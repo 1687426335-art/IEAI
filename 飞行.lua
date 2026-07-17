@@ -28,12 +28,10 @@ button.Font = Enum.Font.GothamBold
 button.BackgroundTransparency = 0.2
 button.BorderSizePixel = 0
 
--- 圆角效果
 local corner = Instance.new("UICorner")
 corner.Parent = button
 corner.CornerRadius = UDim.new(0, 10)
 
--- 飞行核心函数
 local function toggleFly()
     local character = LocalPlayer.Character
     if not character then return end
@@ -45,7 +43,6 @@ local function toggleFly()
     flying = not flying
     
     if flying then
-        -- 开启飞行
         humanoid.PlatformStand = true
         
         bodyVelocity = Instance.new("BodyVelocity")
@@ -56,13 +53,8 @@ local function toggleFly()
         button.Text = "🛑 停止飞行"
         button.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
         
-        -- 用 WASD 控制方向
-        local moveConnection
-        moveConnection = RunService.Heartbeat:Connect(function()
-            if not flying or not humanoidRootPart or not bodyVelocity then
-                if moveConnection then moveConnection:Disconnect() end
-                return
-            end
+        RunService.Heartbeat:Connect(function()
+            if not flying or not humanoidRootPart or not bodyVelocity then return end
             
             local moveDir = Vector3.new(0, 0, 0)
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then
@@ -89,7 +81,6 @@ local function toggleFly()
         end)
         
     else
-        -- 关闭飞行
         humanoid.PlatformStand = false
         if bodyVelocity then
             bodyVelocity:Destroy()
@@ -103,7 +94,6 @@ end
 
 button.MouseButton1Click:Connect(toggleFly)
 
--- 快捷键 F 键切换飞行
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.F then
@@ -111,6 +101,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("✅ 飞行脚本加载成功！")
-print("点击屏幕按钮 或 按 F 键 切换飞行")
-print("WASD 控制方向，空格向上")
+print("✅ 飞行脚本加载成功！点击按钮或按 F 键切换飞行")
