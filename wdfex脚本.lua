@@ -1,5 +1,5 @@
 -- ========== 圣奥里服务器 过检测加速 + 子弹范围 ==========
--- 无验证 | 自动过检测 | 防踢 | 防封 | 速度1-16倍 | 子弹范围1-100
+-- 修复：只要子弹打到白色框区域就能造成伤害
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -8,6 +8,8 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local speedEnabled = false
 local speedMultiplier = 1.5
@@ -17,6 +19,7 @@ local minimized = false
 local isDragging = false
 local dragStart, dragStartPos
 local bypassActive = false
+local rangeConn = nil
 
 -- ========== 创建GUI ==========
 local screenGui = Instance.new("ScreenGui")
@@ -146,7 +149,6 @@ miniBall.MouseButton1Click:Connect(function()
 end)
 
 -- ========== 内容 ==========
--- 加速开关
 local speedBtn = Instance.new("TextButton")
 speedBtn.Parent = mainFrame
 speedBtn.Size = UDim2.new(0, 130, 0, 40)
@@ -157,12 +159,10 @@ speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedBtn.TextSize = 15
 speedBtn.Font = Enum.Font.GothamBold
 speedBtn.BorderSizePixel = 0
-
 local sCorner = Instance.new("UICorner")
 sCorner.Parent = speedBtn
 sCorner.CornerRadius = UDim.new(0, 8)
 
--- 子弹范围开关
 local rangeBtn = Instance.new("TextButton")
 rangeBtn.Parent = mainFrame
 rangeBtn.Size = UDim2.new(0, 130, 0, 40)
@@ -173,12 +173,10 @@ rangeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 rangeBtn.TextSize = 14
 rangeBtn.Font = Enum.Font.GothamBold
 rangeBtn.BorderSizePixel = 0
-
 local rCorner = Instance.new("UICorner")
 rCorner.Parent = rangeBtn
 rCorner.CornerRadius = UDim.new(0, 8)
 
--- 状态标签
 local bypassLabel = Instance.new("TextLabel")
 bypassLabel.Parent = mainFrame
 bypassLabel.Size = UDim2.new(1, -20, 0, 20)
@@ -259,7 +257,7 @@ for i = 1, 16 do
     table.insert(btnList, btn)
 end
 
--- ========== 子弹范围按钮 1-100 (滚动) ==========
+-- ========== 子弹范围按钮 1-100 ==========
 local rangeScroll = Instance.new("ScrollingFrame")
 rangeScroll.Parent = mainFrame
 rangeScroll.Size = UDim2.new(1, -10, 0, 100)
@@ -333,25 +331,91 @@ versionLabel.TextSize = 11
 versionLabel.Font = Enum.Font.Gotham
 
 -- ========== 子弹范围功能 ==========
+local whiteBoxes = {}
+
+local function createWhiteBox(player)
+    local box = Instance.new("Frame")
+    box.Parent = screenGui
+    box.Size = UDim2.new(0, rangeSize * 10, 0, rangeSize * 10)
+    box.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    box.BackgroundTransparency = 0.3
+    box.BorderSizePixel = 2
+    box.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    box.Visible = false
+    box.ZIndex = 5
+    return box
+end
+
+local function updateWhiteBoxes()
+    if not rangeEnabled then
+        for _, box in pairs(whiteBoxes) do
+            box.Visible = false
+        end
+        return
+    end
+    
+    local localChar = LocalPlayer.Character
+    if not localChar then return end
+    local localRoot = localChar:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer then goto continue end
+        local char = player.Character
+        if not char then goto continue end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then goto continue end
+        
+        if not whiteBoxes[player.UserId] then
+            whiteBoxes[player.UserId] = createWhiteBox(player)
+        end
+        
+        local box = whiteBoxes[player.UserId]
+        local screenPos, onScreen = Camera:WorldToScreenPoint(hrp.Position)
+        
+        if not onScreen then
+            box.Visible = false
+            goto continue
+        end
+        
+        -- 根据距离调整大小
+        local dist = (hrp.Position - localRoot.Position).Magnitude
+        local scale = math.clamp(1 / (dist * 0.02), 0.3, 3)
+        local size = rangeSize * 3 * scale
+        
+        box.Size = UDim2.new(0, size, 0, size)
+        box.Position = UDim2.new(0, screenPos.X - size/2, 0, screenPos.Y - size/2)
+        box.Visible = true
+        
+        ::continue::
+    end
+    
+    -- 清理已离开玩家
+    for userId, box in pairs(whiteBoxes) do
+        if not Players:GetPlayerByUserId(userId) then
+            box:Destroy()
+            whiteBoxes[userId] = nil
+        end
+    end
+end
+
+-- ========== 子弹范围核心 ==========
 local function updateRange()
     if not rangeEnabled then
-        -- 恢复玩家大小
+        -- 恢复所有玩家大小
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer then
                 local char = player.Character
                 if char then
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 0
-                        hrp.Material = Enum.Material.Plastic
-                        hrp.CanCollide = true
-                    end
-                    -- 恢复所有部件
                     for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            part.Size = part.Size / (rangeSize / 5)
+                        if part:IsA("BasePart") then
+                            local orig = part:GetAttribute("OriginalSize")
+                            if orig then
+                                part.Size = orig
+                            end
                             part.Transparency = 0
+                            part.Material = Enum.Material.Plastic
+                            part.CanCollide = true
                         end
                     end
                 end
@@ -364,24 +428,29 @@ local function updateRange()
         if player ~= LocalPlayer then
             local char = player.Character
             if char then
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
-                    hrp.Transparency = 0.3
-                    hrp.Material = Enum.Material.Neon
-                    hrp.CanCollide = false
-                end
-                -- 扩大所有部件（让子弹更容易打中）
+                -- 扩大所有部件，让子弹打到范围内就算命中
                 for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        part.Size = part.Size * (rangeSize / 5)
+                    if part:IsA("BasePart") then
+                        if not part:GetAttribute("OriginalSize") then
+                            part:SetAttribute("OriginalSize", part.Size)
+                        end
+                        -- 扩大部件
+                        local scale = rangeSize / 5
+                        part.Size = part:GetAttribute("OriginalSize") * scale
                         part.Transparency = 0.3
+                        part.Material = Enum.Material.Neon
+                        part.CanCollide = true
                     end
                 end
             end
         end
     end
 end
+
+-- 每帧更新白色框
+RunService.RenderStepped:Connect(function()
+    updateWhiteBoxes()
+end)
 
 local function toggleRange()
     rangeEnabled = not rangeEnabled
@@ -541,7 +610,7 @@ LocalPlayer.CharacterAdded:Connect(function()
         end
     end
     if rangeEnabled then
-        task.wait(0.5)
+        task.wait(1)
         updateRange()
     end
 end)
