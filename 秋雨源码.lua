@@ -1,8 +1,8 @@
---GK到此一游
---GK到此一游
---GK到此一游
+--wdfex到此一游
+--wdfex到此一游
+--wdfex到此一游
 -- ============================================
--- 秋雨脚本 v3.0 - 完整版 + 彩蛋
+-- wdfex脚本 v1.0 - 内测版 + 彩蛋
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -136,7 +136,7 @@ local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 28); TitleBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); TitleBar.BackgroundTransparency = 0.9; TitleBar.BorderSizePixel = 0; TitleBar.Parent = MainWindow
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -70, 1, 0); TitleLabel.Position = UDim2.new(0, 8, 0, 0); TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "秋雨脚本"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
+TitleLabel.Text = "wdfex脚本"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
 
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 22, 0, 22); MinBtn.Position = UDim2.new(1, -50, 0, 3); MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -408,7 +408,7 @@ RunService.RenderStepped:Connect(function() if State.ESP then UpdateESP() end en
 QQBtn.MouseButton1Click:Connect(function()
     if setclipboard then setclipboard("1051933529") end
     QQBtn.Text = "✅ 已复制!"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 80, 40)
-    task.wait(1.5); QQBtn.Text = "QQ群: 1051933529"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
+    task.wait(1.5); QQBtn.Text = "QQ群: 无"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
 end)
 
 -- 彩蛋按钮
@@ -433,13 +433,13 @@ EasterBtn.MouseButton1Click:Connect(function()
     
     local line1 = Instance.new("TextLabel")
     line1.Size = UDim2.new(1, 0, 0, 22); line1.Position = UDim2.new(0, 0, 0, 55)
-    line1.BackgroundTransparency = 1; line1.Text = "第一个使用者：爱吃奥利奥"
+    line1.BackgroundTransparency = 1; line1.Text = "第一个使用者：无"
     line1.TextColor3 = Color3.fromRGB(200, 200, 255); line1.TextSize = 14; line1.Font = Enum.Font.GothamMedium
     line1.Parent = easterFrame
     
     local line2 = Instance.new("TextLabel")
     line2.Size = UDim2.new(1, 0, 0, 22); line2.Position = UDim2.new(0, 0, 0, 80)
-    line2.BackgroundTransparency = 1; line2.Text = "第一个传播者：兔大侠"
+    line2.BackgroundTransparency = 1; line2.Text = "第一个传播者：无"
     line2.TextColor3 = Color3.fromRGB(255, 180, 180); line2.TextSize = 14; line2.Font = Enum.Font.GothamMedium
     line2.Parent = easterFrame
     
@@ -508,4 +508,4 @@ MakeDraggable(MainWindow, TitleBar); MakeDraggable(RestoreBtn, RestoreBtn)
 
 CloseBtn.MouseButton1Click:Connect(CloseWithAnim)
 RefreshPlayerList(); Players.PlayerAdded:Connect(RefreshPlayerList); Players.PlayerRemoving:Connect(RefreshPlayerList)
-print("秋雨脚本 彩蛋版 加载完成!")
+print("wdfex脚本 彩蛋版 加载完成!")
