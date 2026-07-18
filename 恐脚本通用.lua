@@ -50,8 +50,8 @@ task.wait(0.5)
 Gui:Destroy()
 
 game:GetService("StarterGui"):SetCore("SendNotification",{
-    Title = "恐脚本--通用",
-    Text = "作者：恐拜大帝\nQQ：3999698324",
+    Title = "wdefx--通用",
+    Text = "作者：wdefx\nQQ：1687426335",
     Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150"
 })
 
