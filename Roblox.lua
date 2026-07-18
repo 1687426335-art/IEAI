@@ -1,6 +1,6 @@
--- ========== wdfex超级加速 卡密验证版 ==========
+-- ========== wdfex超级加速 卡密验证版 V2 ==========
 -- 卡密: wdfexnb
--- 倍率1-15 | 自动恢复 | 永不中断
+-- 倍率1-15 | 自动恢复 | 永不中断 | 修复点击无效
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -9,7 +9,7 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 
 local speedEnabled = false
-local speedMultiplier = 2
+local speedMultiplier = 15
 local isVerified = false
 
 -- ========== 卡密验证 ==========
@@ -42,7 +42,6 @@ local verifyCorner = Instance.new("UICorner")
 verifyCorner.Parent = verifyFrame
 verifyCorner.CornerRadius = UDim.new(0, 16)
 
--- 标题
 local verifyTitle = Instance.new("TextLabel")
 verifyTitle.Parent = verifyFrame
 verifyTitle.Size = UDim2.new(1, 0, 0, 50)
@@ -53,7 +52,6 @@ verifyTitle.BackgroundTransparency = 1
 verifyTitle.TextSize = 24
 verifyTitle.Font = Enum.Font.GothamBold
 
--- 卡密输入框
 local keyInput = Instance.new("TextBox")
 keyInput.Parent = verifyFrame
 keyInput.Size = UDim2.new(0, 220, 0, 45)
@@ -70,7 +68,6 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.Parent = keyInput
 inputCorner.CornerRadius = UDim.new(0, 8)
 
--- 验证按钮
 local verifyBtn = Instance.new("TextButton")
 verifyBtn.Parent = verifyFrame
 verifyBtn.Size = UDim2.new(0, 220, 0, 45)
@@ -86,7 +83,6 @@ local verifyBtnCorner = Instance.new("UICorner")
 verifyBtnCorner.Parent = verifyBtn
 verifyBtnCorner.CornerRadius = UDim.new(0, 8)
 
--- 验证结果标签
 local resultLabel = Instance.new("TextLabel")
 resultLabel.Parent = verifyFrame
 resultLabel.Size = UDim2.new(1, 0, 0, 25)
@@ -100,8 +96,8 @@ resultLabel.Font = Enum.Font.Gotham
 -- ========== 主悬浮窗 ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 260, 0, 380)
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -190)
+mainFrame.Size = UDim2.new(0, 260, 0, 390)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -195)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -150,15 +146,15 @@ closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- ========== 加速开关 ==========
+-- ========== 加速开关按钮 ==========
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Parent = mainFrame
-toggleBtn.Size = UDim2.new(0, 220, 0, 50)
+toggleBtn.Size = UDim2.new(0, 220, 0, 55)
 toggleBtn.Position = UDim2.new(0.5, -110, 0, 55)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 toggleBtn.Text = "⚡ 加速: 关"
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.TextSize = 20
+toggleBtn.TextSize = 22
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.BorderSizePixel = 0
 
@@ -170,15 +166,15 @@ btnCorner.CornerRadius = UDim.new(0, 12)
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Parent = mainFrame
 speedLabel.Size = UDim2.new(1, 0, 0, 25)
-speedLabel.Position = UDim2.new(0, 0, 0, 118)
-speedLabel.Text = "倍率: 2x (点击数字调整)"
+speedLabel.Position = UDim2.new(0, 0, 0, 125)
+speedLabel.Text = "倍率: 15x (点击数字调整)"
 speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
 speedLabel.BackgroundTransparency = 1
-speedLabel.TextSize = 14
+speedLabel.TextSize = 15
 speedLabel.Font = Enum.Font.Gotham
 
 -- ========== 倍率按钮 1-15 ==========
-local btnY = 150
+local btnY = 158
 local btnW = 34
 local gap = 4
 local cols = 5
@@ -236,17 +232,17 @@ end
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Parent = mainFrame
 statusLabel.Size = UDim2.new(1, 0, 0, 22)
-statusLabel.Position = UDim2.new(0, 0, 0, 295)
+statusLabel.Position = UDim2.new(0, 0, 0, 305)
 statusLabel.Text = "🔒 未验证"
 statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
 statusLabel.BackgroundTransparency = 1
-statusLabel.TextSize = 13
+statusLabel.TextSize = 14
 statusLabel.Font = Enum.Font.Gotham
 
 local restoreLabel = Instance.new("TextLabel")
 restoreLabel.Parent = mainFrame
 restoreLabel.Size = UDim2.new(1, 0, 0, 22)
-restoreLabel.Position = UDim2.new(0, 0, 0, 318)
+restoreLabel.Position = UDim2.new(0, 0, 0, 330)
 restoreLabel.Text = "🔄 自动恢复已开启"
 restoreLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
 restoreLabel.BackgroundTransparency = 1
@@ -256,8 +252,8 @@ restoreLabel.Font = Enum.Font.Gotham
 local versionLabel = Instance.new("TextLabel")
 versionLabel.Parent = mainFrame
 versionLabel.Size = UDim2.new(1, 0, 0, 22)
-versionLabel.Position = UDim2.new(0, 0, 0, 342)
-versionLabel.Text = "wdfex超级加速 | 卡密验证版"
+versionLabel.Position = UDim2.new(0, 0, 0, 355)
+versionLabel.Text = "wdfex超级加速 | 卡密验证版 V2"
 versionLabel.TextColor3 = Color3.fromRGB(100, 100, 140)
 versionLabel.BackgroundTransparency = 1
 versionLabel.TextSize = 11
@@ -273,7 +269,34 @@ local function applySpeed()
     if speedEnabled then
         hum.WalkSpeed = 16 * speedMultiplier
         hum.JumpPower = 50 * speedMultiplier
+        print("⚡ 速度已应用: " .. hum.WalkSpeed)
     end
+end
+
+-- ========== 强制启动加速 ==========
+local function forceEnableSpeed()
+    if not isVerified then
+        print("❌ 请先验证卡密")
+        return false
+    end
+    local char = LocalPlayer.Character
+    if not char then
+        print("❌ 没有角色")
+        return false
+    end
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum then
+        print("❌ 找不到 Humanoid")
+        return false
+    end
+    
+    speedEnabled = true
+    hum.WalkSpeed = 16 * speedMultiplier
+    hum.JumpPower = 50 * speedMultiplier
+    toggleBtn.Text = "⚡ 加速: 开"
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    print("✅ 加速强制开启 (" .. speedMultiplier .. "x)")
+    return true
 end
 
 -- ========== 自动恢复 ==========
@@ -300,15 +323,29 @@ local function autoRestore()
     end)
 end
 
+-- ========== 开关加速（修复版） ==========
 local function toggleSpeed()
     if not isVerified then
         print("❌ 请先验证卡密!")
         return
     end
+    
     local char = LocalPlayer.Character
-    if not char then return end
+    if not char then
+        print("❌ 没有角色，等待角色出现...")
+        LocalPlayer.CharacterAdded:Wait()
+        char = LocalPlayer.Character
+        if not char then
+            print("❌ 无法获取角色")
+            return
+        end
+    end
+    
     local hum = char:FindFirstChild("Humanoid")
-    if not hum then return end
+    if not hum then
+        print("❌ 找不到 Humanoid")
+        return
+    end
     
     speedEnabled = not speedEnabled
     
@@ -317,7 +354,7 @@ local function toggleSpeed()
         hum.JumpPower = 50 * speedMultiplier
         toggleBtn.Text = "⚡ 加速: 开"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        print("✅ 加速开启 (" .. speedMultiplier .. "x)")
+        print("✅ 加速开启 (" .. speedMultiplier .. "x) | 当前速度: " .. hum.WalkSpeed)
     else
         hum.WalkSpeed = 16
         hum.JumpPower = 50
@@ -326,6 +363,12 @@ local function toggleSpeed()
         print("❌ 加速关闭")
     end
 end
+
+-- ========== 按钮事件 ==========
+toggleBtn.MouseButton1Click:Connect(function()
+    print("🔄 按钮被点击")
+    toggleSpeed()
+end)
 
 -- ========== 验证按钮事件 ==========
 verifyBtn.MouseButton1Click:Connect(function()
@@ -339,6 +382,10 @@ verifyBtn.MouseButton1Click:Connect(function()
         resultLabel.Text = "✅ 验证成功!"
         resultLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         print("✅ 卡密验证成功!")
+        
+        -- 验证成功后自动开启加速
+        task.wait(0.3)
+        forceEnableSpeed()
     else
         resultLabel.Text = "❌ 卡密错误，请重试"
         resultLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
@@ -350,6 +397,7 @@ end)
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.G then
+        print("🔄 快捷键 G 被按下")
         toggleSpeed()
     end
 end)
@@ -359,6 +407,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     if speedEnabled and isVerified then
         applySpeed()
+        print("🔄 角色重生，速度已恢复")
     end
 end)
 
@@ -366,7 +415,8 @@ end)
 autoRestore()
 
 print("========================================")
-print("  ✅ wdfex超级加速 卡密版加载成功")
+print("  ✅ wdfex超级加速 V2 加载成功")
 print("  卡密: wdfexnb")
-print("  验证后点击按钮开关 | 点击数字调倍率")
+print("  验证后自动开启加速")
+print("  点击按钮或按 G 开关 | 点击数字调倍率")
 print("========================================")
