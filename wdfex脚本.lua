@@ -15,85 +15,6 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local char, root, hum
 
--- ==================== 服务器验证 ====================
--- 检测当前是否在圣奥里服务器
-local function isTargetServer()
-    -- 方法1: 通过游戏名称检测
-    local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
-    if placeName:find("圣奥里") or placeName:find("Aurie") or placeName:find("SAO") then
-        return true
-    end
-    
-    -- 方法2: 通过服务器ID检测
-    local gameId = game.GameId
-    if type(gameId) == "number" then
-        if gameId == 1638323641 then
-            return true
-        end
-    end
-    local numId = tonumber(gameId)
-    if numId and numId == 1638323641 then
-        return true
-    end
-    
-    -- 方法3: 通过游戏内特征检测（圣奥里有警察、火焰、医疗等队伍）
-    local teams = game:GetService("Teams"):GetChildren()
-    local teamNames = {}
-    for _, team in pairs(teams) do
-        table.insert(teamNames, team.Name)
-    end
-    local teamStr = table.concat(teamNames, "")
-    if teamStr:find("警察") or teamStr:find("火焰") or teamStr:find("医疗") then
-        return true
-    end
-    
-    return false
-end
-
--- 如果不是目标服务器，直接弹窗提示并停止加载
-if not isTargetServer() then
-    local warnGui = Instance.new("ScreenGui")
-    warnGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    local frame = Instance.new("Frame")
-    frame.Parent = warnGui
-    frame.Size = UDim2.new(0, 400, 0, 150)
-    frame.Position = UDim2.new(0.5, -200, 0.5, -75)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
-    frame.BackgroundTransparency = 0.1
-    frame.BorderSizePixel = 0
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
-    
-    local label = Instance.new("TextLabel")
-    label.Parent = frame
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.Text = "❌ 此脚本仅支持圣奥里服务器!\n请在圣奥里游戏中运行此脚本"
-    label.TextColor3 = Color3.fromRGB(255, 100, 100)
-    label.BackgroundTransparency = 1
-    label.TextSize = 20
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Parent = frame
-    closeBtn.Size = UDim2.new(0, 100, 0, 35)
-    closeBtn.Position = UDim2.new(0.5, -50, 0.8, 0)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    closeBtn.Text = "确定"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.TextSize = 16
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.BorderSizePixel = 0
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
-    closeBtn.MouseButton1Click:Connect(function()
-        warnGui:Destroy()
-    end)
-    
-    print("❌ 此脚本仅支持圣奥里服务器!")
-    return
-end
-
-print("✅ 服务器验证通过: 圣奥里")
-
 -- ==================== 邀请码验证系统 ====================
 local isVerified = false
 local validKeys = {
@@ -344,7 +265,7 @@ local function startBypass()
         end
     end)
 
-    -- 8. 防服务器检测 (修改Humanoid属性)
+    -- 8. 防服务器检测
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -883,7 +804,6 @@ createVerifyUI()
 
 print("========================================")
 print("  ✅ wdfex脚本 圣奥里专版 加载成功")
-print("  仅限圣奥里服务器使用")
 print("  邀请码: 43775")
 print("  验证后加载完整功能 + 过检测")
 print("========================================")
