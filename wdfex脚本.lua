@@ -57,7 +57,7 @@ RevenantLib:Notification({
 })
 wait(1)
 RevenantLib:Notification({
-  Text = "叫爸爸不叫没有码",
+  Text = "1",
   Duration = 6,
 })
 local PlayerConfig = {
