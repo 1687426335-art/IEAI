@@ -1050,7 +1050,7 @@ do
             info.Size = UDim2.new(1, -20, 0, 60)
             info.Position = UDim2.new(0, 10, 0, 10)
             info.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            info.Text = "通用脚本\n创作者：恐拜大帝"
+            info.Text = "通用脚本\n创作者：wdfex"
             info.TextColor3 = Color3.new(1, 1, 1)
             info.TextWrapped = true
             info.Font = Enum.Font.SourceSans
@@ -1101,8 +1101,8 @@ do
                 return btn
             end
 
-            createCopyButton(page, "QQ群", "1106203175", 10, startY)
-            createCopyButton(page, "QQ", "3999698324", 10, startY + 45)
+            createCopyButton(page, "QQ群", "无", 10, startY)
+            createCopyButton(page, "QQ", "1687426335", 10, startY + 45)
 
         elseif i == 2 then
             local function addSemiTransparentButton(page, txt, posX, posY, callback)
@@ -1419,7 +1419,7 @@ do
     Title.Size = UDim2.new(1, -100, 1, 0)
     Title.Position = UDim2.new(0, 10, 0, 0)
     Title.Font = Enum.Font.ArialBold
-    Title.Text = "恐脚本--通用" .. string.rep(" ", 6) .. "您已执行 " .. count .. " 次，谢谢您的支持！"
+    Title.Text = "wdfex--通用" .. string.rep(" ", 6) .. "您已执行 " .. count .. " 次，谢谢您的支持！"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 18
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -1456,7 +1456,7 @@ do
     ToggleBtn.Position = UDim2.new(0.8, 0, 0.3, 0)
     ToggleBtn.Size = UDim2.new(0, 140, 0, 50)
     ToggleBtn.Font = Enum.Font.ArialBold
-    ToggleBtn.Text = "打开菜单"
+    ToggleBtn.Text = "打开"
     ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleBtn.TextSize = 20
     ToggleBtn.ZIndex = 100
@@ -1477,7 +1477,7 @@ do
     ToggleBtn.InputEnded:Connect(function(input) if input == dragInput then dragging = false; dragInput = nil end end)
     ToggleBtn.MouseButton1Click:Connect(function()
         Main.Visible = not Main.Visible
-        ToggleBtn.Text = Main.Visible and "关闭菜单" or "打开菜单"
+        ToggleBtn.Text = Main.Visible and "关闭菜单" or "打开"
     end)
     MinimizeBtn.MouseButton1Click:Connect(function() Main.Visible = false; ToggleBtn.Text = "打开菜单" end)
     CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
