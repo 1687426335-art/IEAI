@@ -312,7 +312,7 @@ function loadMainUI()
     local ESPHealthBtn= CreateButton(ESPContent, 460, 2,  110, 26, "血量: 关", false)
     local ESPDistBtn  = CreateButton(ESPContent, 576, 2,  110, 26, "距离: 关", false)
     local ESPTraceBtn = CreateButton(ESPContent, 0,   32, 220, 26, "射线: 关", false)
-    local QQBtn = CreateButton(ESPContent, 0, 62, 220, 26, "QQ群: 1051933529", false)
+    local QQBtn = CreateButton(ESPContent, 0, 62, 220, 26, "作者QQ: 1687426335", false)
 
     -- ==================== 功能标签页 ====================
     local FlyBtn    = CreateButton(FuncContent, 0,   2,  110, 26, "飞行", false)
