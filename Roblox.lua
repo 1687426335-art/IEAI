@@ -1,6 +1,6 @@
--- ========== wdfex超级加速 卡密验证版 V2 ==========
--- 卡密: wdfexnb
--- 倍率1-15 | 自动恢复 | 永不中断 | 修复点击无效
+-- ========== wdfex加速2.0 完整版 ==========
+-- 卡密: 1
+-- 全新验证窗UI | 全新悬浮窗 | 倍率1-15
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -9,12 +9,17 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 
 local speedEnabled = false
-local speedMultiplier = 15
+local speedMultiplier = 1
 local isVerified = false
+local minimized = false
+local isDragging = false
+local dragStart = nil
+local dragStartPos = nil
 
 -- ========== 卡密验证 ==========
 local function verifyKey(inputKey)
     local validKeys = {
+        ["1"] = true,
         ["wdfexnb"] = true,
         ["WDFEXNB"] = true,
     }
@@ -27,35 +32,51 @@ screenGui.Parent = CoreGui
 screenGui.Name = "wdfexSpeed"
 screenGui.ResetOnSpawn = false
 
--- ========== 验证窗口 ==========
+-- ========== 卡密验证窗口 ==========
 local verifyFrame = Instance.new("Frame")
 verifyFrame.Parent = screenGui
-verifyFrame.Size = UDim2.new(0, 300, 0, 220)
-verifyFrame.Position = UDim2.new(0.5, -150, 0.5, -110)
-verifyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
-verifyFrame.BackgroundTransparency = 0.1
+verifyFrame.Size = UDim2.new(0, 320, 0, 280)
+verifyFrame.Position = UDim2.new(0.5, -160, 0.5, -140)
+verifyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+verifyFrame.BackgroundTransparency = 0.05
 verifyFrame.BorderSizePixel = 0
 verifyFrame.Active = true
 verifyFrame.Draggable = true
 
 local verifyCorner = Instance.new("UICorner")
 verifyCorner.Parent = verifyFrame
-verifyCorner.CornerRadius = UDim.new(0, 16)
+verifyCorner.CornerRadius = UDim.new(0, 20)
+
+local verifyBorder = Instance.new("UIStroke")
+verifyBorder.Parent = verifyFrame
+verifyBorder.Thickness = 1.5
+verifyBorder.Color = Color3.fromRGB(0, 200, 255)
+verifyBorder.Transparency = 0.3
 
 local verifyTitle = Instance.new("TextLabel")
 verifyTitle.Parent = verifyFrame
 verifyTitle.Size = UDim2.new(1, 0, 0, 50)
-verifyTitle.Position = UDim2.new(0, 0, 0, 10)
-verifyTitle.Text = "🔐 卡密验证"
+verifyTitle.Position = UDim2.new(0, 0, 0, 15)
+verifyTitle.Text = "🔐 wdfex加速2.0"
 verifyTitle.TextColor3 = Color3.fromRGB(0, 200, 255)
 verifyTitle.BackgroundTransparency = 1
 verifyTitle.TextSize = 24
 verifyTitle.Font = Enum.Font.GothamBold
 
+local subTitle = Instance.new("TextLabel")
+subTitle.Parent = verifyFrame
+subTitle.Size = UDim2.new(1, 0, 0, 25)
+subTitle.Position = UDim2.new(0, 0, 0, 65)
+subTitle.Text = "请输入卡密验证"
+subTitle.TextColor3 = Color3.fromRGB(180, 180, 210)
+subTitle.BackgroundTransparency = 1
+subTitle.TextSize = 15
+subTitle.Font = Enum.Font.Gotham
+
 local keyInput = Instance.new("TextBox")
 keyInput.Parent = verifyFrame
-keyInput.Size = UDim2.new(0, 220, 0, 45)
-keyInput.Position = UDim2.new(0.5, -110, 0, 75)
+keyInput.Size = UDim2.new(0, 250, 0, 50)
+keyInput.Position = UDim2.new(0.5, -125, 0, 100)
 keyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 keyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyInput.Text = ""
@@ -66,95 +87,181 @@ keyInput.BorderSizePixel = 0
 
 local inputCorner = Instance.new("UICorner")
 inputCorner.Parent = keyInput
-inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.CornerRadius = UDim.new(0, 10)
 
 local verifyBtn = Instance.new("TextButton")
 verifyBtn.Parent = verifyFrame
-verifyBtn.Size = UDim2.new(0, 220, 0, 45)
-verifyBtn.Position = UDim2.new(0.5, -110, 0, 135)
+verifyBtn.Size = UDim2.new(0, 250, 0, 50)
+verifyBtn.Position = UDim2.new(0.5, -125, 0, 165)
 verifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 verifyBtn.Text = "✅ 验证卡密"
 verifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-verifyBtn.TextSize = 18
+verifyBtn.TextSize = 20
 verifyBtn.Font = Enum.Font.GothamBold
 verifyBtn.BorderSizePixel = 0
 
 local verifyBtnCorner = Instance.new("UICorner")
 verifyBtnCorner.Parent = verifyBtn
-verifyBtnCorner.CornerRadius = UDim.new(0, 8)
+verifyBtnCorner.CornerRadius = UDim.new(0, 10)
 
 local resultLabel = Instance.new("TextLabel")
 resultLabel.Parent = verifyFrame
 resultLabel.Size = UDim2.new(1, 0, 0, 25)
-resultLabel.Position = UDim2.new(0, 0, 0, 190)
-resultLabel.Text = ""
+resultLabel.Position = UDim2.new(0, 0, 0, 230)
+resultLabel.Text = "💡 卡密: 1"
 resultLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
 resultLabel.BackgroundTransparency = 1
 resultLabel.TextSize = 14
 resultLabel.Font = Enum.Font.Gotham
 
+-- ========== 最小化圆球 ==========
+local miniBall = Instance.new("TextButton")
+miniBall.Parent = screenGui
+miniBall.Size = UDim2.new(0, 55, 0, 55)
+miniBall.Position = UDim2.new(1, -75, 0.9, 0)
+miniBall.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+miniBall.Text = "⚡"
+miniBall.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniBall.TextSize = 28
+miniBall.Font = Enum.Font.GothamBold
+miniBall.BorderSizePixel = 0
+miniBall.Visible = false
+miniBall.ZIndex = 999
+
+local ballCorner = Instance.new("UICorner")
+ballCorner.Parent = miniBall
+ballCorner.CornerRadius = UDim.new(1, 0)
+
+-- ========== 圆球拖动 ==========
+miniBall.MouseButton1Down:Connect(function()
+    isDragging = true
+    dragStart = UserInputService:GetMouseLocation()
+    dragStartPos = miniBall.Position
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        local newPos = UDim2.new(
+            dragStartPos.X.Scale + delta.X / screenGui.AbsoluteSize.X,
+            0,
+            dragStartPos.Y.Scale + delta.Y / screenGui.AbsoluteSize.Y,
+            0
+        )
+        miniBall.Position = newPos
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+miniBall.MouseButton1Click:Connect(function()
+    minimized = false
+    miniBall.Visible = false
+    mainFrame.Visible = true
+end)
+
 -- ========== 主悬浮窗 ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 260, 0, 390)
-mainFrame.Position = UDim2.new(0.5, -130, 0.5, -195)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
-mainFrame.BackgroundTransparency = 0.1
+mainFrame.Size = UDim2.new(0, 250, 0, 380)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -190)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 35)
+mainFrame.BackgroundTransparency = 0.05
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Visible = false
+mainFrame.ClipsDescendants = true
 
 local mainCorner = Instance.new("UICorner")
 mainCorner.Parent = mainFrame
-mainCorner.CornerRadius = UDim.new(0, 16)
+mainCorner.CornerRadius = UDim.new(0, 20)
 
--- 标题栏
+local mainBorder = Instance.new("UIStroke")
+mainBorder.Parent = mainFrame
+mainBorder.Thickness = 1.5
+mainBorder.Color = Color3.fromRGB(0, 200, 255)
+mainBorder.Transparency = 0.3
+
+-- ========== 标题栏 ==========
 local titleBar = Instance.new("Frame")
 titleBar.Parent = mainFrame
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
-titleBar.BackgroundTransparency = 0.2
+titleBar.Size = UDim2.new(1, 0, 0, 50)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+titleBar.BackgroundTransparency = 0.1
 titleBar.BorderSizePixel = 0
 
 local titleCorner = Instance.new("UICorner")
 titleCorner.Parent = titleBar
-titleCorner.CornerRadius = UDim.new(0, 16)
+titleCorner.CornerRadius = UDim.new(0, 20)
 
 local titleText = Instance.new("TextLabel")
 titleText.Parent = titleBar
-titleText.Size = UDim2.new(1, -75, 1, 0)
-titleText.Position = UDim2.new(0, 40, 0, 0)
-titleText.Text = "⚡ 超级加速"
-titleText.TextColor3 = Color3.fromRGB(0, 200, 255)
+titleText.Size = UDim2.new(1, -80, 1, 0)
+titleText.Position = UDim2.new(0, 15, 0, 0)
+titleText.Text = "⚡ wdfex加速2.0"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.BackgroundTransparency = 1
 titleText.TextSize = 18
 titleText.Font = Enum.Font.GothamBold
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- 关闭
+-- 关闭按钮
 local closeBtn = Instance.new("TextButton")
 closeBtn.Parent = titleBar
-closeBtn.Size = UDim2.new(0, 40, 1, 0)
-closeBtn.Position = UDim2.new(1, -40, 0, 0)
+closeBtn.Size = UDim2.new(0, 35, 1, 0)
+closeBtn.Position = UDim2.new(1, -35, 0, 0)
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
 closeBtn.BackgroundTransparency = 1
-closeBtn.TextSize = 20
+closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+    print("❌ wdfex加速已关闭")
 end)
 
--- ========== 加速开关按钮 ==========
+-- 最小化按钮
+local minBtn = Instance.new("TextButton")
+minBtn.Parent = titleBar
+minBtn.Size = UDim2.new(0, 35, 1, 0)
+minBtn.Position = UDim2.new(1, -70, 0, 0)
+minBtn.Text = "─"
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.BackgroundTransparency = 1
+minBtn.TextSize = 18
+minBtn.Font = Enum.Font.GothamBold
+minBtn.MouseButton1Click:Connect(function()
+    minimized = true
+    mainFrame.Visible = false
+    miniBall.Visible = true
+    print("📌 已最小化")
+end)
+
+-- ========== 状态标签 ==========
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = mainFrame
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 65)
+statusLabel.Text = "🔒 未验证"
+statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextSize = 14
+statusLabel.Font = Enum.Font.Gotham
+
+-- ========== 加速开关 ==========
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Parent = mainFrame
-toggleBtn.Size = UDim2.new(0, 220, 0, 55)
-toggleBtn.Position = UDim2.new(0.5, -110, 0, 55)
+toggleBtn.Size = UDim2.new(0, 210, 0, 55)
+toggleBtn.Position = UDim2.new(0.5, -105, 0, 100)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 toggleBtn.Text = "⚡ 加速: 关"
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.TextSize = 22
+toggleBtn.TextSize = 20
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.BorderSizePixel = 0
 
@@ -166,20 +273,20 @@ btnCorner.CornerRadius = UDim.new(0, 12)
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Parent = mainFrame
 speedLabel.Size = UDim2.new(1, 0, 0, 25)
-speedLabel.Position = UDim2.new(0, 0, 0, 125)
-speedLabel.Text = "倍率: 15x (点击数字调整)"
+speedLabel.Position = UDim2.new(0, 0, 0, 170)
+speedLabel.Text = "倍率: 1x"
 speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextSize = 15
 speedLabel.Font = Enum.Font.Gotham
 
 -- ========== 倍率按钮 1-15 ==========
-local btnY = 158
-local btnW = 34
+local btnY = 200
+local btnW = 36
 local gap = 4
 local cols = 5
 local totalW = btnW * cols + gap * (cols - 1)
-local startX = (260 - totalW) / 2
+local startX = (250 - totalW) / 2
 
 local speedMap = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 local btnList = {}
@@ -197,19 +304,16 @@ for i, val in ipairs(speedMap) do
     btn.BackgroundColor3 = (val == speedMultiplier) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(40, 40, 60)
     btn.Text = tostring(val)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.GothamBold
     btn.BorderSizePixel = 0
     
     local btnCorner2 = Instance.new("UICorner")
     btnCorner2.Parent = btn
-    btnCorner2.CornerRadius = UDim.new(0, 5)
+    btnCorner2.CornerRadius = UDim.new(0, 6)
     
     btn.MouseButton1Click:Connect(function()
-        if not isVerified then
-            print("❌ 请先验证卡密")
-            return
-        end
+        if not isVerified then return end
         speedMultiplier = val
         speedLabel.Text = "倍率: " .. val .. "x"
         for _, b in pairs(btnList) do
@@ -228,32 +332,12 @@ for i, val in ipairs(speedMap) do
     table.insert(btnList, btn)
 end
 
--- ========== 状态标签 ==========
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Parent = mainFrame
-statusLabel.Size = UDim2.new(1, 0, 0, 22)
-statusLabel.Position = UDim2.new(0, 0, 0, 305)
-statusLabel.Text = "🔒 未验证"
-statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextSize = 14
-statusLabel.Font = Enum.Font.Gotham
-
-local restoreLabel = Instance.new("TextLabel")
-restoreLabel.Parent = mainFrame
-restoreLabel.Size = UDim2.new(1, 0, 0, 22)
-restoreLabel.Position = UDim2.new(0, 0, 0, 330)
-restoreLabel.Text = "🔄 自动恢复已开启"
-restoreLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-restoreLabel.BackgroundTransparency = 1
-restoreLabel.TextSize = 13
-restoreLabel.Font = Enum.Font.Gotham
-
+-- ========== 底部信息 ==========
 local versionLabel = Instance.new("TextLabel")
 versionLabel.Parent = mainFrame
-versionLabel.Size = UDim2.new(1, 0, 0, 22)
-versionLabel.Position = UDim2.new(0, 0, 0, 355)
-versionLabel.Text = "wdfex超级加速 | 卡密验证版 V2"
+versionLabel.Size = UDim2.new(1, 0, 0, 25)
+versionLabel.Position = UDim2.new(0, 0, 0, 350)
+versionLabel.Text = "wdfex加速2.0 | 卡密: 1"
 versionLabel.TextColor3 = Color3.fromRGB(100, 100, 140)
 versionLabel.BackgroundTransparency = 1
 versionLabel.TextSize = 11
@@ -269,92 +353,26 @@ local function applySpeed()
     if speedEnabled then
         hum.WalkSpeed = 16 * speedMultiplier
         hum.JumpPower = 50 * speedMultiplier
-        print("⚡ 速度已应用: " .. hum.WalkSpeed)
     end
 end
 
--- ========== 强制启动加速 ==========
-local function forceEnableSpeed()
-    if not isVerified then
-        print("❌ 请先验证卡密")
-        return false
-    end
-    local char = LocalPlayer.Character
-    if not char then
-        print("❌ 没有角色")
-        return false
-    end
-    local hum = char:FindFirstChild("Humanoid")
-    if not hum then
-        print("❌ 找不到 Humanoid")
-        return false
-    end
-    
-    speedEnabled = true
-    hum.WalkSpeed = 16 * speedMultiplier
-    hum.JumpPower = 50 * speedMultiplier
-    toggleBtn.Text = "⚡ 加速: 开"
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    print("✅ 加速强制开启 (" .. speedMultiplier .. "x)")
-    return true
-end
-
--- ========== 自动恢复 ==========
-local function autoRestore()
-    RunService.Heartbeat:Connect(function()
-        if not speedEnabled or not isVerified then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local hum = char:FindFirstChild("Humanoid")
-        if not hum then return end
-        
-        local targetSpeed = 16 * speedMultiplier
-        local targetJump = 50 * speedMultiplier
-        
-        if hum.WalkSpeed < targetSpeed * 0.9 or hum.JumpPower < targetJump * 0.9 then
-            hum.WalkSpeed = targetSpeed
-            hum.JumpPower = targetJump
-            restoreLabel.Text = "🔄 已自动恢复!"
-            restoreLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            task.wait(0.5)
-            restoreLabel.Text = "🔄 自动恢复已开启"
-            restoreLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-        end
-    end)
-end
-
--- ========== 开关加速（修复版） ==========
 local function toggleSpeed()
     if not isVerified then
         print("❌ 请先验证卡密!")
         return
     end
-    
     local char = LocalPlayer.Character
-    if not char then
-        print("❌ 没有角色，等待角色出现...")
-        LocalPlayer.CharacterAdded:Wait()
-        char = LocalPlayer.Character
-        if not char then
-            print("❌ 无法获取角色")
-            return
-        end
-    end
-    
+    if not char then return end
     local hum = char:FindFirstChild("Humanoid")
-    if not hum then
-        print("❌ 找不到 Humanoid")
-        return
-    end
+    if not hum then return end
     
     speedEnabled = not speedEnabled
-    
     if speedEnabled then
         hum.WalkSpeed = 16 * speedMultiplier
         hum.JumpPower = 50 * speedMultiplier
         toggleBtn.Text = "⚡ 加速: 开"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        print("✅ 加速开启 (" .. speedMultiplier .. "x) | 当前速度: " .. hum.WalkSpeed)
+        print("✅ 加速开启 (" .. speedMultiplier .. "x)")
     else
         hum.WalkSpeed = 16
         hum.JumpPower = 50
@@ -364,13 +382,9 @@ local function toggleSpeed()
     end
 end
 
--- ========== 按钮事件 ==========
-toggleBtn.MouseButton1Click:Connect(function()
-    print("🔄 按钮被点击")
-    toggleSpeed()
-end)
+toggleBtn.MouseButton1Click:Connect(toggleSpeed)
 
--- ========== 验证按钮事件 ==========
+-- ========== 验证 ==========
 verifyBtn.MouseButton1Click:Connect(function()
     local input = keyInput.Text
     if verifyKey(input) then
@@ -382,12 +396,8 @@ verifyBtn.MouseButton1Click:Connect(function()
         resultLabel.Text = "✅ 验证成功!"
         resultLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         print("✅ 卡密验证成功!")
-        
-        -- 验证成功后自动开启加速
-        task.wait(0.3)
-        forceEnableSpeed()
     else
-        resultLabel.Text = "❌ 卡密错误，请重试"
+        resultLabel.Text = "❌ 卡密错误"
         resultLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
         print("❌ 卡密错误")
     end
@@ -397,8 +407,18 @@ end)
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.G then
-        print("🔄 快捷键 G 被按下")
         toggleSpeed()
+    end
+    if input.KeyCode == Enum.KeyCode.M then
+        if mainFrame.Visible then
+            minimized = true
+            mainFrame.Visible = false
+            miniBall.Visible = true
+        else
+            minimized = false
+            miniBall.Visible = false
+            mainFrame.Visible = true
+        end
     end
 end)
 
@@ -407,16 +427,12 @@ LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     if speedEnabled and isVerified then
         applySpeed()
-        print("🔄 角色重生，速度已恢复")
     end
 end)
 
--- ========== 启动 ==========
-autoRestore()
-
 print("========================================")
-print("  ✅ wdfex超级加速 V2 加载成功")
-print("  卡密: wdfexnb")
-print("  验证后自动开启加速")
-print("  点击按钮或按 G 开关 | 点击数字调倍率")
+print("  ✅ wdfex加速2.0 加载成功")
+print("  卡密: 1")
+print("  点击 ─ 或 按 M 键 最小化")
+print("  点击圆球恢复 | 按 G 开关加速")
 print("========================================")
