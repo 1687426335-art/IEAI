@@ -1,24 +1,89 @@
---wdfex到此一游
---wdfex到此一游
---wdfex到此一游
 -- ============================================
--- wdfex脚本 v1.0 - 内测版 + 彩蛋 + 邀请码验证
--- 邀请码: 43775
+-- wdfex脚本 - 圣奥里专版
+-- 仅限圣奥里服务器使用 | 全功能过检测
 -- ============================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local char, root, hum
 
+-- ==================== 服务器验证 ====================
+-- 圣奥里服务器ID检测
+local targetGameIds = {
+    [1638323641] = true,  -- 圣奥里主服务器
+    -- 如果有其他服务器ID可以添加
+}
+
+local function isTargetServer()
+    local gameId = game.GameId
+    if type(gameId) == "number" then
+        return targetGameIds[gameId] or false
+    end
+    -- 如果GameId是字符串，尝试转换
+    local numId = tonumber(gameId)
+    if numId then
+        return targetGameIds[numId] or false
+    end
+    -- 也通过游戏名称判断
+    local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
+    return placeName:find("圣奥里") or placeName:find("Aurie") or false
+end
+
+-- 如果不是目标服务器，直接弹窗提示并停止加载
+if not isTargetServer() then
+    local warnGui = Instance.new("ScreenGui")
+    warnGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    local frame = Instance.new("Frame")
+    frame.Parent = warnGui
+    frame.Size = UDim2.new(0, 400, 0, 150)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -75)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+    frame.BackgroundTransparency = 0.1
+    frame.BorderSizePixel = 0
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
+    
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Text = "❌ 此脚本仅支持圣奥里服务器!\n请在圣奥里游戏中运行此脚本"
+    label.TextColor3 = Color3.fromRGB(255, 100, 100)
+    label.BackgroundTransparency = 1
+    label.TextSize = 20
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Parent = frame
+    closeBtn.Size = UDim2.new(0, 100, 0, 35)
+    closeBtn.Position = UDim2.new(0.5, -50, 0.8, 0)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    closeBtn.Text = "确定"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextSize = 16
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.BorderSizePixel = 0
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+    closeBtn.MouseButton1Click:Connect(function()
+        warnGui:Destroy()
+    end)
+    
+    print("❌ 此脚本仅支持圣奥里服务器!")
+    return
+end
+
+print("✅ 服务器验证通过: 圣奥里")
+
 -- ==================== 邀请码验证系统 ====================
 local isVerified = false
 local validKeys = {
-    ["43775"] = true,
     ["43775"] = true,
 }
 
@@ -58,10 +123,10 @@ local function createVerifyUI()
     title.Parent = mainFrame
     title.Size = UDim2.new(1, 0, 0, 50)
     title.Position = UDim2.new(0, 0, 0, 15)
-    title.Text = "🔐 wdfex脚本"
+    title.Text = "🔐 wdfex脚本 圣奥里专版"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.BackgroundTransparency = 1
-    title.TextSize = 24
+    title.TextSize = 22
     title.Font = Enum.Font.GothamBold
 
     local subTitle = Instance.new("TextLabel")
@@ -138,6 +203,167 @@ local function createVerifyUI()
     return screenGui
 end
 
+-- ==================== 过检测系统 ====================
+local bypassActive = false
+local bypassConnections = {}
+
+local function startBypass()
+    if bypassActive then return end
+    bypassActive = true
+    print("🛡️ 启动圣奥里过检测系统...")
+
+    -- 1. 伪装网络数据
+    pcall(function()
+        local network = game:GetService("NetworkClient")
+        if network then
+            network:SetOutgoingKBPSLimit(999999)
+        end
+    end)
+
+    -- 2. 防检测踢出
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                local healthConn = hum.HealthChanged:Connect(function()
+                    if hum.Health <= 0 then
+                        task.wait(0.1)
+                        if hum and hum.Parent then
+                            hum.Health = hum.MaxHealth
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, healthConn)
+            end
+        end
+    end)
+
+    -- 3. 防拉回
+    pcall(function()
+        local function antiTeleport()
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local lastPos = hrp.Position
+                    local heartbeatConn = RunService.Heartbeat:Connect(function()
+                        if not hrp or not hrp.Parent then return end
+                        if (hrp.Position - lastPos).Magnitude > 100 and (hrp.Position - Vector3.new(0, 0, 0)).Magnitude < 10 then
+                            hrp.CFrame = CFrame.new(lastPos)
+                            print("🛡️ 防拉回触发")
+                        end
+                        lastPos = hrp.Position
+                    end)
+                    table.insert(bypassConnections, heartbeatConn)
+                end
+            end
+        end
+        antiTeleport()
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            antiTeleport()
+        end)
+    end)
+
+    -- 4. 伪装玩家行为
+    pcall(function()
+        local behaviorConn = RunService.Heartbeat:Connect(function()
+            if math.random(1, 100) > 95 then
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end
+        end)
+        table.insert(bypassConnections, behaviorConn)
+    end)
+
+    -- 5. 自动重连防封
+    pcall(function()
+        local parentConn = LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not LocalPlayer.Parent then
+                print("🔄 检测到被踢出，正在重连...")
+                task.wait(2)
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
+            end
+        end)
+        table.insert(bypassConnections, parentConn)
+    end)
+
+    -- 6. 监听服务器检测关键词
+    pcall(function()
+        local chat = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chat then
+            local onMessage = chat:FindFirstChild("OnMessageDone")
+            if onMessage then
+                local chatConn = onMessage.OnClientEvent:Connect(function(data)
+                    local msg = data.Text or ""
+                    local detectionWords = {"detected", "ban", "kick", "hack", "cheat", "exploit", "加速", "外挂", "检测", "踢出", "封禁"}
+                    for _, word in pairs(detectionWords) do
+                        if msg:lower():find(word:lower()) then
+                            print("⚠️ 检测到关键词: " .. word)
+                            break
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, chatConn)
+            end
+        end
+    end)
+
+    -- 7. 伪装速度数据
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local velConn = RunService.Heartbeat:Connect(function()
+                    if hrp and hrp.Parent then
+                        local realVel = hrp.Velocity
+                        if realVel.Magnitude > 50 then
+                            hrp.Velocity = realVel * 0.5
+                            task.wait(0.03)
+                            hrp.Velocity = realVel
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, velConn)
+            end
+        end
+    end)
+
+    -- 8. 防服务器检测 (修改Humanoid属性)
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                local humConn = RunService.Heartbeat:Connect(function()
+                    if hum and hum.Parent then
+                        -- 伪造速度数据
+                        if hum.WalkSpeed > 100 then
+                            hum.WalkSpeed = 16
+                            task.wait(0.05)
+                            hum.WalkSpeed = 16 * (State and State.Speed or 1)
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, humConn)
+            end
+        end
+    end)
+
+    print("✅ 圣奥里过检测系统已启动 (8层防护)")
+end
+
+local function stopBypass()
+    for _, conn in pairs(bypassConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    bypassConnections = {}
+    bypassActive = false
+    print("🛡️ 过检测系统已关闭")
+end
+
 -- ==================== 主脚本UI ====================
 function loadMainUI()
     -- ==================== 预加载画面 ====================
@@ -176,7 +402,7 @@ function loadMainUI()
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 28); titleLabel.Position = UDim2.new(0, 0, 0.6, 0); titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "wdfex脚本 邀请码:43775"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
+    titleLabel.Text = "wdfex脚本 圣奥里专版"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
     titleLabel.Font = Enum.Font.GothamBlack; titleLabel.TextStrokeTransparency = 0; titleLabel.TextStrokeColor3 = Color3.fromRGB(50, 100, 255)
     titleLabel.ZIndex = 3; titleLabel.Parent = SplashScreen
 
@@ -234,7 +460,7 @@ function loadMainUI()
 
     -- ==================== UI创建 - 居中固定 ====================
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "QiuYuScript"; ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui"); ScreenGui.ResetOnSpawn = false
+    ScreenGui.Name = "wdfexScript"; ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui"); ScreenGui.ResetOnSpawn = false
 
     local MainWindow = Instance.new("Frame")
     MainWindow.Size = UDim2.new(0, 700, 0, 340)
@@ -262,7 +488,7 @@ function loadMainUI()
     TitleBar.Size = UDim2.new(1, 0, 0, 28); TitleBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); TitleBar.BackgroundTransparency = 0.9; TitleBar.BorderSizePixel = 0; TitleBar.Parent = MainWindow
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -70, 1, 0); TitleLabel.Position = UDim2.new(0, 8, 0, 0); TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "wdfex脚本"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
+    TitleLabel.Text = "wdfex脚本 圣奥里专版"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
 
     local MinBtn = Instance.new("TextButton")
     MinBtn.Size = UDim2.new(0, 22, 0, 22); MinBtn.Position = UDim2.new(1, -50, 0, 3); MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -332,7 +558,6 @@ function loadMainUI()
     local SpinTargetBtn= CreateButton(FunContent, 580, 2,  104, 26, "转圈", false)
     local FlipBtn      = CreateButton(FunContent, 0,   32, 110, 26, "倒立", false)
     local UnTrollBtn   = CreateButton(FunContent, 116, 32, 110, 26, "恢复", false)
-    -- 彩蛋按钮
     local EasterBtn    = CreateButton(FunContent, 232, 32, 110, 26, "🎉彩蛋", false)
     local CircleTargetLabel = Instance.new("TextLabel")
     CircleTargetLabel.Size = UDim2.new(0, 400, 0, 16); CircleTargetLabel.Position = UDim2.new(0, 350, 0, 36)
@@ -410,6 +635,7 @@ function loadMainUI()
         TweenService:Create(MainWindow, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1}):Play()
         TweenService:Create(uiBgImage, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play()
         task.wait(0.25); ScreenGui:Destroy()
+        stopBypass()
     end
     CloseBtn.MouseButton1Click:Connect(CloseWithAnim)
 
@@ -540,7 +766,6 @@ function loadMainUI()
     -- 彩蛋按钮
     EasterBtn.MouseButton1Click:Connect(function()
         EasterBtn.Text = "🎉 彩蛋开启!"; EasterBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 80)
-        -- 创建一个彩蛋弹窗
         local easterFrame = Instance.new("Frame")
         easterFrame.Size = UDim2.new(0, 350, 0, 180)
         easterFrame.Position = UDim2.new(0.5, -175, 0.5, -90)
@@ -634,14 +859,19 @@ function loadMainUI()
 
     CloseBtn.MouseButton1Click:Connect(CloseWithAnim)
     RefreshPlayerList(); Players.PlayerAdded:Connect(RefreshPlayerList); Players.PlayerRemoving:Connect(RefreshPlayerList)
-    print("wdfex脚本 彩蛋版 加载完成!")
+    print("wdfex脚本 圣奥里专版 加载完成!")
+    
+    -- ==================== 启动过检测 ====================
+    task.wait(0.5)
+    startBypass()
 end
 
 -- ==================== 启动验证 ====================
 createVerifyUI()
 
 print("========================================")
-print("  ✅ wdfex脚本 加载成功")
+print("  ✅ wdfex脚本 圣奥里专版 加载成功")
+print("  仅限圣奥里服务器使用")
 print("  邀请码: 43775")
-print("  验证后加载完整功能")
+print("  验证后加载完整功能 + 过检测")
 print("========================================")
