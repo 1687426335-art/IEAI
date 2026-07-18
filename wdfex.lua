@@ -50,7 +50,7 @@ end
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 28); titleLabel.Position = UDim2.new(0, 0, 0.6, 0); titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "秋雨脚本"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
+titleLabel.Text = "wdfex脚本"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
 titleLabel.Font = Enum.Font.GothamBlack; titleLabel.TextStrokeTransparency = 0; titleLabel.TextStrokeColor3 = Color3.fromRGB(50, 100, 255)
 titleLabel.ZIndex = 3; titleLabel.Parent = SplashScreen
 
@@ -427,7 +427,7 @@ EasterBtn.MouseButton1Click:Connect(function()
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 30); title.Position = UDim2.new(0, 0, 0, 15)
-    title.BackgroundTransparency = 1; title.Text = "🌟 彩蛋 - 秋雨脚本 🌟"
+    title.BackgroundTransparency = 1; title.Text = "🌟 彩蛋 - wdfex脚本 🌟"
     title.TextColor3 = Color3.fromRGB(255, 200, 100); title.TextSize = 16; title.Font = Enum.Font.GothamBold
     title.Parent = easterFrame
     
