@@ -1781,7 +1781,7 @@ end);
 LocalPlayerSection:Button("查看游戏中的所有玩家（包括血量条）", function()
 	loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))();
 end);
-LocalPlayerSection:Button("wdfex飞行（推荐使用）", function()
+LocalPlayerSection:Button("）", function()
 	loadstring(game:HttpGet("https://pastefy.app/zt1XVVdn/raw"))();
 end);
 LocalPlayerSection:Button("踏空行走", function()
