@@ -530,11 +530,11 @@ function loadMainUI()
     local function ToggleESPTrace() if not State.ESP then return end; State.ESPTracers = not State.ESPTracers; ESPTraceBtn.BackgroundColor3 = State.ESPTracers and Color3.fromRGB(30,80,40) or Color3.fromRGB(30,40,60); ESPTraceBtn.Text = State.ESPTracers and "射线: 开" or "射线: 关" end
     RunService.RenderStepped:Connect(function() if State.ESP then UpdateESP() end end)
 
-    -- QQ群
+    -- 作者QQ
     QQBtn.MouseButton1Click:Connect(function()
-        if setclipboard then setclipboard("1051933529") end
+        if setclipboard then setclipboard("1687426335") end
         QQBtn.Text = "✅ 已复制!"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 80, 40)
-        task.wait(1.5); QQBtn.Text = "QQ群: 无"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
+        task.wait(1.5); QQBtn.Text = "QQ: 1687426335"; QQBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
     end)
 
     -- 彩蛋按钮
