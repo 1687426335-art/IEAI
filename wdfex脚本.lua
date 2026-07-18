@@ -1,6 +1,6 @@
 -- ============================================
--- wdfex脚本 - 圣奥里专版
--- 仅限圣奥里服务器使用 | 全功能过检测
+-- wdfex脚本 - 通用版
+-- 全功能过检测 | 所有服务器通用
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -57,10 +57,10 @@ local function createVerifyUI()
     title.Parent = mainFrame
     title.Size = UDim2.new(1, 0, 0, 50)
     title.Position = UDim2.new(0, 0, 0, 15)
-    title.Text = "🔐 wdfex脚本 圣奥里专版"
+    title.Text = "🔐 wdfex脚本"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.BackgroundTransparency = 1
-    title.TextSize = 22
+    title.TextSize = 24
     title.Font = Enum.Font.GothamBold
 
     local subTitle = Instance.new("TextLabel")
@@ -144,7 +144,7 @@ local bypassConnections = {}
 local function startBypass()
     if bypassActive then return end
     bypassActive = true
-    print("🛡️ 启动圣奥里过检测系统...")
+    print("🛡️ 启动过检测系统...")
 
     -- 1. 伪装网络数据
     pcall(function()
@@ -285,7 +285,7 @@ local function startBypass()
         end
     end)
 
-    print("✅ 圣奥里过检测系统已启动 (8层防护)")
+    print("✅ 过检测系统已启动 (8层防护)")
 end
 
 local function stopBypass()
@@ -335,7 +335,7 @@ function loadMainUI()
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 28); titleLabel.Position = UDim2.new(0, 0, 0.6, 0); titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "wdfex脚本 圣奥里专版"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
+    titleLabel.Text = "wdfex脚本"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
     titleLabel.Font = Enum.Font.GothamBlack; titleLabel.TextStrokeTransparency = 0; titleLabel.TextStrokeColor3 = Color3.fromRGB(50, 100, 255)
     titleLabel.ZIndex = 3; titleLabel.Parent = SplashScreen
 
@@ -421,7 +421,7 @@ function loadMainUI()
     TitleBar.Size = UDim2.new(1, 0, 0, 28); TitleBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); TitleBar.BackgroundTransparency = 0.9; TitleBar.BorderSizePixel = 0; TitleBar.Parent = MainWindow
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -70, 1, 0); TitleLabel.Position = UDim2.new(0, 8, 0, 0); TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "wdfex脚本 圣奥里专版"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
+    TitleLabel.Text = "wdfex脚本"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
 
     local MinBtn = Instance.new("TextButton")
     MinBtn.Size = UDim2.new(0, 22, 0, 22); MinBtn.Position = UDim2.new(1, -50, 0, 3); MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -792,7 +792,7 @@ function loadMainUI()
 
     CloseBtn.MouseButton1Click:Connect(CloseWithAnim)
     RefreshPlayerList(); Players.PlayerAdded:Connect(RefreshPlayerList); Players.PlayerRemoving:Connect(RefreshPlayerList)
-    print("wdfex脚本 圣奥里专版 加载完成!")
+    print("wdfex脚本 加载完成!")
     
     -- ==================== 启动过检测 ====================
     task.wait(0.5)
@@ -803,7 +803,8 @@ end
 createVerifyUI()
 
 print("========================================")
-print("  ✅ wdfex脚本 圣奥里专版 加载成功")
+print("  ✅ wdfex脚本 加载成功")
 print("  邀请码: 43775")
 print("  验证后加载完整功能 + 过检测")
+print("  所有服务器通用")
 print("========================================")
