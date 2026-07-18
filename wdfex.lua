@@ -1,6 +1,6 @@
 -- ============================================
--- wdfex脚本 - 圣奥里专版
--- 仅限圣奥里服务器使用 | 全功能过检测
+-- wdfex脚本 - 通用版
+-- 全功能过检测 | 所有服务器通用
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -14,72 +14,6 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local char, root, hum
-
--- ==================== 服务器验证 ====================
--- 圣奥里服务器ID检测
-local targetGameIds = {
-    [1638323641] = true,  -- 圣奥里主服务器
-    -- 如果有其他服务器ID可以添加
-}
-
-local function isTargetServer()
-    local gameId = game.GameId
-    if type(gameId) == "number" then
-        return targetGameIds[gameId] or false
-    end
-    -- 如果GameId是字符串，尝试转换
-    local numId = tonumber(gameId)
-    if numId then
-        return targetGameIds[numId] or false
-    end
-    -- 也通过游戏名称判断
-    local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
-    return placeName:find("圣奥里") or placeName:find("Aurie") or false
-end
-
--- 如果不是目标服务器，直接弹窗提示并停止加载
-if not isTargetServer() then
-    local warnGui = Instance.new("ScreenGui")
-    warnGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    local frame = Instance.new("Frame")
-    frame.Parent = warnGui
-    frame.Size = UDim2.new(0, 400, 0, 150)
-    frame.Position = UDim2.new(0.5, -200, 0.5, -75)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
-    frame.BackgroundTransparency = 0.1
-    frame.BorderSizePixel = 0
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
-    
-    local label = Instance.new("TextLabel")
-    label.Parent = frame
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.Text = "❌ 此脚本仅支持圣奥里服务器!\n请在圣奥里游戏中运行此脚本"
-    label.TextColor3 = Color3.fromRGB(255, 100, 100)
-    label.BackgroundTransparency = 1
-    label.TextSize = 20
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Parent = frame
-    closeBtn.Size = UDim2.new(0, 100, 0, 35)
-    closeBtn.Position = UDim2.new(0.5, -50, 0.8, 0)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    closeBtn.Text = "确定"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.TextSize = 16
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.BorderSizePixel = 0
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
-    closeBtn.MouseButton1Click:Connect(function()
-        warnGui:Destroy()
-    end)
-    
-    print("❌ 此脚本仅支持圣奥里服务器!")
-    return
-end
-
-print("✅ 服务器验证通过: 圣奥里")
 
 -- ==================== 邀请码验证系统 ====================
 local isVerified = false
@@ -123,10 +57,10 @@ local function createVerifyUI()
     title.Parent = mainFrame
     title.Size = UDim2.new(1, 0, 0, 50)
     title.Position = UDim2.new(0, 0, 0, 15)
-    title.Text = "🔐 wdfex脚本 圣奥里专版"
+    title.Text = "🔐 wdfex脚本"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.BackgroundTransparency = 1
-    title.TextSize = 22
+    title.TextSize = 24
     title.Font = Enum.Font.GothamBold
 
     local subTitle = Instance.new("TextLabel")
@@ -210,7 +144,7 @@ local bypassConnections = {}
 local function startBypass()
     if bypassActive then return end
     bypassActive = true
-    print("🛡️ 启动圣奥里过检测系统...")
+    print("🛡️ 启动过检测系统...")
 
     -- 1. 伪装网络数据
     pcall(function()
@@ -331,7 +265,7 @@ local function startBypass()
         end
     end)
 
-    -- 8. 防服务器检测 (修改Humanoid属性)
+    -- 8. 防服务器检测
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -339,7 +273,6 @@ local function startBypass()
             if hum then
                 local humConn = RunService.Heartbeat:Connect(function()
                     if hum and hum.Parent then
-                        -- 伪造速度数据
                         if hum.WalkSpeed > 100 then
                             hum.WalkSpeed = 16
                             task.wait(0.05)
@@ -352,7 +285,7 @@ local function startBypass()
         end
     end)
 
-    print("✅ 圣奥里过检测系统已启动 (8层防护)")
+    print("✅ 过检测系统已启动 (8层防护)")
 end
 
 local function stopBypass()
@@ -402,7 +335,7 @@ function loadMainUI()
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 28); titleLabel.Position = UDim2.new(0, 0, 0.6, 0); titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "wdfex脚本 圣奥里专版"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
+    titleLabel.Text = "wdfex脚本"; titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255); titleLabel.TextSize = 26
     titleLabel.Font = Enum.Font.GothamBlack; titleLabel.TextStrokeTransparency = 0; titleLabel.TextStrokeColor3 = Color3.fromRGB(50, 100, 255)
     titleLabel.ZIndex = 3; titleLabel.Parent = SplashScreen
 
@@ -458,7 +391,7 @@ function loadMainUI()
         if State.NoClip then for _, p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end
     end)
 
-    -- ==================== UI创建 - 居中固定 ====================
+    -- ==================== UI创建 ====================
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "wdfexScript"; ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui"); ScreenGui.ResetOnSpawn = false
 
@@ -488,7 +421,7 @@ function loadMainUI()
     TitleBar.Size = UDim2.new(1, 0, 0, 28); TitleBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); TitleBar.BackgroundTransparency = 0.9; TitleBar.BorderSizePixel = 0; TitleBar.Parent = MainWindow
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -70, 1, 0); TitleLabel.Position = UDim2.new(0, 8, 0, 0); TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = "wdfex脚本 圣奥里专版"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
+    TitleLabel.Text = "wdfex脚本"; TitleLabel.TextColor3 = Color3.fromRGB(80, 150, 255); TitleLabel.TextSize = 13; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
 
     local MinBtn = Instance.new("TextButton")
     MinBtn.Size = UDim2.new(0, 22, 0, 22); MinBtn.Position = UDim2.new(1, -50, 0, 3); MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -859,7 +792,7 @@ function loadMainUI()
 
     CloseBtn.MouseButton1Click:Connect(CloseWithAnim)
     RefreshPlayerList(); Players.PlayerAdded:Connect(RefreshPlayerList); Players.PlayerRemoving:Connect(RefreshPlayerList)
-    print("wdfex脚本 圣奥里专版 加载完成!")
+    print("wdfex脚本 加载完成!")
     
     -- ==================== 启动过检测 ====================
     task.wait(0.5)
@@ -870,8 +803,8 @@ end
 createVerifyUI()
 
 print("========================================")
-print("  ✅ wdfex脚本 圣奥里专版 加载成功")
-print("  仅限圣奥里服务器使用")
+print("  ✅ wdfex脚本 加载成功")
 print("  邀请码: 43775")
 print("  验证后加载完整功能 + 过检测")
+print("  所有服务器通用")
 print("========================================")
