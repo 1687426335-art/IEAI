@@ -1743,7 +1743,7 @@ library.new = function(library, name, theme)
 	end;
 	return window;
 end;
-local window = library:new("wdfex脚本");
+local window = library:new("wdfex内测版脚本");
 game:GetService("StarterGui"):SetCore("SendNotification", {Title="wdfex脚本",Text="欢迎使用wdfex脚本",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="脚本功能多多",Button2="感谢您的使用"});
 game:GetService("StarterGui"):SetCore("SendNotification", {Title="wdfex脚本",Text="wdfex免费脚本永远为您服务",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="此脚本是永久免费的",Button2="请勿倒卖"});
 local UITab1 = window:Tab("『信息』", "6035145364");
