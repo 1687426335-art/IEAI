@@ -131,7 +131,8 @@ local function toggleSpeed()
         hum.JumpPower = 50 * speedMultiplier
         toggleBtn.Text = "⚡ 加速: 开"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-        print("✅ 加速开启 (" .. speedMultiplier .. "倍)")else
+        print("✅ 加速开启 (" .. speedMultiplier .. "倍)")
+    else
         hum.WalkSpeed = 16
         hum.JumpPower = 50
         toggleBtn.Text = "⚡ 加速: 关"
