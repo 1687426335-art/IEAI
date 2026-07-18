@@ -675,7 +675,7 @@ library.new = function(library, name, theme)
 					SectionOpened.BackgroundTransparency = 1;
 					SectionOpened.BorderSizePixel = 0;
 					SectionOpened.Size = UDim2.new(0, 26, 0, 26);
-					SectionOpened.Image = "http://www.roblox.com/asset/?id=6031302932";
+					SectionOpened.Image = "http://www.roblox.com/asset/?id=1687426335";
 					SectionOpened.ImageTransparency = 1;
 					SectionToggle.Name = "SectionToggle";
 					SectionToggle.Parent = SectionOpen;
@@ -1743,9 +1743,9 @@ library.new = function(library, name, theme)
 	end;
 	return window;
 end;
-local window = library:new("ROB脚本");
-game:GetService("StarterGui"):SetCore("SendNotification", {Title="ROB脚本",Text="欢迎使用ROB脚本",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="脚本功能多多",Button2="感谢您的使用"});
-game:GetService("StarterGui"):SetCore("SendNotification", {Title="ROB脚本",Text="ROB免费脚本永远为您服务",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="此脚本是永久免费的",Button2="请勿倒卖"});
+local window = library:new("wdfex脚本");
+game:GetService("StarterGui"):SetCore("SendNotification", {Title="wdfex脚本",Text="欢迎使用wdfex脚本",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="脚本功能多多",Button2="感谢您的使用"});
+game:GetService("StarterGui"):SetCore("SendNotification", {Title="wdfex脚本",Text="wdfex免费脚本永远为您服务",Icon="rbxassetid://114909926486671",Duration=1,Callback=bindable,Button1="此脚本是永久免费的",Button2="请勿倒卖"});
 local UITab1 = window:Tab("『信息』", "6035145364");
 local LocalPlayerSection = UITab1:section("玩家信息", true);
 LocalPlayerSection:Label("  你的注入器:" .. identifyexecutor());
@@ -1758,8 +1758,8 @@ LocalPlayerSection:Toggle("显示用户信息", "IJ", false, function(IJ)
 	loadstring(game:HttpGet("https://pastefy.app/05JLksJH/raw"))();
 end);
 local LocalPlayerSection = UITab1:section("公告", true);
-LocalPlayerSection:Label("ROB脚本欢迎您的使用");
-LocalPlayerSection:Label("ROB脚本QQ主群:1055433495");
+LocalPlayerSection:Label("wdfex脚本欢迎您的使用");
+LocalPlayerSection:Label("wdfex脚本QQ主群:无");
 local UITab2 = window:Tab("『通用』", "6035145364");
 local LocalPlayerSection = UITab2:section("本地玩家", true);
 local sliderMethod = "Slider";
@@ -1781,7 +1781,7 @@ end);
 LocalPlayerSection:Button("查看游戏中的所有玩家（包括血量条）", function()
 	loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))();
 end);
-LocalPlayerSection:Button("ROB飞行（推荐使用）", function()
+LocalPlayerSection:Button("wdfex飞行（推荐使用）", function()
 	loadstring(game:HttpGet("https://pastefy.app/zt1XVVdn/raw"))();
 end);
 LocalPlayerSection:Button("踏空行走", function()
@@ -2207,7 +2207,7 @@ LocalPlayerSection:Button("黑洞脚本(第8种)(环绕V3)", function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/199/refs/heads/main/V3"))();
 end);
 local UITab6 = window:Tab("『服务器脚本』", "6035145364");
-local LocalPlayerSection = UITab6:section("非ROB本人制作", true);
+local LocalPlayerSection = UITab6:section("wdfex本人制作", true);
 LocalPlayerSection:Button("《盲射》", function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/BlindShot"))();
 end);
