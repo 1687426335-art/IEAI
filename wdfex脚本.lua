@@ -1,5 +1,5 @@
--- ========== 圣奥里服务器 过检测加速 + 方框范围 ==========
--- 无验证 | 自动过检测 | 防踢 | 防封 | 速度1-16倍 | 方框范围1-100
+-- ========== 圣奥里服务器 过检测加速 + 子弹范围 ==========
+-- 无验证 | 自动过检测 | 防踢 | 防封 | 速度1-16倍 | 子弹范围1-100
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -8,18 +8,15 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
-local Camera = workspace.CurrentCamera
 
 local speedEnabled = false
 local speedMultiplier = 1.5
-local boxEnabled = false
-local boxSize = 10
+local rangeEnabled = false
+local rangeSize = 10
 local minimized = false
 local isDragging = false
 local dragStart, dragStartPos
 local bypassActive = false
-local boxConn = nil
-local boxObjects = {}
 
 -- ========== 创建GUI ==========
 local screenGui = Instance.new("ScreenGui")
@@ -165,21 +162,21 @@ local sCorner = Instance.new("UICorner")
 sCorner.Parent = speedBtn
 sCorner.CornerRadius = UDim.new(0, 8)
 
--- 方框开关
-local boxBtn = Instance.new("TextButton")
-boxBtn.Parent = mainFrame
-boxBtn.Size = UDim2.new(0, 130, 0, 40)
-boxBtn.Position = UDim2.new(0, 160, 0, 55)
-boxBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-boxBtn.Text = "📦 方框: 关"
-boxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-boxBtn.TextSize = 15
-boxBtn.Font = Enum.Font.GothamBold
-boxBtn.BorderSizePixel = 0
+-- 子弹范围开关
+local rangeBtn = Instance.new("TextButton")
+rangeBtn.Parent = mainFrame
+rangeBtn.Size = UDim2.new(0, 130, 0, 40)
+rangeBtn.Position = UDim2.new(0, 160, 0, 55)
+rangeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+rangeBtn.Text = "🎯 子弹范围: 关"
+rangeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+rangeBtn.TextSize = 14
+rangeBtn.Font = Enum.Font.GothamBold
+rangeBtn.BorderSizePixel = 0
 
-local bCorner = Instance.new("UICorner")
-bCorner.Parent = boxBtn
-bCorner.CornerRadius = UDim.new(0, 8)
+local rCorner = Instance.new("UICorner")
+rCorner.Parent = rangeBtn
+rCorner.CornerRadius = UDim.new(0, 8)
 
 -- 状态标签
 local bypassLabel = Instance.new("TextLabel")
@@ -202,15 +199,15 @@ speedLabel.BackgroundTransparency = 1
 speedLabel.TextSize = 13
 speedLabel.Font = Enum.Font.Gotham
 
-local boxLabel = Instance.new("TextLabel")
-boxLabel.Parent = mainFrame
-boxLabel.Size = UDim2.new(1, -20, 0, 20)
-boxLabel.Position = UDim2.new(0, 10, 0, 158)
-boxLabel.Text = "方框大小: 10 (点击1-100调整)"
-boxLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
-boxLabel.BackgroundTransparency = 1
-boxLabel.TextSize = 13
-boxLabel.Font = Enum.Font.Gotham
+local rangeLabel = Instance.new("TextLabel")
+rangeLabel.Parent = mainFrame
+rangeLabel.Size = UDim2.new(1, -20, 0, 20)
+rangeLabel.Position = UDim2.new(0, 10, 0, 158)
+rangeLabel.Text = "子弹范围: 10 (点击1-100调整)"
+rangeLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
+rangeLabel.BackgroundTransparency = 1
+rangeLabel.TextSize = 13
+rangeLabel.Font = Enum.Font.Gotham
 
 -- ========== 倍率按钮 1-16 ==========
 local btnY = 185
@@ -262,38 +259,38 @@ for i = 1, 16 do
     table.insert(btnList, btn)
 end
 
--- ========== 方框大小按钮 1-100 (滚动) ==========
-local boxScroll = Instance.new("ScrollingFrame")
-boxScroll.Parent = mainFrame
-boxScroll.Size = UDim2.new(1, -10, 0, 100)
-boxScroll.Position = UDim2.new(0, 5, 0, 220)
-boxScroll.BackgroundColor3 = Color3.fromRGB(25, 25, 45)
-boxScroll.BackgroundTransparency = 0.5
-boxScroll.BorderSizePixel = 0
-boxScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-boxScroll.ScrollBarThickness = 3
+-- ========== 子弹范围按钮 1-100 (滚动) ==========
+local rangeScroll = Instance.new("ScrollingFrame")
+rangeScroll.Parent = mainFrame
+rangeScroll.Size = UDim2.new(1, -10, 0, 100)
+rangeScroll.Position = UDim2.new(0, 5, 0, 220)
+rangeScroll.BackgroundColor3 = Color3.fromRGB(25, 25, 45)
+rangeScroll.BackgroundTransparency = 0.5
+rangeScroll.BorderSizePixel = 0
+rangeScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
+rangeScroll.ScrollBarThickness = 3
 
 local scrollCorner = Instance.new("UICorner")
-scrollCorner.Parent = boxScroll
+scrollCorner.Parent = rangeScroll
 scrollCorner.CornerRadius = UDim.new(0, 8)
 
-local boxBtnList = {}
-local boxY = 5
-local boxBtnW = 26
-local boxGap = 2
-local boxCols = 10
+local rangeBtnList = {}
+local rangeY = 5
+local rangeBtnW = 26
+local rangeGap = 2
+local rangeCols = 10
 
 for i = 1, 100 do
-    local col = (i - 1) % boxCols
-    local row = math.floor((i - 1) / boxCols)
-    local x = 5 + col * (boxBtnW + boxGap)
-    local y = boxY + row * (boxBtnW + boxGap + 2)
+    local col = (i - 1) % rangeCols
+    local row = math.floor((i - 1) / rangeCols)
+    local x = 5 + col * (rangeBtnW + rangeGap)
+    local y = rangeY + row * (rangeBtnW + rangeGap + 2)
     
     local btn = Instance.new("TextButton")
-    btn.Parent = boxScroll
-    btn.Size = UDim2.new(0, boxBtnW, 0, boxBtnW)
+    btn.Parent = rangeScroll
+    btn.Size = UDim2.new(0, rangeBtnW, 0, rangeBtnW)
     btn.Position = UDim2.new(0, x, 0, y)
-    btn.BackgroundColor3 = (i == boxSize) and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(40, 40, 60)
+    btn.BackgroundColor3 = (i == rangeSize) and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(40, 40, 60)
     btn.Text = tostring(i)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 8
@@ -305,199 +302,96 @@ for i = 1, 100 do
     corner.CornerRadius = UDim.new(0, 3)
     
     btn.MouseButton1Click:Connect(function()
-        boxSize = i
-        boxLabel.Text = "方框大小: " .. i .. " (点击1-100调整)"
-        for _, b in pairs(boxBtnList) do
+        rangeSize = i
+        rangeLabel.Text = "子弹范围: " .. i .. " (点击1-100调整)"
+        for _, b in pairs(rangeBtnList) do
             if tonumber(b.Text) == i then
                 b.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
             else
                 b.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
             end
         end
-        if boxEnabled then
-            updateBoxes()
+        if rangeEnabled then
+            updateRange()
         end
-        print("📦 方框大小: " .. i)
+        print("🎯 子弹范围: " .. i)
     end)
     
-    table.insert(boxBtnList, btn)
+    table.insert(rangeBtnList, btn)
 end
 
-boxScroll.CanvasSize = UDim2.new(0, 0, 0, boxY + math.ceil(100 / boxCols) * (boxBtnW + boxGap + 2) + 10)
+rangeScroll.CanvasSize = UDim2.new(0, 0, 0, rangeY + math.ceil(100 / rangeCols) * (rangeBtnW + rangeGap + 2) + 10)
 
 local versionLabel = Instance.new("TextLabel")
 versionLabel.Parent = mainFrame
 versionLabel.Size = UDim2.new(1, 0, 0, 20)
 versionLabel.Position = UDim2.new(0, 0, 0, 350)
-versionLabel.Text = "圣奥里过检测 v1.0 | 速度1-16x | 方框1-100"
+versionLabel.Text = "圣奥里过检测 v1.0 | 速度1-16x | 子弹范围1-100"
 versionLabel.TextColor3 = Color3.fromRGB(100, 100, 140)
 versionLabel.BackgroundTransparency = 1
 versionLabel.TextSize = 11
 versionLabel.Font = Enum.Font.Gotham
 
--- ========== 方框功能 ==========
-local function worldToScreen(pos)
-    local screenPos, onScreen = Camera:WorldToScreenPoint(pos)
-    return Vector2.new(screenPos.X, screenPos.Y), onScreen
-end
-
-local function createBox(player)
-    local label = Instance.new("Frame")
-    label.Parent = screenGui
-    label.Size = UDim2.new(0, boxSize * 6, 0, boxSize * 8)
-    label.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-    label.BackgroundTransparency = 0.7
-    label.BorderSizePixel = 2
-    label.BorderColor3 = Color3.fromRGB(0, 200, 255)
-    label.Visible = false
-    label.ZIndex = 10
-    
-    local corner = Instance.new("UICorner")
-    corner.Parent = label
-    corner.CornerRadius = UDim.new(0, 4)
-    
-    -- 名字标签
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Parent = label
-    nameLabel.Size = UDim2.new(1, 0, 0, 16)
-    nameLabel.Position = UDim2.new(0, 0, 1, 2)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = player.Name
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.TextSize = 11
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextStrokeTransparency = 0.3
-    
-    -- 血量标签
-    local healthLabel = Instance.new("TextLabel")
-    healthLabel.Parent = label
-    healthLabel.Size = UDim2.new(1, 0, 0, 14)
-    healthLabel.Position = UDim2.new(0, 0, 1, 18)
-    healthLabel.BackgroundTransparency = 1
-    healthLabel.Text = "100"
-    healthLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    healthLabel.TextSize = 10
-    healthLabel.Font = Enum.Font.Gotham
-    
-    -- 距离标签
-    local distLabel = Instance.new("TextLabel")
-    distLabel.Parent = label
-    distLabel.Size = UDim2.new(1, 0, 0, 14)
-    distLabel.Position = UDim2.new(0, 0, 1, 32)
-    distLabel.BackgroundTransparency = 1
-    distLabel.Text = "0m"
-    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    distLabel.TextSize = 10
-    distLabel.Font = Enum.Font.Gotham
-    
-    return {
-        frame = label,
-        name = nameLabel,
-        health = healthLabel,
-        dist = distLabel,
-        player = player
-    }
-end
-
-local function updateBoxes()
-    if not boxEnabled then
-        for _, obj in pairs(boxObjects) do
-            if obj.frame then
-                obj.frame.Visible = false
+-- ========== 子弹范围功能 ==========
+local function updateRange()
+    if not rangeEnabled then
+        -- 恢复玩家大小
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                local char = player.Character
+                if char then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 0
+                        hrp.Material = Enum.Material.Plastic
+                        hrp.CanCollide = true
+                    end
+                    -- 恢复所有部件
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            part.Size = part.Size / (rangeSize / 5)
+                            part.Transparency = 0
+                        end
+                    end
+                end
             end
         end
         return
     end
     
-    local localChar = LocalPlayer.Character
-    local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
-    
     for _, player in pairs(Players:GetPlayers()) do
-        if player == LocalPlayer then goto continue end
-        
-        local char = player.Character
-        if not char then goto continue end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChild("Humanoid")
-        if not hrp or not hum then goto continue end
-        
-        if not boxObjects[player.UserId] then
-            boxObjects[player.UserId] = createBox(player)
-        end
-        
-        local obj = boxObjects[player.UserId]
-        local headPos = hrp.Position + Vector3.new(0, 2.5, 0)
-        local screenPos, onScreen = worldToScreen(headPos)
-        
-        if not onScreen then
-            obj.frame.Visible = false
-            goto continue
-        end
-        
-        -- 计算大小（根据距离调整）
-        local dist = localRoot and (hrp.Position - localRoot.Position).Magnitude or 0
-        local scale = math.clamp(1 / (dist * 0.02), 0.3, 2)
-        local size = boxSize * 0.5 * scale
-        
-        obj.frame.Size = UDim2.new(0, size * 6, 0, size * 8)
-        obj.frame.Position = UDim2.new(0, screenPos.X - size * 3, 0, screenPos.Y - size * 4)
-        obj.frame.Visible = true
-        
-        -- 颜色根据队伍
-        if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
-            obj.frame.BorderColor3 = Color3.fromRGB(0, 255, 0)
-            obj.frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        else
-            obj.frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-            obj.frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        end
-        
-        -- 更新信息
-        obj.name.Text = player.Name
-        obj.health.Text = math.round(hum.Health) .. "/" .. math.round(hum.MaxHealth)
-        obj.health.TextColor3 = hum.Health / hum.MaxHealth > 0.5 and Color3.fromRGB(0, 255, 0) or
-                                (hum.Health / hum.MaxHealth > 0.25 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 0, 0))
-        obj.dist.Text = math.round(dist) .. "m"
-        
-        ::continue::
-    end
-    
-    -- 清理已离开玩家
-    for userId, obj in pairs(boxObjects) do
-        if not Players:GetPlayerByUserId(userId) then
-            if obj.frame then
-                obj.frame:Destroy()
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
+                    hrp.Transparency = 0.3
+                    hrp.Material = Enum.Material.Neon
+                    hrp.CanCollide = false
+                end
+                -- 扩大所有部件（让子弹更容易打中）
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.Size = part.Size * (rangeSize / 5)
+                        part.Transparency = 0.3
+                    end
+                end
             end
-            boxObjects[userId] = nil
         end
     end
 end
 
-local function toggleBox()
-    boxEnabled = not boxEnabled
-    boxBtn.Text = boxEnabled and "📦 方框: 开" or "📦 方框: 关"
-    boxBtn.BackgroundColor3 = boxEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-    if boxEnabled then
-        updateBoxes()
-        print("📦 方框开启 (大小: " .. boxSize .. ")")
-    else
-        for _, obj in pairs(boxObjects) do
-            if obj.frame then
-                obj.frame.Visible = false
-            end
-        end
-        print("📦 方框关闭")
-    end
+local function toggleRange()
+    rangeEnabled = not rangeEnabled
+    rangeBtn.Text = rangeEnabled and "🎯 子弹范围: 开" or "🎯 子弹范围: 关"
+    rangeBtn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+    updateRange()
+    print(rangeEnabled and "🎯 子弹范围开启 (" .. rangeSize .. ")" or "🎯 子弹范围关闭")
 end
 
-boxBtn.MouseButton1Click:Connect(toggleBox)
-
--- 每帧更新方框
-RunService.RenderStepped:Connect(function()
-    if boxEnabled then
-        updateBoxes()
-    end
-end)
+rangeBtn.MouseButton1Click:Connect(toggleRange)
 
 -- ========== 过检测核心 ==========
 local function startBypass()
@@ -620,8 +514,8 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if input.KeyCode == Enum.KeyCode.G then
         toggleSpeed()
     end
-    if input.KeyCode == Enum.KeyCode.B then
-        toggleBox()
+    if input.KeyCode == Enum.KeyCode.R then
+        toggleRange()
     end
     if input.KeyCode == Enum.KeyCode.M then
         if mainFrame.Visible then
@@ -646,11 +540,15 @@ LocalPlayer.CharacterAdded:Connect(function()
             startBypass()
         end
     end
+    if rangeEnabled then
+        task.wait(0.5)
+        updateRange()
+    end
 end)
 
 print("========================================")
-print("  ✅ 圣奥里过检测加速+方框 加载成功")
-print("  无验证 | 速度1-16x | 方框1-100")
-print("  G键开关加速 | B键开关方框 | M键最小化")
+print("  ✅ 圣奥里过检测加速+子弹范围 加载成功")
+print("  无验证 | 速度1-16x | 子弹范围1-100")
+print("  G键开关加速 | R键开关子弹范围 | M键最小化")
 print("  开启加速自动激活过检测")
 print("========================================")
