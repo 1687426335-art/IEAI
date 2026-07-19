@@ -1,6 +1,6 @@
 -- ========== wdfex脚本 过检测版 ==========
 -- 无服务器验证 | 全功能过检测 | 所有服务器通用
--- 整合BS飞车功能到娱乐分类 + BS范围功能
+-- 整合BS飞车功能到娱乐分类 + 子弹追踪（含队伍检测 + 掩体判断开关）
 
 local player = game:GetService("Players").LocalPlayer
 local plrId = player.UserId
@@ -283,69 +283,230 @@ local function toggleCarFly()
     end
 end
 
--- ==================== BS范围功能 ====================
-local rangeEnabled = false
-local rangeSize = 30
+-- ==================== 子弹追踪功能 ====================
+local aimbotEnabled = false
+local teamCheck = false
+local wallCheck = true
+local camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
-local function toggleRange()
-    rangeEnabled = not rangeEnabled
-    if rangeEnabled then
-        print("✅ 范围开启 (" .. rangeSize .. ")")
-    else
-        print("❌ 范围关闭")
-        -- 恢复所有玩家大小
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 0
-                        hrp.Material = Enum.Material.Plastic
-                    end
-                end)
+-- 检测武器是否支持子弹追踪
+local function checkWeapon()
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return false end
+    
+    -- 检测是否有远程攻击相关属性
+    if tool:FindFirstChild("Remote") or tool:FindFirstChild("FireRemote") or tool:FindFirstChild("ShootRemote") then
+        return true
+    end
+    
+    -- 检测是否有枪械相关部件
+    for _, child in pairs(tool:GetDescendants()) do
+        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+            return true
+        end
+        if child:IsA("NumberValue") and (child.Name:lower():find("ammo") or child.Name:lower():find("bullet") or child.Name:lower():find("damage")) then
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- 检查是否队友
+local function isTeammate(targetPlayer)
+    if not teamCheck then return false end
+    if targetPlayer == LocalPlayer then return true end
+    local localTeam = LocalPlayer.Team
+    local targetTeam = targetPlayer.Team
+    if localTeam and targetTeam then
+        return localTeam == targetTeam
+    end
+    return false
+end
+
+-- 检查是否可见（掩体判断）
+local function isVisible(targetPos)
+    if not wallCheck then return true end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {char}
+    
+    local result = workspace:Raycast(hrp.Position, (targetPos - hrp.Position).Unit * 500, raycastParams)
+    if result then
+        local hitModel = result.Instance:FindFirstAncestorOfClass("Model")
+        if hitModel and hitModel:IsA("Model") and hitModel:FindFirstChild("Humanoid") then
+            return true
+        end
+        return false
+    end
+    return true
+end
+
+-- 获取最近敌人
+local function getClosestEnemy()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local closest = nil
+    local closestDist = math.huge
+    
+    for _, target in pairs(Players:GetPlayers()) do
+        if target == LocalPlayer then continue end
+        if isTeammate(target) then continue end
+        
+        local tchar = target.Character
+        if not tchar then continue end
+        local thrp = tchar:FindFirstChild("HumanoidRootPart")
+        local thum = tchar:FindFirstChild("Humanoid")
+        if not thrp or not thum then continue end
+        if thum.Health <= 0 then continue end
+        
+        local targetPos = thrp.Position
+        local dist = (targetPos - hrp.Position).Magnitude
+        
+        if dist < closestDist and isVisible(targetPos) then
+            closestDist = dist
+            closest = target
+        end
+    end
+    
+    return closest
+end
+
+-- 子弹追踪核心
+local aimbotConn = nil
+local aimbotCircle = nil
+
+local function toggleAimbot()
+    aimbotEnabled = not aimbotEnabled
+    
+    if aimbotEnabled then
+        -- 检测武器
+        local hasWeapon = checkWeapon()
+        if not hasWeapon then
+            print("❌ 当前武器不支持子弹追踪")
+            aimbotEnabled = false
+            return
+        end
+        
+        print("✅ 子弹追踪开启")
+        print("  队伍检测: " .. (teamCheck and "开启" or "关闭"))
+        print("  掩体判断: " .. (wallCheck and "开启" or "关闭"))
+        
+        -- 创建自瞄圈
+        aimbotCircle = Instance.new("Frame")
+        aimbotCircle.Parent = CoreGui
+        aimbotCircle.Size = UDim2.new(0, 100, 0, 100)
+        aimbotCircle.Position = UDim2.new(0.5, -50, 0.5, -50)
+        aimbotCircle.BackgroundTransparency = 1
+        aimbotCircle.BorderSizePixel = 0
+        aimbotCircle.ZIndex = 100
+        
+        local circle = Instance.new("Frame")
+        circle.Parent = aimbotCircle
+        circle.Size = UDim2.new(1, 0, 1, 0)
+        circle.BackgroundTransparency = 1
+        circle.BorderSizePixel = 2
+        circle.BorderColor3 = Color3.fromRGB(0, 255, 0)
+        circle.ZIndex = 101
+        
+        local circleCorner = Instance.new("UICorner")
+        circleCorner.Parent = circle
+        circleCorner.CornerRadius = UDim.new(1, 0)
+        
+        local dot = Instance.new("Frame")
+        dot.Parent = aimbotCircle
+        dot.Size = UDim2.new(0, 4, 0, 4)
+        dot.Position = UDim2.new(0.5, -2, 0.5, -2)
+        dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 102
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.Parent = dot
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        
+        -- 追踪循环
+        aimbotConn = RunService.Heartbeat:Connect(function()
+            if not aimbotEnabled then return end
+            
+            -- 检查武器是否还在
+            if not checkWeapon() then
+                print("⚠️ 武器已切换，子弹追踪暂停")
+                return
             end
+            
+            local target = getClosestEnemy()
+            if target and target.Character then
+                local thrp = target.Character:FindFirstChild("HumanoidRootPart")
+                if thrp then
+                    -- 视角锁定到目标
+                    camera.CFrame = CFrame.new(camera.CFrame.Position, thrp.Position)
+                    
+                    -- 圈圈变红表示锁定
+                    if aimbotCircle then
+                        for _, child in pairs(aimbotCircle:GetChildren()) do
+                            if child:IsA("Frame") and child.BorderColor3 then
+                                child.BorderColor3 = Color3.fromRGB(255, 0, 0)
+                            end
+                        end
+                    end
+                end
+            else
+                -- 没有目标，圈圈变绿
+                if aimbotCircle then
+                    for _, child in pairs(aimbotCircle:GetChildren()) do
+                        if child:IsA("Frame") and child.BorderColor3 then
+                            child.BorderColor3 = Color3.fromRGB(0, 255, 0)
+                        end
+                    end
+                end
+            end
+        end)
+        
+    else
+        print("❌ 子弹追踪关闭")
+        if aimbotConn then
+            aimbotConn:Disconnect()
+            aimbotConn = nil
+        end
+        if aimbotCircle then
+            aimbotCircle:Destroy()
+            aimbotCircle = nil
         end
     end
 end
 
--- 范围循环
-RunService.RenderStepped:Connect(function()
-    if rangeEnabled then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
-                        hrp.Transparency = 0.5
-                        hrp.Material = Enum.Material.Neon
-                        hrp.CanCollide = false
-                    end
-                end)
-            end
-        end
-    else
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 0
-                        hrp.Material = Enum.Material.Plastic
-                    end
-                end)
-            end
-        end
-    end
-end)
+-- 切换队伍检测
+local function toggleTeamCheck()
+    teamCheck = not teamCheck
+    print("🔄 队伍检测: " .. (teamCheck and "开启" or "关闭"))
+    return teamCheck
+end
+
+-- 切换掩体判断
+local function toggleWallCheck()
+    wallCheck = not wallCheck
+    print("🔄 掩体判断: " .. (wallCheck and "开启" or "关闭"))
+    return wallCheck
+end
 
 -- ==================== 原脚本代码 ====================
 local Player = player
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
@@ -919,7 +1080,7 @@ do
     local categories = {}
     local pages = {}
     local selected = nil
-    local catNames = { "通知", "主要", "次要", "娱乐", "支持服务器" }
+    local catNames = { "通知", "主要", "次要", "娱乐", "子弹追踪" }
 
     local speedPanel = nil
     local coordPanel = nil
@@ -1351,7 +1512,7 @@ do
         return aimbotPanel
     end
 
-    -- ==================== 娱乐分类（包含飞车+范围） ====================
+    -- ==================== 娱乐分类（包含飞车） ====================
     local function AddCat(i)
         local cat = Instance.new("TextButton")
         cat.Name = "Cat"..i
@@ -1680,43 +1841,6 @@ do
                 if v then carSpeed = math.clamp(v, 1, 200) end
             end)
 
-            -- ========== BS范围功能（照抄） ==========
-            local rangeBtn = addSemiTransparentButton(page, "🎯 范围: 关", posX2, 4)
-            rangeBtn.MouseButton1Click:Connect(function()
-                toggleRange()
-                rangeBtn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
-                rangeBtn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-            end)
-
-            local rangeLabel = Instance.new("TextLabel")
-            rangeLabel.Parent = page
-            rangeLabel.Size = UDim2.new(0, 80, 0, 25)
-            rangeLabel.Position = UDim2.new(0, 10, 0, 4 + rowHeight + 40)
-            rangeLabel.Text = "范围大小:"
-            rangeLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
-            rangeLabel.BackgroundTransparency = 1
-            rangeLabel.TextSize = 13
-            rangeLabel.Font = Enum.Font.SourceSans
-
-            local rangeInput = Instance.new("TextBox")
-            rangeInput.Parent = page
-            rangeInput.Size = UDim2.new(0, 60, 0, 25)
-            rangeInput.Position = UDim2.new(0, 100, 0, 4 + rowHeight + 40)
-            rangeInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            rangeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-            rangeInput.Text = "30"
-            rangeInput.PlaceholderText = "大小"
-            rangeInput.TextSize = 14
-            rangeInput.Font = Enum.Font.SourceSans
-            rangeInput.BorderSizePixel = 0
-            local corner2 = Instance.new("UICorner")
-            corner2.Parent = rangeInput
-            corner2.CornerRadius = UDim.new(0, 6)
-            rangeInput.FocusLost:Connect(function()
-                local v = tonumber(rangeInput.Text)
-                if v then rangeSize = math.clamp(v, 1, 500) end
-            end)
-
             -- 其他娱乐功能
             addSemiTransparentButton(page, "显示时间", posX1, 4 + (rowHeight + 40) * 2, function()
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "显示时间", Text = "正在加载中...", Duration = 5 })
@@ -1743,7 +1867,64 @@ do
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "准星旋转", Text = CrosshairSpinEnabled and "已开启" or "已关闭", Duration = 3 })
             end)
 
+        -- ==================== 子弹追踪分类（第5个） ====================
         elseif i == 5 then
+            -- 武器检测状态
+            local weaponStatus = checkWeapon()
+            
+            local statusLabel = Instance.new("TextLabel")
+            statusLabel.Parent = page
+            statusLabel.Size = UDim2.new(1, -20, 0, 25)
+            statusLabel.Position = UDim2.new(0, 10, 0, 4)
+            statusLabel.Text = "🔫 武器状态: " .. (weaponStatus and "✅ 支持子弹追踪" or "❌ 当前武器不支持")
+            statusLabel.TextColor3 = weaponStatus and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+            statusLabel.BackgroundTransparency = 1
+            statusLabel.TextSize = 14
+            statusLabel.Font = Enum.Font.SourceSansBold
+
+            -- 子弹追踪开关
+            local aimBtn = addSemiTransparentButton(page, "🎯 子弹追踪: 关", 4, 35)
+            aimBtn.MouseButton1Click:Connect(function()
+                toggleAimbot()
+                aimBtn.Text = aimbotEnabled and "🎯 子弹追踪: 开" or "🎯 子弹追踪: 关"
+                aimBtn.BackgroundColor3 = aimbotEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+                -- 更新武器状态
+                local ws = checkWeapon()
+                statusLabel.Text = "🔫 武器状态: " .. (ws and "✅ 支持子弹追踪" or "❌ 当前武器不支持")
+                statusLabel.TextColor3 = ws and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+            end)
+
+            -- 队伍检测开关
+            local teamBtn = addSemiTransparentButton(page, "👥 队伍检测: 关", 4, 35 + rowHeight)
+            teamBtn.MouseButton1Click:Connect(function()
+                toggleTeamCheck()
+                teamBtn.Text = teamCheck and "👥 队伍检测: 开" or "👥 队伍检测: 关"
+                teamBtn.BackgroundColor3 = teamCheck and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            end)
+
+            -- 掩体判断开关
+            local wallBtn = addSemiTransparentButton(page, "🧱 掩体判断: 开", 4, 35 + rowHeight * 2)
+            wallBtn.MouseButton1Click:Connect(function()
+                toggleWallCheck()
+                wallBtn.Text = wallCheck and "🧱 掩体判断: 开" or "🧱 掩体判断: 关"
+                wallBtn.BackgroundColor3 = wallCheck and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            end)
+
+            -- 说明标签
+            local infoLabel = Instance.new("TextLabel")
+            infoLabel.Parent = page
+            infoLabel.Size = UDim2.new(1, -20, 0, 80)
+            infoLabel.Position = UDim2.new(0, 10, 0, 35 + rowHeight * 3 + 10)
+            infoLabel.Text = "📖 说明:\n• 开启后自动瞄准最近敌人\n• 队伍检测开启后不追踪队友\n• 掩体判断关闭后可以穿墙追踪"
+            infoLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
+            infoLabel.BackgroundTransparency = 1
+            infoLabel.TextSize = 13
+            infoLabel.Font = Enum.Font.SourceSans
+            infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+            infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+        elseif i == 5 then
+            -- 支持服务器
             local function addSemiTransparentButton(page, txt, posX, posY, callback)
                 local btn = Instance.new("TextButton")
                 btn.Parent = page
