@@ -1,5 +1,6 @@
 -- ========== wdfex脚本 过检测版 ==========
 -- 无服务器验证 | 全功能过检测 | 所有服务器通用
+-- 飞车功能已添加到娱乐分类
 
 local player = game:GetService("Players").LocalPlayer
 local plrId = player.UserId
@@ -23,7 +24,6 @@ local function startBypass()
     bypassActive = true
     print("🛡️ 启动过检测系统...")
 
-    -- 1. 伪装网络数据
     pcall(function()
         local network = game:GetService("NetworkClient")
         if network then
@@ -31,7 +31,6 @@ local function startBypass()
         end
     end)
 
-    -- 2. 防检测踢出 (拦截踢出信号)
     pcall(function()
         local char = player.Character
         if char then
@@ -51,7 +50,6 @@ local function startBypass()
         end
     end)
 
-    -- 3. 防拉回 (检测位置被强制修正)
     pcall(function()
         local function antiTeleport()
             local char = player.Character
@@ -78,7 +76,6 @@ local function startBypass()
         end)
     end)
 
-    -- 4. 伪装玩家行为 (模拟随机按键)
     pcall(function()
         local VirtualUser = game:GetService("VirtualUser")
         local behaviorConn = RunService.Heartbeat:Connect(function()
@@ -90,7 +87,6 @@ local function startBypass()
         table.insert(bypassConnections, behaviorConn)
     end)
 
-    -- 5. 自动重连防封
     pcall(function()
         local TeleportService = game:GetService("TeleportService")
         local parentConn = player:GetPropertyChangedSignal("Parent"):Connect(function()
@@ -103,7 +99,6 @@ local function startBypass()
         table.insert(bypassConnections, parentConn)
     end)
 
-    -- 6. 监听服务器检测关键词
     pcall(function()
         local chat = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
         if chat then
@@ -124,7 +119,6 @@ local function startBypass()
         end
     end)
 
-    -- 7. 伪装速度数据
     pcall(function()
         local char = player.Character
         if char then
@@ -145,7 +139,6 @@ local function startBypass()
         end
     end)
 
-    -- 8. 防服务器检测 (修改Humanoid属性)
     pcall(function()
         local char = player.Character
         if char then
@@ -165,7 +158,6 @@ local function startBypass()
         end
     end)
 
-    -- 9. 防服务器踢出 (拦截Kick函数)
     pcall(function()
         local oldKick = player.Kick
         player.Kick = function(self, message)
@@ -177,7 +169,6 @@ local function startBypass()
         end})
     end)
 
-    -- 10. 伪装玩家信息
     pcall(function()
         local stats = game:GetService("Stats")
         if stats then
@@ -198,6 +189,98 @@ local function stopBypass()
     bypassConnections = {}
     bypassActive = false
     print("🛡️ 过检测系统已关闭")
+end
+
+-- ==================== 飞车功能 ====================
+local carFlyEnabled = false
+local carSpeed = 50
+local carBV = nil
+local carBG = nil
+local flyConn = nil
+
+local function toggleCarFly()
+    carFlyEnabled = not carFlyEnabled
+    
+    if carFlyEnabled then
+        local char = player.Character
+        if not char then
+            print("❌ 没有角色")
+            carFlyEnabled = false
+            return
+        end
+        
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChild("Humanoid")
+        if not hrp or not hum then
+            print("❌ 找不到 HumanoidRootPart")
+            carFlyEnabled = false
+            return
+        end
+        
+        print("✅ 飞车开启")
+        hum.PlatformStand = true
+        
+        carBV = Instance.new("BodyVelocity")
+        carBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        carBV.Velocity = Vector3.new(0, 20, 0)
+        carBV.Parent = hrp
+        
+        carBG = Instance.new("BodyGyro")
+        carBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        carBG.D = 5000
+        carBG.P = 50000
+        carBG.CFrame = workspace.CurrentCamera.CFrame
+        carBG.Parent = hrp
+        
+        flyConn = RunService.Heartbeat:Connect(function()
+            if not carFlyEnabled then
+                if flyConn then
+                    flyConn:Disconnect()
+                    flyConn = nil
+                end
+                return
+            end
+            if not hrp or not hrp.Parent then
+                carFlyEnabled = false
+                if flyConn then
+                    flyConn:Disconnect()
+                    flyConn = nil
+                end
+                return
+            end
+            if carBV and carBG then
+                carBV.Velocity = workspace.CurrentCamera.CFrame.LookVector * carSpeed
+                carBG.CFrame = workspace.CurrentCamera.CFrame
+            end
+        end)
+        
+        task.spawn(function()
+            local targetHeight = hrp.Position.Y + 15
+            local waitCount = 0
+            while carFlyEnabled and hrp and hrp.Parent and waitCount < 30 do
+                if hrp.Position.Y < targetHeight then
+                    if carBV then
+                        carBV.Velocity = Vector3.new(0, 30, 0)
+                    end
+                else
+                    break
+                end
+                waitCount = waitCount + 1
+                task.wait(0.1)
+            end
+        end)
+        
+    else
+        print("❌ 飞车关闭")
+        if carBV then carBV:Destroy(); carBV = nil end
+        if carBG then carBG:Destroy(); carBG = nil end
+        if flyConn then flyConn:Disconnect(); flyConn = nil end
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then hum.PlatformStand = false end
+        end
+    end
 end
 
 -- ==================== 原脚本代码 ====================
@@ -778,7 +861,7 @@ do
     local categories = {}
     local pages = {}
     local selected = nil
-    local catNames = { "通知", "主要", "次要", "杂项", "支持服务器" }
+    local catNames = { "通知", "主要", "次要", "娱乐", "支持服务器" }
 
     local speedPanel = nil
     local coordPanel = nil
@@ -1210,6 +1293,7 @@ do
         return aimbotPanel
     end
 
+    -- ==================== 娱乐分类（包含飞车） ====================
     local function AddCat(i)
         local cat = Instance.new("TextButton")
         cat.Name = "Cat"..i
@@ -1478,6 +1562,7 @@ do
 
             teleportPlayerBtn.MouseButton1Click:Connect(function() showPlayerSelect() end)
 
+        -- ==================== 娱乐分类（第4个） ====================
         elseif i == 4 then
             local function addSemiTransparentButton(page, txt, posX, posY, callback)
                 local btn = Instance.new("TextButton")
@@ -1496,23 +1581,67 @@ do
                 return btn
             end
 
-            addSemiTransparentButton(page, "显示时间", 4, 4, function()
+            local posX1, posX2 = 4, page.AbsoluteSize.X * 0.52
+            local rowHeight = 45
+
+            -- ========== 飞车功能（娱乐分类） ==========
+            local carFlyBtn = addSemiTransparentButton(page, "🚗 飞车: 关", posX1, 4)
+            carFlyBtn.MouseButton1Click:Connect(function()
+                toggleCarFly()
+                carFlyBtn.Text = carFlyEnabled and "🚗 飞车: 开" or "🚗 飞车: 关"
+                carFlyBtn.BackgroundColor3 = carFlyEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            end)
+
+            -- 飞车速度输入
+            local speedLabel = Instance.new("TextLabel")
+            speedLabel.Parent = page
+            speedLabel.Size = UDim2.new(0, 80, 0, 25)
+            speedLabel.Position = UDim2.new(0, 10, 0, 4 + rowHeight)
+            speedLabel.Text = "飞车速度:"
+            speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
+            speedLabel.BackgroundTransparency = 1
+            speedLabel.TextSize = 13
+            speedLabel.Font = Enum.Font.SourceSans
+
+            local speedInput = Instance.new("TextBox")
+            speedInput.Parent = page
+            speedInput.Size = UDim2.new(0, 60, 0, 25)
+            speedInput.Position = UDim2.new(0, 100, 0, 4 + rowHeight)
+            speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+            speedInput.Text = "50"
+            speedInput.PlaceholderText = "速度"
+            speedInput.TextSize = 14
+            speedInput.Font = Enum.Font.SourceSans
+            speedInput.BorderSizePixel = 0
+            local corner = Instance.new("UICorner")
+            corner.Parent = speedInput
+            corner.CornerRadius = UDim.new(0, 6)
+            speedInput.FocusLost:Connect(function()
+                local v = tonumber(speedInput.Text)
+                if v then carSpeed = math.clamp(v, 1, 200) end
+            end)
+
+            -- 其他娱乐功能
+            addSemiTransparentButton(page, "显示时间", posX1, 4 + rowHeight + 40, function()
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "显示时间", Text = "正在加载中...", Duration = 5 })
                 task.spawn(function() loadstring(game:HttpGet("https://pastebin.com/raw/0zKLyd4W"))() end)
             end)
-            addSemiTransparentButton(page, "美化包排行榜第一", page.AbsoluteSize.X * 0.52, 4, function()
+
+            addSemiTransparentButton(page, "美化包排行榜第一", posX2, 4 + rowHeight + 40, function()
                 beautifyStats()
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "美化包", Text = "数值已修改为999（若游戏支持）", Duration = 3 })
             end)
 
-            local crosshairBtn = addSemiTransparentButton(page, "准星：关", 4, 4 + 45)
+            local crosshairBtn = addSemiTransparentButton(page, "准星：关", posX1, 4 + (rowHeight + 40) * 2)
             crosshairBtn.MouseButton1Click:Connect(function()
                 CrosshairEnabled = not CrosshairEnabled
                 crosshairBtn.Text = CrosshairEnabled and "准星：开" or "准星：关"
                 CrosshairFrame.Visible = CrosshairEnabled
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "准星", Text = CrosshairEnabled and "已显示" or "已隐藏", Duration = 3 })
             end)
-            local crosshairSpinBtn = addSemiTransparentButton(page, "准星旋转：关", page.AbsoluteSize.X * 0.52, 4 + 45)
+
+            local crosshairSpinBtn = addSemiTransparentButton(page, "准星旋转：关", posX2, 4 + (rowHeight + 40) * 2)
             crosshairSpinBtn.MouseButton1Click:Connect(function()
                 CrosshairSpinEnabled = not CrosshairSpinEnabled
                 crosshairSpinBtn.Text = CrosshairSpinEnabled and "准星旋转：开" or "准星旋转：关"
