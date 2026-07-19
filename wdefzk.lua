@@ -1,6 +1,5 @@
--- ========== 飞车控制 V4 ==========
--- 开启后车辆原地起飞，根据视角方向飞行
--- 速度1-200可调 | 默认50 | 带防检测
+-- ========== 飞车控制 V6 ==========
+-- 不需要坐车上 | 点击直接飞 | 速度1-200 | 带过检测
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -12,10 +11,11 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local carFlyEnabled = false
-local carSpeed = 50
+local carSpeed = 70
 local carBV = nil
 local carBG = nil
-local vehicleModel = nil
+local flyConnection = nil
+local targetVehicle = nil
 local bypassActive = false
 local bypassConnections = {}
 
@@ -26,13 +26,12 @@ LocalPlayer.Idled:connect(function()
     VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
--- ==================== 过检测系统 ====================
+-- ==================== 过检测 ====================
 local function startBypass()
     if bypassActive then return end
     bypassActive = true
-    print("🛡️ 飞车过检测启动")
+    print("🛡️ 过检测启动")
 
-    -- 1. 防踢出
     pcall(function()
         local oldKick = LocalPlayer.Kick
         LocalPlayer.Kick = function(self, msg)
@@ -44,7 +43,6 @@ local function startBypass()
         end})
     end)
 
-    -- 2. 防死亡
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -63,7 +61,6 @@ local function startBypass()
         end
     end)
 
-    -- 3. 防拉回
     pcall(function()
         local function antiTeleport()
             local char = LocalPlayer.Character
@@ -89,7 +86,6 @@ local function startBypass()
         end)
     end)
 
-    -- 4. 伪装行为
     pcall(function()
         local conn = RunService.Heartbeat:Connect(function()
             if math.random(1, 100) > 95 then
@@ -100,7 +96,6 @@ local function startBypass()
         table.insert(bypassConnections, conn)
     end)
 
-    -- 5. 自动重连
     pcall(function()
         local conn = LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
             if not LocalPlayer.Parent then
@@ -112,22 +107,33 @@ local function startBypass()
         table.insert(bypassConnections, conn)
     end)
 
-    print("✅ 飞车过检测已启动")
+    print("✅ 过检测已启动")
 end
 
--- ==================== 获取车辆 ====================
-local function getVehicle()
+-- ==================== 获取载具 ====================
+local function findNearestVehicle()
     local char = LocalPlayer.Character
     if not char then return nil end
-    local hum = char:FindFirstChild("Humanoid")
-    if not hum then return nil end
-    local seat = hum.SeatPart
-    if not seat then return nil end
-    local model = seat.Parent
-    if model and model:IsA("Model") then
-        return model
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    for _, model in pairs(workspace:GetChildren()) do
+        if model:IsA("Model") and model ~= char then
+            local modelHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("PrimaryPart")
+            if modelHrp and modelHrp:IsA("BasePart") then
+                local dist = (modelHrp.Position - hrp.Position).Magnitude
+                if dist < nearestDist and dist < 50 then
+                    nearestDist = dist
+                    nearest = model
+                end
+            end
+        end
     end
-    return nil
+    
+    return nearest
 end
 
 -- ==================== 创建悬浮窗 ====================
@@ -207,7 +213,7 @@ local speedLabel = Instance.new("TextLabel")
 speedLabel.Parent = mainFrame
 speedLabel.Size = UDim2.new(1, 0, 0, 25)
 speedLabel.Position = UDim2.new(0, 0, 0, 100)
-speedLabel.Text = "速度: 50"
+speedLabel.Text = "速度: 70"
 speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextSize = 15
@@ -234,7 +240,7 @@ speedInput.Size = UDim2.new(0, 80, 0, 30)
 speedInput.Position = UDim2.new(0.5, -40, 0, 135)
 speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedInput.Text = "50"
+speedInput.Text = "70"
 speedInput.PlaceholderText = "1-200"
 speedInput.TextSize = 16
 speedInput.Font = Enum.Font.Gotham
@@ -269,6 +275,17 @@ statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextSize = 12
 statusLabel.Font = Enum.Font.Gotham
+
+-- 提示标签
+local hintLabel = Instance.new("TextLabel")
+hintLabel.Parent = mainFrame
+hintLabel.Size = UDim2.new(1, 0, 0, 16)
+hintLabel.Position = UDim2.new(0, 0, 0, 205)
+hintLabel.Text = "点击开关自动锁定最近载具"
+hintLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
+hintLabel.BackgroundTransparency = 1
+hintLabel.TextSize = 11
+hintLabel.Font = Enum.Font.Gotham
 
 -- ========== 更新速度显示 ==========
 local function updateSpeedDisplay()
@@ -306,57 +323,66 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
--- ========== 飞车核心 ==========
+-- ==================== 飞车核心 ====================
 local function toggleCarFly()
+    print("🔄 飞车按钮被点击")
+    
     carFlyEnabled = not carFlyEnabled
     
     if carFlyEnabled then
-        -- 获取当前车辆
-        vehicleModel = getVehicle()
-        if not vehicleModel then
-            print("❌ 请先坐在车上")
+        print("✅ 尝试开启飞车")
+        
+        -- 找最近的载具
+        targetVehicle = findNearestVehicle()
+        if not targetVehicle then
+            print("❌ 附近没有找到载具")
             carFlyEnabled = false
             toggleBtn.Text = "🚗 飞车: 关"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             return
         end
         
-        print("✅ 飞车开启")
+        print("✅ 找到载具: " .. targetVehicle.Name)
         toggleBtn.Text = "🚗 飞车: 开"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         
-        -- 获取车辆HumanoidRootPart
-        local hrp = vehicleModel:FindFirstChild("HumanoidRootPart")
+        -- 获取载具主体
+        local hrp = targetVehicle:FindFirstChild("HumanoidRootPart")
         if not hrp then
-            hrp = vehicleModel:FindFirstChild("PrimaryPart")
+            hrp = targetVehicle:FindFirstChild("PrimaryPart")
         end
         if not hrp then
-            for _, part in pairs(vehicleModel:GetChildren()) do
-                if part:IsA("BasePart") and part.Size.Magnitude > 5 then
+            for _, part in pairs(targetVehicle:GetChildren()) do
+                if part:IsA("BasePart") and part.Size.Magnitude > 2 then
                     hrp = part
                     break
                 end
             end
         end
         if not hrp then
-            print("❌ 找不到车辆主体")
+            print("❌ 找不到载具主体")
             carFlyEnabled = false
             toggleBtn.Text = "🚗 飞车: 关"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             return
         end
         
-        -- 车辆所有部件取消碰撞（防卡）
-        for _, part in pairs(vehicleModel:GetDescendants()) do
+        -- 取消载具碰撞
+        for _, part in pairs(targetVehicle:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
         
+        -- 清除旧的
+        if carBV then carBV:Destroy() end
+        if carBG then carBG:Destroy() end
+        if flyConnection then flyConnection:Disconnect() end
+        
         -- 升空动力
         carBV = Instance.new("BodyVelocity")
         carBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        carBV.Velocity = Vector3.new(0, 20, 0) -- 先升空
+        carBV.Velocity = Vector3.new(0, 30, 0)
         carBV.Parent = hrp
         
         -- 稳定陀螺仪
@@ -367,28 +393,46 @@ local function toggleCarFly()
         carBG.CFrame = Camera.CFrame
         carBG.Parent = hrp
         
-        -- 飞控循环
-        RunService.Heartbeat:Connect(function()
-            if not carFlyEnabled then return end
-            if not hrp or not hrp.Parent then return end
-            if carBV and carBG then
-                -- 根据视角方向飞行
-                carBV.Velocity = Camera.CFrame.LookVector * carSpeed
-                carBG.CFrame = Camera.CFrame
-            end
-        end)
-        
-        -- 自动升空到一定高度
-        local targetHeight = hrp.Position.Y + 15
+        -- 自动升空
         task.spawn(function()
-            while carFlyEnabled and hrp and hrp.Parent do
-                local currentY = hrp.Position.Y
-                if currentY < targetHeight then
-                    carBV.Velocity = Vector3.new(0, 20, 0)
+            local targetHeight = hrp.Position.Y + 20
+            local waitCount = 0
+            while carFlyEnabled and hrp and hrp.Parent and waitCount < 50 do
+                if hrp.Position.Y < targetHeight then
+                    if carBV then
+                        carBV.Velocity = Vector3.new(0, 30, 0)
+                    end
                 else
                     break
                 end
+                waitCount = waitCount + 1
                 task.wait(0.1)
+            end
+        end)
+        
+        -- 飞控循环
+        flyConnection = RunService.Heartbeat:Connect(function()
+            if not carFlyEnabled then
+                if flyConnection then
+                    flyConnection:Disconnect()
+                    flyConnection = nil
+                end
+                return
+            end
+            if not hrp or not hrp.Parent then
+                print("⚠️ 载具丢失，关闭飞车")
+                carFlyEnabled = false
+                toggleBtn.Text = "🚗 飞车: 关"
+                toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+                if flyConnection then
+                    flyConnection:Disconnect()
+                    flyConnection = nil
+                end
+                return
+            end
+            if carBV and carBG then
+                carBV.Velocity = Camera.CFrame.LookVector * carSpeed
+                carBG.CFrame = Camera.CFrame
             end
         end)
         
@@ -405,20 +449,26 @@ local function toggleCarFly()
             carBG:Destroy()
             carBG = nil
         end
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
         
-        -- 恢复车辆碰撞
-        if vehicleModel then
-            for _, part in pairs(vehicleModel:GetDescendants()) do
+        if targetVehicle then
+            for _, part in pairs(targetVehicle:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = true
                 end
             end
         end
-        vehicleModel = nil
+        targetVehicle = nil
     end
 end
 
-toggleBtn.MouseButton1Click:Connect(toggleCarFly)
+-- ========== 按钮事件 ==========
+toggleBtn.MouseButton1Click:Connect(function()
+    toggleCarFly()
+end)
 
 -- ========== 快捷键 ==========
 UserInputService.InputBegan:Connect(function(input, gp)
@@ -435,6 +485,7 @@ LocalPlayer.CharacterAdded:Connect(function()
         carFlyEnabled = false
         if carBV then carBV:Destroy(); carBV = nil end
         if carBG then carBG:Destroy(); carBG = nil end
+        if flyConnection then flyConnection:Disconnect(); flyConnection = nil end
         toggleBtn.Text = "🚗 飞车: 关"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     end
@@ -445,8 +496,8 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ 飞车控制 V4 加载成功")
-print("  先坐上载具，再点击飞车按钮")
+print("  ✅ 飞车控制 V6 加载成功")
+print("  点击按钮自动锁定附近载具")
 print("  C键 开关飞车 | 速度1-200可调")
 print("  🛡️ 过检测已启动")
 print("========================================")
