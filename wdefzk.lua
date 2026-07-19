@@ -1,5 +1,5 @@
--- ========== 飞车控制 V7 (修复版) ==========
--- 点一下开，再点一下关 | 自动锁定附近载具
+-- ========== 飞车控制 V8 (G键开关) ==========
+-- 按G键开关飞车 | 自动锁定附近载具
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -11,7 +11,7 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local carFlyEnabled = false
-local carSpeed = 70
+local carSpeed = 80
 local carBV = nil
 local carBG = nil
 local flyConnection = nil
@@ -192,28 +192,29 @@ closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- ========== 开关按钮 ==========
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Parent = mainFrame
-toggleBtn.Size = UDim2.new(0, 180, 0, 40)
-toggleBtn.Position = UDim2.new(0.5, -90, 0, 45)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-toggleBtn.Text = "🚗 飞车: 关"
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.TextSize = 16
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.BorderSizePixel = 0
+-- ========== 状态显示 ==========
+local statusBtn = Instance.new("TextButton")
+statusBtn.Parent = mainFrame
+statusBtn.Size = UDim2.new(0, 180, 0, 40)
+statusBtn.Position = UDim2.new(0.5, -90, 0, 45)
+statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+statusBtn.Text = "🚗 飞车: 关 (按G)"
+statusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusBtn.TextSize = 16
+statusBtn.Font = Enum.Font.GothamBold
+statusBtn.BorderSizePixel = 0
+statusBtn.BackgroundTransparency = 0.3
 
 local btnCorner = Instance.new("UICorner")
-btnCorner.Parent = toggleBtn
+btnCorner.Parent = statusBtn
 btnCorner.CornerRadius = UDim.new(0, 8)
 
--- ========== 速度控制 ==========
+-- 速度控制
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Parent = mainFrame
 speedLabel.Size = UDim2.new(1, 0, 0, 25)
 speedLabel.Position = UDim2.new(0, 0, 0, 100)
-speedLabel.Text = "速度: 70"
+speedLabel.Text = "速度: 80"
 speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextSize = 15
@@ -229,6 +230,11 @@ speedDown.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedDown.TextSize = 18
 speedDown.Font = Enum.Font.GothamBold
 speedDown.BorderSizePixel = 0
+speedDown.MouseButton1Click:Connect(function()
+    carSpeed = math.max(carSpeed - 5, 1)
+    speedLabel.Text = "速度: " .. carSpeed
+    speedInput.Text = tostring(carSpeed)
+end)
 
 local sdCorner = Instance.new("UICorner")
 sdCorner.Parent = speedDown
@@ -240,11 +246,20 @@ speedInput.Size = UDim2.new(0, 80, 0, 30)
 speedInput.Position = UDim2.new(0.5, -40, 0, 135)
 speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedInput.Text = "70"
+speedInput.Text = "80"
 speedInput.PlaceholderText = "1-200"
 speedInput.TextSize = 16
 speedInput.Font = Enum.Font.Gotham
 speedInput.BorderSizePixel = 0
+speedInput.FocusLost:Connect(function()
+    local v = tonumber(speedInput.Text)
+    if v then
+        carSpeed = math.clamp(v, 1, 200)
+        speedLabel.Text = "速度: " .. carSpeed
+    else
+        speedInput.Text = tostring(carSpeed)
+    end
+end)
 
 local siCorner = Instance.new("UICorner")
 siCorner.Parent = speedInput
@@ -260,12 +275,16 @@ speedUp.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedUp.TextSize = 18
 speedUp.Font = Enum.Font.GothamBold
 speedUp.BorderSizePixel = 0
+speedUp.MouseButton1Click:Connect(function()
+    carSpeed = math.min(carSpeed + 5, 200)
+    speedLabel.Text = "速度: " .. carSpeed
+    speedInput.Text = tostring(carSpeed)
+end)
 
 local suCorner = Instance.new("UICorner")
 suCorner.Parent = speedUp
 suCorner.CornerRadius = UDim.new(0, 6)
 
--- 状态标签
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Parent = mainFrame
 statusLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -276,43 +295,15 @@ statusLabel.BackgroundTransparency = 1
 statusLabel.TextSize = 12
 statusLabel.Font = Enum.Font.Gotham
 
--- 提示标签
 local hintLabel = Instance.new("TextLabel")
 hintLabel.Parent = mainFrame
 hintLabel.Size = UDim2.new(1, 0, 0, 16)
 hintLabel.Position = UDim2.new(0, 0, 0, 205)
-hintLabel.Text = "点击开关自动锁定最近载具"
+hintLabel.Text = "按 G 键开关飞车"
 hintLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
 hintLabel.BackgroundTransparency = 1
-hintLabel.TextSize = 11
-hintLabel.Font = Enum.Font.Gotham
-
--- ========== 更新速度显示 ==========
-local function updateSpeedDisplay()
-    speedLabel.Text = "速度: " .. carSpeed
-    speedInput.Text = tostring(carSpeed)
-end
-
--- ========== 速度按钮事件 ==========
-speedDown.MouseButton1Click:Connect(function()
-    carSpeed = math.max(carSpeed - 5, 1)
-    updateSpeedDisplay()
-end)
-
-speedUp.MouseButton1Click:Connect(function()
-    carSpeed = math.min(carSpeed + 5, 200)
-    updateSpeedDisplay()
-end)
-
-speedInput.FocusLost:Connect(function()
-    local v = tonumber(speedInput.Text)
-    if v then
-        carSpeed = math.clamp(v, 1, 200)
-        updateSpeedDisplay()
-    else
-        updateSpeedDisplay()
-    end
-end)
+hintLabel.TextSize = 12
+hintLabel.Font = Enum.Font.GothamBold
 
 -- ==================== 飞车核心 ====================
 local function toggleCarFly()
@@ -324,14 +315,14 @@ local function toggleCarFly()
         if not targetVehicle then
             print("❌ 附近没有找到载具")
             carFlyEnabled = false
-            toggleBtn.Text = "🚗 飞车: 关"
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            statusBtn.Text = "🚗 飞车: 关 (按G)"
+            statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             return
         end
         
         print("✅ 飞车开启 - 载具: " .. targetVehicle.Name)
-        toggleBtn.Text = "🚗 飞车: 开"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        statusBtn.Text = "🚗 飞车: 开 (按G)"
+        statusBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         
         -- 获取载具主体
         local hrp = targetVehicle:FindFirstChild("HumanoidRootPart")
@@ -349,8 +340,8 @@ local function toggleCarFly()
         if not hrp then
             print("❌ 找不到载具主体")
             carFlyEnabled = false
-            toggleBtn.Text = "🚗 飞车: 关"
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            statusBtn.Text = "🚗 飞车: 关 (按G)"
+            statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             return
         end
         
@@ -409,8 +400,8 @@ local function toggleCarFly()
             if not hrp or not hrp.Parent then
                 print("⚠️ 载具丢失，关闭飞车")
                 carFlyEnabled = false
-                toggleBtn.Text = "🚗 飞车: 关"
-                toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+                statusBtn.Text = "🚗 飞车: 关 (按G)"
+                statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
                 if flyConnection then
                     flyConnection:Disconnect()
                     flyConnection = nil
@@ -425,8 +416,8 @@ local function toggleCarFly()
         
     else
         print("❌ 飞车关闭")
-        toggleBtn.Text = "🚗 飞车: 关"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        statusBtn.Text = "🚗 飞车: 关 (按G)"
+        statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
         
         if carBV then
             carBV:Destroy()
@@ -452,13 +443,10 @@ local function toggleCarFly()
     end
 end
 
--- ========== 按钮事件 ==========
-toggleBtn.MouseButton1Click:Connect(toggleCarFly)
-
--- ========== 快捷键 ==========
+-- ========== 快捷键 G ==========
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.C then
+    if input.KeyCode == Enum.KeyCode.G then
         toggleCarFly()
     end
 end)
@@ -471,8 +459,8 @@ LocalPlayer.CharacterAdded:Connect(function()
         if carBV then carBV:Destroy(); carBV = nil end
         if carBG then carBG:Destroy(); carBG = nil end
         if flyConnection then flyConnection:Disconnect(); flyConnection = nil end
-        toggleBtn.Text = "🚗 飞车: 关"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        statusBtn.Text = "🚗 飞车: 关 (按G)"
+        statusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     end
 end)
 
@@ -481,8 +469,8 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ 飞车控制 V7 加载成功")
-print("  点击按钮自动锁定附近载具")
-print("  C键 开关飞车 | 速度1-200可调")
+print("  ✅ 飞车控制 V8 加载成功")
+print("  按 G 键 开关飞车")
+print("  速度1-200可调")
 print("  🛡️ 过检测已启动")
 print("========================================")
