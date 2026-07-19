@@ -1,4 +1,4 @@
--- ========== 圣奥里飞车 完整版 ==========
+-- ========== wdfex飞车 ==========
 -- 卡密验证 + 加载动画 + 欢迎特效 + 飞车控制
 
 local Players = game:GetService("Players")
@@ -46,7 +46,7 @@ local function createLoadingScreen()
     logo.Size = UDim2.new(1, 0, 0, 60)
     logo.Position = UDim2.new(0, 0, 0.3, 0)
     logo.BackgroundTransparency = 1
-    logo.Text = "🚗 飞车控制"
+    logo.Text = "wdfex飞车"
     logo.TextColor3 = Color3.fromRGB(0, 200, 255)
     logo.TextSize = 40
     logo.Font = Enum.Font.GothamBlack
@@ -163,7 +163,7 @@ local function createVerifyUI()
     title.Size = UDim2.new(1, 0, 0, 50)
     title.Position = UDim2.new(0, 0, 0, 10)
     title.BackgroundTransparency = 1
-    title.Text = "🔐 飞车控制"
+    title.Text = "🔐 wdfex飞车"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.TextSize = 24
     title.Font = Enum.Font.GothamBold
@@ -273,7 +273,7 @@ local function showWelcomeEffect()
     welcomeText.Size = UDim2.new(1, 0, 0, 60)
     welcomeText.Position = UDim2.new(0, 0, 0.3, 0)
     welcomeText.BackgroundTransparency = 1
-    welcomeText.Text = "🎉 欢迎使用飞车控制"
+    welcomeText.Text = "🎉 欢迎使用wdfex飞车"
     welcomeText.TextColor3 = Color3.fromRGB(0, 200, 255)
     welcomeText.TextSize = 36
     welcomeText.Font = Enum.Font.GothamBlack
@@ -311,7 +311,7 @@ local function showWelcomeEffect()
     welcomeGui:Destroy()
 end
 
--- ==================== 创建悬浮窗 ====================
+-- ==================== 创建主UI ====================
 local function createMainUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Parent = CoreGui
@@ -348,7 +348,7 @@ local function createMainUI()
     titleText.Parent = titleBar
     titleText.Size = UDim2.new(1, -60, 1, 0)
     titleText.Position = UDim2.new(0, 10, 0, 0)
-    titleText.Text = "🚗 飞车控制"
+    titleText.Text = "wdfex飞车"
     titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleText.BackgroundTransparency = 1
     titleText.TextSize = 15
@@ -374,7 +374,7 @@ local function createMainUI()
     toggleBtn.Size = UDim2.new(0, 160, 0, 40)
     toggleBtn.Position = UDim2.new(0.5, -80, 0, 45)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    toggleBtn.Text = "🚗 飞车: 关"
+    toggleBtn.Text = "飞车: 关"
     toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggleBtn.TextSize = 16
     toggleBtn.Font = Enum.Font.GothamBold
@@ -453,7 +453,7 @@ local function toggleFly(toggleBtn)
     
     if flyEnabled then
         flyEnabled = false
-        toggleBtn.Text = "🚗 飞车: 关"
+        toggleBtn.Text = "飞车: 关"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
         print("❌ 飞车关闭")
         if flyBV then flyBV:Destroy(); flyBV = nil end
@@ -481,7 +481,7 @@ local function toggleFly(toggleBtn)
     
     print("✅ 飞车开启")
     flyEnabled = true
-    toggleBtn.Text = "🚗 飞车: 开"
+    toggleBtn.Text = "飞车: 开"
     toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
     
     hum.PlatformStand = true
@@ -512,7 +512,7 @@ local function toggleFly(toggleBtn)
         end
         if not hrp or not hrp.Parent then
             flyEnabled = false
-            toggleBtn.Text = "🚗 飞车: 关"
+            toggleBtn.Text = "飞车: 关"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
             if flyConn then
                 flyConn:Disconnect()
@@ -637,7 +637,7 @@ local function startScript()
                     if flyBV then flyBV:Destroy(); flyBV = nil end
                     if flyBG then flyBG:Destroy(); flyBG = nil end
                     if flyConn then flyConn:Disconnect(); flyConn = nil end
-                    toggleBtn.Text = "🚗 飞车: 关"
+                    toggleBtn.Text = "飞车: 关"
                     toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
                 end
             end)
@@ -646,7 +646,7 @@ local function startScript()
             showWelcomeEffect()
             
             print("========================================")
-            print("  ✅ 飞车控制 加载成功")
+            print("  ✅ wdfex飞车 加载成功")
             print("  卡密: wdfex")
             print("  点击按钮 或 按 G 键 开关")
             print("  速度1-200可调")
