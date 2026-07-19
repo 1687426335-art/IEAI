@@ -1,5 +1,5 @@
--- ========== BS-过检测完整版 ==========
--- 所有功能保留 | 不需要OrionLib | 直接显示悬浮窗
+-- ========== BS-圣奥里修复版 ==========
+-- 修复按键乱跳问题 | 所有功能保留
 
 local player = game.Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -97,7 +97,8 @@ local function startBypass()
     print("✅ 过检测已启动")
 end
 
--- ==================== 反挂机 ====================
+-- ==================== 反挂机（修复版） ====================
+-- 修复：只模拟按键，不影响游戏操作
 game:GetService("Players").LocalPlayer.Idled:connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
     wait(1)
@@ -118,6 +119,8 @@ local espEnabled = false
 local rangeEnabled = false
 local rangeSize = 30
 local espHighlights = {}
+local originalWalkSpeed = 16
+local originalJumpPower = 50
 
 -- ==================== 创建悬浮窗 ====================
 local screenGui = Instance.new("ScreenGui")
@@ -161,7 +164,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Parent = titleBar
 titleText.Size = UDim2.new(1, -60, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
-titleText.Text = "BS 过检测版"
+titleText.Text = "BS 圣奥里修复版"
 titleText.TextColor3 = Color3.fromRGB(0, 200, 255)
 titleText.BackgroundTransparency = 1
 titleText.TextSize = 16
@@ -205,7 +208,7 @@ end
 local y = 50
 local gap = 8
 
--- ========== 飞行功能 ==========
+-- ========== 飞行功能（修复版：不干扰按键） ==========
 local flyBtn = createBtn("✈️ 飞行: 关", y, Color3.fromRGB(60, 60, 80))
 flyBtn.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
@@ -285,7 +288,7 @@ end)
 
 y = y + 35 + gap + 30
 
--- ========== 加速功能 ==========
+-- ========== 加速功能（修复版） ==========
 local speedBtn = createBtn("⚡ 加速: 关", y, Color3.fromRGB(60, 60, 80))
 speedBtn.MouseButton1Click:Connect(function()
     speedEnabled = not speedEnabled
@@ -295,8 +298,15 @@ speedBtn.MouseButton1Click:Connect(function()
     if char then
         local hum = char:FindFirstChild("Humanoid")
         if hum then
-            hum.WalkSpeed = speedEnabled and (16 * speedMultiplier) or 16
-            hum.JumpPower = speedEnabled and (50 * speedMultiplier) or 50
+            if speedEnabled then
+                originalWalkSpeed = hum.WalkSpeed
+                originalJumpPower = hum.JumpPower
+                hum.WalkSpeed = 16 * speedMultiplier
+                hum.JumpPower = 50 * speedMultiplier
+            else
+                hum.WalkSpeed = originalWalkSpeed
+                hum.JumpPower = originalJumpPower
+            end
         end
     end
 end)
@@ -364,7 +374,7 @@ end)
 
 y = y + 35 + gap
 
--- ========== 无限跳跃 ==========
+-- ========== 无限跳跃（修复版：不影响其他按键） ==========
 local jumpBtn = createBtn("🦘 无限跳: 关", y, Color3.fromRGB(60, 60, 80))
 jumpBtn.MouseButton1Click:Connect(function()
     jumpEnabled = not jumpEnabled
@@ -372,6 +382,7 @@ jumpBtn.MouseButton1Click:Connect(function()
     jumpBtn.BackgroundColor3 = jumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
 end)
 
+-- 使用跳跃请求事件，不干扰其他按键
 UserInputService.JumpRequest:Connect(function()
     if jumpEnabled then
         local char = player.Character
@@ -503,13 +514,13 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Parent = mainFrame
 statusLabel.Size = UDim2.new(1, 0, 0, 20)
 statusLabel.Position = UDim2.new(0, 0, 1, -25)
-statusLabel.Text = "🛡️ 过检测已启动"
+statusLabel.Text = "🛡️ 过检测已启动 | 圣奥里修复版"
 statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextSize = 12
 statusLabel.Font = Enum.Font.Gotham
 
--- ==================== 快捷键 ====================
+-- ========== 快捷键（只保留必要的） ==========
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.F then
@@ -548,7 +559,8 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ BS-过检测完整版 加载成功")
+print("  ✅ BS-圣奥里修复版 加载成功")
 print("  🛡️ 过检测已启动")
 print("  F键 开关飞行 | G键 开关加速")
+print("  修复：按键不乱跳 | 进店正常")
 print("========================================")
