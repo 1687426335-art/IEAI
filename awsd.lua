@@ -1,6 +1,6 @@
 -- ========== wdfex脚本 过检测版 ==========
 -- 无服务器验证 | 全功能过检测 | 所有服务器通用
--- 整合BS飞车功能到娱乐分类
+-- 整合BS飞车功能到娱乐分类 + BS范围功能
 
 local player = game:GetService("Players").LocalPlayer
 local plrId = player.UserId
@@ -282,6 +282,64 @@ local function toggleCarFly()
         end
     end
 end
+
+-- ==================== BS范围功能 ====================
+local rangeEnabled = false
+local rangeSize = 30
+
+local function toggleRange()
+    rangeEnabled = not rangeEnabled
+    if rangeEnabled then
+        print("✅ 范围开启 (" .. rangeSize .. ")")
+    else
+        print("❌ 范围关闭")
+        -- 恢复所有玩家大小
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 0
+                        hrp.Material = Enum.Material.Plastic
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- 范围循环
+RunService.RenderStepped:Connect(function()
+    if rangeEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
+                        hrp.Transparency = 0.5
+                        hrp.Material = Enum.Material.Neon
+                        hrp.CanCollide = false
+                    end
+                end)
+            end
+        end
+    else
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 0
+                        hrp.Material = Enum.Material.Plastic
+                    end
+                end)
+            end
+        end
+    end
+end)
 
 -- ==================== 原脚本代码 ====================
 local Player = player
@@ -1293,7 +1351,7 @@ do
         return aimbotPanel
     end
 
-    -- ==================== 娱乐分类（包含飞车） ====================
+    -- ==================== 娱乐分类（包含飞车+范围） ====================
     local function AddCat(i)
         local cat = Instance.new("TextButton")
         cat.Name = "Cat"..i
@@ -1622,18 +1680,55 @@ do
                 if v then carSpeed = math.clamp(v, 1, 200) end
             end)
 
+            -- ========== BS范围功能（照抄） ==========
+            local rangeBtn = addSemiTransparentButton(page, "🎯 范围: 关", posX2, 4)
+            rangeBtn.MouseButton1Click:Connect(function()
+                toggleRange()
+                rangeBtn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
+                rangeBtn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            end)
+
+            local rangeLabel = Instance.new("TextLabel")
+            rangeLabel.Parent = page
+            rangeLabel.Size = UDim2.new(0, 80, 0, 25)
+            rangeLabel.Position = UDim2.new(0, 10, 0, 4 + rowHeight + 40)
+            rangeLabel.Text = "范围大小:"
+            rangeLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
+            rangeLabel.BackgroundTransparency = 1
+            rangeLabel.TextSize = 13
+            rangeLabel.Font = Enum.Font.SourceSans
+
+            local rangeInput = Instance.new("TextBox")
+            rangeInput.Parent = page
+            rangeInput.Size = UDim2.new(0, 60, 0, 25)
+            rangeInput.Position = UDim2.new(0, 100, 0, 4 + rowHeight + 40)
+            rangeInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            rangeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+            rangeInput.Text = "30"
+            rangeInput.PlaceholderText = "大小"
+            rangeInput.TextSize = 14
+            rangeInput.Font = Enum.Font.SourceSans
+            rangeInput.BorderSizePixel = 0
+            local corner2 = Instance.new("UICorner")
+            corner2.Parent = rangeInput
+            corner2.CornerRadius = UDim.new(0, 6)
+            rangeInput.FocusLost:Connect(function()
+                local v = tonumber(rangeInput.Text)
+                if v then rangeSize = math.clamp(v, 1, 500) end
+            end)
+
             -- 其他娱乐功能
-            addSemiTransparentButton(page, "显示时间", posX1, 4 + rowHeight + 40, function()
+            addSemiTransparentButton(page, "显示时间", posX1, 4 + (rowHeight + 40) * 2, function()
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "显示时间", Text = "正在加载中...", Duration = 5 })
                 task.spawn(function() loadstring(game:HttpGet("https://pastebin.com/raw/0zKLyd4W"))() end)
             end)
 
-            addSemiTransparentButton(page, "美化包排行榜第一", posX2, 4 + rowHeight + 40, function()
+            addSemiTransparentButton(page, "美化包排行榜第一", posX2, 4 + (rowHeight + 40) * 2, function()
                 beautifyStats()
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "美化包", Text = "数值已修改为999（若游戏支持）", Duration = 3 })
             end)
 
-            local crosshairBtn = addSemiTransparentButton(page, "准星：关", posX1, 4 + (rowHeight + 40) * 2)
+            local crosshairBtn = addSemiTransparentButton(page, "准星：关", posX1, 4 + (rowHeight + 40) * 3)
             crosshairBtn.MouseButton1Click:Connect(function()
                 CrosshairEnabled = not CrosshairEnabled
                 crosshairBtn.Text = CrosshairEnabled and "准星：开" or "准星：关"
@@ -1641,7 +1736,7 @@ do
                 game:GetService("StarterGui"):SetCore("SendNotification", { Title = "准星", Text = CrosshairEnabled and "已显示" or "已隐藏", Duration = 3 })
             end)
 
-            local crosshairSpinBtn = addSemiTransparentButton(page, "准星旋转：关", posX2, 4 + (rowHeight + 40) * 2)
+            local crosshairSpinBtn = addSemiTransparentButton(page, "准星旋转：关", posX2, 4 + (rowHeight + 40) * 3)
             crosshairSpinBtn.MouseButton1Click:Connect(function()
                 CrosshairSpinEnabled = not CrosshairSpinEnabled
                 crosshairSpinBtn.Text = CrosshairSpinEnabled and "准星旋转：开" or "准星旋转：关"
