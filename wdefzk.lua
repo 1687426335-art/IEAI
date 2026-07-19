@@ -1,5 +1,5 @@
--- ========== 圣奥里飞车 V2 ==========
--- 不需要载具 | 直接飞自己 | 跟飞行一样但显示飞车
+-- ========== 圣奥里飞车 V3 ==========
+-- 直接飞自己 | 不检测载具 | 点一下就能飞
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -22,8 +22,8 @@ screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 200, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -100)
+mainFrame.Size = UDim2.new(0, 200, 0, 190)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -95)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -143,49 +143,39 @@ local suCorner = Instance.new("UICorner")
 suCorner.Parent = speedUp
 suCorner.CornerRadius = UDim.new(0, 6)
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Parent = mainFrame
-statusLabel.Size = UDim2.new(1, 0, 0, 18)
-statusLabel.Position = UDim2.new(0, 0, 0, 170)
-statusLabel.Text = "🟢 就绪 | 点开关"
-statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextSize = 12
-statusLabel.Font = Enum.Font.Gotham
-
 -- ========== 速度事件 ==========
 speedDown.MouseButton1Click:Connect(function()
-    carSpeed = math.max(carSpeed - 5, 1)
-    speedLabel.Text = "速度: " .. carSpeed
-    speedInput.Text = tostring(carSpeed)
+    flySpeed = math.max(flySpeed - 5, 1)
+    speedLabel.Text = "速度: " .. flySpeed
+    speedInput.Text = tostring(flySpeed)
     if flyEnabled and flyBV then
-        flyBV.Velocity = Camera.CFrame.LookVector * carSpeed
+        flyBV.Velocity = Camera.CFrame.LookVector * flySpeed
     end
 end)
 
 speedUp.MouseButton1Click:Connect(function()
-    carSpeed = math.min(carSpeed + 5, 200)
-    speedLabel.Text = "速度: " .. carSpeed
-    speedInput.Text = tostring(carSpeed)
+    flySpeed = math.min(flySpeed + 5, 200)
+    speedLabel.Text = "速度: " .. flySpeed
+    speedInput.Text = tostring(flySpeed)
     if flyEnabled and flyBV then
-        flyBV.Velocity = Camera.CFrame.LookVector * carSpeed
+        flyBV.Velocity = Camera.CFrame.LookVector * flySpeed
     end
 end)
 
 speedInput.FocusLost:Connect(function()
     local v = tonumber(speedInput.Text)
     if v then
-        carSpeed = math.clamp(v, 1, 200)
-        speedLabel.Text = "速度: " .. carSpeed
+        flySpeed = math.clamp(v, 1, 200)
+        speedLabel.Text = "速度: " .. flySpeed
         if flyEnabled and flyBV then
-            flyBV.Velocity = Camera.CFrame.LookVector * carSpeed
+            flyBV.Velocity = Camera.CFrame.LookVector * flySpeed
         end
     else
-        speedInput.Text = tostring(carSpeed)
+        speedInput.Text = tostring(flySpeed)
     end
 end)
 
--- ==================== 飞车核心（直接飞自己） ====================
+-- ==================== 飞车核心（直接飞自己，不检测载具） ====================
 local function toggleFly()
     print("🔄 点击开关")
     
@@ -194,7 +184,6 @@ local function toggleFly()
         flyEnabled = false
         toggleBtn.Text = "🚗 飞车: 关"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-        statusLabel.Text = "🟢 已关闭"
         print("❌ 飞车关闭")
         if flyBV then flyBV:Destroy(); flyBV = nil end
         if flyBG then flyBG:Destroy(); flyBG = nil end
@@ -206,19 +195,17 @@ local function toggleFly()
         return
     end
     
-    -- 开启
+    -- 开启（直接飞，不检测任何东西）
     local char = LocalPlayer.Character
     if not char then
-        statusLabel.Text = "❌ 无角色"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        print("❌ 没有角色")
         return
     end
     
     local hrp = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChild("Humanoid")
     if not hrp or not hum then
-        statusLabel.Text = "❌ 无角色"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        print("❌ 没有 Humanoid")
         return
     end
     
@@ -226,8 +213,6 @@ local function toggleFly()
     flyEnabled = true
     toggleBtn.Text = "🚗 飞车: 开"
     toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    statusLabel.Text = "🟢 飞行中"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
     
     hum.PlatformStand = true
     
@@ -266,7 +251,7 @@ local function toggleFly()
             return
         end
         if flyBV and flyBG then
-            flyBV.Velocity = Camera.CFrame.LookVector * carSpeed
+            flyBV.Velocity = Camera.CFrame.LookVector * flySpeed
             flyBG.CFrame = Camera.CFrame
         end
     end)
@@ -297,7 +282,7 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 
 print("========================================")
-print("  ✅ 圣奥里飞车 加载成功")
+print("  ✅ 飞车控制 加载成功")
 print("  不需要载具 | 直接飞自己")
 print("  点击按钮 或 按 G 键 开关")
 print("  速度1-200可调")
