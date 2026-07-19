@@ -1,21 +1,19 @@
--- ========== 飞车控制 过检测版 ==========
--- 原地升天 + 视角控制 + 过检测
+-- ========== 飞车控制 V5（视角控制版） ==========
+-- 视角朝哪飞哪 | WASD控制 | 空格上升 | Shift下降
 
 local player = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local Camera = workspace.CurrentCamera
-local TeleportService = game:GetService("TeleportService")
-local VirtualUser = game:GetService("VirtualUser")
 
 local carFlyEnabled = false
-local carSpeed = 80
+local carSpeed = 50
 local carBV = nil
 local carBG = nil
 local flyConn = nil
 
--- ==================== 过检测系统 ====================
+-- ==================== 过检测 ====================
 local bypassActive = false
 local bypassConnections = {}
 
@@ -23,20 +21,11 @@ local function startBypass()
     if bypassActive then return end
     bypassActive = true
     print("🛡️ 启动过检测...")
-
-    -- 1. 防踢出
     pcall(function()
         local oldKick = player.Kick
-        player.Kick = function(self, msg)
-            print("🛡️ 拦截踢出: " .. tostring(msg))
-            return nil
-        end
-        table.insert(bypassConnections, {Disconnect = function()
-            player.Kick = oldKick
-        end})
+        player.Kick = function(self, msg) print("🛡️ 拦截踢出: " .. tostring(msg)) return nil end
+        table.insert(bypassConnections, {Disconnect = function() player.Kick = oldKick end})
     end)
-
-    -- 2. 防死亡
     pcall(function()
         local char = player.Character
         if char then
@@ -45,17 +34,13 @@ local function startBypass()
                 local conn = hum.HealthChanged:Connect(function()
                     if hum.Health <= 0 then
                         task.wait(0.1)
-                        if hum and hum.Parent then
-                            hum.Health = hum.MaxHealth
-                        end
+                        if hum and hum.Parent then hum.Health = hum.MaxHealth end
                     end
                 end)
                 table.insert(bypassConnections, conn)
             end
         end
     end)
-
-    -- 3. 防拉回
     pcall(function()
         local function antiTeleport()
             local char = player.Character
@@ -75,14 +60,10 @@ local function startBypass()
             end
         end
         antiTeleport()
-        player.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            antiTeleport()
-        end)
+        player.CharacterAdded:Connect(function() task.wait(0.5) antiTeleport() end)
     end)
-
-    -- 4. 伪装行为
     pcall(function()
+        local VirtualUser = game:GetService("VirtualUser")
         local conn = RunService.Heartbeat:Connect(function()
             if math.random(1, 100) > 95 then
                 VirtualUser:CaptureController()
@@ -91,9 +72,8 @@ local function startBypass()
         end)
         table.insert(bypassConnections, conn)
     end)
-
-    -- 5. 自动重连
     pcall(function()
+        local TeleportService = game:GetService("TeleportService")
         local conn = player:GetPropertyChangedSignal("Parent"):Connect(function()
             if not player.Parent then
                 print("🔄 被踢出，重连中...")
@@ -103,7 +83,6 @@ local function startBypass()
         end)
         table.insert(bypassConnections, conn)
     end)
-
     print("✅ 过检测已启动")
 end
 
@@ -132,7 +111,7 @@ local function toggleCarFly()
         
         carBV = Instance.new("BodyVelocity")
         carBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        carBV.Velocity = Vector3.new(0, 30, 0)
+        carBV.Velocity = Vector3.new(0, 20, 0)
         carBV.Parent = hrp
         
         carBG = Instance.new("BodyGyro")
@@ -142,40 +121,82 @@ local function toggleCarFly()
         carBG.CFrame = Camera.CFrame
         carBG.Parent = hrp
         
+        local moveForward = 0
+        local moveBackward = 0
+        local moveLeft = 0
+        local moveRight = 0
+        local moveUp = 0
+        local moveDown = 0
+        
+        -- 按键监听
+        local keyBegan = UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.KeyCode == Enum.KeyCode.W then moveForward = 1 end
+            if input.KeyCode == Enum.KeyCode.S then moveBackward = 1 end
+            if input.KeyCode == Enum.KeyCode.A then moveLeft = 1 end
+            if input.KeyCode == Enum.KeyCode.D then moveRight = 1 end
+            if input.KeyCode == Enum.KeyCode.Space then moveUp = 1 end
+            if input.KeyCode == Enum.KeyCode.LeftShift then moveDown = 1 end
+        end)
+        
+        local keyEnded = UserInputService.InputEnded:Connect(function(input, gp)
+            if gp then return end
+            if input.KeyCode == Enum.KeyCode.W then moveForward = 0 end
+            if input.KeyCode == Enum.KeyCode.S then moveBackward = 0 end
+            if input.KeyCode == Enum.KeyCode.A then moveLeft = 0 end
+            if input.KeyCode == Enum.KeyCode.D then moveRight = 0 end
+            if input.KeyCode == Enum.KeyCode.Space then moveUp = 0 end
+            if input.KeyCode == Enum.KeyCode.LeftShift then moveDown = 0 end
+        end)
+        
         flyConn = RunService.Heartbeat:Connect(function()
             if not carFlyEnabled then
-                if flyConn then
-                    flyConn:Disconnect()
-                    flyConn = nil
-                end
+                if flyConn then flyConn:Disconnect(); flyConn = nil end
+                keyBegan:Disconnect()
+                keyEnded:Disconnect()
                 return
             end
             if not hrp or not hrp.Parent then
                 carFlyEnabled = false
-                if flyConn then
-                    flyConn:Disconnect()
-                    flyConn = nil
-                end
+                if flyConn then flyConn:Disconnect(); flyConn = nil end
+                keyBegan:Disconnect()
+                keyEnded:Disconnect()
                 return
             end
-            if carBV and carBG then
-                carBV.Velocity = Camera.CFrame.LookVector * carSpeed
-                carBG.CFrame = Camera.CFrame
+            
+            -- 视角方向
+            local look = Camera.CFrame.LookVector
+            local right = Camera.CFrame.RightVector
+            local up = Camera.CFrame.UpVector
+            
+            -- 计算移动方向
+            local moveDir = Vector3.new(0, 0, 0)
+            moveDir = moveDir + look * (moveForward - moveBackward) * carSpeed
+            moveDir = moveDir + right * (moveRight - moveLeft) * carSpeed
+            moveDir = moveDir + up * (moveUp - moveDown) * carSpeed
+            
+            if moveDir.Magnitude > 0 then
+                carBV.Velocity = moveDir
+                hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + look)
+            else
+                -- 悬停
+                carBV.Velocity = Vector3.new(0, 0, 0)
             end
+            
+            carBG.CFrame = Camera.CFrame
         end)
         
+        -- 升空
         task.spawn(function()
-            local targetHeight = hrp.Position.Y + 20
-            local waitCount = 0
-            while carFlyEnabled and hrp and hrp.Parent and waitCount < 30 do
+            local targetHeight = hrp.Position.Y + 15
+            while carFlyEnabled and hrp and hrp.Parent do
                 if hrp.Position.Y < targetHeight then
                     if carBV then
-                        carBV.Velocity = Vector3.new(0, 30, 0)
+                        carBV.Velocity = Vector3.new(0, 20, 0)
                     end
                 else
                     break
                 end
-                waitCount = waitCount + 1
                 task.wait(0.1)
             end
         end)
@@ -201,8 +222,8 @@ screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 200, 0, 160)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -80)
+mainFrame.Size = UDim2.new(0, 200, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -90)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -270,7 +291,7 @@ local speedLabel = Instance.new("TextLabel")
 speedLabel.Parent = mainFrame
 speedLabel.Size = UDim2.new(1, 0, 0, 25)
 speedLabel.Position = UDim2.new(0, 0, 0, 100)
-speedLabel.Text = "速度: 80"
+speedLabel.Text = "速度: 50"
 speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextSize = 14
@@ -297,7 +318,7 @@ speedInput.Size = UDim2.new(0, 70, 0, 28)
 speedInput.Position = UDim2.new(0.5, -35, 0, 130)
 speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedInput.Text = "80"
+speedInput.Text = "50"
 speedInput.PlaceholderText = "1-200"
 speedInput.TextSize = 15
 speedInput.Font = Enum.Font.Gotham
@@ -385,8 +406,9 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ 飞车控制 过检测版 加载成功")
+print("  ✅ 飞车控制 加载成功")
 print("  点击按钮 或 按 G 键 开关")
 print("  视角控制方向 | 速度1-200可调")
+print("  W前 S后 A左 D右 | 空格上升 Shift下降")
 print("  🛡️ 过检测已启动")
 print("========================================")
