@@ -1,5 +1,5 @@
--- ========== 飞车控制 V6 ==========
--- 不需要坐车上 | 点击直接飞 | 速度1-200 | 带过检测
+-- ========== 飞车控制 V7 (修复版) ==========
+-- 点一下开，再点一下关 | 自动锁定附近载具
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -125,7 +125,7 @@ local function findNearestVehicle()
             local modelHrp = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("PrimaryPart")
             if modelHrp and modelHrp:IsA("BasePart") then
                 local dist = (modelHrp.Position - hrp.Position).Magnitude
-                if dist < nearestDist and dist < 50 then
+                if dist < nearestDist and dist < 80 then
                     nearestDist = dist
                     nearest = model
                 end
@@ -297,17 +297,11 @@ end
 speedDown.MouseButton1Click:Connect(function()
     carSpeed = math.max(carSpeed - 5, 1)
     updateSpeedDisplay()
-    if carFlyEnabled and carBV then
-        carBV.Velocity = Camera.CFrame.LookVector * carSpeed
-    end
 end)
 
 speedUp.MouseButton1Click:Connect(function()
     carSpeed = math.min(carSpeed + 5, 200)
     updateSpeedDisplay()
-    if carFlyEnabled and carBV then
-        carBV.Velocity = Camera.CFrame.LookVector * carSpeed
-    end
 end)
 
 speedInput.FocusLost:Connect(function()
@@ -315,9 +309,6 @@ speedInput.FocusLost:Connect(function()
     if v then
         carSpeed = math.clamp(v, 1, 200)
         updateSpeedDisplay()
-        if carFlyEnabled and carBV then
-            carBV.Velocity = Camera.CFrame.LookVector * carSpeed
-        end
     else
         updateSpeedDisplay()
     end
@@ -325,13 +316,9 @@ end)
 
 -- ==================== 飞车核心 ====================
 local function toggleCarFly()
-    print("🔄 飞车按钮被点击")
-    
     carFlyEnabled = not carFlyEnabled
     
     if carFlyEnabled then
-        print("✅ 尝试开启飞车")
-        
         -- 找最近的载具
         targetVehicle = findNearestVehicle()
         if not targetVehicle then
@@ -342,7 +329,7 @@ local function toggleCarFly()
             return
         end
         
-        print("✅ 找到载具: " .. targetVehicle.Name)
+        print("✅ 飞车开启 - 载具: " .. targetVehicle.Name)
         toggleBtn.Text = "🚗 飞车: 开"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
         
@@ -466,9 +453,7 @@ local function toggleCarFly()
 end
 
 -- ========== 按钮事件 ==========
-toggleBtn.MouseButton1Click:Connect(function()
-    toggleCarFly()
-end)
+toggleBtn.MouseButton1Click:Connect(toggleCarFly)
 
 -- ========== 快捷键 ==========
 UserInputService.InputBegan:Connect(function(input, gp)
@@ -496,7 +481,7 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ 飞车控制 V6 加载成功")
+print("  ✅ 飞车控制 V7 加载成功")
 print("  点击按钮自动锁定附近载具")
 print("  C键 开关飞车 | 速度1-200可调")
 print("  🛡️ 过检测已启动")
