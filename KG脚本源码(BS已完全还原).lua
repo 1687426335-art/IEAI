@@ -1,7 +1,3 @@
---傻逼张硕 我超你妈 叫你圈钱
---BS还原 PCO dump 
---张硕我就超你妈
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "LoadingScreen"
 ScreenGui.ResetOnSpawn = false
@@ -43,7 +39,7 @@ TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
 TextLabel.Position = UDim2.new(0.5, 0, 0.75, 0)
 TextLabel.Size = UDim2.new(0, 350, 0, 60)
 TextLabel.BackgroundTransparency = 1
-TextLabel.Text = "欢迎使用KG脚本"
+TextLabel.Text = "欢迎使用wdfex脚本"
 TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel.TextSize = 42
 TextLabel.Font = Enum.Font.GothamBold
@@ -90,12 +86,12 @@ local Window = Loaded_Main_Lua:CreateWindow({
         end,
         Anonymous = false,
     },
-    Author = "作者:张硕",
+    Author = "作者:wdfex",
     IconThemed = true,
     ScrollBarEnabled = true,
-    Folder = "KG脚本",
+    Folder = "wdfex脚本",
     HideSearchBar = true,
-    Title = "KG脚本",
+    Title = "wdfex脚本",
     Transparent = true,
     SideBarWidth = 200,
     Theme = "Midnight",
@@ -156,16 +152,16 @@ local homeTab = Window:Tab({
 
 homeTab:Paragraph({
     Image = "rbxassetid://128586210657724",
-    Title = "KG脚本介绍",
+    Title = "wdfex脚本介绍",
     Buttons = {{
         Callback = function()
-            setclipboard("KG脚本QQ群819104139")
+            setclipboard("wdfex脚本QQ群无")
         end,
-        Title = "复制KG脚本QQ群",
+        Title = "复制wdfex脚本作者QQ号",
         Icon = "link",
     }},
     ImageSize = 68,
-    Desc = "KG脚本为半自制\nKG脚本唯一作者：张硕\nKG脚本成立于2025年10月5日\nKG脚本是专门做枪战射击类游戏",
+    Desc = "wdfex脚本为半自制\wdfex唯一作者：wdfex\wdfex脚本成立于2025年7月20日\wdfex脚本是专门做枪战射击类游戏",
 })
 
 local feedbackSection = homeTab:Section({
