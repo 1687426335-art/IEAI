@@ -2,9 +2,9 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Confirmed = false
 
 WindUI:Popup({
-    Title = "大司马脚本付费版V2",
+    Title = "wdefx脚本付费版V2",
     IconThemed = true,
-    Content = "尊贵的用户" .. game.Players.LocalPlayer.Name .. "使用大司马脚本付费版",
+    Content = "尊贵的用户" .. game.Players.LocalPlayer.Name .. "使用wdfex脚本付费版",
     Buttons = {
         {
             Title = "取消",
@@ -24,9 +24,9 @@ WindUI:Popup({
 })
 function createUI()
     local Window = WindUI:CreateWindow({
-        Title = "大司马脚本",
+        Title = "wdfex脚本",
         Icon = "palette",
-    Author = "尊贵的"..game.Players.localPlayer.Name.."欢迎使用大司马脚本付费版", 
+    Author = "尊贵的"..game.Players.localPlayer.Name.."欢迎使用wdfex脚本付费版", 
         Folder = "Premium",
         Size = UDim2.fromOffset(550, 320),
         Theme = "Light",
@@ -46,12 +46,12 @@ function createUI()
     })
     
     Window:Tag({
-        Title = "大司马脚本付费版",
+        Title = "wdfex脚本付费版",
         Color = Color3.fromHex("#00ffff") 
     })
 
     Window:EditOpenButton({
-        Title = "大司马脚本V2",
+        Title = "wdfex脚本V2",
         Icon = "crown",
         CornerRadius = UDim.new(0, 8),
         StrokeThickness = 3,
