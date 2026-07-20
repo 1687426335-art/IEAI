@@ -1,5 +1,6 @@
 -- ========== BS-过检测完整版 (修复版) ==========
 -- 仿皮脚本UI风格 | 左边分类 | 右边内容
+-- 已删除：透视、范围、跳跃
 
 local player = game.Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -10,7 +11,7 @@ local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
 
--- ==================== 修复1: 补全所有功能变量 ====================
+-- ==================== 补全所有功能变量 ====================
 local speedEnabled = false
 local speedMultiplier = 1
 local originalWalkSpeed = 16
@@ -18,11 +19,6 @@ local originalJumpPower = 50
 local flyEnabled = false
 local flySpeed = 50
 local noclipEnabled = false
-local jumpEnabled = false
-local espEnabled = false
-local rangeEnabled = false
-local rangeSize = 30
-local espHighlights = {}
 local flyBV, flyBG, flyConn = nil, nil, nil
 
 -- ==================== 过检测 ====================
@@ -248,7 +244,7 @@ contentScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
 contentScroller.ScrollBarThickness = 4
 
 -- ========== 分类列表 ==========
-local categories = {"⚡ 加速", "✈️ 飞行", "🚪 穿墙", "🦘 跳跃", "👁️ 透视", "🎯 范围"}
+local categories = {"⚡ 加速", "✈️ 飞行", "🚪 穿墙"}
 local currentTab = "⚡ 加速"
 local categoryBtns = {}
 
@@ -446,7 +442,6 @@ local function updateContent(tab)
         corner.Parent = btn
         corner.CornerRadius = UDim.new(0, 8)
         
-        -- 修复：补全穿墙实际执行逻辑
         local noclipConnection = nil
         btn.MouseButton1Click:Connect(function()
             noclipEnabled = not noclipEnabled
@@ -479,116 +474,6 @@ local function updateContent(tab)
                     end
                 end
             end
-        end)
-        
-    elseif tab == "🦘 跳跃" then
-        local btn = Instance.new("TextButton")
-        btn.Parent = contentScroller
-        btn.Size = UDim2.new(0, 200, 0, 40)
-        btn.Position = UDim2.new(0.5, -100, 0, y)
-        btn.BackgroundColor3 = jumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        btn.Text = jumpEnabled and "🦘 无限跳: 开" or "🦘 无限跳: 关"
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 16
-        btn.Font = Enum.Font.GothamBold
-        btn.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = btn
-        corner.CornerRadius = UDim.new(0, 8)
-        
-        -- 修复：补全无限跳实际执行逻辑
-        btn.MouseButton1Click:Connect(function()
-            jumpEnabled = not jumpEnabled
-            btn.Text = jumpEnabled and "🦘 无限跳: 开" or "🦘 无限跳: 关"
-            btn.BackgroundColor3 = jumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        end)
-        
-    elseif tab == "👁️ 透视" then
-        local btn = Instance.new("TextButton")
-        btn.Parent = contentScroller
-        btn.Size = UDim2.new(0, 200, 0, 40)
-        btn.Position = UDim2.new(0.5, -100, 0, y)
-        btn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        btn.Text = espEnabled and "👁️ 透视: 开" or "👁️ 透视: 关"
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 16
-        btn.Font = Enum.Font.GothamBold
-        btn.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = btn
-        corner.CornerRadius = UDim.new(0, 8)
-        btn.MouseButton1Click:Connect(function()
-            espEnabled = not espEnabled
-            btn.Text = espEnabled and "👁️ 透视: 开" or "👁️ 透视: 关"
-            btn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= player then
-                    if espEnabled then
-                        if not espHighlights[p.UserId] then
-                            local highlight = Instance.new("Highlight")
-                            highlight.Parent = p.Character
-                            highlight.FillTransparency = 1
-                            highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-                            highlight.OutlineTransparency = 0
-                            espHighlights[p.UserId] = highlight
-                        end
-                    else
-                        if espHighlights[p.UserId] then
-                            espHighlights[p.UserId]:Destroy()
-                            espHighlights[p.UserId] = nil
-                        end
-                    end
-                end
-            end
-        end)
-        
-    elseif tab == "🎯 范围" then
-        local btn = Instance.new("TextButton")
-        btn.Parent = contentScroller
-        btn.Size = UDim2.new(0, 200, 0, 40)
-        btn.Position = UDim2.new(0.5, -100, 0, y)
-        btn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        btn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 16
-        btn.Font = Enum.Font.GothamBold
-        btn.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.Parent = btn
-        corner.CornerRadius = UDim.new(0, 8)
-        btn.MouseButton1Click:Connect(function()
-            rangeEnabled = not rangeEnabled
-            btn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
-            btn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        end)
-        y = y + 40 + gap
-        
-        local label = Instance.new("TextLabel")
-        label.Parent = contentScroller
-        label.Size = UDim2.new(0, 80, 0, 25)
-        label.Position = UDim2.new(0, 10, 0, y)
-        label.Text = "范围大小:"
-        label.TextColor3 = Color3.fromRGB(180, 180, 210)
-        label.BackgroundTransparency = 1
-        label.TextSize = 14
-        label.Font = Enum.Font.Gotham
-        
-        local input = Instance.new("TextBox")
-        input.Parent = contentScroller
-        input.Size = UDim2.new(0, 80, 0, 25)
-        input.Position = UDim2.new(0, 120, 0, y)
-        input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-        input.TextColor3 = Color3.fromRGB(255, 255, 255)
-        input.Text = tostring(rangeSize)
-        input.TextSize = 14
-        input.Font = Enum.Font.Gotham
-        input.BorderSizePixel = 0
-        local corner2 = Instance.new("UICorner")
-        corner2.Parent = input
-        corner2.CornerRadius = UDim.new(0, 6)
-        input.FocusLost:Connect(function()
-            local v = tonumber(input.Text)
-            if v then rangeSize = math.clamp(v, 1, 500) end
         end)
     end
     
@@ -632,38 +517,6 @@ statusLabel.BackgroundTransparency = 1
 statusLabel.TextSize = 11
 statusLabel.Font = Enum.Font.Gotham
 
--- ========== 范围循环 ==========
-RunService.RenderStepped:Connect(function()
-    if rangeEnabled then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
-                        hrp.Transparency = 0.5
-                        hrp.Material = Enum.Material.Neon
-                        hrp.CanCollide = false
-                    end
-                end)
-            end
-        end
-    else
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 0
-                        hrp.Material = Enum.Material.Plastic
-                    end
-                end)
-            end
-        end
-    end
-end)
-
 -- ========== 穿墙循环 ==========
 RunService.Stepped:Connect(function()
     if noclipEnabled then
@@ -673,19 +526,6 @@ RunService.Stepped:Connect(function()
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
-            end
-        end
-    end
-end)
-
--- ========== 无限跳 ==========
-UserInputService.JumpRequest:Connect(function()
-    if jumpEnabled then
-        local char = player.Character
-        if char then
-            local hum = char:FindFirstChild("Humanoid")
-            if hum then
-                hum:ChangeState("Jumping")
             end
         end
     end
