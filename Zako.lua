@@ -1,5 +1,3 @@
-loadstring(game:HttpGet("https://pastebin.com/raw/9fFu43FF"))()
-
 game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "看到这个就代表可以用"; Text ="请耐心等待加载"; Duration = 4; })
 
 local CoreGui = game:GetService("StarterGui")
