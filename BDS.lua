@@ -1,1793 +1,703 @@
-loadstring(game:HttpGet("https://pastebin.com/raw/9fFu43FF"))()
+-- ========== BS-过检测完整版 ==========
+-- 仿皮脚本UI风格 | 左边分类 | 右边内容
 
-game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "看到这个就代表可以用"; Text ="请耐心等待加载"; Duration = 4; })
-
-local CoreGui = game:GetService("StarterGui")
-
-CoreGui:SetCore("SendNotification", {
-    Title = "BS",
-    Text = "正在加载（反挂机已开启）",
-    Duration = 5, 
-})
-print("反挂机开启")
-		local vu = game:GetService("VirtualUser")
-		game:GetService("Players").LocalPlayer.Idled:connect(function()
-		   vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-		   wait(1)
-		   vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-		end)
-local OrionLib = loadstring(game:HttpGet('https://pastebin.com/raw/iXGNieAz'))()
-local Window = OrionLib:MakeWindow({Name = "黑洞中心(BS)", HidePremium = false, SaveConfig = true,IntroText = "黑洞中心启动", ConfigFolder = "黑洞中心"})
-
-local Tab = Window:MakeTab({
-    Name = "我想对你们说的话",
-    Icon = "rbxassetid://7734068321",
-    PremiumOnly = false
-})
-
-Tab:AddParagraph("❤️BS脚本❤️")
-Tab:AddParagraph("本脚本主要更新通用和黑洞类")
-Tab:AddParagraph("阿尔宙斯注入器可能用不了")
-Tab:AddParagraph("作者游戏名老大二世")
-Tab:AddParagraph("作者QQ1545959422")
-Tab:AddParagraph("副作者QQ1710433791")
-Tab:AddParagraph("Q群934326582")
-
-local Tab = Window:MakeTab({
-	Name = "设置",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddParagraph("您的用户名:"," "..game.Players.LocalPlayer.Name.."")
-Tab:AddParagraph("您的注入器:"," "..identifyexecutor().."")
-Tab:AddParagraph("您当前服务器的ID"," "..game.GameId.."")
-
-Tab:AddButton({
-	Name = "开启玩家进出服务器提示",
-	Callback = function()
-      	loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/scriscriptsc/main/bbn.lua"))()
-  	end
-})
-
-Tab:AddTextbox({
-	Name = "跳跃高度设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "移动速度设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)		game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "重力设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		game.Workspace.Gravity = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "血量设置(只能自己看)",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		game.Players.LocalPlayer.Character.Humanoid.Health = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "超广角设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		Workspace.CurrentCamera.FieldOfView = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "最大视野设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		Workspace.CurrentCamera.FieldOfView = Value
-	end
-})
-
-Tab:AddTextbox({
-	Name = "最小视野设置",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		game.Workspace.CurrentCamera.FieldOfView = v
-	end
-})
-
-Tab:AddButton({
-  Name = "重新加入服务器",
-  Callback = function()
-game:GetService("TeleportService"):TeleportToPlaceInstance(
-            game.PlaceId,
-            game.JobId,
-            game:GetService("Players").LocalPlayer
-        )
-  end
-})
-
-Tab:AddButton({
-  Name = "离开服务器",
-  Callback = function()
-     game:Shutdown()
-  end
-})
-
-Tab:AddButton({
-  Name = "帧率显示",
-  Callback = function()
- -- Gui to Lua 
- -- Version: 3.2 
-  
- -- Instances:
- local ScreenGui = Instance.new("ScreenGui") 
- local FpsLabel = Instance.new("TextLabel")
- 
- --Properties:
- 
- ScreenGui.Name = "FPSGui" 
- ScreenGui.ResetOnSpawn = false 
- ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling 
- 
- FpsLabel.Name = "FPSLabel" 
- FpsLabel.Size = UDim2.new(0, 100, 0, 50) 
- FpsLabel.Position = UDim2.new(0, 10, 0, 10) 
- FpsLabel.BackgroundTransparency = 1 
- FpsLabel.Font = Enum.Font.SourceSansBold 
- FpsLabel.Text = "帧率: 0" 
- FpsLabel.TextSize = 20 
- FpsLabel.TextColor3 = Color3.new(1, 1, 1) 
- FpsLabel.Parent = ScreenGui 
-  
- function updateFpsLabel() 
-     local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait()) 
-     FpsLabel.Text = "帧率: " .. fps 
- end 
-  
-  game:GetService("RunService").RenderStepped:Connect(updateFpsLabel) 
-  
- ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-
- animateCredits()
-  end
-})
-
-Tab:AddButton({
-  Name = "显示时间",
-  Callback = function()
-local LBLG = Instance.new("ScreenGui", getParent)
-local LBL = Instance.new("TextLabel", getParent)
 local player = game.Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
 
-LBLG.Name = "LBLG"
-LBLG.Parent = game.CoreGui
-LBLG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-LBLG.Enabled = true
-LBL.Name = "LBL"
-LBL.Parent = LBLG
-LBL.BackgroundColor3 = Color3.new(1, 1, 1)
-LBL.BackgroundTransparency = 1
-LBL.BorderColor3 = Color3.new(0, 0, 0)
-LBL.Position = UDim2.new(0.75,0,0.010,0)
-LBL.Size = UDim2.new(0, 133, 0, 30)
-LBL.Font = Enum.Font.GothamSemibold
-LBL.Text = "TextLabel"
-LBL.TextColor3 = Color3.new(1, 1, 1)
-LBL.TextScaled = true
-LBL.TextSize = 14
-LBL.TextWrapped = true
-LBL.Visible = true
+-- ==================== 过检测 ====================
+local bypassActive = false
+local bypassConnections = {}
 
-local FpsLabel = LBL
-local Heartbeat = game:GetService("RunService").Heartbeat
-local LastIteration, Start
-local FrameUpdateTable = { }
+local function startBypass()
+    if bypassActive then return end
+    bypassActive = true
+    print("🛡️ 启动过检测...")
 
-local function HeartbeatUpdate()
-	LastIteration = tick()
-	for Index = #FrameUpdateTable, 1, -1 do
-		FrameUpdateTable[Index + 1] = (FrameUpdateTable[Index] >= LastIteration - 1) and FrameUpdateTable[Index] or nil
-	end
-	FrameUpdateTable[1] = LastIteration
-	local CurrentFPS = (tick() - Start >= 1 and #FrameUpdateTable) or (#FrameUpdateTable / (tick() - Start))
-	CurrentFPS = CurrentFPS - CurrentFPS % 1
-	FpsLabel.Text = ("时间:"..os.date("%H").."时"..os.date("%M").."分"..os.date("%S")).."秒"
+    pcall(function()
+        local oldKick = player.Kick
+        player.Kick = function(self, msg)
+            print("🛡️ 拦截踢出: " .. tostring(msg))
+            return nil
+        end
+        table.insert(bypassConnections, {Disconnect = function()
+            player.Kick = oldKick
+        end})
+    end)
+
+    pcall(function()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                local conn = hum.HealthChanged:Connect(function()
+                    if hum.Health <= 0 then
+                        task.wait(0.1)
+                        if hum and hum.Parent then
+                            hum.Health = hum.MaxHealth
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, conn)
+            end
+        end
+    end)
+
+    pcall(function()
+        local function antiTeleport()
+            local char = player.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local lastPos = hrp.Position
+                    local conn = RunService.Heartbeat:Connect(function()
+                        if not hrp or not hrp.Parent then return end
+                        if (hrp.Position - lastPos).Magnitude > 100 then
+                            hrp.CFrame = CFrame.new(lastPos)
+                        end
+                        lastPos = hrp.Position
+                    end)
+                    table.insert(bypassConnections, conn)
+                end
+            end
+        end
+        antiTeleport()
+        player.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            antiTeleport()
+        end)
+    end)
+
+    pcall(function()
+        local conn = RunService.Heartbeat:Connect(function()
+            if math.random(1, 100) > 95 then
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end
+        end)
+        table.insert(bypassConnections, conn)
+    end)
+
+    pcall(function()
+        local conn = player:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not player.Parent then
+                print("🔄 被踢出，重连中...")
+                task.wait(2)
+                TeleportService:Teleport(game.PlaceId, player)
+            end
+        end)
+        table.insert(bypassConnections, conn)
+    end)
+
+    print("✅ 过检测已启动")
+end)
+
+-- ==================== 反挂机 ====================
+game:GetService("Players").LocalPlayer.Idled:connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+end)
+
+-- ==================== 创建UI（仿皮脚本风格） ====================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = CoreGui
+screenGui.Name = "BS"
+screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Parent = screenGui
+mainFrame.Size = UDim2.new(0, 500, 0, 350)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.ClipsDescendants = true
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.Parent = mainFrame
+mainCorner.CornerRadius = UDim.new(0, 14)
+
+local stroke = Instance.new("UIStroke")
+stroke.Parent = mainFrame
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(0, 200, 255)
+stroke.Transparency = 0.3
+
+-- ========== 标题栏 ==========
+local titleBar = Instance.new("Frame")
+titleBar.Parent = mainFrame
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+titleBar.BackgroundTransparency = 0.15
+titleBar.BorderSizePixel = 0
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.Parent = titleBar
+titleCorner.CornerRadius = UDim.new(0, 14)
+
+local titleText = Instance.new("TextLabel")
+titleText.Parent = titleBar
+titleText.Size = UDim2.new(1, -70, 1, 0)
+titleText.Position = UDim2.new(0, 15, 0, 0)
+titleText.Text = "⚡ BS 过检测版"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.BackgroundTransparency = 1
+titleText.TextSize = 16
+titleText.Font = Enum.Font.GothamBold
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Parent = titleBar
+closeBtn.Size = UDim2.new(0, 32, 1, 0)
+closeBtn.Position = UDim2.new(1, -32, 0, 0)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.BackgroundTransparency = 1
+closeBtn.TextSize = 16
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+local minBtn = Instance.new("TextButton")
+minBtn.Parent = titleBar
+minBtn.Size = UDim2.new(0, 32, 1, 0)
+minBtn.Position = UDim2.new(1, -64, 0, 0)
+minBtn.Text = "─"
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.BackgroundTransparency = 1
+minBtn.TextSize = 16
+minBtn.Font = Enum.Font.GothamBold
+minBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    miniBall.Visible = true
+end)
+
+-- ========== 最小化圆球 ==========
+local miniBall = Instance.new("TextButton")
+miniBall.Parent = screenGui
+miniBall.Size = UDim2.new(0, 55, 0, 55)
+miniBall.Position = UDim2.new(1, -75, 0.9, 0)
+miniBall.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+miniBall.Text = "⚡"
+miniBall.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniBall.TextSize = 28
+miniBall.Font = Enum.Font.GothamBold
+miniBall.BorderSizePixel = 0
+miniBall.Visible = false
+
+local ballCorner = Instance.new("UICorner")
+ballCorner.Parent = miniBall
+ballCorner.CornerRadius = UDim.new(1, 0)
+
+miniBall.MouseButton1Click:Connect(function()
+    miniBall.Visible = false
+    mainFrame.Visible = true
+end)
+
+-- ========== 左侧分类栏 ==========
+local leftBar = Instance.new("Frame")
+leftBar.Parent = mainFrame
+leftBar.Size = UDim2.new(0, 120, 1, -35)
+leftBar.Position = UDim2.new(0, 0, 0, 35)
+leftBar.BackgroundColor3 = Color3.fromRGB(25, 25, 45)
+leftBar.BackgroundTransparency = 0.3
+leftBar.BorderSizePixel = 0
+
+local leftCorner = Instance.new("UICorner")
+leftCorner.Parent = leftBar
+leftCorner.CornerRadius = UDim.new(0, 0)
+
+-- ========== 右侧内容区 ==========
+local rightFrame = Instance.new("Frame")
+rightFrame.Parent = mainFrame
+rightFrame.Size = UDim2.new(1, -120, 1, -35)
+rightFrame.Position = UDim2.new(0, 120, 0, 35)
+rightFrame.BackgroundTransparency = 1
+rightFrame.BorderSizePixel = 0
+
+local contentScroller = Instance.new("ScrollingFrame")
+contentScroller.Parent = rightFrame
+contentScroller.Size = UDim2.new(1, 0, 1, 0)
+contentScroller.BackgroundTransparency = 1
+contentScroller.BorderSizePixel = 0
+contentScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentScroller.ScrollBarThickness = 4
+
+-- ========== 分类列表 ==========
+local categories = {"⚡ 加速", "✈️ 飞行", "🚪 穿墙", "🦘 跳跃", "👁️ 透视", "🎯 范围"}
+local currentTab = "⚡ 加速"
+local categoryBtns = {}
+
+local function updateContent(tab)
+    for _, child in pairs(contentScroller:GetChildren()) do
+        child:Destroy()
+    end
+    
+    local y = 10
+    local gap = 8
+    
+    if tab == "⚡ 加速" then
+        -- 加速开关
+        local speedBtn = Instance.new("TextButton")
+        speedBtn.Parent = contentScroller
+        speedBtn.Size = UDim2.new(0, 200, 0, 40)
+        speedBtn.Position = UDim2.new(0.5, -100, 0, y)
+        speedBtn.BackgroundColor3 = speedEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        speedBtn.Text = speedEnabled and "⚡ 加速: 开" or "⚡ 加速: 关"
+        speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        speedBtn.TextSize = 16
+        speedBtn.Font = Enum.Font.GothamBold
+        speedBtn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = speedBtn
+        corner.CornerRadius = UDim.new(0, 8)
+        speedBtn.MouseButton1Click:Connect(function()
+            speedEnabled = not speedEnabled
+            speedBtn.Text = speedEnabled and "⚡ 加速: 开" or "⚡ 加速: 关"
+            speedBtn.BackgroundColor3 = speedEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChild("Humanoid")
+                if hum then
+                    if speedEnabled then
+                        originalWalkSpeed = hum.WalkSpeed
+                        originalJumpPower = hum.JumpPower
+                        hum.WalkSpeed = 16 * speedMultiplier
+                        hum.JumpPower = 50 * speedMultiplier
+                    else
+                        hum.WalkSpeed = originalWalkSpeed
+                        hum.JumpPower = originalJumpPower
+                    end
+                end
+            end
+        end)
+        y = y + 40 + gap
+        
+        -- 倍率标签
+        local label = Instance.new("TextLabel")
+        label.Parent = contentScroller
+        label.Size = UDim2.new(1, 0, 0, 25)
+        label.Position = UDim2.new(0, 0, 0, y)
+        label.Text = "倍率: " .. speedMultiplier .. "x"
+        label.TextColor3 = Color3.fromRGB(180, 180, 210)
+        label.BackgroundTransparency = 1
+        label.TextSize = 14
+        label.Font = Enum.Font.Gotham
+        y = y + 25 + gap
+        
+        -- 倍率按钮 1-5
+        for i = 1, 5 do
+            local btn = Instance.new("TextButton")
+            btn.Parent = contentScroller
+            btn.Size = UDim2.new(0, 45, 0, 35)
+            btn.Position = UDim2.new(0, 10 + (i-1) * 52, 0, y)
+            btn.BackgroundColor3 = (i == speedMultiplier) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(40, 40, 60)
+            btn.Text = tostring(i)
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 16
+            btn.Font = Enum.Font.GothamBold
+            btn.BorderSizePixel = 0
+            local corner = Instance.new("UICorner")
+            corner.Parent = btn
+            corner.CornerRadius = UDim.new(0, 8)
+            btn.MouseButton1Click:Connect(function()
+                speedMultiplier = i
+                for _, b in pairs(contentScroller:GetChildren()) do
+                    if b:IsA("TextButton") and b.Size == UDim2.new(0, 45, 0, 35) then
+                        b.BackgroundColor3 = (tonumber(b.Text) == i) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(40, 40, 60)
+                    end
+                end
+                if speedEnabled then
+                    local char = player.Character
+                    if char then
+                        local hum = char:FindFirstChild("Humanoid")
+                        if hum then
+                            hum.WalkSpeed = 16 * i
+                            hum.JumpPower = 50 * i
+                        end
+                    end
+                end
+                label.Text = "倍率: " .. i .. "x"
+            end)
+        end
+        y = y + 35 + gap + 10
+        
+    elseif tab == "✈️ 飞行" then
+        local flyBtn = Instance.new("TextButton")
+        flyBtn.Parent = contentScroller
+        flyBtn.Size = UDim2.new(0, 200, 0, 40)
+        flyBtn.Position = UDim2.new(0.5, -100, 0, y)
+        flyBtn.BackgroundColor3 = flyEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        flyBtn.Text = flyEnabled and "✈️ 飞行: 开" or "✈️ 飞行: 关"
+        flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyBtn.TextSize = 16
+        flyBtn.Font = Enum.Font.GothamBold
+        flyBtn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = flyBtn
+        corner.CornerRadius = UDim.new(0, 8)
+        flyBtn.MouseButton1Click:Connect(function()
+            flyEnabled = not flyEnabled
+            flyBtn.Text = flyEnabled and "✈️ 飞行: 开" or "✈️ 飞行: 关"
+            flyBtn.BackgroundColor3 = flyEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            if flyEnabled then
+                local char = player.Character
+                if char then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hrp and hum then
+                        hum.PlatformStand = true
+                        flyBV = Instance.new("BodyVelocity")
+                        flyBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+                        flyBV.Velocity = Vector3.new(0, 20, 0)
+                        flyBV.Parent = hrp
+                        flyBG = Instance.new("BodyGyro")
+                        flyBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+                        flyBG.D = 5000
+                        flyBG.P = 50000
+                        flyBG.CFrame = Camera.CFrame
+                        flyBG.Parent = hrp
+                        flyConn = RunService.Heartbeat:Connect(function()
+                            if not flyEnabled or not hrp or not hrp.Parent then
+                                if flyConn then flyConn:Disconnect(); flyConn = nil end
+                                return
+                            end
+                            if flyBV and flyBG then
+                                flyBV.Velocity = Camera.CFrame.LookVector * flySpeed
+                                flyBG.CFrame = Camera.CFrame
+                            end
+                        end)
+                    end
+                end
+            else
+                if flyBV then flyBV:Destroy(); flyBV = nil end
+                if flyBG then flyBG:Destroy(); flyBG = nil end
+                if flyConn then flyConn:Disconnect(); flyConn = nil end
+                local char = player.Character
+                if char then
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hum then hum.PlatformStand = false end
+                end
+            end
+        end)
+        y = y + 40 + gap
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = contentScroller
+        label.Size = UDim2.new(0, 80, 0, 25)
+        label.Position = UDim2.new(0, 10, 0, y)
+        label.Text = "飞行速度:"
+        label.TextColor3 = Color3.fromRGB(180, 180, 210)
+        label.BackgroundTransparency = 1
+        label.TextSize = 14
+        label.Font = Enum.Font.Gotham
+        
+        local input = Instance.new("TextBox")
+        input.Parent = contentScroller
+        input.Size = UDim2.new(0, 80, 0, 25)
+        input.Position = UDim2.new(0, 120, 0, y)
+        input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        input.TextColor3 = Color3.fromRGB(255, 255, 255)
+        input.Text = tostring(flySpeed)
+        input.TextSize = 14
+        input.Font = Enum.Font.Gotham
+        input.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = input
+        corner.CornerRadius = UDim.new(0, 6)
+        input.FocusLost:Connect(function()
+            local v = tonumber(input.Text)
+            if v then flySpeed = math.clamp(v, 1, 200) end
+        end)
+        
+    elseif tab == "🚪 穿墙" then
+        local btn = Instance.new("TextButton")
+        btn.Parent = contentScroller
+        btn.Size = UDim2.new(0, 200, 0, 40)
+        btn.Position = UDim2.new(0.5, -100, 0, y)
+        btn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        btn.Text = noclipEnabled and "🚪 穿墙: 开" or "🚪 穿墙: 关"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 16
+        btn.Font = Enum.Font.GothamBold
+        btn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = btn
+        corner.CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(function()
+            noclipEnabled = not noclipEnabled
+            btn.Text = noclipEnabled and "🚪 穿墙: 开" or "🚪 穿墙: 关"
+            btn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        end)
+        
+    elseif tab == "🦘 跳跃" then
+        local btn = Instance.new("TextButton")
+        btn.Parent = contentScroller
+        btn.Size = UDim2.new(0, 200, 0, 40)
+        btn.Position = UDim2.new(0.5, -100, 0, y)
+        btn.BackgroundColor3 = jumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        btn.Text = jumpEnabled and "🦘 无限跳: 开" or "🦘 无限跳: 关"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 16
+        btn.Font = Enum.Font.GothamBold
+        btn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = btn
+        corner.CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(function()
+            jumpEnabled = not jumpEnabled
+            btn.Text = jumpEnabled and "🦘 无限跳: 开" or "🦘 无限跳: 关"
+            btn.BackgroundColor3 = jumpEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        end)
+        
+    elseif tab == "👁️ 透视" then
+        local btn = Instance.new("TextButton")
+        btn.Parent = contentScroller
+        btn.Size = UDim2.new(0, 200, 0, 40)
+        btn.Position = UDim2.new(0.5, -100, 0, y)
+        btn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        btn.Text = espEnabled and "👁️ 透视: 开" or "👁️ 透视: 关"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 16
+        btn.Font = Enum.Font.GothamBold
+        btn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = btn
+        corner.CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(function()
+            espEnabled = not espEnabled
+            btn.Text = espEnabled and "👁️ 透视: 开" or "👁️ 透视: 关"
+            btn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= player then
+                    if espEnabled then
+                        if not espHighlights[p.UserId] then
+                            local highlight = Instance.new("Highlight")
+                            highlight.Parent = p.Character
+                            highlight.FillTransparency = 1
+                            highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                            highlight.OutlineTransparency = 0
+                            espHighlights[p.UserId] = highlight
+                        end
+                    else
+                        if espHighlights[p.UserId] then
+                            espHighlights[p.UserId]:Destroy()
+                            espHighlights[p.UserId] = nil
+                        end
+                    end
+                end
+            end
+        end)
+        
+    elseif tab == "🎯 范围" then
+        local btn = Instance.new("TextButton")
+        btn.Parent = contentScroller
+        btn.Size = UDim2.new(0, 200, 0, 40)
+        btn.Position = UDim2.new(0.5, -100, 0, y)
+        btn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        btn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 16
+        btn.Font = Enum.Font.GothamBold
+        btn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = btn
+        corner.CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(function()
+            rangeEnabled = not rangeEnabled
+            btn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
+            btn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        end)
+        y = y + 40 + gap
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = contentScroller
+        label.Size = UDim2.new(0, 80, 0, 25)
+        label.Position = UDim2.new(0, 10, 0, y)
+        label.Text = "范围大小:"
+        label.TextColor3 = Color3.fromRGB(180, 180, 210)
+        label.BackgroundTransparency = 1
+        label.TextSize = 14
+        label.Font = Enum.Font.Gotham
+        
+        local input = Instance.new("TextBox")
+        input.Parent = contentScroller
+        input.Size = UDim2.new(0, 80, 0, 25)
+        input.Position = UDim2.new(0, 120, 0, y)
+        input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        input.TextColor3 = Color3.fromRGB(255, 255, 255)
+        input.Text = tostring(rangeSize)
+        input.TextSize = 14
+        input.Font = Enum.Font.Gotham
+        input.BorderSizePixel = 0
+        local corner2 = Instance.new("UICorner")
+        corner2.Parent = input
+        corner2.CornerRadius = UDim.new(0, 6)
+        input.FocusLost:Connect(function()
+            local v = tonumber(input.Text)
+            if v then rangeSize = math.clamp(v, 1, 500) end
+        end)
+    end
+    
+    contentScroller.CanvasSize = UDim2.new(0, 0, 0, y + 20)
 end
-Start = tick()
-Heartbeat:Connect(HeartbeatUpdate)
-  end
-})
 
+-- ========== 创建分类按钮 ==========
+for i, cat in ipairs(categories) do
+    local btn = Instance.new("TextButton")
+    btn.Parent = leftBar
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Position = UDim2.new(0, 0, 0, (i-1) * 38)
+    btn.BackgroundColor3 = (i == 1) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(40, 40, 60)
+    btn.Text = cat
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.BorderSizePixel = 0
+    local corner = Instance.new("UICorner")
+    corner.Parent = btn
+    corner.CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(function()
+        currentTab = cat
+        for _, b in pairs(categoryBtns) do
+            b.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        updateContent(cat)
+    end)
+    table.insert(categoryBtns, btn)
+end
 
-Tab:AddButton({
-  Name = "重开",
-  Callback = function()
+-- ========== 状态标签 ==========
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = leftBar
+statusLabel.Size = UDim2.new(1, 0, 0, 20)
+statusLabel.Position = UDim2.new(0, 0, 1, -25)
+statusLabel.Text = "🛡️ 已启动"
+statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextSize = 11
+statusLabel.Font = Enum.Font.Gotham
 
-game.Players.LocalPlayer.Character.Head:Remove()
-
-  end
-})
-
-local Tab = Window:MakeTab({
-	Name = "通用1",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddToggle({
-	Name = "夜视",
-	Default = false,
-	Callback = function(Value)
-
-		if Value then
-		    game.Lighting.Ambient = Color3.new(1, 1, 1)
-		else
-		    game.Lighting.Ambient = Color3.new(0, 0, 0)
-		end
-	end
-})
-
-Tab:AddToggle({
-  Name = "秒杀有血量的NPC",
-  Default = false,
-  Callback = function(Value)
-  if Value then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/WSbuq/-/main/killNPC"))()
+-- ========== 范围循环 ==========
+RunService.RenderStepped:Connect(function()
+    if rangeEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
+                        hrp.Transparency = 0.5
+                        hrp.Material = Enum.Material.Neon
+                        hrp.CanCollide = false
+                    end
+                end)
+            end
+        end
     else
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/WSbuq/-/main/killNPC1"))()
-  end
-end
-})
-
-Tab:AddButton({
-  Name = "穿墙(可关闭)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScript/main/Noclip"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "阿尔宙斯注入器",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/chillz-workshop/main/Arceus%20X%20V3"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "子弹追踪(视角会变得奇怪)",
-  Callback = function()
-local Camera = game:GetService("Workspace").CurrentCamera
-local Players = game:GetService("Players")
-local LocalPlayer = game:GetService("Players").LocalPlayer
-
-local function GetClosestPlayer()
-   local ClosestPlayer = nil
-   local FarthestDistance = math.huge
-
-   for i, v in pairs(Players.GetPlayers(Players)) do
-       if v ~= LocalPlayer and v.Character and v.Character.FindFirstChild(v.Character, "HumanoidRootPart") then
-           local DistanceFromPlayer = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-
-           if DistanceFromPlayer < FarthestDistance then
-               FarthestDistance = DistanceFromPlayer
-               ClosestPlayer = v
-           end
-       end
-   end
-
-   if ClosestPlayer then
-       return ClosestPlayer
-   end
-end
-
-local GameMetaTable = getrawmetatable(game)
-local OldGameMetaTableNamecall = GameMetaTable.__namecall
-setreadonly(GameMetaTable, false)
-
-GameMetaTable.__namecall = newcclosure(function(object, ...)
-   local NamecallMethod = getnamecallmethod()
-   local Arguments = {...}
-
-   if tostring(NamecallMethod) == "FindPartOnRayWithIgnoreList" then
-       local ClosestPlayer = GetClosestPlayer()
-       
-       if ClosestPlayer and ClosestPlayer.Character then
-           Arguments[1] = Ray.new(Camera.CFrame.Position, (ClosestPlayer.Character.Head.Position - Camera.CFrame.Position).Unit * (Camera.CFrame.Position - ClosestPlayer.Character.Head.Position).Magnitude)
-       end
-   end
-
-   return OldGameMetaTableNamecall(object, unpack(Arguments))
-end)
-
-setreadonly(GameMetaTable, true)
-  end
-})
-
-Tab:AddButton({
-  Name = "吸人(一局只能吸一次)",
-  Callback = function()
-loadstring(game:HttpGet('https://pastebin.com/raw/PVPFXqtH'))()
-  end
-})
-
-Tab:AddButton({
-  Name = "飞行",
-  Callback = function()
-  
-loadstring(game:HttpGet("https://pastebin.com/raw/pMyEyJN6"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "隐身",
-  Callback = function()
-
-loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
-
-  end
-})
-
-Tab:AddButton({
-  Name = "安全区",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/rmPfWVU3"))()
-  end
-})
-
-Tab:AddButton({
-	Name = "快速旋转",
-	Callback = function()
-     --BROUGHT TO YOU BY RSCRIPTS.NET--
-
-if game.Players.LocalPlayer.Character.Humanoid.RigType == Enum.HumanoidRigType.R6 then
-spawn(function()
-local speaker = game.Players.LocalPlayer
-local Anim = Instance.new("Animation")
-     Anim.AnimationId = "rbxassetid://27432686"
-     local bruh = game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(Anim)
-bruh:Play()
-bruh:AdjustSpeed(0)
-speaker.Character.Animate.Disabled = true
-local hi = Instance.new("Sound")
-hi.Name = "Sound"
-hi.SoundId = "http://www.roblox.com/asset/?id=8114290584"
-hi.Volume = 2
-hi.Looped = false
-hi.archivable = false
-hi.Parent = game.Workspace
-hi:Play()
-wait(1.5)
-local spinSpeed = 30
-local Spin = Instance.new("BodyAngularVelocity")
-Spin.Name = "Spinning"
-Spin.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
-Spin.MaxTorque = Vector3.new(0, math.huge, 0)
-Spin.AngularVelocity = Vector3.new(0,spinSpeed,0)
-wait(3.5)
-while speaker.Character.Humanoid.Health > 0 do
-   wait(0)
-speaker.Character.Humanoid.HipHeight = speaker.Character.Humanoid.HipHeight + 0
-end
-end)
-else
-spawn(function()
-local speaker = game.Players.LocalPlayer
-local Anim = Instance.new("Animation")
-     Anim.AnimationId = "rbxassetid://507776043"
-     local bruh = game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(Anim)
-bruh:Play()
-bruh:AdjustSpeed(0)
-speaker.Character.Animate.Disabled = true
-local hi = Instance.new("Sound")
-hi.Name = "Sound"
-hi.SoundId = "http://www.roblox.com/asset/?id=8114290584"
-hi.Volume = 0
-hi.Looped = false
-hi.archivable = false
-hi.Parent = game.Workspace
-hi:Play()
-wait()
-local spinSpeed = 30
-local Spin = Instance.new("BodyAngularVelocity")
-Spin.Name = "Spinning"
-Spin.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
-Spin.MaxTorque = Vector3.new(0, math.huge, 0)
-Spin.AngularVelocity = Vector3.new(0,spinSpeed,0)
-wait(3.5)
-while speaker.Character.Humanoid.Health > 0 do
-   wait(0)
-speaker.Character.Humanoid.HipHeight = speaker.Character.Humanoid.HipHeight + 0
-end
-end)    
-end
-  	end    
-})
-
-Tab:AddButton({
-  Name = "极速旋转",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/ckiGL34v"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "在聊天框中进行图画",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ocfi/Draw-To-Chat-Obfuscated/refs/heads/main/Draw%20to%20Chat"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "锁定视角",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/gdLR5Z7X"))()
-  end
-})
-
-local Tab = Window:MakeTab({
-	Name = "通用2",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddButton({
-	Name = "点击传送工器",
-	Callback = function()
-
-mouse = game.Players.LocalPlayer:GetMouse() tool = Instance.new("Tool") tool.RequiresHandle = false tool.Name = "[BS]传送工具" tool.Activated:connect(function() local pos = mouse.Hit+Vector3.new(0,2.5,0) pos = CFrame.new(pos.X,pos.Y,pos.Z) game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos end) tool.Parent = game.Players.LocalPlayer.Backpack
-
-	end
-})
-
-Tab:AddButton({
-  Name = "吸人脚本2(可循环开启)",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/sbxKPPHc"))()
-  end
-})
-
-Tab:AddButton({
-	Name = "走路创人",
-	Callback = function()
-     loadstring(game:HttpGet(('https://raw.githubusercontent.com/0Ben1/fe/main/obf_5wpM7bBcOPspmX7lQ3m75SrYNWqxZ858ai3tJdEAId6jSI05IOUB224FQ0VSAswH.lua.txt'),true))()
-  	end    
-})
-
-Tab:AddButton({
-	Name = "铁拳打人",
-	Callback = function()
-loadstring(game:HttpGet(('https://raw.githubusercontent.com/0Ben1/fe/main/obf_rf6iQURzu1fqrytcnLBAvW34C9N55kS9g9G3CKz086rC47M6632sEd4ZZYB0AYgV.lua.txt'),true))()
-end
-})
-
-Tab:AddButton({
-  Name = "透视",
-  Callback = function()
-              loadstring(game:HttpGet('https://raw.githubusercontent.com/Lucasfin000/SpaceHub/main/UESP'))()
-end
-})
-
-Tab:AddButton({
-	Name = "点击传送工具",
-	Callback = function()
-mouse = game.Players.LocalPlayer:GetMouse() tool = Instance.new("Tool") tool.RequiresHandle = false tool.Name = "[FE] TELEPORT TOOL" tool.Activated:connect(function() local pos = mouse.Hit+Vector3.new(0,2.5,0) pos = CFrame.new(pos.X,pos.Y,pos.Z) game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos end) tool.Parent = game.Players.LocalPlayer.Backpack
-	end
-})
-
-Tab:AddButton({
-  Name = "甩人",
-  Callback = function()
-  loadstring(game:HttpGet("https://pastebin.com/raw/L9QBifcX"))()
-  end
-})
-
-Tab:AddButton({
-	Name = "无限跳",
-	Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/V5PQy3y0", true))()
-end
-})
-
-Tab:AddButton({
-  Name = "操人",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/XmcMKfMV"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "灵魂出窍",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/ahK5jRxM"))()
-  end
-})
-
-local Tab = Window:MakeTab({
-	Name = "通用3",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddButton({
-  Name = "0范围",
-
-  Callback = function()
-_G.HeadSize = 0
-_G.Disabled = true
-
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
-end
-end
-end
-end)
-
-  end
-})
-
-Tab:AddButton({
-  Name = "普通范围",
-  Callback = function ()
-
-_G.HeadSize = 30
-_G.Disabled = true
-
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
-end
-end
-end
-end)
-
-  end
-})
-
-Tab:AddButton({
-  Name = "中等范围",
-  Callback = function ()
-
-_G.HeadSize = 100
-_G.Disabled = true
-
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
-end
-end
-end
-end)
-
-  end
-})
-
-Tab:AddButton({
-    Name="全图范围",
-    Callback=function()
-
-_G.HeadSize = 500
-_G.Disabled = true
-
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
-end
-end
-end
-end)
-
-    end
-})
-
-Tab:AddButton({
-    Name="终极范围",
-    Callback=function()
-
-_G.HeadSize = 2500
-_G.Disabled = true
-
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
-end
-end
-end
-end)
-
-    end
-})
-
-Tab:AddButton({
-	Name = "选人甩飞（需要输入别人的名字）",
-	Callback = function()
-	
-loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Auto%20Fling%20Player'))()
-
-end
-})
-
-Tab:AddButton({
-  Name = "刷道具",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/wT1aKD4B"))()
-  end
-})
-
-Tab:AddButton({
-      Name = "位置",
-      Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/ZJeTvyzG"))()
-      end    
-})
-
-Tab:AddButton({
-	Name = "爬墙",
-	Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/zXk4Rq2r"))()
-end
-})
-
-Tab:AddButton({
-  Name = "让物体起飞(Q键使用)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/ajduoxc/refs/heads/main/ajduoxcz"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "键盘(配合其他脚本使用)",
-  Callback = function()
-  loadstring(game:HttpGet("https://gist.githubusercontent.com/RedZenXYZ/4d80bfd70ee27000660e4bfa7509c667/raw/da903c570249ab3c0c1a74f3467260972c3d87e6/KeyBoard%2520From%2520Ohio%2520Fr%2520Fr"))()
-  end
-})
-
-Tab:AddButton({
-	Name = "键盘脚本(第2种)",
-	Callback = function()
-	
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Xxtan31/Ata/main/deltakeyboardcrack.txt", true))()
-
-end
-})
-
-Tab:AddButton({
-  Name = "飞车",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/gNqZiexm"))()
-
-  end
-})
-
-Tab:AddButton({
-  Name = "动作(按，开启)",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/ws8cJmTD"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "上头定在原地",
-  Callback = function()
-    local lp = game:GetService "Players".LocalPlayer
-    if lp.Character:FindFirstChild "Head" then
-      local char = lp.Character
-      char.Archivable = true
-      local new = char:Clone()
-      new.Parent = workspace
-      lp.Character = new
-      wait(0.1)
-      local oldhum = char:FindFirstChildWhichIsA "Humanoid"
-      local newhum = oldhum:Clone()
-      newhum.Parent = char
-      newhum.RequiresNeck = false
-      oldhum.Parent = nil
-      wait(0.1)
-      lp.Character = char
-      new:Destroy()
-      wait(0.1)
-      newhum:GetPropertyChangedSignal("Health"):Connect(
-      function()
-        if newhum.Health <= 0 then
-          oldhum.Parent = lp.Character
-          wait(0.1)
-          oldhum:Destroy()
-        end
-      end)
-      workspace.CurrentCamera.CameraSubject = char
-      if char:FindFirstChild "Animate" then
-        char.Animate.Disabled = true
-        wait(0.1)
-        char.Animate.Disabled = false
-      end
-      lp.Character:FindFirstChild "Head":Destroy()
-    end
-end
-})
-
-local Tab = Window:MakeTab({
-	Name = "通用4",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddButton({
-  Name = "让走路和跳跃变卡(对别人没影响)",
-  Callback = function()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Fe%20Fake%20Lag%20Obfuscator'))()
-  end
-})
-
-Tab:AddButton({
-  Name = "滚动",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/111/refs/heads/main/192"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "动画包",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/fTsp2ZgP"))()
-
-  end
-})
-
-Tab:AddButton({
-  Name = "控制玩家",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/BOOSBS/refs/heads/main/README.md"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "认真反复横跳",
-  Callback = function()
-
-loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe/main/obf_11l7Y131YqJjZ31QmV5L8pI23V02b3191sEg26E75472Wl78Vi8870jRv5txZyL1.lua.txt"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "自瞄",
-  Callback = function()
-   loadstring(game:HttpGet("https://pastebin.com/raw/tYuVRD8r"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "定住自己",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/YrfBSuWw"))()
-  end
-})
-
-Tab:AddButton({
-   Name = "工具包",
-   Callback = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Bebo-Mods/BeboScripts/main/StandAwekening.lua"))()
-   end
-})
-
-Tab:AddButton({
-	Name = "踏空行走",
-	Callback = function()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/main/Float'))()
-	end
-})
-
-local Tab = Window:MakeTab({
-	Name = "黑洞脚本合集(全部可用)",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddButton({
-  Name = "辅助脚本(可以让黑洞吸力更强)",
-  Callback = function()
-if "you wanna use rochips universal" then
-	local z_x,z_z="gzrux646yj/raw/main.ts","https://glot.io/snippets/"
-	local im,lonely,z_c=task.wait,game,loadstring
-	z_c(lonely:HttpGet(z_z..""..z_x))()
-	return ("This will load in about 2 - 30 seconds" or "according to your device and executor")
-end
-  end
-})
-
-Tab:AddButton({
-  Name = "辅助脚本第2种(可以切换黑洞模式)",
-  Callback = function()
-loadstring(game:HttpGet("https://gist.githubusercontent.com/AxolotlBmgo/8888080921c2b426a32dd9ff587baff1/raw/d45e03afed3c1716f36523bbf6dd741d3d2aad00/gistfile1.txt"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞之神(别人应该看不见)",
-  Callback = function()
-  local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local MaxRange = 100  -- Set your maximum range
-
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local Character = LocalPlayer.Character
-local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-
-if not HumanoidRootPart then
-    print("Cannot find the HumanoidRootPart of your character. Please ensure your character has been fully loaded.")
-    return
-end
-
-local Attachment1 = Instance.new("Attachment", HumanoidRootPart)
-
-local function TeleportPart(v)
-    if v:IsA("Part") and v.Parent ~= Character and not v:IsDescendantOf(Character) then
-        Mouse.TargetFilter = v
-        for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
-                x:Destroy()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 0
+                        hrp.Material = Enum.Material.Plastic
+                    end
+                end)
             end
         end
-        if v:FindFirstChild("Attachment") then
-            v:FindFirstChild("Attachment"):Destroy()
-        end
-
-        v.CanCollide = false 
-
-        local AlignPosition = Instance.new("AlignPosition", v)
-        local Attachment2 = Instance.new("Attachment", v)
-
-        AlignPosition.MaxForce = math.huge 
-        AlignPosition.MaxVelocity = math.huge 
-        AlignPosition.Responsiveness = math.huge  -- Always within suction range
-        AlignPosition.Attachment0 = Attachment2
-        AlignPosition.Attachment1 = Attachment1
-    end
-end
-
-local function TeleportAllParts()
-    for _, v in next, game:GetService("Workspace"):GetDescendants() do
-        TeleportPart(v)
-    end
-end
-
-TeleportAllParts()
-
-game:GetService("Workspace").DescendantAdded:Connect(TeleportPart)
-
-UserInputService.InputBegan:Connect(function(Key, Chat)
-    if Key.KeyCode == Enum.KeyCode.E and not Chat then
-        Attachment1.WorldCFrame = Mouse.Hit + Vector3.new(0, 5, 0)
     end
 end)
 
-spawn(function()
-    while game:GetService("RunService").RenderStepped:Wait() do
-        Attachment1.WorldCFrame = Mouse.Hit + Vector3.new(0, 5, 0)
-        -- Force to stay within the suction range
-        for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-            if v:IsA("Part") and v.Parent ~= Character and not v:IsDescendantOf(Character) then
-                local dist = (v.Position - HumanoidRootPart.Position).Magnitude
-                if dist > MaxRange then
-                    v.Position = HumanoidRootPart.Position + (v.Position - HumanoidRootPart.Position).Unit * MaxRange
+-- ========== 穿墙循环 ==========
+RunService.Stepped:Connect(function()
+    if noclipEnabled then
+        local char = player.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
                 end
             end
         end
     end
 end)
-  end
-})
 
-Tab:AddButton({
-  Name = "最垃圾黑洞(配合指令“tpua”使用)",
-  Callback = function()
-  loadstring(game:HttpGet(('https://raw.githubusercontent.com/SAZXHUB/Control-update/main/README.md'),true))()
-  end
-})
-
-Tab:AddButton({
-  Name = "普通黑洞(E键控制)",
-  Callback = function()
-  loadstring(game:HttpGet("https://pastebin.com/raw/Sx6PY4gV"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "普通黑洞(第2种)(点击即跟随)",
-  Callback = function()
-loadstring(game:HttpGet(('https://pastefy.app/BbXuvVkK/raw'),true))()
-  end
-})
-
-Tab:AddButton({
-  Name = "高级黑洞(吸力超强E键控制)",
-  Callback = function()
-  loadstring(game:HttpGet("https://pastebin.com/raw/Kgtw4gt7"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第1种)",
-  Callback = function()
-    print('Hello World!');local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-
-local Folder = Instance.new("Folder", game:GetService("Workspace"))
-local Part = Instance.new("Part", Folder)
-Part.Anchored = true
-Part.CanCollide = false
-Part.Transparency = 1
-
-local Attachment1 = Instance.new("Attachment", Part)
-
-local Updated = Mouse.Hit + Vector3.new(0, 5, 0)
-local ForceStrength = math.huge
-
-local function TeleportPart(v)
-   if v:IsA("Part") and v.Anchored == false and v.Parent ~= game:GetService("Players").LocalPlayer.Character then
-       Mouse.TargetFilter = v
-       for _, x in next, v:GetChildren() do
-           if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
-               x:Destroy()
-           end
-       end
-       if v:FindFirstChild("Attachment") then
-           v:FindFirstChild("Attachment"):Destroy()
-       end
-
-       v.CanCollide = false
-
-       local Torque = Instance.new("BodyAngularVelocity", v)
-       Torque.AngularVelocity = Vector3.new(0, math.rad(ForceStrength * 4), 0) -- 更快的旋转速度
-
-       local AlignPosition = Instance.new("AlignPosition", v)
-       local Attachment2 = Instance.new("Attachment", v)
-
-       AlignPosition.MaxForce = math.huge
-       AlignPosition.MaxVelocity = math.huge
-       AlignPosition.Responsiveness = math.huge  -- 始终在吸取范围内
-       AlignPosition.Attachment0 = Attachment2
-       AlignPosition.Attachment1 = Attachment1
-   end
-end
-
-local function TeleportAllParts()
-   for _, v in next, game:GetService("Workspace"):GetDescendants() do
-       if v:IsA("Part") and v.Parent ~= game:GetService("Players").LocalPlayer.Character then
-           TeleportPart(v)
-       end
-   end
-end
-
-TeleportAllParts()
-
-game:GetService("Workspace").DescendantAdded:Connect(function(v)
-   if v:IsA("Part") and v.Parent ~= game:GetService("Players").LocalPlayer.Character then
-       TeleportPart(v)
-   end
+-- ========== 无限跳 ==========
+UserInputService.JumpRequest:Connect(function()
+    if jumpEnabled then
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                hum:ChangeState("Jumping")
+            end
+        end
+    end
 end)
 
-UserInputService.InputBegan:Connect(function(Key, Chat)
-   if Key.KeyCode == Enum.KeyCode.E and not Chat then
-       Updated = Mouse.Hit + Vector3.new(0, 5, 0)
-   end
+-- ========== 角色重生 ==========
+player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if flyEnabled then
+        flyEnabled = false
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+        if flyBG then flyBG:Destroy(); flyBG = nil end
+        if flyConn then flyConn:Disconnect(); flyConn = nil end
+    end
+    if speedEnabled then
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                hum.WalkSpeed = 16 * speedMultiplier
+                hum.JumpPower = 50 * speedMultiplier
+            end
+        end
+    end
 end)
 
-spawn(function()
-   while game:GetService("RunService").RenderStepped:Wait() do
-       Attachment1.WorldCFrame = Updated
-   end
+-- ========== 快捷键 ==========
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        for _, btn in pairs(categoryBtns) do
+            if btn.Text == "✈️ 飞行" then
+                btn.MouseButton1Click:Fire()
+                break
+            end
+        end
+        updateContent(currentTab)
+    end
+    if input.KeyCode == Enum.KeyCode.G then
+        for _, btn in pairs(categoryBtns) do
+            if btn.Text == "⚡ 加速" then
+                btn.MouseButton1Click:Fire()
+                break
+            end
+        end
+        updateContent(currentTab)
+    end
 end)
 
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-
-local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-if not getgenv().Network then
-    getgenv().Network = {
-        BaseParts = {},
-        Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424)
-    }
-
-    Network.RetainPart = function(Part)
-        if typeof(Part) == "Instance" and Part:IsA("BasePart") and Part:IsDescendantOf(Workspace) then
-            table.insert(Network.BaseParts, Part)
-            Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-            Part.CanCollide = false
-        end
-    end
-
-    local function EnablePartControl()
-        LocalPlayer.ReplicationFocus = Workspace
-        RunService.Heartbeat:Connect(function()
-            sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
-            for _, Part in pairs(Network.BaseParts) do
-                if Part:IsDescendantOf(Workspace) then
-                    Part.Velocity = Network.Velocity
-                end
-            end
-        end)
-    end
-
-    EnablePartControl()
-end
-
-local function ForcePart(v)
-    if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" and v.Parent ~= LocalPlayer.Character then
-        for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
-                x:Destroy()
-            end
-        end
-        if v:FindFirstChild("Attachment") then
-            v:FindFirstChild("Attachment"):Destroy()
-        end
-        if v:FindFirstChild("AlignPosition") then
-            v:FindFirstChild("AlignPosition"):Destroy()
-        end
-        if v:FindFirstChild("Torque") then
-            v:FindFirstChild("Torque"):Destroy()
-        end
-        v.CanCollide = false
-        local Torque = Instance.new("Torque", v)
-        Torque.Torque = Vector3.new(100000, 100000, 100000)
-        local AlignPosition = Instance.new("AlignPosition", v)
-        local Attachment2 = Instance.new("Attachment", v)
-        Torque.Attachment0 = Attachment2
-        AlignPosition.MaxForce = 9999999999999999
-        AlignPosition.MaxVelocity = math.huge
-        AlignPosition.Responsiveness = 200
-        AlignPosition.Attachment0 = Attachment2
-        AlignPosition.Attachment1 = Attachment1
-    end
-end
-
-local blackHoleActive = true
-
-local function toggleBlackHole()
-    blackHoleActive = not blackHoleActive
-    if blackHoleActive then
-        for _, v in next, Workspace:GetDescendants() do
-            ForcePart(v)
-        end
-
-        Workspace.DescendantAdded:Connect(function(v)
-            if blackHoleActive then
-                ForcePart(v)
-            end
-        end)
-
-        spawn(function()
-            while blackHoleActive and RunService.RenderStepped:Wait() do
-                Attachment1.WorldCFrame = humanoidRootPart.CFrame
-            end
-        end)
-    end
-end
-
-local function createControlButton()
-    local screenGui = Instance.new("ScreenGui")
-    local button = Instance.new("TextButton")
-
-    screenGui.Name = "BlackHoleControlGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-    button.Name = "ToggleBlackHoleButton"
-    button.Size = UDim2.new(0, 200, 0, 50)
-    button.Position = UDim2.new(0.5, -100, 0, 100)
-    button.Text = "Desativar Buraco Negro"
-    button.Parent = screenGui
-
-    button.MouseButton1Click:Connect(function()
-        toggleBlackHole()
-        if blackHoleActive then
-            button.Text = "Desativar Buraco Negro"
-        else
-            button.Text = "Ativar Buraco Negro"
-        end
-    end)
-end
-
-createControlButton()
-toggleBlackHole()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第2种要输入玩家名字)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/dingding123hhh/lililiugg/main/jm114514.lua"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第3种)",
-  Callback = function()
-  local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
- 
-local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
- 
-local Folder = Instance.new("Folder", Workspace)
-local Part = Instance.new("Part", Folder)
-local Attachment1 = Instance.new("Attachment", Part)
-Part.Anchored = true
-Part.CanCollide = false
-Part.Transparency = 1
- 
-if not getgenv().Network then
-    getgenv().Network = {
-        BaseParts = {},
-        Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424)
-    }
- 
-    Network.RetainPart = function(Part)
-        if typeof(Part) == "Instance" and Part:IsA("BasePart") and Part:IsDescendantOf(Workspace) then
-            table.insert(Network.BaseParts, Part)
-            Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-            Part.CanCollide = false
-        end
-    end
- 
-    local function EnablePartControl()
-        LocalPlayer.ReplicationFocus = Workspace
-        RunService.Heartbeat:Connect(function()
-            sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
-            for _, Part in pairs(Network.BaseParts) do
-                if Part:IsDescendantOf(Workspace) then
-                    Part.Velocity = Network.Velocity
-                end
-            end
-        end)
-    end
- 
-    EnablePartControl()
-end
- 
-local function ForcePart(v)
-    if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
-        for _, x in next, v:GetChildren() do
-            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
-                x:Destroy()
-            end
-        end
-        if v:FindFirstChild("Attachment") then
-            v:FindFirstChild("Attachment"):Destroy()
-        end
-        if v:FindFirstChild("AlignPosition") then
-            v:FindFirstChild("AlignPosition"):Destroy()
-        end
-        if v:FindFirstChild("Torque") then
-            v:FindFirstChild("Torque"):Destroy()
-        end
-        v.CanCollide = false
-        local Torque = Instance.new("Torque", v)
-        Torque.Torque = Vector3.new(100000, 100000, 100000)
-        local AlignPosition = Instance.new("AlignPosition", v)
-        local Attachment2 = Instance.new("Attachment", v)
-        Torque.Attachment0 = Attachment2
-        AlignPosition.MaxForce = 9999999999999999
-        AlignPosition.MaxVelocity = math.huge
-        AlignPosition.Responsiveness = 200
-        AlignPosition.Attachment0 = Attachment2
-        AlignPosition.Attachment1 = Attachment1
-    end
-end
- 
-local blackHoleActive = true
- 
-local function toggleBlackHole()
-    blackHoleActive = not blackHoleActive
-    if blackHoleActive then
-        for _, v in next, Workspace:GetDescendants() do
-            ForcePart(v)
-        end
- 
-        Workspace.DescendantAdded:Connect(function(v)
-            if blackHoleActive then
-                ForcePart(v)
-            end
-        end)
- 
-        spawn(function()
-            while blackHoleActive and RunService.RenderStepped:Wait() do
-                Attachment1.WorldCFrame = humanoidRootPart.CFrame
-            end
-        end)
-    end
-end
- 
-local function createControlButton()
-    local screenGui = Instance.new("ScreenGui")
-    local button = Instance.new("TextButton")
- 
-    screenGui.Name = "BlackHoleControlGUI"
-    screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
- 
-    button.Name = "ToggleBlackHoleButton"
-    button.Size = UDim2.new(0, 200, 0, 50)
-    button.Position = UDim2.new(0.5, -100, 0, 100)
-    button.Text = "Desativar Buraco Negro"
-    button.Parent = screenGui
- 
-    button.MouseButton1Click:Connect(function()
-        toggleBlackHole()
-        if blackHoleActive then
-            button.Text = "Desativar Buraco Negro"
-        else
-            button.Text = "Ativar Buraco Negro"
-        end
-    end)
-end
- 
-createControlButton()
-toggleBlackHole()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第4种)",
-  Callback = function()
-loadstring(game:HttpGet("https://pastefy.app/pYhER1z4/raw"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第5种)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BingusWR/BLACKHOLDSCRIPT/refs/heads/main/BLACK%20HOLD%20SCRIPT"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第6种)",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/qPcm2zPy"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第7种)(环绕V2)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/666/refs/heads/main/656"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第8种)(传送型黑洞)(别人看不见)",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/U29jR1Cf"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "黑洞脚本(第9种)(环绕V3)",
-  Callback = function()
-
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/BOOSBS/199/refs/heads/main/V3"))()
-  
-end
-})
-
-local Tab = Window:MakeTab({
-	Name = "指令挂",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-Tab:AddButton({
-  Name = "指令脚本",
-  Callback = function()
-  loadstring(game:HttpGet(('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'),true))()
-  end
-})
-
-Tab:AddLabel("bang能够掀人")
-Tab:AddLabel("noface没有脸")
-Tab:AddLabel("headsit坐在玩家头上加玩家名字")
-Tab:AddLabel("float悬浮")
-Tab:AddLabel("re重置人物但位置不变")
-Tab:AddLabel("dance跳舞")
-Tab:AddLabel("nolegs没有腿")
-Tab:AddLabel("walltp碰到墙壁传送到墙壁顶部")
-Tab:AddLabel("bring+玩家名字可以让玩家吸到你手上但是只能用于一些服务器")
-Tab:AddLabel("carpet趴着走")
-Tab:AddLabel("infjump无限跳跃")
-Tab:AddLabel("xray透视地图所有物体变透明")
-Tab:AddLabel("bang玩家开头两个英文吸在玩家身后")
-Tab:AddLabel("noanim没有动作")
-Tab:AddLabel("spin人物旋转")
-Tab:AddLabel("sitwalk坐着走")
-Tab:AddLabel("trip让你的人物摔倒")
-Tab:AddLabel("antikick防踢")
-Tab:AddLabel("lay躺下")
-Tab:AddLabel("sit坐")
-Tab:AddLabel("god加血")
-Tab:AddLabel("invisfling配合加血可以旋转")
-Tab:AddLabel("goto+玩家名字传送")
-Tab:AddLabel("unxray关闭透视")
-Tab:AddLabel("noclip穿墙")
-Tab:AddLabel("有的可能不能用")
-
-local Tab = Window:MakeTab({
-	Name = "念力",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-
-Tab:AddButton({
-  Name = "获取念力工具",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/dbcy7SHF"))()
-  end
-})
-
-Tab:AddLabel("Q - 靠近")
-Tab:AddLabel("E - 离远")
-Tab:AddLabel("Y - 投掷")
-Tab:AddLabel("J - 超级投掷")
-Tab:AddLabel("U - 使物体自转")
-Tab:AddLabel("P - 使物体悬浮在空中")
-Tab:AddLabel("X - 走得更远一点")
-Tab:AddLabel("L - 使方块变直并锁定在前部")
-
-Tab:AddButton({
-  Name = "让手上的道具飘起来",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/WmD8MuSx"))()
-  end
-})
-
-Tab:AddLabel("J-飞起来")
-Tab:AddLabel("K-回到手中")
-
-local Tab = Window:MakeTab({
-	Name = "变身(只能自己看)",
-	Icon = "rbxassetid://7734068321",
-	PremiumOnly = false
-})
-Tab:AddLabel("部分服务器可以用")
-Tab:AddButton({
-  Name = "大BOSS",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/NChRru9B"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "变大变小",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/cEa7d3a5"))()
-
-  end
-})
-
-Tab:AddButton({
-  Name = "大飞机",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/EJS2Fde3"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "巫毒娃娃",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/xqCCqeha"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "天使",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/RaXbiByH"))()
-  end
-})
-
-local Tab = Window:MakeTab({
-    Name = "黑洞融合表",
-    Icon = "rbxassetid://7734068321",
-    PremiumOnly = false
-})
-
-Tab:AddLabel("黑洞中心独家创作")
-Tab:AddLabel("普通黑洞2+所有黑洞=超级黑洞")
-Tab:AddLabel("超级黑洞+辅助黑洞=最强黑洞")
-Tab:AddLabel("全部黑洞通用融合表")
-Tab:AddLabel("👆以上为亲身测试得出的结论☝")
-
-local Tab = Window:MakeTab({
-    Name = "滤镜与光影",
-    Icon = "rbxassetid://7734068321",
-    PremiumOnly = false
-})
-
-Tab:AddButton({
-	Name = "自定义画质包",
-	Callback = function()
-loadstring(game:HttpGet(('https://pastefy.app/xXkUxA0P/raw'),true))()
-end
-})
-
-Tab:AddButton({
-      Name = "恢复默认",
-      Callback = function()
-        game.Lighting.Ambient = Color3.new(0, 0, 0)
-      end
-    })
-
-
-Tab:AddButton({
-      Name = "亮度1",
-      Callback = function()
-        game.Lighting.Ambient = Color3.new(1, 1, 1)
-      end
-    })
-Tab:AddButton({
-      Name = "亮度2",
-      Callback = function()
-        game.Lighting.Ambient = Color3.new(2, 2, 2)
-      end
-    })
-
-Tab:AddButton({
-      Name = "亮度3",
-      Callback = function()
-        game.Lighting.Ambient = Color3.new(3, 3, 3)
-      end
-    })
-
-Tab:AddButton({
-	Name = "红色",
-	Callback = function()
-game.Lighting.Ambient = Color3.new(1, 0, 0)
-end
-})    
-Tab:AddButton({
-	Name = "绿色",
-	Callback = function()
-game.Lighting.Ambient = Color3.new(0, 1, 0)
-end
-})    
-
-Tab:AddButton({
-      Name = "蓝色",
-      Callback = function()
-        game.Lighting.Ambient = Color3.new(0, 0, 1)
-      end
-    })
-Tab:AddButton({
-  Name = "红色(2)",
-  Default = false,
-  Callback = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/MZEEN2424/Graphics/main/Graphics.xml"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "美丽天空（带动态阴影）",
-  Callback = function()
-    -- Roblox Graphics Enhancher
-    local light = game.Lighting
-    for i, v in pairs(light:GetChildren()) do
-      v:Destroy()
-    end
-
-    local ter = workspace.Terrain
-    local color = Instance.new("ColorCorrectionEffect")
-    local bloom = Instance.new("BloomEffect")
-    local sun = Instance.new("SunRaysEffect")
-    local blur = Inst
-  end
-})
-
-Tab:AddButton({
-  Name = "光影(1)",
-  Callback = function()
-loadstring(game:HttpGet('https://pastebin.com/raw/gUceVJig'))()
-  end
-})
-
-Tab:AddButton({
-  Name = "光影(2)",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/MZEEN2424/Graphics/main/Graphics.xml"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "光影(3)",
-  Callback = function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/jHBfJYmS"))()
-  end
-})
-
-local Tab = Window:MakeTab({
-    Name = "音乐只能自己听",
-    Icon = "rbxassetid://7734068321",
-    PremiumOnly = false
-})
-
-Tab:AddButton({
-	Name = "自定义音乐",
-	Callback = function()		
-loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/beta/main/music.lua"))()
-    end
-})
-
-Tab:AddButton({
-	Name = "音乐轰炸器",
-	Callback = function()		
-loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/scriscriptsc/main/%E8%BD%B0%E7%82%B8.lua"))()
-    end
-})
-
-Tab:AddButton({
-
-	Name = "color",
-
-	Callback = function()
-
-local audioPlayer : AudioPlayer = Instance.new("AudioPlayer")
-audioPlayer.Parent = workspace
-audioPlayer.AssetId = "rbxassetid://7023828725"
-
-local deviceOutput = Instance.new("AudioDeviceOutput")
-deviceOutput.Parent = workspace
-
-local wire = Instance.new("Wire")
-wire.Parent = workspace
-
-wire.SourceInstance = audioPlayer
-wire.TargetInstance = deviceOutput
-
-audioPlayer:Play()
-
-    end
-})
-
-Tab:AddButton({
-	Name = "happy song",
-	Callback = function()
-
-local audioPlayer : AudioPlayer = Instance.new("AudioPlayer")
-audioPlayer.Parent = workspace
-audioPlayer.AssetId = "rbxassetid://1843404009"
-
-local deviceOutput = Instance.new("AudioDeviceOutput")
-deviceOutput.Parent = workspace
-
-local wire = Instance.new("Wire")
-wire.Parent = workspace
-
-wire.SourceInstance = audioPlayer
-wire.TargetInstance = deviceOutput
-
-audioPlayer:Play()
-    end
-})
-
-Tab:AddButton({
-	Name = "World-Hang up",
-	Callback = function()
-
-local audioPlayer : AudioPlayer = Instance.new("AudioPlayer")
-audioPlayer.Parent = workspace
-audioPlayer.AssetId = "rbxassetid://5410084188"
-
-local deviceOutput = Instance.new("AudioDeviceOutput")
-deviceOutput.Parent = workspace
-
-local wire = Instance.new("Wire")
-wire.Parent = workspace
-
-wire.SourceInstance = audioPlayer
-wire.TargetInstance = deviceOutput
-
-audioPlayer:Play()
-    end
-})
-
-Tab:AddButton({
-	Name = "雨中牛郎",
-	Callback = function()
-
-local audioPlayer : AudioPlayer = Instance.new("AudioPlayer")
-audioPlayer.Parent = workspace
-audioPlayer.AssetId = "rbxassetid://16831108393"
-
-local deviceOutput = Instance.new("AudioDeviceOutput")
-deviceOutput.Parent = workspace
-
-local wire = Instance.new("Wire")
-wire.Parent = workspace
-
-wire.SourceInstance = audioPlayer
-wire.TargetInstance = deviceOutput
-
-audioPlayer:Play()
-end
-})
-
-Tab:AddButton({
-  Name = "彩虹瀑布",
-  Callback = function()
-local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://1837879082"
-    sound.Parent = game.Workspace
-    sound:Play()
-  end
-})
-
-Tab:AddButton({
-  Name = "义勇军进行曲",
-  Callback = function()
-local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://1845918434"
-    sound.Parent = game.Workspace
-    sound:Play()
-  end
-})
-
-Tab:AddButton({
-  Name = "防空警报",
-  Callback = function()
-local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://792323017"
-    sound.Parent = game.Workspace
-    sound:Play()
-  end
-})
-
-local Tab = Window:MakeTab({
-    Name = "其他脚本",
-    Icon = "rbxassetid://7734068321",
-    PremiumOnly = false
-})
-
-Tab:AddButton({
-  Name = "林脚本破解版",
-  Callback = function()
-  AL = "Advanced Logic团队破解"
-loadstring(game:HttpGet("https://raw.githubusercontent.com/longshu886/longscript/main/linpojie"))()
-end
-})
-
-Tab:AddButton({
-  Name = "安脚本",
-  Callback = function()
-loadstring(game:HttpGet(('https://raw.githubusercontent.com/wucan114514/gegeyxjb/refs/heads/main/%E5%AE%89%E8%84%9A%E6%9C%AC.lua')))()
-  end
-})
-
-Tab:AddButton({
-  Name = "秋脚本",
-  Callback = function()
-  _G[".秋·自制脚本 遗存抢救"]="2024dncxddtsnchzxtb0112"loadstring(game:HttpGet(utf8.char((function() return table.unpack({104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,87,83,98,117,113,47,45,47,109,97,105,110,47,37,69,55,37,65,55,37,56,66,37,67,50,37,66,55,37,69,56,37,56,55,37,65,65,37,69,53,37,56,56,37,66,54,37,69,56,37,56,52,37,57,65,37,69,54,37,57,67,37,65,67})end)())))()
-  end
-})
-Tab:AddButton({
-  Name = "龙脚本破解版",
-  Callback = function()
-  loadstring(game:HttpGet("https://raw.githubusercontent.com/nahida-cn/Roblox/main/long"))()
-  end
-})
-Tab:AddButton({
-	Name = "doors(中文)",
-	Callback = function()
-     loadstring(game:HttpGet("https://raw.githubusercontent.com/XiaoYunCN/EntitySpawner/main/doors(orionlib).lua"))()
-  	end    
-})
-
-Tab:AddButton({
-  Name = "俄亥俄州",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/rbxluau/Roblox/main/ScriptHub.lua"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "俄亥俄州自动印钞机",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/PUSCRIPTS/MONEY-PRINTER-YAY/main/MONEY"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "极速传奇",
-  Callback = function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/GoodScript/main/LegendOfSpeed(Chinese)"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "监狱人生(变钢铁侠)",
-  Callback = function()
-loadstring(game:HttpGet("https://pastebin.com/raw/7prijqYH"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "极速传奇(云脚本)",
-  Callback = function()
-
-loadstring(game:HttpGet("https://pastebin.com/raw/HzhPC0dY"))()
-  end
-})
-
-Tab:AddButton({
-  Name = "门(卡密:nrty)",
-  Callback = function()
-  loadstring(game:HttpGet("https://raw.githubusercontent.com/zuohongjian/bjb/main/ZS%20III"))()
-  end
-})
+-- ========== 启动 ==========
+updateContent("⚡ 加速")
+task.wait(0.5)
+startBypass()
+
+print("========================================")
+print("  ✅ BS-过检测版 加载成功")
+print("  🛡️ 过检测已启动")
+print("  F键 开关飞行 | G键 开关加速")
+print("========================================")
