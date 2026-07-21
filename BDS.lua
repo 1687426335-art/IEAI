@@ -1,6 +1,7 @@
--- ========== BS-过检测完整版 (修复版) ==========
+-- ========== 圣奥里(San Aurie) 过检测版 ==========
 -- 仿皮脚本UI风格 | 左边分类 | 右边内容
--- 已删除：透视、范围、跳跃
+-- 已删除：透视、跳跃
+-- 已恢复：范围
 
 local player = game.Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -19,6 +20,8 @@ local originalJumpPower = 50
 local flyEnabled = false
 local flySpeed = 50
 local noclipEnabled = false
+local rangeEnabled = false
+local rangeSize = 30
 local flyBV, flyBG, flyConn = nil, nil, nil
 
 -- ==================== 过检测 ====================
@@ -158,7 +161,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Parent = titleBar
 titleText.Size = UDim2.new(1, -70, 1, 0)
 titleText.Position = UDim2.new(0, 15, 0, 0)
-titleText.Text = "⚡ BS 过检测版"
+titleText.Text = "⚡ 圣奥里 过检测版"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.BackgroundTransparency = 1
 titleText.TextSize = 16
@@ -244,7 +247,7 @@ contentScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
 contentScroller.ScrollBarThickness = 4
 
 -- ========== 分类列表 ==========
-local categories = {"⚡ 加速", "✈️ 飞行", "🚪 穿墙"}
+local categories = {"⚡ 加速", "✈️ 飞行", "🚪 穿墙", "🎯 范围"}
 local currentTab = "⚡ 加速"
 local categoryBtns = {}
 
@@ -475,6 +478,55 @@ local function updateContent(tab)
                 end
             end
         end)
+        
+    elseif tab == "🎯 范围" then
+        local rangeBtn = Instance.new("TextButton")
+        rangeBtn.Parent = contentScroller
+        rangeBtn.Size = UDim2.new(0, 200, 0, 40)
+        rangeBtn.Position = UDim2.new(0.5, -100, 0, y)
+        rangeBtn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        rangeBtn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
+        rangeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        rangeBtn.TextSize = 16
+        rangeBtn.Font = Enum.Font.GothamBold
+        rangeBtn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner")
+        corner.Parent = rangeBtn
+        corner.CornerRadius = UDim.new(0, 8)
+        rangeBtn.MouseButton1Click:Connect(function()
+            rangeEnabled = not rangeEnabled
+            rangeBtn.Text = rangeEnabled and "🎯 范围: 开" or "🎯 范围: 关"
+            rangeBtn.BackgroundColor3 = rangeEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
+        end)
+        y = y + 40 + gap
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = contentScroller
+        label.Size = UDim2.new(0, 80, 0, 25)
+        label.Position = UDim2.new(0, 10, 0, y)
+        label.Text = "范围大小:"
+        label.TextColor3 = Color3.fromRGB(180, 180, 210)
+        label.BackgroundTransparency = 1
+        label.TextSize = 14
+        label.Font = Enum.Font.Gotham
+        
+        local input = Instance.new("TextBox")
+        input.Parent = contentScroller
+        input.Size = UDim2.new(0, 80, 0, 25)
+        input.Position = UDim2.new(0, 120, 0, y)
+        input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+        input.TextColor3 = Color3.fromRGB(255, 255, 255)
+        input.Text = tostring(rangeSize)
+        input.TextSize = 14
+        input.Font = Enum.Font.Gotham
+        input.BorderSizePixel = 0
+        local corner2 = Instance.new("UICorner")
+        corner2.Parent = input
+        corner2.CornerRadius = UDim.new(0, 6)
+        input.FocusLost:Connect(function()
+            local v = tonumber(input.Text)
+            if v then rangeSize = math.clamp(v, 1, 500) end
+        end)
     end
     
     contentScroller.CanvasSize = UDim2.new(0, 0, 0, y + 20)
@@ -516,6 +568,38 @@ statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextSize = 11
 statusLabel.Font = Enum.Font.Gotham
+
+-- ========== 范围循环 ==========
+RunService.RenderStepped:Connect(function()
+    if rangeEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(rangeSize, rangeSize, rangeSize * 0.5)
+                        hrp.Transparency = 0.5
+                        hrp.Material = Enum.Material.Neon
+                        hrp.CanCollide = false
+                    end
+                end)
+            end
+        end
+    else
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                pcall(function()
+                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 0
+                        hrp.Material = Enum.Material.Plastic
+                    end
+                end)
+            end
+        end
+    end
+end)
 
 -- ========== 穿墙循环 ==========
 RunService.Stepped:Connect(function()
@@ -581,7 +665,7 @@ task.wait(0.5)
 startBypass()
 
 print("========================================")
-print("  ✅ BS-过检测版 加载成功")
+print("  ✅ 圣奥里过检测版 加载成功")
 print("  🛡️ 过检测已启动")
 print("  F键 开关飞行 | G键 开关加速")
 print("========================================")
