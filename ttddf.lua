@@ -1,4 +1,4 @@
--- ===== 皮脚本 防267 + 安全加速(带警告) + 范围 + 透视绘制 =====
+-- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -54,7 +54,7 @@ local function BypassAll()
 end
 BypassAll()
 
--- ===== 2. 通知函数 =====
+-- ===== 2. 右边通知函数 =====
 local function Notify(title, text, duration)
     duration = duration or 3
     pcall(function()
@@ -67,22 +67,66 @@ local function Notify(title, text, duration)
     end)
 end
 
--- ===== 3. 启动通知 =====
-Notify("皮脚本", "防267 + 安全加速 + 范围 + 绘制已加载", 2)
-wait(1.5)
+-- ===== 3. 启动弹窗 =====
+Notify("皮脚本", "欢迎使用皮脚本", 2)
+wait(1)
+Notify("皮脚本", "请在公告中输入卡密验证", 3)
+wait(1)
 
--- ===== 4. 防挂机 =====
-local VirtualUserService = game:GetService("VirtualUser")
-game:GetService("Players").LocalPlayer.Idled:connect(function()
-    VirtualUserService:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-    wait(1)
-    VirtualUserService:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-end)
+-- ===== 4. 卡密验证系统 =====
+getgenv().CardVerified = false
 
-Notify("皮脚本", "已自动开启反挂机", 2)
+-- 卡密 = 1
+local ValidCards = {
+    ["1"] = true,
+}
 
 -- ===== 5. 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本-防267")
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本-卡密验证")
+
+-- ===== 公告Tab（第一排） =====
+local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
+local AnnounceSection = AnnounceTab:section("卡密验证", true)
+
+AnnounceSection:Label("⚠️ 请输入卡密验证后使用功能")
+AnnounceSection:Label("卡密: 联系作者获取")
+
+-- 卡密输入框（不显示卡密内容）
+AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function(input)
+    if input and input ~= "" then
+        if ValidCards[input] then
+            getgenv().CardVerified = true
+            Notify("✅ 验证成功", "卡密正确！所有功能已解锁", 3)
+        else
+            getgenv().CardVerified = false
+            Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
+        end
+    end
+end)
+
+-- 验证状态显示
+local statusLabel = AnnounceSection:Label("状态: ❌ 未验证")
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            if statusLabel and statusLabel.Parent then
+                if getgenv().CardVerified then
+                    statusLabel.Text = "状态: ✅ 已验证"
+                else
+                    statusLabel.Text = "状态: ❌ 未验证"
+                end
+            end
+        end)
+    end
+end)
+
+AnnounceSection:Label("━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("公告内容:")
+AnnounceSection:Label("1. 本脚本永久免费")
+AnnounceSection:Label("2. 禁止倒卖")
+AnnounceSection:Label("3. 安全速度上限80")
+AnnounceSection:Label("4. 有问题联系作者")
 
 -- ===== 信息Tab =====
 local InfoTab = UILibrary:Tab("『信息』", "18930406865")
@@ -90,22 +134,28 @@ local InfoSection = InfoTab:section("玩家信息", true)
 InfoSection:Label("用户名: " .. game.Players.LocalPlayer.Name)
 InfoSection:Label("服务器ID: " .. game.GameId)
 InfoSection:Label("状态: 防267已启动")
-InfoSection:Label("安全速度上限: 80 (防检测)")
 
--- ===== 加速Tab（安全限速+警告） =====
+-- ===== 功能是否可用的检查函数 =====
+local function CheckCard()
+    if not getgenv().CardVerified then
+        Notify("⚠️ 卡密未验证", "请先在公告中输入卡密验证", 2)
+        return false
+    end
+    return true
+end
+
+-- ===== 加速Tab =====
 local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
 local SpeedSection = SpeedTab:section("安全速度控制", true)
 
 SpeedSection:Label("⚠️ 安全速度范围: 16 ~ 80")
-SpeedSection:Label("⚠️ 超过80会触发警告并自动降速")
 
--- 速度变量
 getgenv().SafeSpeed = 30
 getgenv().SpeedLock = true
 getgenv().WarningShown = false
 
--- 安全速度滑块（限制最高80）
 SpeedSection:Slider("安全步行速度", "SafeSpeed", 30, 16, 80, false, function(s)
+    if not CheckCard() then return end
     getgenv().SafeSpeed = s
     getgenv().WarningShown = false
     pcall(function()
@@ -114,11 +164,10 @@ SpeedSection:Slider("安全步行速度", "SafeSpeed", 30, 16, 80, false, functi
             hum.WalkSpeed = getgenv().SafeSpeed
         end
     end)
-    Notify("皮脚本", "速度已设为: " .. tostring(s), 1)
 end)
 
--- 强制速度锁定开关
 SpeedSection:Toggle("锁定安全速度", "SpeedLock", true, function(enabled)
+    if not CheckCard() then return end
     getgenv().SpeedLock = enabled
     getgenv().WarningShown = false
     if enabled then
@@ -128,39 +177,22 @@ SpeedSection:Toggle("锁定安全速度", "SpeedLock", true, function(enabled)
                 hum.WalkSpeed = getgenv().SafeSpeed
             end
         end)
-        Notify("皮脚本", "速度锁定已开启", 1)
-    else
-        Notify("皮脚本", "⚠️ 速度锁定已关闭，请注意安全", 2)
     end
 end)
 
--- ===== 速度守卫（带警告弹窗） =====
+-- 超速守卫
 game:GetService("RunService").Heartbeat:Connect(function()
-    if getgenv().SpeedLock then
+    if getgenv().SpeedLock and getgenv().CardVerified then
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then
                 local currentSpeed = hum.WalkSpeed
-                
-                -- 检测到超速（超过80）
                 if currentSpeed > 80 then
-                    -- 弹出警告（只弹一次，避免刷屏）
                     if not getgenv().WarningShown then
                         getgenv().WarningShown = true
                         Notify("⚠️ 超速警告", "检测到速度 " .. tostring(math.floor(currentSpeed)) .. " 超过安全值80！\n已自动降速至 " .. tostring(getgenv().SafeSpeed), 4)
-                        wait(0.5)
                     end
-                    -- 强制降速
                     hum.WalkSpeed = getgenv().SafeSpeed
-                    
-                -- 检测到轻微超速（70-80）
-                elseif currentSpeed > 70 and currentSpeed <= 80 then
-                    if not getgenv().WarningShown then
-                        getgenv().WarningShown = true
-                        Notify("⚠️ 速度偏高", "当前速度 " .. tostring(math.floor(currentSpeed)) .. " 接近安全上限，建议降低", 3)
-                    end
-                    
-                -- 速度正常，重置警告标记
                 else
                     getgenv().WarningShown = false
                 end
@@ -169,9 +201,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
     end
 end)
 
--- 守卫2：防止其他脚本修改速度（仅当锁定时）
 game:GetService("RunService").Stepped:Connect(function()
-    if getgenv().SpeedLock then
+    if getgenv().SpeedLock and getgenv().CardVerified then
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then
@@ -188,17 +219,19 @@ game:GetService("RunService").Stepped:Connect(function()
 end)
 
 SpeedSection:Textbox("设置重力", "Gravity", "输入数值", function(g)
+    if not CheckCard() then return end
     pcall(function()
         game.Workspace.Gravity = tonumber(g) or 196.2
     end)
 end)
 
 SpeedSection:Toggle("穿墙（NoClip）", "NoClip", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().NoClip = enabled
 end)
 
 game:GetService("RunService").Stepped:Connect(function()
-    if getgenv().NoClip then
+    if getgenv().NoClip and getgenv().CardVerified then
         pcall(function()
             local char = game.Players.LocalPlayer.Character
             if char then
@@ -225,18 +258,22 @@ getgenv().HitboxColor = "Really red"
 getgenv().TeamCheck = false
 
 RangeSection:Toggle("开启范围", "Hitbox", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().HitboxEnabled = enabled
 end)
 
 RangeSection:Slider("范围大小", "Size", 15, 5, 80, false, function(size)
+    if not CheckCard() then return end
     getgenv().HitboxSize = size
 end)
 
 RangeSection:Slider("范围透明度", "Transparency", 0.7, 0, 1, false, function(trans)
+    if not CheckCard() then return end
     getgenv().HitboxTransparency = trans
 end)
 
 RangeSection:Toggle("队伍检测", "TeamCheck", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().TeamCheck = enabled
 end)
 
@@ -245,11 +282,12 @@ RangeSection:Dropdown("范围颜色", "Color", {
     "Really yellow", "Really purple", "Really black",
     "Really pink", "Really orange"
 }, function(color)
+    if not CheckCard() then return end
     getgenv().HitboxColor = color
 end)
 
 game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().HitboxEnabled then
+    if getgenv().HitboxEnabled and getgenv().CardVerified then
         for _, player in pairs(game:GetService("Players"):GetPlayers()) do
             if player ~= game.Players.LocalPlayer then
                 if getgenv().TeamCheck and player.Team == game.Players.LocalPlayer.Team then
@@ -267,7 +305,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
                 end
             end
         end
-    else
+    elseif not getgenv().HitboxEnabled and getgenv().CardVerified then
         for _, player in pairs(game:GetService("Players"):GetPlayers()) do
             if player ~= game.Players.LocalPlayer then
                 pcall(function()
@@ -344,7 +382,7 @@ local function CreateESP(player)
     table.insert(espObjects, tracer)
     
     game:GetService("RunService").RenderStepped:Connect(function()
-        if not getgenv().ESPEnabled then
+        if not getgenv().ESPEnabled or not getgenv().CardVerified then
             square.Visible = false
             nameText.Visible = false
             healthText.Visible = false
@@ -444,26 +482,32 @@ game.Players.PlayerAdded:Connect(function(player)
 end)
 
 ESPSection:Toggle("ESP总开关", "ESP", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ESPEnabled = enabled
 end)
 
 ESPSection:Toggle("显示方框", "Box", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ShowBox = enabled
 end)
 
 ESPSection:Toggle("显示名字", "Name", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ShowName = enabled
 end)
 
 ESPSection:Toggle("显示血量", "Health", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ShowHealth = enabled
 end)
 
 ESPSection:Toggle("显示距离", "Distance", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ShowDistance = enabled
 end)
 
 ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
+    if not CheckCard() then return end
     getgenv().ShowTracer = enabled
 end)
 
@@ -482,4 +526,4 @@ SettingsSection:Button("关闭脚本", function()
     end)
 end)
 
-print("✅ 皮脚本加载完成 - 防267 + 安全加速(带警告) + 范围 + 透视绘制")
+print("✅ 皮脚本加载完成 - 卡密为: 1")
