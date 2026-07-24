@@ -106,7 +106,7 @@ else
 end
 wait(1)
 
--- ===== 4. 顶部滚动文字（从左边飘到右边，循环） =====
+-- ===== 4. 顶部滚动文字 =====
 local function CreateTopScrollText()
     pcall(function()
         local gui = Instance.new("ScreenGui")
@@ -131,6 +131,7 @@ local function CreateTopScrollText()
         label.TextSize = 14
         label.TextWrapped = true
         label.ClipsDescendants = false
+        label.ZIndex = 9999
         
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(0, 6)
@@ -171,7 +172,7 @@ CreateTopScrollText()
 -- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
--- ===== 公告Tab（第一排） =====
+-- ===== 公告Tab =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("卡密验证", true)
 
@@ -189,7 +190,7 @@ AnnounceSection:Button("验证", function()
             getgenv().CardVerified = true
             VerifiedPlayers[CurrentPlayer] = true
             SaveVerification()
-            Notify("✅ 验证成功", "卡密正确！所有功能已解锁，下次启动自动验证", 3)
+            Notify("✅ 验证成功", "卡密正确！所有功能已解锁", 3)
         else
             getgenv().CardVerified = false
             Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
@@ -204,7 +205,7 @@ AnnounceSection:Button("解绑", function()
         getgenv().CardVerified = false
         VerifiedPlayers[CurrentPlayer] = nil
         SaveVerification()
-        Notify("🔓 已解绑", "卡密已解绑，下次启动需要重新验证", 3)
+        Notify("🔓 已解绑", "卡密已解绑", 3)
     else
         Notify("⚠️ 提示", "当前未绑定卡密", 2)
     end
@@ -217,7 +218,7 @@ task.spawn(function()
         pcall(function()
             if statusLabel and statusLabel.Parent then
                 if getgenv().CardVerified then
-                    statusLabel.Text = "状态: ✅ 已验证 (记住状态)"
+                    statusLabel.Text = "状态: ✅ 已验证"
                 else
                     statusLabel.Text = "状态: ❌ 未验证"
                 end
@@ -231,7 +232,6 @@ AnnounceSection:Label("公告内容:")
 AnnounceSection:Label("1. 本脚本永久免费")
 AnnounceSection:Label("2. 禁止倒卖")
 AnnounceSection:Label("3. 安全速度上限80")
-AnnounceSection:Label("4. 验证后下次启动自动登录")
 
 -- ===== 信息Tab =====
 local InfoTab = UILibrary:Tab("『信息』", "18930406865")
@@ -239,13 +239,8 @@ local InfoSection = InfoTab:section("玩家信息", true)
 InfoSection:Label("用户名: " .. game.Players.LocalPlayer.Name)
 InfoSection:Label("服务器ID: " .. game.GameId)
 InfoSection:Label("状态: 防267已启动")
-if getgenv().CardVerified then
-    InfoSection:Label("卡密状态: ✅ 已验证")
-else
-    InfoSection:Label("卡密状态: ❌ 未验证")
-end
 
--- ===== 功能是否可用的检查函数 =====
+-- ===== 功能检查 =====
 local function CheckCard()
     if not getgenv().CardVerified then
         Notify("⚠️ 卡密未验证", "请先在公告中验证卡密", 2)
@@ -270,9 +265,7 @@ SpeedSection:Slider("安全步行速度", "SafeSpeed", 30, 16, 80, false, functi
     getgenv().WarningShown = false
     pcall(function()
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.WalkSpeed = getgenv().SafeSpeed
-        end
+        if hum then hum.WalkSpeed = getgenv().SafeSpeed end
     end)
 end)
 
@@ -283,9 +276,7 @@ SpeedSection:Toggle("锁定安全速度", "SpeedLock", true, function(enabled)
     if enabled then
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.WalkSpeed = getgenv().SafeSpeed
-            end
+            if hum then hum.WalkSpeed = getgenv().SafeSpeed end
         end)
     end
 end)
@@ -295,11 +286,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then
-                local currentSpeed = hum.WalkSpeed
-                if currentSpeed > 80 then
+                if hum.WalkSpeed > 80 then
                     if not getgenv().WarningShown then
                         getgenv().WarningShown = true
-                        Notify("⚠️ 超速警告", "检测到速度 " .. tostring(math.floor(currentSpeed)) .. " 超过安全值80！\n已自动降速至 " .. tostring(getgenv().SafeSpeed), 4)
+                        Notify("⚠️ 超速警告", "速度超过80！已自动降速", 3)
                     end
                     hum.WalkSpeed = getgenv().SafeSpeed
                 else
@@ -310,28 +300,9 @@ game:GetService("RunService").Heartbeat:Connect(function()
     end
 end)
 
-game:GetService("RunService").Stepped:Connect(function()
-    if getgenv().SpeedLock and getgenv().CardVerified then
-        pcall(function()
-            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                if hum.WalkSpeed > 80 then
-                    hum.WalkSpeed = getgenv().SafeSpeed
-                end
-                if hum.WalkSpeed ~= getgenv().SafeSpeed and hum.WalkSpeed <= 80 then
-                    getgenv().SafeSpeed = hum.WalkSpeed
-                    getgenv().WarningShown = false
-                end
-            end
-        end)
-    end
-end)
-
 SpeedSection:Textbox("设置重力", "Gravity", "输入数值", function(g)
     if not CheckCard() then return end
-    pcall(function()
-        game.Workspace.Gravity = tonumber(g) or 196.2
-    end)
+    pcall(function() game.Workspace.Gravity = tonumber(g) or 196.2 end)
 end)
 
 SpeedSection:Toggle("穿墙（NoClip）", "NoClip", false, function(enabled)
@@ -345,9 +316,7 @@ game:GetService("RunService").Stepped:Connect(function()
             local char = game.Players.LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
+                    if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
         end)
@@ -357,8 +326,6 @@ end)
 -- ===== 范围Tab =====
 local RangeTab = UILibrary:Tab("『范围』", "18930406865")
 local RangeSection = RangeTab:section("范围设置", true)
-
-RangeSection:Label("⚠️ 范围过大会增加被检测风险")
 
 getgenv().HitboxSize = 15
 getgenv().HitboxTransparency = 0.7
@@ -414,7 +381,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
                 end
             end
         end
-    elseif not getgenv().HitboxEnabled and getgenv().CardVerified then
+    else
         for _, player in pairs(game:GetService("Players"):GetPlayers()) do
             if player ~= game.Players.LocalPlayer then
                 pcall(function()
@@ -639,4 +606,4 @@ SettingsSection:Button("关闭脚本", function()
     end)
 end)
 
-print("✅ wdfex加载完成 - 卡密为: 1")
+print("✅ wdfex加载完成 - 卡密: 1")
