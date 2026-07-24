@@ -1,4 +1,4 @@
--- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 子弹追踪 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 圈圈自瞄 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -524,134 +524,164 @@ ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
     getgenv().ShowTracer = enabled
 end)
 
--- ===== 子弹追踪Tab =====
-local AimTab = UILibrary:Tab("『子弹追踪』", "18930406865")
-local AimSection = AimTab:section("子弹追踪设置", true)
+-- ===== 圈圈自瞄Tab =====
+local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
+local AimSection = AimTab:section("圈圈自瞄", true)
 
-AimSection:Label("⚠️ 子弹追踪会让子弹自动瞄准敌人")
-AimSection:Label("开启后子弹会拐弯打人")
+AimSection:Label("⚠️ 开启后准星会自动锁定敌人")
 
-getgenv().BulletTrack = false
+-- 自瞄配置
+getgenv().AimFOV = 150
 getgenv().AimPart = "Head"
+getgenv().AimSmoothness = 5
+getgenv().AimRange = 200
+getgenv().AimEnabled = false
+getgenv().AimTeamCheck = false
 
-AimSection:Toggle("开启子弹追踪", "BulletTrack", false, function(enabled)
-    if not CheckCard() then return end
-    getgenv().BulletTrack = enabled
-    if enabled then
-        Notify("✅ 子弹追踪已开启", "子弹将自动追踪敌人", 2)
-    else
-        Notify("❌ 子弹追踪已关闭", "", 1)
+-- 绘制圈圈
+local fovCircle = nil
+local function CreateFOVCircle()
+    if fovCircle then
+        pcall(function() fovCircle:Remove() end)
+        fovCircle = nil
+    end
+    if getgenv().AimEnabled then
+        fovCircle = Drawing.new("Circle")
+        fovCircle.Visible = true
+        fovCircle.Radius = getgenv().AimFOV
+        fovCircle.Thickness = 2
+        fovCircle.Color = Color3.fromRGB(0, 255, 0)
+        fovCircle.Filled = false
+        fovCircle.Transparency = 0.5
+        fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
+    end
+end
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if getgenv().AimEnabled and getgenv().CardVerified then
+        if not fovCircle then
+            CreateFOVCircle()
+        end
+        if fovCircle then
+            fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
+            fovCircle.Radius = getgenv().AimFOV
+            fovCircle.Visible = true
+        end
+    elseif fovCircle then
+        fovCircle.Visible = false
     end
 end)
 
-AimSection:Dropdown("瞄准部位", "AimPart", {
-    "头部", "颈部", "躯干", "左臂", "右臂", "左腿", "右腿"
+AimSection:Toggle("开启自瞄", "Aim", false, function(enabled)
+    if not CheckCard() then return end
+    getgenv().AimEnabled = enabled
+    if enabled then
+        CreateFOVCircle()
+        Notify("✅ 自瞄已开启", "准星将自动锁定敌人", 2)
+    else
+        if fovCircle then
+            pcall(function() fovCircle:Remove() end)
+            fovCircle = nil
+        end
+        Notify("❌ 自瞄已关闭", "", 1)
+    end
+end)
+
+AimSection:Slider("自瞄范围(FOV)", "FOV", 150, 30, 500, false, function(val)
+    if not CheckCard() then return end
+    getgenv().AimFOV = val
+    if fovCircle then
+        fovCircle.Radius = val
+    end
+end)
+
+AimSection:Slider("自瞄距离", "Range", 200, 50, 500, false, function(val)
+    if not CheckCard() then return end
+    getgenv().AimRange = val
+end)
+
+AimSection:Slider("自瞄平滑度", "Smooth", 5, 1, 20, false, function(val)
+    if not CheckCard() then return end
+    getgenv().AimSmoothness = val
+end)
+
+AimSection:Dropdown("瞄准部位", "Part", {
+    "头部", "躯干", "腿部"
 }, function(part)
     if not CheckCard() then return end
     local parts = {
         ["头部"] = "Head",
-        ["颈部"] = "Neck",
-        ["躯干"] = "Torso",
-        ["左臂"] = "Left Arm",
-        ["右臂"] = "Right Arm",
-        ["左腿"] = "Left Leg",
-        ["右腿"] = "Right Leg",
+        ["躯干"] = "HumanoidRootPart",
+        ["腿部"] = "Right Leg",
     }
     getgenv().AimPart = parts[part] or "Head"
     Notify("✅ 瞄准部位已切换", part, 1)
 end)
 
-AimSection:Slider("追踪范围", "Range", 100, 30, 500, false, function(range)
+AimSection:Toggle("队伍检测", "TeamCheck", false, function(enabled)
     if not CheckCard() then return end
-    getgenv().AimRange = range
+    getgenv().AimTeamCheck = enabled
 end)
 
-AimSection:Slider("追踪速度", "Speed", 5, 1, 20, false, function(speed)
-    if not CheckCard() then return end
-    getgenv().AimSpeed = speed
-end)
-
--- ===== 子弹追踪核心逻辑 =====
-local function BulletTrackFunction()
-    if not getgenv().BulletTrack then return end
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        local camera = workspace.CurrentCamera
-        local mouse = player:GetMouse()
-        
-        -- 获取最近的敌人
-        local function GetClosestEnemy()
-            local closest = nil
-            local closestDist = getgenv().AimRange or 200
-            
-            for _, enemy in pairs(game.Players:GetPlayers()) do
-                if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Humanoid") and enemy.Character.Humanoid.Health > 0 then
-                    local hrp = enemy.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
-                        if onScreen then
-                            local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
-                            if dist < closestDist then
-                                closestDist = dist
-                                closest = enemy
-                            end
+-- ===== 自瞄核心逻辑 =====
+local function GetClosestEnemy()
+    local player = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    local closest = nil
+    local closestDist = getgenv().AimFOV or 200
+    
+    for _, enemy in pairs(game.Players:GetPlayers()) do
+        if enemy ~= player then
+            if getgenv().AimTeamCheck and enemy.Team == player.Team then
+            else
+                local char = enemy.Character
+                if char then
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local targetPart = char:FindFirstChild(getgenv().AimPart or "Head")
+                        if not targetPart then
+                            targetPart = char:FindFirstChild("HumanoidRootPart")
                         end
-                    end
-                end
-            end
-            return closest
-        end
-        
-        -- 获取瞄准部位的位置
-        local function GetTargetPosition(enemy)
-            if not enemy or not enemy.Character then return nil end
-            local part = enemy.Character:FindFirstChild(getgenv().AimPart or "Head")
-            if not part then
-                part = enemy.Character:FindFirstChild("HumanoidRootPart")
-            end
-            return part and part.Position
-        end
-        
-        -- 修改子弹方向（通过Hook投射物创建）
-        local oldShoot = nil
-        if not getgenv()._bulletHooked then
-            getgenv()._bulletHooked = true
-            
-            -- 方法1：Hook 远程事件（适用于大部分游戏）
-            local replicatedStorage = game:GetService("ReplicatedStorage")
-            for _, child in pairs(replicatedStorage:GetDescendants()) do
-                if child:IsA("RemoteEvent") and (child.Name:lower():match("shoot") or child.Name:lower():match("fire") or child.Name:lower():match("bullet")) then
-                    local oldFire = child.FireServer
-                    child.FireServer = function(self, ...)
-                        if getgenv().BulletTrack then
-                            local target = GetClosestEnemy()
-                            if target then
-                                local targetPos = GetTargetPosition(target)
-                                if targetPos then
-                                    local args = {...}
-                                    -- 尝试修改子弹方向参数（具体取决于游戏）
-                                    for i, arg in pairs(args) do
-                                        if type(arg) == "Vector3" then
-                                            args[i] = targetPos
-                                            break
-                                        end
-                                    end
-                                    return oldFire(self, unpack(args))
+                        if targetPart then
+                            local pos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+                            if onScreen then
+                                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
+                                local worldDist = (targetPart.Position - camera.CFrame.Position).Magnitude
+                                if dist < closestDist and worldDist <= getgenv().AimRange then
+                                    closestDist = dist
+                                    closest = enemy
                                 end
                             end
                         end
-                        return oldFire(self, ...)
                     end
                 end
             end
         end
-    end)
+    end
+    return closest
 end
 
--- 每帧执行子弹追踪
 game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().BulletTrack and getgenv().CardVerified then
-        BulletTrackFunction()
+    if getgenv().AimEnabled and getgenv().CardVerified then
+        pcall(function()
+            local target = GetClosestEnemy()
+            if target then
+                local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
+                if not targetPart then
+                    targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                end
+                if targetPart then
+                    local camera = workspace.CurrentCamera
+                    local targetPos = targetPart.Position
+                    local currentCF = camera.CFrame
+                    local newCF = CFrame.new(currentCF.Position, targetPos)
+                    
+                    local smooth = getgenv().AimSmoothness or 5
+                    local lerpFactor = math.min(1, 1 / smooth)
+                    camera.CFrame = currentCF:Lerp(newCF, lerpFactor)
+                end
+            end
+        end)
     end
 end)
 
@@ -663,8 +693,12 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().HitboxEnabled = false
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
-    getgenv().BulletTrack = false
+    getgenv().AimEnabled = false
     ClearESP()
+    if fovCircle then
+        pcall(function() fovCircle:Remove() end)
+        fovCircle = nil
+    end
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
         if frosty then frosty:Destroy() end
