@@ -1,4 +1,4 @@
--- ===== wdfex 完整版（加速 + 范围 + 透视 + 自瞄圈 + 掩体判断） =====
+-- ===== wdfex 完整版（加速 + 范围 + 透视 + 自瞄圈 + 掩体判断 + 自动开火） =====
 
 -- ===== 1. 过检测 =====
 local function BypassAll()
@@ -419,13 +419,14 @@ ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
     getgenv().ShowTracer = enabled
 end)
 
--- ===== 自瞄Tab（带自瞄圈 + 掩体判断） =====
+-- ===== 自瞄Tab（带自瞄圈 + 掩体判断 + 自动开火） =====
 local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
 local AimSection = AimTab:section("圈圈自瞄", true)
 
 AimSection:Label("⚠️ 开启后准星会自动锁定敌人")
 AimSection:Label("🟢 绿色圈=空闲 | 🔴 红色圈=锁定目标")
 AimSection:Label("✅ 自动掩体判断（被墙挡住不瞄）")
+AimSection:Label("🔥 自动开火：锁定后自动射击")
 
 -- 自瞄配置
 getgenv().AimFOV = 150
@@ -435,6 +436,8 @@ getgenv().AimRange = 200
 getgenv().AimEnabled = false
 getgenv().AimTeamCheck = false
 getgenv().AimWallCheck = true
+getgenv().AutoFire = false
+getgenv().FireRate = 0.1
 
 -- ===== 创建自瞄圈 =====
 local fovCircle = Drawing.new("Circle")
@@ -482,7 +485,6 @@ local function GetClosestEnemy()
                         if not targetPart then targetPart = char:FindFirstChild("HumanoidRootPart") end
                         if targetPart then
                             if not IsVisible(targetPart) then
-                                -- 被掩体挡住
                             else
                                 local pos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
                                 if onScreen then
@@ -503,6 +505,60 @@ local function GetClosestEnemy()
     return closest
 end
 
+-- 锁定状态
+local isLocked = false
+local lockedTarget = nil
+
+-- ===== 自动开火函数 =====
+local function AutoFire()
+    if not getgenv().AutoFire or not getgenv().AimEnabled then return end
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if not char then return end
+        
+        -- 获取当前工具
+        local tool = char:FindFirstChildOfClass("Tool")
+        if not tool then
+            -- 从背包拿一个工具
+            local backpack = player.Backpack
+            for _, item in pairs(backpack:GetChildren()) do
+                if item:IsA("Tool") then
+                    tool = item
+                    break
+                end
+            end
+        end
+        
+        if tool then
+            -- 方法1: 直接激活
+            tool:Activate()
+            
+            -- 方法2: 通过RemoteEvent射击（部分游戏）
+            local remote = tool:FindFirstChild("RemoteEvent") or tool:FindFirstChild("Fire") or tool:FindFirstChild("Shoot")
+            if remote then
+                pcall(function()
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer()
+                    elseif remote:IsA("BindableEvent") then
+                        remote:Fire()
+                    end
+                end)
+            end
+            
+            -- 方法3: 鼠标点击
+            local mouse = player:GetMouse()
+            if mouse then
+                pcall(function()
+                    mouse.Button1Down:Fire()
+                    task.wait(0.05)
+                    mouse.Button1Up:Fire()
+                end)
+            end
+        end
+    end)
+end
+
 -- ===== 更新自瞄圈位置和颜色 =====
 game:GetService("RunService").RenderStepped:Connect(function()
     if getgenv().AimEnabled and getgenv().CardVerified then
@@ -510,21 +566,28 @@ game:GetService("RunService").RenderStepped:Connect(function()
         fovCircle.Radius = getgenv().AimFOV
         fovCircle.Visible = true
         
-        -- 检测是否有目标
         local target = GetClosestEnemy()
         if target then
             local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
             if not targetPart then targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart") end
             if targetPart and IsVisible(targetPart) then
-                fovCircle.Color = Color3.fromRGB(255, 0, 0)  -- 红色锁定
+                fovCircle.Color = Color3.fromRGB(255, 0, 0)
+                isLocked = true
+                lockedTarget = target
             else
-                fovCircle.Color = Color3.fromRGB(0, 255, 0)  -- 绿色空闲
+                fovCircle.Color = Color3.fromRGB(0, 255, 0)
+                isLocked = false
+                lockedTarget = nil
             end
         else
-            fovCircle.Color = Color3.fromRGB(0, 255, 0)  -- 绿色空闲
+            fovCircle.Color = Color3.fromRGB(0, 255, 0)
+            isLocked = false
+            lockedTarget = nil
         end
     else
         fovCircle.Visible = false
+        isLocked = false
+        lockedTarget = nil
     end
 end)
 
@@ -544,6 +607,11 @@ game:GetService("RunService").RenderStepped:Connect(function()
                     local smooth = getgenv().AimSmoothness or 5
                     local lerpFactor = math.min(1, 1 / smooth)
                     camera.CFrame = currentCF:Lerp(newCF, lerpFactor)
+                    
+                    -- 自动开火
+                    if getgenv().AutoFire then
+                        AutoFire()
+                    end
                 end
             end
         end)
@@ -597,6 +665,18 @@ AimSection:Toggle("掩体判断", "WallCheck", true, function(enabled)
     Notify(enabled and "✅ 掩体判断已开启" or "❌ 掩体判断已关闭", "", 1)
 end)
 
+-- ===== 自动开火开关 =====
+AimSection:Toggle("自动开火", "AutoFire", false, function(enabled)
+    if not CheckCard() then return end
+    getgenv().AutoFire = enabled
+    Notify(enabled and "🔥 自动开火已开启" or "❌ 自动开火已关闭", enabled and "锁定敌人后自动射击" or "", 2)
+end)
+
+AimSection:Slider("开火间隔(秒)", "FireRate", 0.1, 0.05, 0.5, false, function(val)
+    if not CheckCard() then return end
+    getgenv().FireRate = val
+end)
+
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
@@ -605,6 +685,7 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     getgenv().AimEnabled = false
+    getgenv().AutoFire = false
     ClearESP()
     pcall(function() fovCircle:Remove() end)
     pcall(function()
@@ -616,3 +697,4 @@ end)
 print("✅ wdfex加载完成 - 卡密: 1")
 print("🟢 自瞄圈: 绿色=空闲 | 🔴 红色=锁定目标")
 print("✅ 掩体判断已开启")
+print("🔥 自动开火: 锁定后自动射击")
