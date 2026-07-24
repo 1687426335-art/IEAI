@@ -1,138 +1,6 @@
--- ===== wdfex San Aurie 完整版（过检测 + 加速 + 范围 + 透视 + 自瞄 + 加载动画） =====
+-- ===== wdfex San Aurie 最终版（过检测 + 加速 + 范围 + 透视 + 自瞄，无加载动画） =====
 
--- ===== 1. 加载动画 =====
-local function CreateLoadingScreen()
-    pcall(function()
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "LoadingScreen"
-        screenGui.Parent = game:GetService("CoreGui")
-        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        screenGui.DisplayOrder = 9999
-        screenGui.ResetOnSpawn = false
-        
-        local background = Instance.new("Frame")
-        background.Name = "Background"
-        background.Parent = screenGui
-        background.Size = UDim2.new(1, 0, 1, 0)
-        background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        background.BackgroundTransparency = 0
-        background.ZIndex = 10
-        
-        local loadingText = Instance.new("TextLabel")
-        loadingText.Name = "LoadingText"
-        loadingText.Parent = screenGui
-        loadingText.Size = UDim2.new(0, 300, 0, 50)
-        loadingText.Position = UDim2.new(0.5, -150, 0.4, 0)
-        loadingText.BackgroundTransparency = 1
-        loadingText.Text = "wdfex 加载中..."
-        loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        loadingText.TextSize = 30
-        loadingText.TextScaled = true
-        loadingText.Font = Enum.Font.GothamBold
-        loadingText.ZIndex = 11
-        
-        local progressBg = Instance.new("Frame")
-        progressBg.Name = "ProgressBg"
-        progressBg.Parent = screenGui
-        progressBg.Size = UDim2.new(0, 300, 0, 6)
-        progressBg.Position = UDim2.new(0.5, -150, 0.5, 0)
-        progressBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        progressBg.BackgroundTransparency = 0
-        progressBg.ZIndex = 11
-        
-        local corner1 = Instance.new("UICorner")
-        corner1.Parent = progressBg
-        corner1.CornerRadius = UDim.new(0, 3)
-        
-        local progressBar = Instance.new("Frame")
-        progressBar.Name = "ProgressBar"
-        progressBar.Parent = progressBg
-        progressBar.Size = UDim2.new(0, 0, 1, 0)
-        progressBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        progressBar.BackgroundTransparency = 0
-        progressBar.ZIndex = 12
-        
-        local corner2 = Instance.new("UICorner")
-        corner2.Parent = progressBar
-        corner2.CornerRadius = UDim.new(0, 3)
-        
-        local percentText = Instance.new("TextLabel")
-        percentText.Name = "PercentText"
-        percentText.Parent = screenGui
-        percentText.Size = UDim2.new(0, 100, 0, 30)
-        percentText.Position = UDim2.new(0.5, -50, 0.55, 0)
-        percentText.BackgroundTransparency = 1
-        percentText.Text = "0%"
-        percentText.TextColor3 = Color3.fromRGB(200, 200, 200)
-        percentText.TextSize = 18
-        percentText.Font = Enum.Font.Gotham
-        percentText.ZIndex = 11
-        
-        local dots = Instance.new("TextLabel")
-        dots.Name = "Dots"
-        dots.Parent = screenGui
-        dots.Size = UDim2.new(0, 100, 0, 30)
-        dots.Position = UDim2.new(0.5, 150, 0.4, 0)
-        dots.BackgroundTransparency = 1
-        dots.Text = "..."
-        dots.TextColor3 = Color3.fromRGB(255, 255, 255)
-        dots.TextSize = 30
-        dots.Font = Enum.Font.GothamBold
-        dots.ZIndex = 11
-        
-        local function UpdateProgress(percent)
-            pcall(function()
-                progressBar.Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)
-                percentText.Text = math.floor(math.clamp(percent, 0, 100)) .. "%"
-            end)
-        end
-        
-        task.spawn(function()
-            local dotStates = {"   ", ".  ", ".. ", "..."}
-            local idx = 1
-            while screenGui and screenGui.Parent do
-                pcall(function()
-                    if dots and dots.Parent then
-                        dots.Text = dotStates[idx]
-                        idx = idx % 4 + 1
-                    end
-                end)
-                task.wait(0.3)
-            end
-        end)
-        
-        return {
-            Update = UpdateProgress,
-            Close = function()
-                pcall(function()
-                    if screenGui then
-                        screenGui:Destroy()
-                    end
-                end)
-            end
-        }
-    end)
-    return nil
-end
-
-local loading = CreateLoadingScreen()
-
-task.spawn(function()
-    if loading then
-        for i = 0, 100 do
-            pcall(function()
-                loading.Update(i)
-            end)
-            task.wait(0.015)
-        end
-        task.wait(0.3)
-        pcall(function()
-            loading.Close()
-        end)
-    end
-end)
-
--- ===== 2. 过检测 =====
+-- ===== 1. 过检测 =====
 local function SanAurieBypass()
     pcall(function()
         local player = game:GetService("Players").LocalPlayer
@@ -225,7 +93,7 @@ local function SanAurieBypass()
 end
 SanAurieBypass()
 
--- ===== 3. 通知 =====
+-- ===== 2. 通知 =====
 local function Notify(text, duration)
     duration = duration or 3
     pcall(function()
@@ -240,7 +108,7 @@ end
 
 Notify("✅ wdfex 已加载", 2)
 
--- ===== 4. 防挂机 =====
+-- ===== 3. 防挂机 =====
 local VirtualUserService = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
     VirtualUserService:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
@@ -248,7 +116,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
     VirtualUserService:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- ===== 5. 加载UI =====
+-- ===== 4. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
 -- ===== 公告Tab =====
@@ -659,5 +527,5 @@ SettingsSection:Button("关闭脚本", function()
 end)
 
 Notify("✅ wdfex 加载完成", 2)
-print("✅ wdfex San Aurie 完整版加载完成")
+print("✅ wdfex San Aurie 最终版加载完成")
 print("🛡️ 防267已启动")
