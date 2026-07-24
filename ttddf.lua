@@ -1,4 +1,4 @@
--- ===== wdfex San Aurie 最终版（过检测 + 加速 + 范围 + 透视 + 自瞄，无加载动画） =====
+-- ===== wdfex San Aurie 完整版（过检测 + 加速输入框 + 范围 + 透视 + 自瞄 + 加载UI） =====
 
 -- ===== 1. 过检测 =====
 local function SanAurieBypass()
@@ -11,7 +11,7 @@ local function SanAurieBypass()
         local logService = game:GetService("LogService")
         local starterGui = game:GetService("StarterGui")
 
-        local antiKeywords = {"anticheat", "antifly", "antihack", "antikick", "antiban", "cheat", "detect"}
+        local antiKeywords = {"anticheat", "antifly", "antihack", "antikick", "antiban", "cheat", "detect", "admin", "mod", "guard", "protect", "security"}
         for _, obj in pairs(game:GetDescendants()) do
             if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
                 local name = obj.Name:lower()
@@ -70,10 +70,8 @@ local function SanAurieBypass()
                     obj.FireServer = function(self, ...)
                         local args = {...}
                         for _, arg in pairs(args) do
-                            if type(arg) == "string" then
-                                if arg:lower():match("kick") or arg:lower():match("ban") then
-                                    return
-                                end
+                            if type(arg) == "string" and (arg:lower():match("kick") or arg:lower():match("ban")) then
+                                return
                             end
                         end
                         return old(self, ...)
@@ -88,12 +86,20 @@ local function SanAurieBypass()
             end
         end)
 
-        print("过检测已启动")
+        print("✅ 过检测已启动")
     end)
 end
 SanAurieBypass()
 
--- ===== 2. 通知 =====
+-- ===== 2. 防挂机 =====
+local vu = game:GetService("VirtualUser")
+game:GetService("Players").LocalPlayer.Idled:connect(function()
+    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+-- ===== 3. 通知 =====
 local function Notify(text, duration)
     duration = duration or 3
     pcall(function()
@@ -105,16 +111,7 @@ local function Notify(text, duration)
         })
     end)
 end
-
 Notify("✅ wdfex 已加载", 2)
-
--- ===== 3. 防挂机 =====
-local VirtualUserService = game:GetService("VirtualUser")
-game:GetService("Players").LocalPlayer.Idled:connect(function()
-    VirtualUserService:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    wait(1)
-    VirtualUserService:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-end)
 
 -- ===== 4. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
@@ -128,52 +125,117 @@ AnnounceSection:Label("✅ 防267已启动")
 AnnounceSection:Label("✅ 防挂机已启动")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 AnnounceSection:Label("📢 永久免费 | 禁止倒卖")
-AnnounceSection:Label("📢 速度上限80 | 低调使用")
+AnnounceSection:Label("📢 速度1-300 | 低调使用")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
--- ===== 加速Tab =====
+-- ===== 加速Tab（输入框） =====
 local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
 local SpeedSection = SpeedTab:section("速度控制", true)
-SpeedSection:Label("⚠️ 速度超过80会增加被踢风险")
-getgenv().SafeSpeed = 30
-getgenv().SpeedLock = true
-SpeedSection:Slider("步行速度", "Speed", 30, 16, 80, false, function(s)
-    getgenv().SafeSpeed = s
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = s end
-    end)
-end)
-SpeedSection:Toggle("锁定速度", "Lock", true, function(e)
-    getgenv().SpeedLock = e
-end)
-SpeedSection:Textbox("重力", "Gravity", "输入数值", function(g)
-    pcall(function() game.Workspace.Gravity = tonumber(g) or 196.2 end)
-end)
-SpeedSection:Toggle("穿墙", "NoClip", false, function(e)
-    getgenv().NoClip = e
-end)
+SpeedSection:Label("⚠️ 输入速度数值 1-300")
 
-game:GetService("RunService").Stepped:Connect(function()
-    if getgenv().NoClip then
-        pcall(function()
-            local char = game.Players.LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
+-- 当前速度显示（默认1）
+local currentSpeedLabel = SpeedSection:Label("当前速度: 1")
+
+-- 设置默认速度为1
+getgenv().PlayerSpeed = 1
+pcall(function()
+    local hum = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = 1
     end
 end)
 
-game:GetService("RunService").Heartbeat:Connect(function()
-    if getgenv().SpeedLock then
+-- 速度输入框
+SpeedSection:Textbox("输入速度", "SpeedInput", "输入1-300", function(value)
+    local speed = tonumber(value)
+    if speed then
+        if speed < 1 then speed = 1 end
+        if speed > 300 then speed = 300 end
+        getgenv().PlayerSpeed = speed
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.WalkSpeed > 80 then hum.WalkSpeed = getgenv().SafeSpeed end
+            if hum then
+                hum.WalkSpeed = speed
+            end
         end)
+        pcall(function()
+            if currentSpeedLabel then
+                currentSpeedLabel.Text = "当前速度: " .. tostring(speed)
+            end
+        end)
+        Notify("✅ 速度已设为: " .. tostring(speed), 1)
+    else
+        Notify("⚠️ 请输入有效数字", 2)
     end
+end)
+
+-- 预设速度按钮
+SpeedSection:Button("速度 50", function()
+    getgenv().PlayerSpeed = 50
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 50 end
+    end)
+    pcall(function()
+        if currentSpeedLabel then
+            currentSpeedLabel.Text = "当前速度: 50"
+        end
+    end)
+    Notify("✅ 速度已设为: 50", 1)
+end)
+
+SpeedSection:Button("速度 100", function()
+    getgenv().PlayerSpeed = 100
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 100 end
+    end)
+    pcall(function()
+        if currentSpeedLabel then
+            currentSpeedLabel.Text = "当前速度: 100"
+        end
+    end)
+    Notify("✅ 速度已设为: 100", 1)
+end)
+
+SpeedSection:Button("速度 200", function()
+    getgenv().PlayerSpeed = 200
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 200 end
+    end)
+    pcall(function()
+        if currentSpeedLabel then
+            currentSpeedLabel.Text = "当前速度: 200"
+        end
+    end)
+    Notify("✅ 速度已设为: 200", 1)
+end)
+
+SpeedSection:Button("速度 300", function()
+    getgenv().PlayerSpeed = 300
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 300 end
+    end)
+    pcall(function()
+        if currentSpeedLabel then
+            currentSpeedLabel.Text = "当前速度: 300"
+        end
+    end)
+    Notify("✅ 速度已设为: 300", 1)
+end)
+
+-- 速度守卫（防止被服务器拉回）
+game:GetService("RunService").Heartbeat:Connect(function()
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if hum.WalkSpeed ~= getgenv().PlayerSpeed then
+                hum.WalkSpeed = getgenv().PlayerSpeed
+            end
+        end
+    end)
 end)
 
 -- ===== 范围Tab =====
@@ -527,5 +589,5 @@ SettingsSection:Button("关闭脚本", function()
 end)
 
 Notify("✅ wdfex 加载完成", 2)
-print("✅ wdfex San Aurie 最终版加载完成")
+print("✅ wdfex San Aurie 完整版加载完成")
 print("🛡️ 防267已启动")
