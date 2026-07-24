@@ -1,4 +1,4 @@
--- ===== wdfex 完整版（加速 + 范围 + 透视 + 自瞄圈 + 掩体判断 + 自动开火） =====
+-- ===== wdfex 完整版（加速 + 范围 + 透视 + 自瞄圈 + 掩体判断 + 高级卡密验证 + 设备绑定） =====
 
 -- ===== 1. 过检测 =====
 local function BypassAll()
@@ -49,7 +49,7 @@ local function Notify(title, text, duration)
     duration = duration or 3
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title,
+            Title = title or "wdfex",
             Text = text,
             Icon = "rbxassetid://18941716391",
             Duration = duration,
@@ -57,84 +57,140 @@ local function Notify(title, text, duration)
     end)
 end
 
--- ===== 3. 卡密验证 =====
-getgenv().CardVerified = false
-local ValidCards = { ["1"] = true }
-local VerifiedPlayers = {}
-local CurrentPlayer = game.Players.LocalPlayer.Name
-
-local function LoadSavedVerification()
+-- ===== 3. 获取设备UID =====
+local function GetDeviceUID()
+    local uid = nil
     pcall(function()
-        if getgenv()._VerifiedPlayers then VerifiedPlayers = getgenv()._VerifiedPlayers end
-        if VerifiedPlayers[CurrentPlayer] then getgenv().CardVerified = true; return true end
-        return false
+        uid = game:GetService("RbxAnalyticsService"):GetClientId()
     end)
-    return false
-end
-local function SaveVerification()
-    pcall(function() getgenv()._VerifiedPlayers = VerifiedPlayers end)
+    if not uid or uid == "" then
+        pcall(function()
+            local player = game.Players.LocalPlayer
+            uid = player.UserId .. "_" .. game:GetService("RbxAnalyticsService"):GetClientId()
+        end)
+    end
+    if not uid or uid == "" then
+        pcall(function()
+            local http = game:GetService("HttpService")
+            uid = http:GenerateGUID(false)
+        end)
+    end
+    return uid or "UNKNOWN_DEVICE"
 end
 
-if LoadSavedVerification() then
-    Notify("wdfex", "✅ 欢迎回来！卡密已验证", 2)
+local DeviceUID = GetDeviceUID()
+print("📱 设备UID: " .. DeviceUID)
+
+-- ===== 4. 卡密验证系统（设备绑定） =====
+getgenv().CardVerified = false
+getgenv()._DeviceBinds = getgenv()._DeviceBinds or {}
+
+local ValidCards = {
+    ["1"] = true,
+    ["2"] = true,
+    ["3"] = true,
+}
+
+local function CheckDeviceBind()
+    for card, boundDevice in pairs(getgenv()._DeviceBinds) do
+        if boundDevice == DeviceUID and ValidCards[card] then
+            return true, card
+        end
+    end
+    return false, nil
+end
+
+local isBound, boundCard = CheckDeviceBind()
+if isBound then
+    getgenv().CardVerified = true
+    Notify("wdfex", "✅ 设备已验证！卡密已绑定，自动登录", 2)
 else
-    Notify("wdfex", "欢迎使用wdfex，请验证卡密", 2)
+    Notify("wdfex", "🔐 新设备，请验证卡密", 2)
     wait(1)
     Notify("wdfex", "请在公告中输入卡密验证", 3)
 end
 wait(1)
 
--- ===== 4. 加载UI =====
+-- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
--- ===== 公告Tab =====
+-- ===== 公告Tab（高级卡密验证） =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
-local AnnounceSection = AnnounceTab:section("卡密验证", true)
-AnnounceSection:Label("⚠️ 请输入卡密验证后使用功能")
-AnnounceSection:Label("卡密: 联系作者获取")
-AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function(input) getgenv()._CardInput = input end)
-AnnounceSection:Button("验证", function()
+local AnnounceSection = AnnounceTab:section("🔐 卡密验证系统", true)
+
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("⚠️ 验证卡密后解锁全部功能")
+AnnounceSection:Label("📱 绑定后自动登录")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━")
+
+AnnounceSection:Label("📱 设备ID: " .. string.sub(DeviceUID, 1, 20) .. "...")
+
+AnnounceSection:Textbox("📝 请输入卡密", "CardInput", "点击此处输入卡密...", function(input)
+    getgenv()._CardInput = input
+end)
+
+AnnounceSection:Button("✅ 验证并绑定设备", function()
     local input = getgenv()._CardInput
     if input and input ~= "" then
         if ValidCards[input] then
+            if getgenv()._DeviceBinds[input] and getgenv()._DeviceBinds[input] ~= DeviceUID then
+                Notify("wdfex", "❌ 该卡密已被其他设备绑定！", 3)
+                return
+            end
+            getgenv()._DeviceBinds[input] = DeviceUID
             getgenv().CardVerified = true
-            VerifiedPlayers[CurrentPlayer] = true
-            SaveVerification()
-            Notify("✅ 验证成功", "卡密正确！所有功能已解锁", 3)
+            Notify("wdfex", "🎉 验证成功！设备已绑定，下次自动登录", 3)
         else
             getgenv().CardVerified = false
-            Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
+            Notify("wdfex", "❌ 卡密错误，请重新输入", 3)
         end
     else
-        Notify("⚠️ 提示", "请先输入卡密", 2)
+        Notify("wdfex", "⚠️ 请先输入卡密", 2)
     end
 end)
-AnnounceSection:Button("解绑", function()
+
+AnnounceSection:Button("🔓 解绑设备", function()
     if getgenv().CardVerified then
+        for card, device in pairs(getgenv()._DeviceBinds) do
+            if device == DeviceUID then
+                getgenv()._DeviceBinds[card] = nil
+                break
+            end
+        end
         getgenv().CardVerified = false
-        VerifiedPlayers[CurrentPlayer] = nil
-        SaveVerification()
-        Notify("🔓 已解绑", "卡密已解绑", 3)
+        Notify("wdfex", "🔓 已解绑，下次启动需要重新验证", 3)
     else
-        Notify("⚠️ 提示", "当前未绑定卡密", 2)
+        Notify("wdfex", "⚠️ 当前未绑定卡密", 2)
     end
 end)
-local statusLabel = AnnounceSection:Label("状态: ❌ 未验证")
+
+local statusLabel = AnnounceSection:Label("📊 状态: ❌ 未验证")
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.3)
         pcall(function()
             if statusLabel and statusLabel.Parent then
-                if getgenv().CardVerified then statusLabel.Text = "状态: ✅ 已验证" else statusLabel.Text = "状态: ❌ 未验证" end
+                if getgenv().CardVerified then
+                    statusLabel.Text = "📊 状态: ✅ 已验证 (设备已绑定)"
+                else
+                    statusLabel.Text = "📊 状态: ❌ 未验证 (请输入卡密)"
+                end
             end
         end)
     end
 end)
-AnnounceSection:Label("━━━━━━━━━━━━━━━━")
-AnnounceSection:Label("公告内容:")
-AnnounceSection:Label("1. 本脚本永久免费")
-AnnounceSection:Label("2. 禁止倒卖")
-AnnounceSection:Label("3. 安全速度上限80")
+
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("👤 当前用户: " .. game.Players.LocalPlayer.Name)
+AnnounceSection:Label("🆔 用户ID: " .. game.Players.LocalPlayer.UserId)
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━")
+
+AnnounceSection:Label("📢 公告内容:")
+AnnounceSection:Label("  ● 本脚本永久免费")
+AnnounceSection:Label("  ● 禁止倒卖")
+AnnounceSection:Label("  ● 安全速度上限80")
+AnnounceSection:Label("  ● 验证后设备自动绑定，无需重复输入")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━")
 
 -- ===== 信息Tab =====
 local InfoTab = UILibrary:Tab("『信息』", "18930406865")
@@ -142,10 +198,16 @@ local InfoSection = InfoTab:section("玩家信息", true)
 InfoSection:Label("用户名: " .. game.Players.LocalPlayer.Name)
 InfoSection:Label("服务器ID: " .. game.GameId)
 InfoSection:Label("状态: 防267已启动")
+InfoSection:Label("设备UID: " .. string.sub(DeviceUID, 1, 30) .. "...")
+if getgenv().CardVerified then
+    InfoSection:Label("卡密状态: ✅ 已验证")
+else
+    InfoSection:Label("卡密状态: ❌ 未验证")
+end
 
 local function CheckCard()
     if not getgenv().CardVerified then
-        Notify("⚠️ 卡密未验证", "请先在公告中验证卡密", 2)
+        Notify("wdfex", "⚠️ 卡密未验证，请先在公告中验证卡密", 2)
         return false
     end
     return true
@@ -186,7 +248,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
                 if hum.WalkSpeed > 80 then
                     if not getgenv().WarningShown then
                         getgenv().WarningShown = true
-                        Notify("⚠️ 超速警告", "速度超过80！已自动降速", 3)
+                        Notify("wdfex", "⚠️ 超速警告！速度超过80，已自动降速", 3)
                     end
                     hum.WalkSpeed = getgenv().SafeSpeed
                 else
@@ -419,27 +481,22 @@ ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
     getgenv().ShowTracer = enabled
 end)
 
--- ===== 自瞄Tab（带自瞄圈 + 掩体判断 + 自动开火） =====
+-- ===== 自瞄Tab =====
 local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
 local AimSection = AimTab:section("圈圈自瞄", true)
 
 AimSection:Label("⚠️ 开启后准星会自动锁定敌人")
 AimSection:Label("🟢 绿色圈=空闲 | 🔴 红色圈=锁定目标")
 AimSection:Label("✅ 自动掩体判断（被墙挡住不瞄）")
-AimSection:Label("🔥 自动开火：锁定后自动射击")
 
--- 自瞄配置
-getgenv().AimFOV = 150
+getgenv().AimFOV = 200
 getgenv().AimPart = "Head"
 getgenv().AimSmoothness = 5
-getgenv().AimRange = 200
+getgenv().AimRange = 250
 getgenv().AimEnabled = false
 getgenv().AimTeamCheck = false
 getgenv().AimWallCheck = true
-getgenv().AutoFire = false
-getgenv().FireRate = 0.1
 
--- ===== 创建自瞄圈 =====
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible = false
 fovCircle.Radius = getgenv().AimFOV
@@ -449,7 +506,6 @@ fovCircle.Filled = false
 fovCircle.Transparency = 0.5
 fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
 
--- ===== 掩体判断 =====
 local function IsVisible(targetPart)
     if not getgenv().AimWallCheck then return true end
     local success, result = pcall(function()
@@ -467,7 +523,6 @@ local function IsVisible(targetPart)
     return result
 end
 
--- ===== 获取最近敌人 =====
 local function GetClosestEnemy()
     local player = game.Players.LocalPlayer
     local camera = workspace.CurrentCamera
@@ -505,93 +560,28 @@ local function GetClosestEnemy()
     return closest
 end
 
--- 锁定状态
-local isLocked = false
-local lockedTarget = nil
-
--- ===== 自动开火函数 =====
-local function AutoFire()
-    if not getgenv().AutoFire or not getgenv().AimEnabled then return end
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        local char = player.Character
-        if not char then return end
-        
-        -- 获取当前工具
-        local tool = char:FindFirstChildOfClass("Tool")
-        if not tool then
-            -- 从背包拿一个工具
-            local backpack = player.Backpack
-            for _, item in pairs(backpack:GetChildren()) do
-                if item:IsA("Tool") then
-                    tool = item
-                    break
-                end
-            end
-        end
-        
-        if tool then
-            -- 方法1: 直接激活
-            tool:Activate()
-            
-            -- 方法2: 通过RemoteEvent射击（部分游戏）
-            local remote = tool:FindFirstChild("RemoteEvent") or tool:FindFirstChild("Fire") or tool:FindFirstChild("Shoot")
-            if remote then
-                pcall(function()
-                    if remote:IsA("RemoteEvent") then
-                        remote:FireServer()
-                    elseif remote:IsA("BindableEvent") then
-                        remote:Fire()
-                    end
-                end)
-            end
-            
-            -- 方法3: 鼠标点击
-            local mouse = player:GetMouse()
-            if mouse then
-                pcall(function()
-                    mouse.Button1Down:Fire()
-                    task.wait(0.05)
-                    mouse.Button1Up:Fire()
-                end)
-            end
-        end
-    end)
-end
-
--- ===== 更新自瞄圈位置和颜色 =====
 game:GetService("RunService").RenderStepped:Connect(function()
     if getgenv().AimEnabled and getgenv().CardVerified then
         fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
         fovCircle.Radius = getgenv().AimFOV
         fovCircle.Visible = true
-        
         local target = GetClosestEnemy()
         if target then
             local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
             if not targetPart then targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart") end
             if targetPart and IsVisible(targetPart) then
                 fovCircle.Color = Color3.fromRGB(255, 0, 0)
-                isLocked = true
-                lockedTarget = target
             else
                 fovCircle.Color = Color3.fromRGB(0, 255, 0)
-                isLocked = false
-                lockedTarget = nil
             end
         else
             fovCircle.Color = Color3.fromRGB(0, 255, 0)
-            isLocked = false
-            lockedTarget = nil
         end
     else
         fovCircle.Visible = false
-        isLocked = false
-        lockedTarget = nil
     end
 end)
 
--- ===== 自瞄核心 =====
 game:GetService("RunService").RenderStepped:Connect(function()
     if getgenv().AimEnabled and getgenv().CardVerified then
         pcall(function()
@@ -607,11 +597,6 @@ game:GetService("RunService").RenderStepped:Connect(function()
                     local smooth = getgenv().AimSmoothness or 5
                     local lerpFactor = math.min(1, 1 / smooth)
                     camera.CFrame = currentCF:Lerp(newCF, lerpFactor)
-                    
-                    -- 自动开火
-                    if getgenv().AutoFire then
-                        AutoFire()
-                    end
                 end
             end
         end)
@@ -622,20 +607,20 @@ AimSection:Toggle("开启自瞄", "Aim", false, function(enabled)
     if not CheckCard() then return end
     getgenv().AimEnabled = enabled
     if enabled then
-        Notify("✅ 自瞄已开启", "绿色圈=空闲 | 红色圈=锁定", 2)
+        Notify("wdfex", "✅ 自瞄已开启", "绿色圈=空闲 | 红色圈=锁定", 2)
     else
         fovCircle.Visible = false
-        Notify("❌ 自瞄已关闭", "", 1)
+        Notify("wdfex", "❌ 自瞄已关闭", "", 1)
     end
 end)
 
-AimSection:Slider("自瞄范围(FOV)", "FOV", 150, 30, 500, false, function(val)
+AimSection:Slider("自瞄范围(FOV)", "FOV", 200, 30, 500, false, function(val)
     if not CheckCard() then return end
     getgenv().AimFOV = val
     fovCircle.Radius = val
 end)
 
-AimSection:Slider("自瞄距离", "Range", 200, 50, 500, false, function(val)
+AimSection:Slider("自瞄距离", "Range", 250, 50, 500, false, function(val)
     if not CheckCard() then return end
     getgenv().AimRange = val
 end)
@@ -651,7 +636,7 @@ AimSection:Dropdown("瞄准部位", "Part", {
     if not CheckCard() then return end
     local parts = { ["头部"] = "Head", ["躯干"] = "HumanoidRootPart", ["腿部"] = "Right Leg" }
     getgenv().AimPart = parts[part] or "Head"
-    Notify("✅ 瞄准部位已切换", part, 1)
+    Notify("wdfex", "✅ 瞄准部位已切换", part, 1)
 end)
 
 AimSection:Toggle("队伍检测", "TeamCheck", false, function(enabled)
@@ -662,19 +647,7 @@ end)
 AimSection:Toggle("掩体判断", "WallCheck", true, function(enabled)
     if not CheckCard() then return end
     getgenv().AimWallCheck = enabled
-    Notify(enabled and "✅ 掩体判断已开启" or "❌ 掩体判断已关闭", "", 1)
-end)
-
--- ===== 自动开火开关 =====
-AimSection:Toggle("自动开火", "AutoFire", false, function(enabled)
-    if not CheckCard() then return end
-    getgenv().AutoFire = enabled
-    Notify(enabled and "🔥 自动开火已开启" or "❌ 自动开火已关闭", enabled and "锁定敌人后自动射击" or "", 2)
-end)
-
-AimSection:Slider("开火间隔(秒)", "FireRate", 0.1, 0.05, 0.5, false, function(val)
-    if not CheckCard() then return end
-    getgenv().FireRate = val
+    Notify("wdfex", enabled and "✅ 掩体判断已开启" or "❌ 掩体判断已关闭", "", 1)
 end)
 
 -- ===== 设置Tab =====
@@ -685,7 +658,6 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     getgenv().AimEnabled = false
-    getgenv().AutoFire = false
     ClearESP()
     pcall(function() fovCircle:Remove() end)
     pcall(function()
@@ -697,4 +669,4 @@ end)
 print("✅ wdfex加载完成 - 卡密: 1")
 print("🟢 自瞄圈: 绿色=空闲 | 🔴 红色=锁定目标")
 print("✅ 掩体判断已开启")
-print("🔥 自动开火: 锁定后自动射击")
+print("📱 设备绑定已开启")
