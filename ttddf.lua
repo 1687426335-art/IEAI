@@ -3,7 +3,6 @@
 -- ===== 1. 加载动画（覆盖全屏） =====
 local function CreateLoadingScreen()
     pcall(function()
-        -- 创建全屏覆盖GUI
         local screenGui = Instance.new("ScreenGui")
         screenGui.Name = "LoadingScreen"
         screenGui.Parent = game:GetService("CoreGui")
@@ -11,7 +10,6 @@ local function CreateLoadingScreen()
         screenGui.DisplayOrder = 9999
         screenGui.ResetOnSpawn = false
         
-        -- 全屏黑色背景
         local background = Instance.new("Frame")
         background.Name = "Background"
         background.Parent = screenGui
@@ -20,7 +18,6 @@ local function CreateLoadingScreen()
         background.BackgroundTransparency = 0
         background.ZIndex = 10
         
-        -- 加载文字
         local loadingText = Instance.new("TextLabel")
         loadingText.Name = "LoadingText"
         loadingText.Parent = screenGui
@@ -34,7 +31,6 @@ local function CreateLoadingScreen()
         loadingText.Font = Enum.Font.GothamBold
         loadingText.ZIndex = 11
         
-        -- 加载进度条背景
         local progressBg = Instance.new("Frame")
         progressBg.Name = "ProgressBg"
         progressBg.Parent = screenGui
@@ -44,12 +40,10 @@ local function CreateLoadingScreen()
         progressBg.BackgroundTransparency = 0
         progressBg.ZIndex = 11
         
-        -- 圆角
         local corner1 = Instance.new("UICorner")
         corner1.Parent = progressBg
         corner1.CornerRadius = UDim.new(0, 3)
         
-        -- 加载进度条
         local progressBar = Instance.new("Frame")
         progressBar.Name = "ProgressBar"
         progressBar.Parent = progressBg
@@ -62,7 +56,6 @@ local function CreateLoadingScreen()
         corner2.Parent = progressBar
         corner2.CornerRadius = UDim.new(0, 3)
         
-        -- 百分比文字
         local percentText = Instance.new("TextLabel")
         percentText.Name = "PercentText"
         percentText.Parent = screenGui
@@ -75,7 +68,6 @@ local function CreateLoadingScreen()
         percentText.Font = Enum.Font.Gotham
         percentText.ZIndex = 11
         
-        -- 加载小点动画
         local dots = Instance.new("TextLabel")
         dots.Name = "Dots"
         dots.Parent = screenGui
@@ -88,7 +80,6 @@ local function CreateLoadingScreen()
         dots.Font = Enum.Font.GothamBold
         dots.ZIndex = 11
         
-        -- 更新进度条动画
         local function UpdateProgress(percent)
             pcall(function()
                 progressBar.Size = UDim2.new(percent / 100, 0, 1, 0)
@@ -96,7 +87,6 @@ local function CreateLoadingScreen()
             end)
         end
         
-        -- 小点动画
         task.spawn(function()
             local dotStates = {"   ", ".  ", ".. ", "..."}
             local idx = 1
@@ -111,7 +101,6 @@ local function CreateLoadingScreen()
             end
         end)
         
-        -- 返回更新函数和关闭函数
         return {
             Update = UpdateProgress,
             Close = function()
@@ -126,10 +115,8 @@ local function CreateLoadingScreen()
     return nil
 end
 
--- 创建加载动画
 local loading = CreateLoadingScreen()
 
--- ===== 2. 模拟加载进度 =====
 task.spawn(function()
     if loading then
         for i = 1, 100 do
@@ -145,7 +132,7 @@ task.spawn(function()
     end
 end)
 
--- ===== 3. 过检测 =====
+-- ===== 2. 过检测 =====
 local function SanAurieBypass()
     pcall(function()
         local player = game:GetService("Players").LocalPlayer
@@ -238,7 +225,7 @@ local function SanAurieBypass()
 end
 SanAurieBypass()
 
--- ===== 4. 通知 =====
+-- ===== 3. 通知 =====
 local function Notify(text, duration)
     duration = duration or 3
     pcall(function()
@@ -251,7 +238,7 @@ local function Notify(text, duration)
     end)
 end
 
--- ===== 5. 防挂机 =====
+-- ===== 4. 防挂机 =====
 local VirtualUserService = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
     VirtualUserService:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
@@ -259,10 +246,10 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
     VirtualUserService:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- ===== 6. 加载UI =====
+-- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
--- ===== 公告Tab =====
+-- ===== 公告Tab（无卡密验证） =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("🛡️ 系统状态", true)
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
@@ -270,12 +257,9 @@ AnnounceSection:Label("✅ 过检测已启动")
 AnnounceSection:Label("✅ 防267已启动")
 AnnounceSection:Label("✅ 防挂机已启动")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AnnounceSection:Label("📢 永久免费 | 禁止倒卖 | 速度上限80")
-
--- ===== 功能检查 =====
-local function CheckStatus()
-    return true
-end
+AnnounceSection:Label("📢 永久免费 | 禁止倒卖")
+AnnounceSection:Label("📢 速度上限80 | 低调使用")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
 -- ===== 加速Tab =====
 local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
