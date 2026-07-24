@@ -1,4 +1,4 @@
--- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 顶部浮动文字 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -98,16 +98,83 @@ local function SaveVerification()
 end
 
 if LoadSavedVerification() then
-    Notify("皮脚本", "✅ 欢迎回来！卡密已验证", 2)
+    Notify("wdfex", "✅ 欢迎回来！卡密已验证", 2)
 else
-    Notify("皮脚本", "欢迎使用皮脚本，请验证卡密", 2)
+    Notify("wdfex", "欢迎使用wdfex，请验证卡密", 2)
     wait(1)
-    Notify("皮脚本", "请在公告中输入卡密验证", 3)
+    Notify("wdfex", "请在公告中输入卡密验证", 3)
 end
 wait(1)
 
--- ===== 4. 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本-卡密验证")
+-- ===== 4. 顶部浮动文字（屏幕最上方） =====
+local function CreateTopText()
+    pcall(function()
+        -- 创建ScreenGui
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "TopFloatText"
+        gui.Parent = game:GetService("CoreGui")
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.ResetOnSpawn = false
+        
+        -- 创建TextLabel
+        local label = Instance.new("TextLabel")
+        label.Name = "FloatLabel"
+        label.Parent = gui
+        label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        label.BackgroundTransparency = 0.3
+        label.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        label.BorderSizePixel = 1
+        label.Size = UDim2.new(0, 200, 0, 35)
+        label.Position = UDim2.new(0.5, -100, 0, 5)
+        label.Font = Enum.Font.GothamBold
+        label.Text = "你好"
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextScaled = true
+        label.TextSize = 20
+        label.TextWrapped = true
+        label.ClipsDescendants = false
+        
+        -- 圆角
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = label
+        
+        -- 阴影效果（发光边框）
+        local stroke = Instance.new("UIStroke")
+        stroke.Parent = label
+        stroke.Color = Color3.fromRGB(255, 0, 0)
+        stroke.Thickness = 1
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        
+        -- 让文字一直在最上面
+        gui.DisplayOrder = 9999
+        
+        -- 循环：让文字左右轻微飘动（浮动的感觉）
+        task.spawn(function()
+            local direction = 1
+            while gui and label and label.Parent do
+                pcall(function()
+                    local posX = label.Position.X.Scale
+                    -- 左右浮动 -0.02 到 +0.02
+                    posX = posX + direction * 0.001
+                    if posX > 0.52 then
+                        direction = -1
+                    elseif posX < 0.48 then
+                        direction = 1
+                    end
+                    label.Position = UDim2.new(posX, -100, 0, 5)
+                end)
+                task.wait(0.02)
+            end
+        end)
+    end)
+end
+
+-- 启动顶部浮动文字
+CreateTopText()
+
+-- ===== 5. 加载UI =====
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
 -- ===== 公告Tab（第一排） =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
@@ -572,10 +639,15 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     ClearESP()
+    -- 删除顶部文字
+    pcall(function()
+        local gui = game:GetService("CoreGui"):FindFirstChild("TopFloatText")
+        if gui then gui:Destroy() end
+    end)
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
         if frosty then frosty:Destroy() end
     end)
 end)
 
-print("✅ 皮脚本加载完成 - 卡密为: 1")
+print("✅ wdfex加载完成 - 卡密为: 1")
