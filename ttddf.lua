@@ -1,6 +1,6 @@
--- ===== wdfex San Aurie 最终版（过检测 + 加速 + 范围 + 透视 + 自瞄 + 加载动画） =====
+-- ===== wdfex San Aurie 完整版（过检测 + 加速 + 范围 + 透视 + 自瞄 + 加载动画） =====
 
--- ===== 1. 加载动画（覆盖全屏） =====
+-- ===== 1. 加载动画 =====
 local function CreateLoadingScreen()
     pcall(function()
         local screenGui = Instance.new("ScreenGui")
@@ -82,8 +82,8 @@ local function CreateLoadingScreen()
         
         local function UpdateProgress(percent)
             pcall(function()
-                progressBar.Size = UDim2.new(percent / 100, 0, 1, 0)
-                percentText.Text = math.floor(percent) .. "%"
+                progressBar.Size = UDim2.new(math.clamp(percent / 100, 0, 1), 0, 1, 0)
+                percentText.Text = math.floor(math.clamp(percent, 0, 100)) .. "%"
             end)
         end
         
@@ -119,7 +119,7 @@ local loading = CreateLoadingScreen()
 
 task.spawn(function()
     if loading then
-        for i = 1, 100 do
+        for i = 0, 100 do
             pcall(function()
                 loading.Update(i)
             end)
@@ -238,6 +238,8 @@ local function Notify(text, duration)
     end)
 end
 
+Notify("✅ wdfex 已加载", 2)
+
 -- ===== 4. 防挂机 =====
 local VirtualUserService = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
@@ -249,7 +251,7 @@ end)
 -- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
--- ===== 公告Tab（无卡密验证） =====
+-- ===== 公告Tab =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("🛡️ 系统状态", true)
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
@@ -657,5 +659,5 @@ SettingsSection:Button("关闭脚本", function()
 end)
 
 Notify("✅ wdfex 加载完成", 2)
-print("✅ wdfex San Aurie 最终版加载完成")
+print("✅ wdfex San Aurie 完整版加载完成")
 print("🛡️ 防267已启动")
