@@ -1,4 +1,4 @@
--- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 顶部浮动文字 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 顶部滚动文字 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -106,26 +106,27 @@ else
 end
 wait(1)
 
--- ===== 4. 顶部浮动文字（屏幕最上方） =====
-local function CreateTopText()
+-- ===== 4. 顶部滚动文字（从左边滚到右边，循环） =====
+local function CreateTopScrollText()
     pcall(function()
         -- 创建ScreenGui
         local gui = Instance.new("ScreenGui")
-        gui.Name = "TopFloatText"
+        gui.Name = "TopScrollText"
         gui.Parent = game:GetService("CoreGui")
         gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         gui.ResetOnSpawn = false
+        gui.DisplayOrder = 9999
         
         -- 创建TextLabel
         local label = Instance.new("TextLabel")
-        label.Name = "FloatLabel"
+        label.Name = "ScrollLabel"
         label.Parent = gui
         label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        label.BackgroundTransparency = 0.3
+        label.BackgroundTransparency = 0.4
         label.BorderColor3 = Color3.fromRGB(255, 0, 0)
         label.BorderSizePixel = 1
-        label.Size = UDim2.new(0, 200, 0, 35)
-        label.Position = UDim2.new(0.5, -100, 0, 5)
+        label.Size = UDim2.new(0, 220, 0, 35)
+        label.Position = UDim2.new(0, -220, 0, 5) -- 从左边屏幕外开始
         label.Font = Enum.Font.GothamBold
         label.Text = "你好"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -139,39 +140,43 @@ local function CreateTopText()
         corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = label
         
-        -- 阴影效果（发光边框）
+        -- 边框发光
         local stroke = Instance.new("UIStroke")
         stroke.Parent = label
         stroke.Color = Color3.fromRGB(255, 0, 0)
         stroke.Thickness = 1
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         
-        -- 让文字一直在最上面
-        gui.DisplayOrder = 9999
-        
-        -- 循环：让文字左右轻微飘动（浮动的感觉）
+        -- 滚动循环：从左边滚到右边，然后重置
         task.spawn(function()
-            local direction = 1
             while gui and label and label.Parent do
-                pcall(function()
-                    local posX = label.Position.X.Scale
-                    -- 左右浮动 -0.02 到 +0.02
-                    posX = posX + direction * 0.001
-                    if posX > 0.52 then
-                        direction = -1
-                    elseif posX < 0.48 then
-                        direction = 1
-                    end
-                    label.Position = UDim2.new(posX, -100, 0, 5)
-                end)
-                task.wait(0.02)
+                -- 从左边屏幕外开始（-220 到 屏幕宽度 + 220）
+                local startPos = -220
+                local endPos = game:GetService("GuiService").ScreenSize.X + 220
+                local speed = 150 -- 像素/秒，可调
+                
+                -- 先重置到左边
+                label.Position = UDim2.new(0, startPos, 0, 5)
+                
+                -- 滚动到右边
+                while label and label.Parent and label.Position.X.Offset < endPos do
+                    pcall(function()
+                        local currentX = label.Position.X.Offset
+                        local newX = currentX + speed * task.wait(0.02)
+                        label.Position = UDim2.new(0, newX, 0, 5)
+                    end)
+                end
+                
+                -- 到达右边后，重置到左边（不等待，直接循环）
+                if label and label.Parent then
+                    label.Position = UDim2.new(0, startPos, 0, 5)
+                end
             end
         end)
     end)
 end
 
--- 启动顶部浮动文字
-CreateTopText()
+-- 启动顶部滚动文字
+CreateTopScrollText()
 
 -- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
@@ -639,9 +644,9 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     ClearESP()
-    -- 删除顶部文字
+    -- 删除顶部滚动文字
     pcall(function()
-        local gui = game:GetService("CoreGui"):FindFirstChild("TopFloatText")
+        local gui = game:GetService("CoreGui"):FindFirstChild("TopScrollText")
         if gui then gui:Destroy() end
     end)
     pcall(function()
