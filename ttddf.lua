@@ -1,4 +1,4 @@
--- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 左上角彩色文字 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 子弹追踪 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -106,77 +106,7 @@ else
 end
 wait(1)
 
--- ===== 4. 左上角彩色渐变文字 =====
-local function CreateTopLeftText()
-    pcall(function()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "TopLeftText"
-        gui.Parent = game:GetService("CoreGui")
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        gui.ResetOnSpawn = false
-        gui.DisplayOrder = 9999
-        
-        local label = Instance.new("TextLabel")
-        label.Name = "FixedLabel"
-        label.Parent = gui
-        label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        label.BackgroundTransparency = 0.3
-        label.BorderColor3 = Color3.fromRGB(255, 255, 255)
-        label.BorderSizePixel = 0
-        label.Size = UDim2.new(0, 80, 0, 28)
-        label.Position = UDim2.new(0, 10, 0, 10)
-        label.Font = Enum.Font.GothamBold
-        label.Text = "你好"
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 16
-        label.TextWrapped = true
-        label.ClipsDescendants = false
-        label.ZIndex = 9999
-        
-        -- 彩虹渐变
-        local gradient = Instance.new("UIGradient")
-        gradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-            ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
-            ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
-            ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 255, 255)),
-            ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0, 0, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
-        })
-        gradient.Rotation = 0
-        gradient.Parent = label
-        
-        -- 圆角
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = label
-        
-        -- 边框
-        local stroke = Instance.new("UIStroke")
-        stroke.Parent = label
-        stroke.Color = Color3.fromRGB(255, 255, 255)
-        stroke.Thickness = 1
-        stroke.Transparency = 0.3
-        
-        -- 彩虹动画
-        task.spawn(function()
-            while gradient and gradient.Parent do
-                pcall(function()
-                    for i = 0, 360, 2 do
-                        if not gradient or not gradient.Parent then break end
-                        gradient.Rotation = i
-                        task.wait(0.02)
-                    end
-                end)
-            end
-        end)
-    end)
-end
-
-CreateTopLeftText()
-
--- ===== 5. 加载UI =====
+-- ===== 4. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
 -- ===== 公告Tab =====
@@ -594,6 +524,137 @@ ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
     getgenv().ShowTracer = enabled
 end)
 
+-- ===== 子弹追踪Tab =====
+local AimTab = UILibrary:Tab("『子弹追踪』", "18930406865")
+local AimSection = AimTab:section("子弹追踪设置", true)
+
+AimSection:Label("⚠️ 子弹追踪会让子弹自动瞄准敌人")
+AimSection:Label("开启后子弹会拐弯打人")
+
+getgenv().BulletTrack = false
+getgenv().AimPart = "Head"
+
+AimSection:Toggle("开启子弹追踪", "BulletTrack", false, function(enabled)
+    if not CheckCard() then return end
+    getgenv().BulletTrack = enabled
+    if enabled then
+        Notify("✅ 子弹追踪已开启", "子弹将自动追踪敌人", 2)
+    else
+        Notify("❌ 子弹追踪已关闭", "", 1)
+    end
+end)
+
+AimSection:Dropdown("瞄准部位", "AimPart", {
+    "头部", "颈部", "躯干", "左臂", "右臂", "左腿", "右腿"
+}, function(part)
+    if not CheckCard() then return end
+    local parts = {
+        ["头部"] = "Head",
+        ["颈部"] = "Neck",
+        ["躯干"] = "Torso",
+        ["左臂"] = "Left Arm",
+        ["右臂"] = "Right Arm",
+        ["左腿"] = "Left Leg",
+        ["右腿"] = "Right Leg",
+    }
+    getgenv().AimPart = parts[part] or "Head"
+    Notify("✅ 瞄准部位已切换", part, 1)
+end)
+
+AimSection:Slider("追踪范围", "Range", 100, 30, 500, false, function(range)
+    if not CheckCard() then return end
+    getgenv().AimRange = range
+end)
+
+AimSection:Slider("追踪速度", "Speed", 5, 1, 20, false, function(speed)
+    if not CheckCard() then return end
+    getgenv().AimSpeed = speed
+end)
+
+-- ===== 子弹追踪核心逻辑 =====
+local function BulletTrackFunction()
+    if not getgenv().BulletTrack then return end
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local camera = workspace.CurrentCamera
+        local mouse = player:GetMouse()
+        
+        -- 获取最近的敌人
+        local function GetClosestEnemy()
+            local closest = nil
+            local closestDist = getgenv().AimRange or 200
+            
+            for _, enemy in pairs(game.Players:GetPlayers()) do
+                if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Humanoid") and enemy.Character.Humanoid.Health > 0 then
+                    local hrp = enemy.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                        if onScreen then
+                            local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
+                            if dist < closestDist then
+                                closestDist = dist
+                                closest = enemy
+                            end
+                        end
+                    end
+                end
+            end
+            return closest
+        end
+        
+        -- 获取瞄准部位的位置
+        local function GetTargetPosition(enemy)
+            if not enemy or not enemy.Character then return nil end
+            local part = enemy.Character:FindFirstChild(getgenv().AimPart or "Head")
+            if not part then
+                part = enemy.Character:FindFirstChild("HumanoidRootPart")
+            end
+            return part and part.Position
+        end
+        
+        -- 修改子弹方向（通过Hook投射物创建）
+        local oldShoot = nil
+        if not getgenv()._bulletHooked then
+            getgenv()._bulletHooked = true
+            
+            -- 方法1：Hook 远程事件（适用于大部分游戏）
+            local replicatedStorage = game:GetService("ReplicatedStorage")
+            for _, child in pairs(replicatedStorage:GetDescendants()) do
+                if child:IsA("RemoteEvent") and (child.Name:lower():match("shoot") or child.Name:lower():match("fire") or child.Name:lower():match("bullet")) then
+                    local oldFire = child.FireServer
+                    child.FireServer = function(self, ...)
+                        if getgenv().BulletTrack then
+                            local target = GetClosestEnemy()
+                            if target then
+                                local targetPos = GetTargetPosition(target)
+                                if targetPos then
+                                    local args = {...}
+                                    -- 尝试修改子弹方向参数（具体取决于游戏）
+                                    for i, arg in pairs(args) do
+                                        if type(arg) == "Vector3" then
+                                            args[i] = targetPos
+                                            break
+                                        end
+                                    end
+                                    return oldFire(self, unpack(args))
+                                end
+                            end
+                        end
+                        return oldFire(self, ...)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- 每帧执行子弹追踪
+game:GetService("RunService").RenderStepped:Connect(function()
+    if getgenv().BulletTrack and getgenv().CardVerified then
+        BulletTrackFunction()
+    end
+end)
+
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
@@ -602,11 +663,8 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().HitboxEnabled = false
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
+    getgenv().BulletTrack = false
     ClearESP()
-    pcall(function()
-        local gui = game:GetService("CoreGui"):FindFirstChild("TopLeftText")
-        if gui then gui:Destroy() end
-    end)
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
         if frosty then frosty:Destroy() end
