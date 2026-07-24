@@ -1,4 +1,4 @@
--- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 顶部滚动文字 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 左上角彩色文字 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -106,68 +106,75 @@ else
 end
 wait(1)
 
--- ===== 4. 顶部滚动文字 =====
-local function CreateTopScrollText()
+-- ===== 4. 左上角彩色渐变文字 =====
+local function CreateTopLeftText()
     pcall(function()
         local gui = Instance.new("ScreenGui")
-        gui.Name = "TopScrollText"
+        gui.Name = "TopLeftText"
         gui.Parent = game:GetService("CoreGui")
         gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         gui.ResetOnSpawn = false
         gui.DisplayOrder = 9999
         
         local label = Instance.new("TextLabel")
-        label.Name = "ScrollLabel"
+        label.Name = "FixedLabel"
         label.Parent = gui
         label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        label.BackgroundTransparency = 0.4
-        label.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        label.BorderSizePixel = 1
-        label.Size = UDim2.new(0, 80, 0, 22)
-        label.Position = UDim2.new(0, -80, 0, 4)
+        label.BackgroundTransparency = 0.3
+        label.BorderColor3 = Color3.fromRGB(255, 255, 255)
+        label.BorderSizePixel = 0
+        label.Size = UDim2.new(0, 80, 0, 28)
+        label.Position = UDim2.new(0, 10, 0, 10)
         label.Font = Enum.Font.GothamBold
         label.Text = "你好"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 14
+        label.TextSize = 16
         label.TextWrapped = true
         label.ClipsDescendants = false
         label.ZIndex = 9999
         
+        -- 彩虹渐变
+        local gradient = Instance.new("UIGradient")
+        gradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+            ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
+            ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+            ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 255, 255)),
+            ColorSequenceKeypoint.new(0.83, Color3.fromRGB(0, 0, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 255))
+        })
+        gradient.Rotation = 0
+        gradient.Parent = label
+        
+        -- 圆角
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
+        corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = label
         
+        -- 边框
         local stroke = Instance.new("UIStroke")
         stroke.Parent = label
-        stroke.Color = Color3.fromRGB(255, 0, 0)
+        stroke.Color = Color3.fromRGB(255, 255, 255)
         stroke.Thickness = 1
+        stroke.Transparency = 0.3
         
+        -- 彩虹动画
         task.spawn(function()
-            while gui and label and label.Parent do
-                local startX = -80
-                local endX = game:GetService("GuiService").ScreenSize.X + 50
-                local speed = 180
-                
-                label.Position = UDim2.new(0, startX, 0, 4)
-                
-                while label and label.Parent and label.Position.X.Offset < endX do
-                    pcall(function()
-                        local currentX = label.Position.X.Offset
-                        local newX = currentX + speed * task.wait(0.016)
-                        label.Position = UDim2.new(0, newX, 0, 4)
-                    end)
-                end
-                
-                if label and label.Parent then
-                    label.Position = UDim2.new(0, startX, 0, 4)
-                end
-                task.wait(0.1)
+            while gradient and gradient.Parent do
+                pcall(function()
+                    for i = 0, 360, 2 do
+                        if not gradient or not gradient.Parent then break end
+                        gradient.Rotation = i
+                        task.wait(0.02)
+                    end
+                end)
             end
         end)
     end)
 end
 
-CreateTopScrollText()
+CreateTopLeftText()
 
 -- ===== 5. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
@@ -597,7 +604,7 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().ESPEnabled = false
     ClearESP()
     pcall(function()
-        local gui = game:GetService("CoreGui"):FindFirstChild("TopScrollText")
+        local gui = game:GetService("CoreGui"):FindFirstChild("TopLeftText")
         if gui then gui:Destroy() end
     end)
     pcall(function()
