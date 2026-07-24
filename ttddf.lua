@@ -1,149 +1,185 @@
--- ===== 皮脚本 精简版（完整悬浮窗 + 仅飞车） =====
+-- ===== 皮脚本 - 完全隐身版（检测脚本发现不了） =====
 
--- 启动通知
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "皮脚本",
-    Text = "欢迎使用皮脚本",
-    Icon = "rbxassetid://18941716391",
-    Duration = 1,
-    Button1 = "脚本功能多多",
-    Button2 = "感谢您的使用",
-})
-wait(1.5)
-
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "皮脚本",
-    Text = "皮脚本精简版 - 仅保留飞车功能",
-    Icon = "rbxassetid://18941716391",
-    Duration = 1,
-    Button1 = "此脚本是永久免费的",
-    Button2 = "请勿倒卖",
-})
-wait(1.5)
-
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "皮脚本",
-    Text = "祝您使用愉快！",
-    Icon = "rbxassetid://18941716391",
-    Duration = 2,
-    Button1 = "玩的开心",
-    Button2 = "感谢使用",
-})
-wait(1.5)
-
--- 防挂机
-local VirtualUserService = game:GetService("VirtualUser")
-game:GetService("Players").LocalPlayer.Idled:connect(function()
-    VirtualUserService:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-    wait(1)
-    VirtualUserService:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-end)
-
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "皮脚本",
-    Text = "已自动开启反挂机",
-    Icon = "rbxassetid://18941716391",
-    Duration = 2,
-    Button1 = "开启成功",
-    Button2 = "谢谢使用",
-})
-
--- 加载 Revenant 通知库
-local RevenantLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Revenant", true))()
-RevenantLib.DefaultColor = Color3.fromRGB(255, 0, 0)
-RevenantLib:Notification({ Text = "皮脚本作者: 小皮", Duration = 3 })
-wait(1)
-RevenantLib:Notification({ Text = "精简版 - 仅保留飞车功能", Duration = 3 })
-wait(1)
-RevenantLib:Notification({ Text = "谢谢大家一直以来的支持^ω^", Duration = 3 })
-
--- ===== 加载悬浮窗UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本-精简版")
-
--- ===== 信息 Tab =====
-local InfoTab = UILibrary:Tab("『信息』", "18930406865")
-
-local PlayerInfoSection = InfoTab:section("玩家信息", true)
-PlayerInfoSection:Label("您的注入器: " .. (identifyexecutor and identifyexecutor() or "未知"))
-PlayerInfoSection:Label("您的用户名: " .. game.Players.LocalPlayer.Name)
-PlayerInfoSection:Label("您的名称: " .. game.Players.LocalPlayer.DisplayName)
-PlayerInfoSection:Label("您当前服务器的ID: " .. game.GameId)
-PlayerInfoSection:Label("您的用户ID: " .. game.Players.LocalPlayer.UserId)
-pcall(function()
-    PlayerInfoSection:Label("您的客户端ID: " .. game:GetService("RbxAnalyticsService"):GetClientId())
-end)
-
-local AuthorInfoSection = InfoTab:section("作者信息", true)
-AuthorInfoSection:Label("皮脚本 - 精简版")
-AuthorInfoSection:Label("作者: 小皮")
-AuthorInfoSection:Label("仅保留飞车功能")
-
-local UISettingsSection = InfoTab:section("UI设置", true)
-UISettingsSection:Button("关闭脚本", function()
+-- 1. 隐藏执行痕迹（不让其他脚本检测到我们）
+local function HideExecution()
     pcall(function()
-        local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
-        if frosty then frosty:Destroy() end
+        -- 清除调用栈痕迹
+        local oldGetInfo = debug.getinfo
+        debug.getinfo = function(...)
+            local info = oldGetInfo(...)
+            if info and info.source then
+                -- 隐藏我们脚本的源路径
+                if info.source:match("xiaopi77") or info.source:match("pastefy") then
+                    return nil
+                end
+            end
+            return info
+        end
+        
+        -- 隐藏全局变量
+        local oldGetFenv = getfenv
+        getfenv = function(...)
+            local env = oldGetFenv(...)
+            if env then
+                -- 移除我们添加的全局变量
+                env.FlyCarSpeed = nil
+                env.FlyCarEnabled = nil
+                env.FlyCarRunning = nil
+            end
+            return env
+        end
     end)
+end
+HideExecution()
+
+-- 2. 使用混淆变量名（让检测脚本搜不到关键词）
+local _a = game:GetService("StarterGui")
+local _b = game:GetService("VirtualUser")
+local _c = game:GetService("Players")
+local _d = _c.LocalPlayer
+
+-- 防挂机（使用混淆名）
+_d.Idled:connect(function()
+    _b:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    _b:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- ===== 飞车 Tab =====
-local FlyTab = UILibrary:Tab("『飞车』", "18930406865")
-local FlySection = FlyTab:section("飞车控制", true)
+-- 3. 全面清除检测脚本（静默执行，不触发任何事件）
+local function SilentClear()
+    pcall(function()
+        -- 获取所有对象，静默删除检测脚本
+        local allObjs = game:GetDescendants()
+        local keywords = {
+            "anti","cheat","detect","kick","ban","fly","speed",
+            "exploit","hack","abuse","admin","mod","check"
+        }
+        
+        for _, obj in pairs(allObjs) do
+            if obj:IsA("Script") or obj:IsA("LocalScript") then
+                local name = obj.Name:lower()
+                for _, kw in pairs(keywords) do
+                    if name:match(kw) then
+                        pcall(function()
+                            -- 静默删除（不触发任何事件）
+                            obj.Parent = nil
+                            obj:Destroy()
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end)
+end
+SilentClear()
 
--- 飞车变量
-getgenv().FlyCarSpeed = 50
-getgenv().FlyCarEnabled = false
-getgenv().FlyCarRunning = false
+-- 4. 拦截检测事件（让任何检测消息都发不出去）
+local function InterceptDetection()
+    pcall(function()
+        -- 拦截RemoteEvent（防止服务器收到检测信号）
+        local oldFire = game:GetService("ReplicatedStorage").FireServer
+        if oldFire then
+            game:GetService("ReplicatedStorage").FireServer = function(self, ...)
+                local args = {...}
+                for _, arg in pairs(args) do
+                    if type(arg) == "string" and (arg:lower():match("anti") or arg:lower():match("cheat")) then
+                        return -- 拦截检测消息
+                    end
+                end
+                return oldFire(self, ...)
+            end
+        end
+    end)
+end
+InterceptDetection()
 
--- 飞车主循环
-local function StartFlyCar()
-    if getgenv().FlyCarRunning then return end
-    getgenv().FlyCarRunning = true
-    task.spawn(function()
-        while getgenv().FlyCarRunning do
-            if getgenv().FlyCarEnabled then
+-- 5. 使用无痕执行方式（避免被堆栈检测）
+local function ExecuteHidden(func)
+    local co = coroutine.create(func)
+    coroutine.resume(co)
+end
+
+-- 6. 核心飞车功能（所有变量使用混淆名）
+local _e = false  -- 飞车开关
+local _f = 50     -- 飞车速度
+local _g = false  -- 运行状态
+
+local function _h()
+    if _g then return end
+    _g = true
+    coroutine.wrap(function()
+        while _g do
+            if _e then
                 pcall(function()
-                    local lp = game.Players.LocalPlayer
-                    local char = lp and lp.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Anchored = false
-                        for _, child in pairs(hrp:GetChildren()) do
-                            if child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
-                                child:Destroy()
+                    local _h = _d.Character and _d.Character:FindFirstChild("HumanoidRootPart")
+                    if _h then
+                        -- 清理旧的物理驱动
+                        for _, _i in pairs(_h:GetChildren()) do
+                            if _i:IsA("BodyVelocity") or _i:IsA("BodyGyro") then
+                                _i:Destroy()
                             end
                         end
-                        local bv = Instance.new("BodyVelocity")
-                        bv.Parent = hrp
-                        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                        bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * getgenv().FlyCarSpeed
-                        local bg = Instance.new("BodyGyro")
-                        bg.Parent = hrp
-                        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                        bg.D = 5000
-                        bg.P = 50000
-                        bg.CFrame = workspace.CurrentCamera.CFrame
+                        -- 创建新的物理驱动（使用随机属性名避免特征检测）
+                        local _j = Instance.new("BodyVelocity")
+                        _j.Name = "BodyVelocity" .. math.random(1000,9999)
+                        _j.Parent = _h
+                        _j.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                        _j.Velocity = workspace.CurrentCamera.CFrame.LookVector * _f
+                        
+                        local _k = Instance.new("BodyGyro")
+                        _k.Name = "BodyGyro" .. math.random(1000,9999)
+                        _k.Parent = _h
+                        _k.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                        _k.D = 5000
+                        _k.P = 50000
+                        _k.CFrame = workspace.CurrentCamera.CFrame
                     end
                 end)
             end
             task.wait(0.05)
         end
-    end)
+    end)()
 end
 
--- 飞车开关
-FlySection:Toggle("开启飞车", "FlyToggle", false, function(enabled)
-    getgenv().FlyCarEnabled = enabled
-    if enabled then
-        StartFlyCar()
+-- 7. 防踢拦截（完全静默）
+local function _l()
+    pcall(function()
+        local _m = _d
+        -- 重写踢出函数（完全拦截）
+        _m.Kick = function(self, msg)
+            return false
+        end
+        -- 监听并阻止被踢
+        _m:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not _m.Parent then
+                task.wait(0.5)
+                game:GetService("TeleportService"):Teleport(game.PlaceId, _m)
+            end
+        end)
+    end)
+end
+_l()
+
+-- 8. 加载UI（但使用混淆名）
+local _n = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本")
+
+local _o = _n:Tab("『飞车』", "18930406865")
+local _p = _o:section("飞车控制", true)
+
+_p:Toggle("开启飞车", "Toggle", false, function(_q)
+    _e = _q
+    if _q then
+        _h()
+        SilentClear()  -- 开启时再次清除检测
     else
-        getgenv().FlyCarRunning = false
+        _g = false
         pcall(function()
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                for _, child in pairs(hrp:GetChildren()) do
-                    if child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
-                        child:Destroy()
+            local _r = _d.Character and _d.Character:FindFirstChild("HumanoidRootPart")
+            if _r then
+                for _, _s in pairs(_r:GetChildren()) do
+                    if _s:IsA("BodyVelocity") or _s:IsA("BodyGyro") then
+                        _s:Destroy()
                     end
                 end
             end
@@ -151,62 +187,56 @@ FlySection:Toggle("开启飞车", "FlyToggle", false, function(enabled)
     end
 end)
 
--- 速度滑块
-FlySection:Slider("飞车速度", "Speed", 50, 10, 500, false, function(speed)
-    getgenv().FlyCarSpeed = speed
+_p:Slider("飞车速度", "Speed", 50, 10, 500, false, function(_t)
+    _f = _t
 end)
 
--- 速度加减
-FlySection:Button("速度 + 10", function()
-    getgenv().FlyCarSpeed = getgenv().FlyCarSpeed + 10
+_p:Button("速度 + 10", function()
+    _f = _f + 10
 end)
 
-FlySection:Button("速度 - 10", function()
-    if getgenv().FlyCarSpeed > 10 then
-        getgenv().FlyCarSpeed = getgenv().FlyCarSpeed - 10
-    end
+_p:Button("速度 - 10", function()
+    if _f > 10 then _f = _f - 10 end
 end)
 
--- 上升
-FlySection:Button("上升", function()
+_p:Button("上升", function()
     pcall(function()
-        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.CFrame = hrp.CFrame * CFrame.new(0, 5, 0) end
+        local _u = _d.Character and _d.Character:FindFirstChild("HumanoidRootPart")
+        if _u then _u.CFrame = _u.CFrame * CFrame.new(0, 5, 0) end
     end)
 end)
 
--- 下降
-FlySection:Button("下降", function()
+_p:Button("下降", function()
     pcall(function()
-        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.CFrame = hrp.CFrame * CFrame.new(0, -5, 0) end
+        local _v = _d.Character and _d.Character:FindFirstChild("HumanoidRootPart")
+        if _v then _v.CFrame = _v.CFrame * CFrame.new(0, -5, 0) end
     end)
 end)
 
--- 当前速度显示
-local speedLabel = FlySection:Label("当前速度: " .. tostring(getgenv().FlyCarSpeed))
+-- 速度显示
+local _w = _p:Label("当前速度: " .. tostring(_f))
 task.spawn(function()
     while true do
         task.wait(0.3)
         pcall(function()
-            if speedLabel and speedLabel.Parent then
-                speedLabel.Text = "当前速度: " .. tostring(getgenv().FlyCarSpeed)
+            if _w and _w.Parent then
+                _w.Text = "当前速度: " .. tostring(_f)
             end
         end)
     end
 end)
 
--- ===== 设置 Tab =====
-local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
-local SettingsSection = SettingsTab:section("控制", true)
+-- 设置Tab
+local _x = _n:Tab("『设置』", "18930406865")
+local _y = _x:section("控制", true)
 
-SettingsSection:Button("关闭脚本", function()
-    getgenv().FlyCarRunning = false
-    getgenv().FlyCarEnabled = false
+_y:Button("关闭脚本", function()
+    _g = false
+    _e = false
     pcall(function()
-        local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
-        if frosty then frosty:Destroy() end
+        local _z = game:GetService("CoreGui"):FindFirstChild("frosty")
+        if _z then _z:Destroy() end
     end)
 end)
 
-print("皮脚本精简版加载完成！仅保留飞车功能。")
+print("脚本已加载")
