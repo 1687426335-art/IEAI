@@ -1,4 +1,4 @@
--- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 圈圈自瞄 =====
+-- ===== wdfex 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 + 圈圈自瞄(带掩体判断) =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -524,11 +524,12 @@ ESPSection:Toggle("显示射线", "Tracer", false, function(enabled)
     getgenv().ShowTracer = enabled
 end)
 
--- ===== 圈圈自瞄Tab =====
+-- ===== 圈圈自瞄Tab（带掩体判断） =====
 local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
 local AimSection = AimTab:section("圈圈自瞄", true)
 
 AimSection:Label("⚠️ 开启后准星会自动锁定敌人")
+AimSection:Label("✅ 带掩体判断 + 绿色自瞄圈")
 
 -- 自瞄配置
 getgenv().AimFOV = 150
@@ -537,8 +538,9 @@ getgenv().AimSmoothness = 5
 getgenv().AimRange = 200
 getgenv().AimEnabled = false
 getgenv().AimTeamCheck = false
+getgenv().AimWallCheck = true  -- 掩体判断默认开启
 
--- 绘制圈圈
+-- 自瞄圈圈
 local fovCircle = nil
 local function CreateFOVCircle()
     if fovCircle then
@@ -557,6 +559,7 @@ local function CreateFOVCircle()
     end
 end
 
+-- 更新圈圈位置
 game:GetService("RunService").RenderStepped:Connect(function()
     if getgenv().AimEnabled and getgenv().CardVerified then
         if not fovCircle then
@@ -572,12 +575,124 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
+-- ===== 掩体判断函数 =====
+local function IsVisible(targetPart)
+    if not getgenv().AimWallCheck then return true end
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if not char then return true end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return true end
+        
+        local camera = workspace.CurrentCamera
+        local startPos = camera.CFrame.Position
+        local targetPos = targetPart.Position
+        
+        -- 射线检测
+        local ray = Ray.new(startPos, (targetPos - startPos).Unit * (targetPos - startPos).Magnitude)
+        local hit, hitPos = workspace:FindPartOnRayWithIgnoreList(ray, {char, targetPart.Parent})
+        
+        if hit then
+            -- 检查是否打到目标本身
+            if hit:IsDescendantOf(targetPart.Parent) then
+                return true
+            end
+            return false
+        end
+        return true
+    end)
+    return true
+end
+
+-- ===== 获取最近敌人（带掩体判断） =====
+local function GetClosestEnemy()
+    local player = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    local closest = nil
+    local closestDist = getgenv().AimFOV or 200
+    
+    for _, enemy in pairs(game.Players:GetPlayers()) do
+        if enemy ~= player then
+            if getgenv().AimTeamCheck and enemy.Team == player.Team then
+                -- 跳过队友
+            else
+                local char = enemy.Character
+                if char then
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local targetPart = char:FindFirstChild(getgenv().AimPart or "Head")
+                        if not targetPart then
+                            targetPart = char:FindFirstChild("HumanoidRootPart")
+                        end
+                        if targetPart then
+                            -- 掩体判断
+                            if not IsVisible(targetPart) then
+                                -- 被掩体挡住，跳过
+                            else
+                                local pos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+                                if onScreen then
+                                    local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
+                                    local worldDist = (targetPart.Position - camera.CFrame.Position).Magnitude
+                                    if dist < closestDist and worldDist <= getgenv().AimRange then
+                                        closestDist = dist
+                                        closest = enemy
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- ===== 自瞄核心 =====
+game:GetService("RunService").RenderStepped:Connect(function()
+    if getgenv().AimEnabled and getgenv().CardVerified then
+        pcall(function()
+            local target = GetClosestEnemy()
+            if target then
+                local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
+                if not targetPart then
+                    targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                end
+                if targetPart and IsVisible(targetPart) then
+                    local camera = workspace.CurrentCamera
+                    local targetPos = targetPart.Position
+                    local currentCF = camera.CFrame
+                    local newCF = CFrame.new(currentCF.Position, targetPos)
+                    
+                    local smooth = getgenv().AimSmoothness or 5
+                    local lerpFactor = math.min(1, 1 / smooth)
+                    camera.CFrame = currentCF:Lerp(newCF, lerpFactor)
+                    
+                    -- 自瞄圈变红色表示锁定
+                    if fovCircle then
+                        fovCircle.Color = Color3.fromRGB(255, 0, 0)
+                    end
+                else
+                    if fovCircle then
+                        fovCircle.Color = Color3.fromRGB(0, 255, 0)
+                    end
+                end
+            else
+                if fovCircle then
+                    fovCircle.Color = Color3.fromRGB(0, 255, 0)
+                end
+            end
+        end)
+    end
+end)
+
 AimSection:Toggle("开启自瞄", "Aim", false, function(enabled)
     if not CheckCard() then return end
     getgenv().AimEnabled = enabled
     if enabled then
         CreateFOVCircle()
-        Notify("✅ 自瞄已开启", "准星将自动锁定敌人", 2)
+        Notify("✅ 自瞄已开启", "准星将自动锁定敌人（绿色圈）", 2)
     else
         if fovCircle then
             pcall(function() fovCircle:Remove() end)
@@ -623,65 +738,13 @@ AimSection:Toggle("队伍检测", "TeamCheck", false, function(enabled)
     getgenv().AimTeamCheck = enabled
 end)
 
--- ===== 自瞄核心逻辑 =====
-local function GetClosestEnemy()
-    local player = game.Players.LocalPlayer
-    local camera = workspace.CurrentCamera
-    local closest = nil
-    local closestDist = getgenv().AimFOV or 200
-    
-    for _, enemy in pairs(game.Players:GetPlayers()) do
-        if enemy ~= player then
-            if getgenv().AimTeamCheck and enemy.Team == player.Team then
-            else
-                local char = enemy.Character
-                if char then
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local targetPart = char:FindFirstChild(getgenv().AimPart or "Head")
-                        if not targetPart then
-                            targetPart = char:FindFirstChild("HumanoidRootPart")
-                        end
-                        if targetPart then
-                            local pos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
-                            if onScreen then
-                                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
-                                local worldDist = (targetPart.Position - camera.CFrame.Position).Magnitude
-                                if dist < closestDist and worldDist <= getgenv().AimRange then
-                                    closestDist = dist
-                                    closest = enemy
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return closest
-end
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().AimEnabled and getgenv().CardVerified then
-        pcall(function()
-            local target = GetClosestEnemy()
-            if target then
-                local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
-                if not targetPart then
-                    targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                end
-                if targetPart then
-                    local camera = workspace.CurrentCamera
-                    local targetPos = targetPart.Position
-                    local currentCF = camera.CFrame
-                    local newCF = CFrame.new(currentCF.Position, targetPos)
-                    
-                    local smooth = getgenv().AimSmoothness or 5
-                    local lerpFactor = math.min(1, 1 / smooth)
-                    camera.CFrame = currentCF:Lerp(newCF, lerpFactor)
-                end
-            end
-        end)
+AimSection:Toggle("掩体判断", "WallCheck", true, function(enabled)
+    if not CheckCard() then return end
+    getgenv().AimWallCheck = enabled
+    if enabled then
+        Notify("✅ 掩体判断已开启", "只瞄准可见敌人", 1)
+    else
+        Notify("❌ 掩体判断已关闭", "可穿透掩体瞄准", 1)
     end
 end)
 
@@ -706,3 +769,4 @@ SettingsSection:Button("关闭脚本", function()
 end)
 
 print("✅ wdfex加载完成 - 卡密: 1")
+print("🔵 自瞄圈圈显示: 绿色=未锁定, 红色=已锁定目标")
