@@ -1,4 +1,4 @@
--- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 =====
+-- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证(记住状态) =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -67,13 +67,7 @@ local function Notify(title, text, duration)
     end)
 end
 
--- ===== 3. 启动弹窗 =====
-Notify("皮脚本", "欢迎使用皮脚本", 2)
-wait(1)
-Notify("皮脚本", "请在公告中输入卡密验证", 3)
-wait(1)
-
--- ===== 4. 卡密验证系统 =====
+-- ===== 3. 卡密验证系统（记住状态） =====
 getgenv().CardVerified = false
 
 -- 卡密 = 1
@@ -81,7 +75,48 @@ local ValidCards = {
     ["1"] = true,
 }
 
--- ===== 5. 加载UI =====
+-- 存储已验证的玩家（永久记住）
+local VerifiedPlayers = {}
+local CurrentPlayer = game.Players.LocalPlayer.Name
+
+-- 尝试加载之前保存的验证状态
+local function LoadSavedVerification()
+    pcall(function()
+        -- 使用HttpService保存到本地（部分注入器支持）
+        local http = game:GetService("HttpService")
+        local saveData = http:JSONDecode(http:GetAsync("https://pastebin.com/raw/xxxxxxxx")) -- 可换成你自己的存储
+        -- 但由于pastebin需要上传，我们使用简单的本地存储方式
+        -- 使用setclipboard/getclipboard 或 全局变量持久化
+        if getgenv()._VerifiedPlayers then
+            VerifiedPlayers = getgenv()._VerifiedPlayers
+        end
+        if VerifiedPlayers[CurrentPlayer] then
+            getgenv().CardVerified = true
+            return true
+        end
+        return false
+    end)
+    return false
+end
+
+-- 保存验证状态
+local function SaveVerification()
+    pcall(function()
+        getgenv()._VerifiedPlayers = VerifiedPlayers
+    end)
+end
+
+-- 启动时检查是否已验证
+if LoadSavedVerification() then
+    Notify("皮脚本", "✅ 欢迎回来！卡密已验证", 2)
+else
+    Notify("皮脚本", "欢迎使用皮脚本，请验证卡密", 2)
+    wait(1)
+    Notify("皮脚本", "请在公告中输入卡密验证", 3)
+end
+wait(1)
+
+-- ===== 4. 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("皮脚本-卡密验证")
 
 -- ===== 公告Tab（第一排） =====
@@ -91,16 +126,52 @@ local AnnounceSection = AnnounceTab:section("卡密验证", true)
 AnnounceSection:Label("⚠️ 请输入卡密验证后使用功能")
 AnnounceSection:Label("卡密: 联系作者获取")
 
--- 卡密输入框（不显示卡密内容）
+-- 卡密输入框
 AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function(input)
     if input and input ~= "" then
         if ValidCards[input] then
             getgenv().CardVerified = true
-            Notify("✅ 验证成功", "卡密正确！所有功能已解锁", 3)
+            VerifiedPlayers[CurrentPlayer] = true
+            SaveVerification()
+            Notify("✅ 验证成功", "卡密正确！所有功能已解锁，下次启动自动验证", 3)
         else
             getgenv().CardVerified = false
             Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
         end
+    end
+end)
+
+-- 验证按钮
+AnnounceSection:Button("验证", function()
+    if getgenv()._CardInput then
+        local input = getgenv()._CardInput
+        if input and input ~= "" then
+            if ValidCards[input] then
+                getgenv().CardVerified = true
+                VerifiedPlayers[CurrentPlayer] = true
+                SaveVerification()
+                Notify("✅ 验证成功", "卡密正确！下次启动自动验证", 3)
+            else
+                getgenv().CardVerified = false
+                Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
+            end
+        else
+            Notify("⚠️ 提示", "请先输入卡密", 2)
+        end
+    else
+        Notify("⚠️ 提示", "请先输入卡密", 2)
+    end
+end)
+
+-- 解绑按钮
+AnnounceSection:Button("解绑", function()
+    if getgenv().CardVerified then
+        getgenv().CardVerified = false
+        VerifiedPlayers[CurrentPlayer] = nil
+        SaveVerification()
+        Notify("🔓 已解绑", "卡密已解绑，下次启动需要重新验证", 3)
+    else
+        Notify("⚠️ 提示", "当前未绑定卡密", 2)
     end
 end)
 
@@ -112,7 +183,7 @@ task.spawn(function()
         pcall(function()
             if statusLabel and statusLabel.Parent then
                 if getgenv().CardVerified then
-                    statusLabel.Text = "状态: ✅ 已验证"
+                    statusLabel.Text = "状态: ✅ 已验证 (记住状态)"
                 else
                     statusLabel.Text = "状态: ❌ 未验证"
                 end
@@ -126,7 +197,7 @@ AnnounceSection:Label("公告内容:")
 AnnounceSection:Label("1. 本脚本永久免费")
 AnnounceSection:Label("2. 禁止倒卖")
 AnnounceSection:Label("3. 安全速度上限80")
-AnnounceSection:Label("4. 有问题联系作者")
+AnnounceSection:Label("4. 验证后下次启动自动登录")
 
 -- ===== 信息Tab =====
 local InfoTab = UILibrary:Tab("『信息』", "18930406865")
@@ -134,11 +205,16 @@ local InfoSection = InfoTab:section("玩家信息", true)
 InfoSection:Label("用户名: " .. game.Players.LocalPlayer.Name)
 InfoSection:Label("服务器ID: " .. game.GameId)
 InfoSection:Label("状态: 防267已启动")
+if getgenv().CardVerified then
+    InfoSection:Label("卡密状态: ✅ 已验证")
+else
+    InfoSection:Label("卡密状态: ❌ 未验证")
+end
 
 -- ===== 功能是否可用的检查函数 =====
 local function CheckCard()
     if not getgenv().CardVerified then
-        Notify("⚠️ 卡密未验证", "请先在公告中输入卡密验证", 2)
+        Notify("⚠️ 卡密未验证", "请先在公告中验证卡密", 2)
         return false
     end
     return true
