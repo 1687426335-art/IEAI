@@ -1,4 +1,4 @@
--- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证(记住状态) =====
+-- ===== 皮脚本 防267 + 安全加速 + 范围 + 透视绘制 + 公告卡密验证 =====
 
 -- ===== 1. 过检测系统 =====
 local function BypassAll()
@@ -67,26 +67,18 @@ local function Notify(title, text, duration)
     end)
 end
 
--- ===== 3. 卡密验证系统（记住状态） =====
+-- ===== 3. 卡密验证系统 =====
 getgenv().CardVerified = false
 
--- 卡密 = 1
 local ValidCards = {
     ["1"] = true,
 }
 
--- 存储已验证的玩家（永久记住）
 local VerifiedPlayers = {}
 local CurrentPlayer = game.Players.LocalPlayer.Name
 
--- 尝试加载之前保存的验证状态
 local function LoadSavedVerification()
     pcall(function()
-        -- 使用HttpService保存到本地（部分注入器支持）
-        local http = game:GetService("HttpService")
-        local saveData = http:JSONDecode(http:GetAsync("https://pastebin.com/raw/xxxxxxxx")) -- 可换成你自己的存储
-        -- 但由于pastebin需要上传，我们使用简单的本地存储方式
-        -- 使用setclipboard/getclipboard 或 全局变量持久化
         if getgenv()._VerifiedPlayers then
             VerifiedPlayers = getgenv()._VerifiedPlayers
         end
@@ -99,14 +91,12 @@ local function LoadSavedVerification()
     return false
 end
 
--- 保存验证状态
 local function SaveVerification()
     pcall(function()
         getgenv()._VerifiedPlayers = VerifiedPlayers
     end)
 end
 
--- 启动时检查是否已验证
 if LoadSavedVerification() then
     Notify("皮脚本", "✅ 欢迎回来！卡密已验证", 2)
 else
@@ -128,6 +118,12 @@ AnnounceSection:Label("卡密: 联系作者获取")
 
 -- 卡密输入框
 AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function(input)
+    getgenv()._CardInput = input
+end)
+
+-- 验证按钮
+AnnounceSection:Button("验证", function()
+    local input = getgenv()._CardInput
     if input and input ~= "" then
         if ValidCards[input] then
             getgenv().CardVerified = true
@@ -137,26 +133,6 @@ AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function
         else
             getgenv().CardVerified = false
             Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
-        end
-    end
-end)
-
--- 验证按钮
-AnnounceSection:Button("验证", function()
-    if getgenv()._CardInput then
-        local input = getgenv()._CardInput
-        if input and input ~= "" then
-            if ValidCards[input] then
-                getgenv().CardVerified = true
-                VerifiedPlayers[CurrentPlayer] = true
-                SaveVerification()
-                Notify("✅ 验证成功", "卡密正确！下次启动自动验证", 3)
-            else
-                getgenv().CardVerified = false
-                Notify("❌ 验证失败", "卡密错误，请重新输入", 3)
-            end
-        else
-            Notify("⚠️ 提示", "请先输入卡密", 2)
         end
     else
         Notify("⚠️ 提示", "请先输入卡密", 2)
