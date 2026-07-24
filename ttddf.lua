@@ -1,6 +1,6 @@
--- ===== wdfex San Aurie 专用版（加速 + 范围 + 透视 + 自瞄 + 过检测 + 防267） =====
+-- ===== wdfex San Aurie 专用版（全部功能集成 + 完整过检测） =====
 
--- ===== 1. San Aurie 专用过检测 =====
+-- ===== 1. 完整过检测 =====
 local function SanAurieBypass()
     pcall(function()
         local player = game:GetService("Players").LocalPlayer
@@ -10,22 +10,25 @@ local function SanAurieBypass()
         local scriptContext = game:GetService("ScriptContext")
         local logService = game:GetService("LogService")
         local runService = game:GetService("RunService")
-        local httpService = game:GetService("HttpService")
         local teleportService = game:GetService("TeleportService")
         local starterGui = game:GetService("StarterGui")
+        local lighting = game:GetService("Lighting")
+        local httpService = game:GetService("HttpService")
 
-        -- ===== 1.1 删除所有反作弊脚本 =====
+        -- 1.1 删除所有反作弊脚本
         local antiKeywords = {
             "anticheat", "antifly", "antihack", "antikick", "antiban", "kick", "ban", 
             "cheat", "detect", "admin", "mod", "guard", "protect", "security", 
             "verify", "punish", "report", "flag", "suspect", "ac", "monitor", "track",
-            "anti", "exploit", "hack", "abuse", "check", "validate", "enforce"
+            "anti", "exploit", "hack", "abuse", "check", "validate", "enforce",
+            "speedcheck", "flycheck", "tpcheck", "noclipcheck", "teleportcheck"
         }
         for _, obj in pairs(game:GetDescendants()) do
             if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
                 local name = obj.Name:lower()
+                local fullName = obj:GetFullName():lower()
                 for _, kw in pairs(antiKeywords) do
-                    if name:match(kw) then
+                    if name:match(kw) or fullName:match(kw) then
                         pcall(function() obj:Destroy() end)
                         break
                     end
@@ -33,7 +36,7 @@ local function SanAurieBypass()
             end
         end
 
-        -- ===== 1.2 删除PlayerScripts检测 =====
+        -- 1.2 删除PlayerScripts检测
         local ps = player:FindFirstChild("PlayerScripts")
         if ps then
             for _, child in pairs(ps:GetChildren()) do
@@ -46,27 +49,27 @@ local function SanAurieBypass()
             end
         end
 
-        -- ===== 1.3 删除ReplicatedStorage检测 =====
+        -- 1.3 删除ReplicatedStorage检测
         for _, obj in pairs(replicatedStorage:GetDescendants()) do
             if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
                 local n = obj.Name:lower()
-                if n:match("anti") or n:match("cheat") or n:match("detect") then
+                if n:match("anti") or n:match("cheat") or n:match("detect") or n:match("kick") then
                     pcall(function() obj:Destroy() end)
                 end
             end
         end
 
-        -- ===== 1.4 删除Workspace检测 =====
+        -- 1.4 删除Workspace检测
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Script") or obj:IsA("LocalScript") then
                 local n = obj.Name:lower()
-                if n:match("anti") or n:match("cheat") or n:match("detect") then
+                if n:match("anti") or n:match("cheat") or n:match("detect") or n:match("kick") then
                     pcall(function() obj:Destroy() end)
                 end
             end
         end
 
-        -- ===== 1.5 删除CoreGui检测GUI =====
+        -- 1.5 删除CoreGui检测GUI
         for _, obj in pairs(coreGui:GetDescendants()) do
             if obj:IsA("ScreenGui") or obj:IsA("Frame") or obj:IsA("TextLabel") then
                 local n = obj.Name:lower()
@@ -76,7 +79,36 @@ local function SanAurieBypass()
             end
         end
 
-        -- ===== 1.6 拦截所有踢出弹窗 =====
+        -- 1.6 删除Lighting检测
+        for _, obj in pairs(lighting:GetDescendants()) do
+            if obj:IsA("Script") or obj:IsA("LocalScript") then
+                local n = obj.Name:lower()
+                if n:match("anti") or n:match("cheat") or n:match("detect") then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+
+        -- 1.7 多层拦截踢出
+        player.Kick = function(self, msg)
+            warn("🛡️ 拦截踢出: " .. tostring(msg))
+            task.spawn(function()
+                task.wait(0.5)
+                pcall(function() teleportService:Teleport(game.PlaceId, player) end)
+            end)
+            return false
+        end
+
+        -- 1.8 监听被踢重连
+        player:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not player.Parent then
+                warn("🛡️ 被踢！正在重连...")
+                task.wait(0.1)
+                pcall(function() teleportService:Teleport(game.PlaceId, player) end)
+            end
+        end)
+
+        -- 1.9 删除踢出GUI
         coreGui.DescendantAdded:Connect(function(child)
             if child:IsA("ScreenGui") then
                 local n = child.Name:lower()
@@ -86,31 +118,7 @@ local function SanAurieBypass()
             end
         end)
 
-        -- ===== 1.7 拦截踢出函数（多层防护） =====
-        player.Kick = function(self, msg)
-            warn("🛡️ 拦截踢出: " .. tostring(msg))
-            -- 踢出时自动重连
-            task.spawn(function()
-                task.wait(0.5)
-                pcall(function()
-                    teleportService:Teleport(game.PlaceId, player)
-                end)
-            end)
-            return false
-        end
-
-        -- ===== 1.8 监听Parent变化（被踢前拦截） =====
-        player:GetPropertyChangedSignal("Parent"):Connect(function()
-            if not player.Parent then
-                warn("🛡️ 检测到被踢，正在重连...")
-                task.wait(0.1)
-                pcall(function()
-                    teleportService:Teleport(game.PlaceId, player)
-                end)
-            end
-        end)
-
-        -- ===== 1.9 拦截RemoteEvent踢出信号 =====
+        -- 1.10 拦截RemoteEvent踢出
         for _, obj in pairs(replicatedStorage:GetDescendants()) do
             if obj:IsA("RemoteEvent") then
                 local n = obj.Name:lower()
@@ -120,9 +128,8 @@ local function SanAurieBypass()
                         local args = {...}
                         for _, arg in pairs(args) do
                             if type(arg) == "string" then
-                                local a = arg:lower()
-                                if a:match("kick") or a:match("ban") or a:match("cheat") or a:match("detect") then
-                                    warn("🛡️ 拦截远程踢出信号")
+                                if arg:lower():match("kick") or arg:lower():match("ban") or arg:lower():match("cheat") then
+                                    warn("🛡️ 拦截远程踢出")
                                     return
                                 end
                             end
@@ -133,92 +140,76 @@ local function SanAurieBypass()
             end
         end
 
-        -- ===== 1.10 拦截错误日志 =====
-        scriptContext.Error:Connect(function(msg)
+        -- 1.11 拦截所有错误日志
+        scriptContext.Error:Connect(function(msg, stack)
             if msg:lower():match("kick") or msg:lower():match("ban") or msg:lower():match("267") then
-                warn("🛡️ 拦截错误日志: " .. msg)
+                warn("🛡️ 拦截错误: " .. msg)
                 return
             end
         end)
 
-        -- ===== 1.11 拦截日志输出 =====
+        -- 1.12 拦截日志输出
         logService.MessageOut:Connect(function(msg)
             if msg:lower():match("kick") or msg:lower():match("ban") or msg:lower():match("cheat") then
                 return
             end
         end)
 
-        -- ===== 1.12 隐藏ScriptContext中的错误（防止上报） =====
-        scriptContext.Error:Connect(function(err)
-            if err:find("267") or err:find("kick") then
-                return
-            end
-        end)
-
-        -- ===== 1.13 伪装正常玩家行为 =====
-        local function FakeBehavior()
-            task.spawn(function()
-                while true do
-                    task.wait(math.random(2, 5))
-                    pcall(function()
-                        local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-                        if hum then
-                            local cam = workspace.CurrentCamera
-                            if cam then
-                                cam.CFrame = cam.CFrame * CFrame.Angles(
-                                    math.rad(math.random(-1, 1)),
-                                    math.rad(math.random(-2, 2)),
-                                    0
-                                )
-                            end
-                        end
-                    end)
-                end
-            end)
-        end
-        FakeBehavior()
-
-        -- ===== 1.14 速度限制（防止服务器端检测） =====
-        local function SpeedLimit()
-            task.spawn(function()
-                while true do
-                    task.wait(0.5)
-                    pcall(function()
-                        local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-                        if hum and hum.WalkSpeed > 80 then
-                            hum.WalkSpeed = 50
-                        end
-                    end)
-                end
-            end)
-        end
-        SpeedLimit()
-
-        -- ===== 1.15 伪装网络延迟（防止服务器检测异常） =====
-        local function FakePing()
-            task.spawn(function()
-                while true do
-                    task.wait(math.random(10, 30))
-                    pcall(function()
-                        local stats = game:GetService("Stats")
-                        if stats then
-                            stats.Network:GetPropertyChangedSignal("Ping"):Wait()
-                        end
-                    end)
-                end
-            end)
-        end
-        FakePing()
-
-        -- ===== 1.16 删除267错误弹窗 =====
+        -- 1.13 删除踢出弹窗（持续监控）
         starterGui:SetCore("SendNotification", function(...)
             local args = {...}
-            if args[1] and args[1]:lower():match("kick") or args[1]:lower():match("ban") then
+            if args[1] and (args[1]:lower():match("kick") or args[1]:lower():match("ban")) then
                 return
             end
         end)
 
-        print("🛡️ San Aurie 超级过检测已启动")
+        -- 1.14 伪装正常玩家
+        task.spawn(function()
+            while true do
+                task.wait(math.random(2, 5))
+                pcall(function()
+                    local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        local cam = workspace.CurrentCamera
+                        if cam then
+                            cam.CFrame = cam.CFrame * CFrame.Angles(
+                                math.rad(math.random(-1, 1)),
+                                math.rad(math.random(-2, 2)),
+                                0
+                            )
+                        end
+                    end
+                end)
+            end
+        end)
+
+        -- 1.15 速度限制（防服务器检测）
+        task.spawn(function()
+            while true do
+                task.wait(0.5)
+                pcall(function()
+                    local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.WalkSpeed > 80 then
+                        hum.WalkSpeed = 50
+                    end
+                end)
+            end
+        end)
+
+        -- 1.16 伪装网络延迟
+        task.spawn(function()
+            while true do
+                task.wait(math.random(10, 30))
+                pcall(function()
+                    local stats = game:GetService("Stats")
+                    if stats then
+                        stats.Network:GetPropertyChangedSignal("Ping"):Wait()
+                    end
+                end)
+            end
+        end)
+
+        print("🛡️ 完整过检测已启动")
     end)
 end
 SanAurieBypass()
@@ -236,32 +227,30 @@ local function Notify(text, duration)
     end)
 end
 
-Notify("✅ San Aurie 专用版已加载", 2)
+Notify("✅ wdfex 已加载", 2)
 
 -- ===== 3. 防挂机 =====
 local VirtualUserService = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
-    VirtualUserService:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    VirtualUserService:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     wait(1)
-    VirtualUserService:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    VirtualUserService:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- ===== 4. 设备绑定卡密验证 =====
+-- ===== 4. 卡密验证 =====
 getgenv().CardVerified = false
 getgenv()._DeviceBinds = getgenv()._DeviceBinds or {}
-local ValidCards = { ["1"] = true, ["2"] = true, ["3"] = true }
+local ValidCards = { ["1"] = true }
 local DeviceUID = pcall(function() return game:GetService("RbxAnalyticsService"):GetClientId() end) or "UNKNOWN"
-local CurrentPlayer = game.Players.LocalPlayer.Name
 
 local function CheckDeviceBind()
     for card, dev in pairs(getgenv()._DeviceBinds) do
-        if dev == DeviceUID and ValidCards[card] then return true, card end
+        if dev == DeviceUID and ValidCards[card] then return true end
     end
-    return false, nil
+    return false
 end
 
-local isBound = CheckDeviceBind()
-if isBound then
+if CheckDeviceBind() then
     getgenv().CardVerified = true
     Notify("✅ 设备已验证，自动登录", 2)
 else
@@ -274,12 +263,13 @@ local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xia
 -- ===== 公告Tab =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("🔐 卡密验证", true)
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("✦ 欢迎使用 wdfex ✦")
 AnnounceSection:Label("⚠️ 验证卡密后解锁全部功能")
-AnnounceSection:Label("📱 绑定后自动登录")
-AnnounceSection:Label("🛡️ 防267已启动")
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("📱 绑定自动登录 | 🛡️ 防267已启动")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━━━")
 AnnounceSection:Label("📱 设备ID: " .. string.sub(DeviceUID, 1, 20) .. "...")
+AnnounceSection:Label("👤 用户: " .. game.Players.LocalPlayer.Name)
 AnnounceSection:Textbox("📝 请输入卡密", "CardInput", "输入卡密...", function(i) getgenv()._CardInput = i end)
 AnnounceSection:Button("✅ 验证并绑定", function()
     local input = getgenv()._CardInput
@@ -291,9 +281,8 @@ AnnounceSection:Button("✅ 验证并绑定", function()
             end
             getgenv()._DeviceBinds[input] = DeviceUID
             getgenv().CardVerified = true
-            Notify("🎉 验证成功！设备已绑定", 3)
+            Notify("🎉 验证成功！已绑定", 3)
         else
-            getgenv().CardVerified = false
             Notify("❌ 卡密错误", 3)
         end
     else
@@ -303,10 +292,7 @@ end)
 AnnounceSection:Button("🔓 解绑设备", function()
     if getgenv().CardVerified then
         for card, dev in pairs(getgenv()._DeviceBinds) do
-            if dev == DeviceUID then
-                getgenv()._DeviceBinds[card] = nil
-                break
-            end
+            if dev == DeviceUID then getgenv()._DeviceBinds[card] = nil break end
         end
         getgenv().CardVerified = false
         Notify("🔓 已解绑", 3)
@@ -320,35 +306,15 @@ task.spawn(function()
         task.wait(0.3)
         pcall(function()
             if statusLabel and statusLabel.Parent then
-                if getgenv().CardVerified then
-                    statusLabel.Text = "📊 状态: ✅ 已验证"
-                else
-                    statusLabel.Text = "📊 状态: ❌ 未验证"
-                end
+                statusLabel.Text = getgenv().CardVerified and "📊 状态: ✅ 已验证" or "📊 状态: ❌ 未验证"
             end
         end)
     end
 end)
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AnnounceSection:Label("📢 公告:")
-AnnounceSection:Label("  ● 本脚本永久免费")
-AnnounceSection:Label("  ● 禁止倒卖")
-AnnounceSection:Label("  ● 安全速度上限80")
-AnnounceSection:Label("  ● 防267已开启")
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━━━━━━━")
+AnnounceSection:Label("📢 公告: 永久免费 | 禁止倒卖 | 速度上限80")
 
--- ===== 信息Tab =====
-local InfoTab = UILibrary:Tab("『信息』", "18930406865")
-local InfoSection = InfoTab:section("玩家信息", true)
-InfoSection:Label("用户名: " .. game.Players.LocalPlayer.Name)
-InfoSection:Label("服务器ID: " .. game.GameId)
-InfoSection:Label("防267: ✅ 已启动")
-if getgenv().CardVerified then
-    InfoSection:Label("卡密状态: ✅ 已验证")
-else
-    InfoSection:Label("卡密状态: ❌ 未验证")
-end
-
+-- ===== 功能检查 =====
 local function CheckCard()
     if not getgenv().CardVerified then
         Notify("⚠️ 请先验证卡密", 2)
@@ -371,19 +337,18 @@ SpeedSection:Slider("步行速度", "Speed", 30, 16, 80, false, function(s)
         if hum then hum.WalkSpeed = s end
     end)
 end)
-SpeedSection:Toggle("锁定速度", "Lock", true, function(enabled)
+SpeedSection:Toggle("锁定速度", "Lock", true, function(e)
     if not CheckCard() then return end
-    getgenv().SpeedLock = enabled
+    getgenv().SpeedLock = e
 end)
 SpeedSection:Textbox("重力", "Gravity", "输入数值", function(g)
     if not CheckCard() then return end
     pcall(function() game.Workspace.Gravity = tonumber(g) or 196.2 end)
 end)
-SpeedSection:Toggle("穿墙", "NoClip", false, function(enabled)
+SpeedSection:Toggle("穿墙", "NoClip", false, function(e)
     if not CheckCard() then return end
-    getgenv().NoClip = enabled
+    getgenv().NoClip = e
 end)
-
 game:GetService("RunService").Stepped:Connect(function()
     if getgenv().NoClip and getgenv().CardVerified then
         pcall(function()
@@ -396,15 +361,11 @@ game:GetService("RunService").Stepped:Connect(function()
         end)
     end
 end)
-
--- 速度守卫
 game:GetService("RunService").Heartbeat:Connect(function()
     if getgenv().SpeedLock and getgenv().CardVerified then
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.WalkSpeed > 80 then
-                hum.WalkSpeed = getgenv().SafeSpeed
-            end
+            if hum and hum.WalkSpeed > 80 then hum.WalkSpeed = getgenv().SafeSpeed end
         end)
     end
 end)
@@ -417,12 +378,11 @@ getgenv().HitboxTransparency = 0.7
 getgenv().HitboxEnabled = false
 getgenv().HitboxColor = "Really red"
 getgenv().TeamCheck = false
-
-RangeSection:Toggle("开启范围", "Hitbox", false, function(enabled)
+RangeSection:Toggle("开启范围", "Hitbox", false, function(e)
     if not CheckCard() then return end
-    getgenv().HitboxEnabled = enabled
+    getgenv().HitboxEnabled = e
 end)
-RangeSection:Slider("范围大小", "Size", 15, 5, 80, false, function(s)
+RangeSection:Slider("大小", "Size", 15, 5, 80, false, function(s)
     if not CheckCard() then return end
     getgenv().HitboxSize = s
 end)
@@ -438,13 +398,11 @@ RangeSection:Dropdown("颜色", "Color", {"Really red","Really blue","Really gre
     if not CheckCard() then return end
     getgenv().HitboxColor = c
 end)
-
 game:GetService("RunService").RenderStepped:Connect(function()
     if getgenv().HitboxEnabled and getgenv().CardVerified then
         for _, p in pairs(game:GetService("Players"):GetPlayers()) do
             if p ~= game.Players.LocalPlayer then
-                if getgenv().TeamCheck and p.Team == game.Players.LocalPlayer.Team then
-                else
+                if getgenv().TeamCheck and p.Team == game.Players.LocalPlayer.Team then else
                     pcall(function()
                         local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
                         if hrp then
@@ -464,7 +422,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
                 pcall(function()
                     local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Size = Vector3.new(2,2,1)
                         hrp.Transparency = 1
                         hrp.Material = "Plastic"
                         hrp.CanCollide = false
@@ -484,13 +442,11 @@ getgenv().ShowName = false
 getgenv().ShowHealth = false
 getgenv().ShowDistance = false
 getgenv().ShowTracer = false
-
 local espObjs = {}
 local function ClearESP()
     for _, o in pairs(espObjs) do pcall(function() o:Remove() end) end
     espObjs = {}
 end
-
 local function CreateESP(p)
     if p == game.Players.LocalPlayer then return end
     local square = Drawing.new("Square")
@@ -579,14 +535,12 @@ local function CreateESP(p)
         end)
     end)
 end
-
 for _, p in pairs(game.Players:GetPlayers()) do
     if p ~= game.Players.LocalPlayer then CreateESP(p) end
 end
 game.Players.PlayerAdded:Connect(function(p)
     if p ~= game.Players.LocalPlayer then CreateESP(p) end
 end)
-
 ESPSection:Toggle("ESP总开关", "ESP", false, function(e)
     if not CheckCard() then return end
     getgenv().ESPEnabled = e
@@ -658,8 +612,7 @@ local function GetClosestEnemy()
     local closestDist = getgenv().AimFOV
     for _, enemy in pairs(game.Players:GetPlayers()) do
         if enemy ~= player then
-            if getgenv().AimTeamCheck and enemy.Team == player.Team then
-            else
+            if getgenv().AimTeamCheck and enemy.Team == player.Team then else
                 local char = enemy.Character
                 if char then
                     local hum = char:FindFirstChild("Humanoid")
@@ -667,8 +620,7 @@ local function GetClosestEnemy()
                         local targetPart = char:FindFirstChild(getgenv().AimPart or "Head")
                         if not targetPart then targetPart = char:FindFirstChild("HumanoidRootPart") end
                         if targetPart then
-                            if not IsVisible(targetPart) then
-                            else
+                            if not IsVisible(targetPart) then else
                                 local pos, on = cam:WorldToViewportPoint(targetPart.Position)
                                 if on then
                                     local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)).Magnitude
@@ -763,6 +715,62 @@ AimSection:Toggle("掩体判断", "Wall", true, function(e)
     getgenv().AimWallCheck = e
 end)
 
+-- ===== 车辆加速Tab =====
+local VehicleTab = UILibrary:Tab("『车辆加速』", "18930406865")
+local VehicleSection = VehicleTab:section("车辆加速", true)
+VehicleSection:Label("🚗 坐上车辆后自动加速")
+getgenv().VehicleSpeed = 80
+getgenv().VehicleAccelEnabled = false
+
+local function GetCurrentVehicle()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if not char then return nil end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return nil end
+        local seat = hum.SeatPart
+        if not seat then return nil end
+        local vehicle = seat.Parent
+        if vehicle and (vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChildOfClass("VehicleSeat")) then
+            return vehicle
+        end
+        return nil
+    end)
+    return nil
+end
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().VehicleAccelEnabled and getgenv().CardVerified then
+        pcall(function()
+            local vehicle = GetCurrentVehicle()
+            if vehicle then
+                local hrp = vehicle:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local bv = hrp:FindFirstChild("VehicleBV")
+                    if not bv then
+                        bv = Instance.new("BodyVelocity")
+                        bv.Name = "VehicleBV"
+                        bv.Parent = hrp
+                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    end
+                    bv.Velocity = hrp.CFrame.LookVector * getgenv().VehicleSpeed
+                end
+            end
+        end)
+    end
+end)
+
+VehicleSection:Toggle("开启车辆加速", "VehicleAccel", false, function(e)
+    if not CheckCard() then return end
+    getgenv().VehicleAccelEnabled = e
+    Notify(e and "🚗 车辆加速已开启" or "❌ 车辆加速已关闭", 2)
+end)
+VehicleSection:Slider("车辆速度", "VehicleSpeed", 80, 20, 200, false, function(s)
+    if not CheckCard() then return end
+    getgenv().VehicleSpeed = s
+end)
+
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
@@ -771,6 +779,7 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     getgenv().AimEnabled = false
+    getgenv().VehicleAccelEnabled = false
     ClearESP()
     pcall(function() fovCircle:Remove() end)
     pcall(function()
