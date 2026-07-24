@@ -106,10 +106,9 @@ else
 end
 wait(1)
 
--- ===== 4. 顶部滚动文字（从左边滚到右边，循环） =====
+-- ===== 4. 顶部滚动文字（从左边飘到右边，循环） =====
 local function CreateTopScrollText()
     pcall(function()
-        -- 创建ScreenGui
         local gui = Instance.new("ScreenGui")
         gui.Name = "TopScrollText"
         gui.Parent = game:GetService("CoreGui")
@@ -117,7 +116,6 @@ local function CreateTopScrollText()
         gui.ResetOnSpawn = false
         gui.DisplayOrder = 9999
         
-        -- 创建TextLabel
         local label = Instance.new("TextLabel")
         label.Name = "ScrollLabel"
         label.Parent = gui
@@ -125,57 +123,49 @@ local function CreateTopScrollText()
         label.BackgroundTransparency = 0.4
         label.BorderColor3 = Color3.fromRGB(255, 0, 0)
         label.BorderSizePixel = 1
-        label.Size = UDim2.new(0, 220, 0, 35)
-        label.Position = UDim2.new(0, -220, 0, 5) -- 从左边屏幕外开始
+        label.Size = UDim2.new(0, 80, 0, 22)
+        label.Position = UDim2.new(0, -80, 0, 4)
         label.Font = Enum.Font.GothamBold
         label.Text = "你好"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextScaled = true
-        label.TextSize = 20
+        label.TextSize = 14
         label.TextWrapped = true
         label.ClipsDescendants = false
         
-        -- 圆角
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
+        corner.CornerRadius = UDim.new(0, 6)
         corner.Parent = label
         
-        -- 边框发光
         local stroke = Instance.new("UIStroke")
         stroke.Parent = label
         stroke.Color = Color3.fromRGB(255, 0, 0)
         stroke.Thickness = 1
         
-        -- 滚动循环：从左边滚到右边，然后重置
         task.spawn(function()
             while gui and label and label.Parent do
-                -- 从左边屏幕外开始（-220 到 屏幕宽度 + 220）
-                local startPos = -220
-                local endPos = game:GetService("GuiService").ScreenSize.X + 220
-                local speed = 150 -- 像素/秒，可调
+                local startX = -80
+                local endX = game:GetService("GuiService").ScreenSize.X + 50
+                local speed = 180
                 
-                -- 先重置到左边
-                label.Position = UDim2.new(0, startPos, 0, 5)
+                label.Position = UDim2.new(0, startX, 0, 4)
                 
-                -- 滚动到右边
-                while label and label.Parent and label.Position.X.Offset < endPos do
+                while label and label.Parent and label.Position.X.Offset < endX do
                     pcall(function()
                         local currentX = label.Position.X.Offset
-                        local newX = currentX + speed * task.wait(0.02)
-                        label.Position = UDim2.new(0, newX, 0, 5)
+                        local newX = currentX + speed * task.wait(0.016)
+                        label.Position = UDim2.new(0, newX, 0, 4)
                     end)
                 end
                 
-                -- 到达右边后，重置到左边（不等待，直接循环）
                 if label and label.Parent then
-                    label.Position = UDim2.new(0, startPos, 0, 5)
+                    label.Position = UDim2.new(0, startX, 0, 4)
                 end
+                task.wait(0.1)
             end
         end)
     end)
 end
 
--- 启动顶部滚动文字
 CreateTopScrollText()
 
 -- ===== 5. 加载UI =====
@@ -188,12 +178,10 @@ local AnnounceSection = AnnounceTab:section("卡密验证", true)
 AnnounceSection:Label("⚠️ 请输入卡密验证后使用功能")
 AnnounceSection:Label("卡密: 联系作者获取")
 
--- 卡密输入框
 AnnounceSection:Textbox("输入卡密", "CardInput", "请输入卡密", function(input)
     getgenv()._CardInput = input
 end)
 
--- 验证按钮
 AnnounceSection:Button("验证", function()
     local input = getgenv()._CardInput
     if input and input ~= "" then
@@ -211,7 +199,6 @@ AnnounceSection:Button("验证", function()
     end
 end)
 
--- 解绑按钮
 AnnounceSection:Button("解绑", function()
     if getgenv().CardVerified then
         getgenv().CardVerified = false
@@ -223,7 +210,6 @@ AnnounceSection:Button("解绑", function()
     end
 end)
 
--- 验证状态显示
 local statusLabel = AnnounceSection:Label("状态: ❌ 未验证")
 task.spawn(function()
     while true do
@@ -304,7 +290,6 @@ SpeedSection:Toggle("锁定安全速度", "SpeedLock", true, function(enabled)
     end
 end)
 
--- 超速守卫
 game:GetService("RunService").Heartbeat:Connect(function()
     if getgenv().SpeedLock and getgenv().CardVerified then
         pcall(function()
@@ -644,7 +629,6 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     ClearESP()
-    -- 删除顶部滚动文字
     pcall(function()
         local gui = game:GetService("CoreGui"):FindFirstChild("TopScrollText")
         if gui then gui:Destroy() end
