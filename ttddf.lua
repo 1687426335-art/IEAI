@@ -1,4 +1,4 @@
--- ===== wdfex San Aurie 完整版（全部功能集成，黑色悬浮窗） =====
+-- ===== wdfex San Aurie 完整版（修复UI不显示Tab问题） =====
 
 -- ===== 1. 过检测 =====
 local function SanAurieBypass()
@@ -113,17 +113,11 @@ local function Notify(text, duration)
 end
 Notify("✅ wdfex 已加载", 2)
 
--- ===== 4. 加载UI（黑色悬浮窗，无图案） =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new({
-    Title = "wdfex",
-    Icon = "",
-    Style = 3,
-    Size = UDim2.new(0, 500, 0, 350),
-    Draggable = true,
-    Theme = "Dark",
-})
+-- ===== 4. 加载UI（修复版） =====
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
 
 -- 把悬浮窗背景改成黑色
+task.wait(0.5)
 pcall(function()
     local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
     if frosty then
@@ -139,7 +133,7 @@ pcall(function()
 end)
 
 -- ===== 公告Tab =====
-local AnnounceTab = UILibrary:Tab("『公告』", "")
+local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("🛡️ 系统状态", true)
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 AnnounceSection:Label("✅ 过检测已启动")
@@ -149,8 +143,8 @@ AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━
 AnnounceSection:Label("📢 永久免费 | 禁止倒卖")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
--- ===== 加速Tab（输入框） =====
-local SpeedTab = UILibrary:Tab("『加速』", "")
+-- ===== 加速Tab =====
+local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
 local SpeedSection = SpeedTab:section("速度控制", true)
 SpeedSection:Label("⚠️ 输入速度数值 1-300")
 
@@ -246,7 +240,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 end)
 
 -- ===== 范围Tab =====
-local RangeTab = UILibrary:Tab("『范围』", "")
+local RangeTab = UILibrary:Tab("『范围』", "18930406865")
 local RangeSection = RangeTab:section("范围设置", true)
 getgenv().HitboxSize = 15
 getgenv().HitboxTransparency = 0.7
@@ -306,7 +300,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 -- ===== 透视Tab =====
-local ESPTab = UILibrary:Tab("『透视』", "")
+local ESPTab = UILibrary:Tab("『透视』", "18930406865")
 local ESPSection = ESPTab:section("透视绘制", true)
 getgenv().ESPEnabled = false
 getgenv().ShowBox = false
@@ -438,7 +432,7 @@ ESPSection:Toggle("射线", "Tracer", false, function(e)
 end)
 
 -- ===== 自瞄Tab =====
-local AimTab = UILibrary:Tab("『自瞄』", "")
+local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
 local AimSection = AimTab:section("圈圈自瞄", true)
 AimSection:Label("🟢 绿色=空闲 | 🔴 红色=锁定")
 
@@ -579,8 +573,8 @@ AimSection:Toggle("掩体判断", "Wall", true, function(e)
     getgenv().AimWallCheck = e
 end)
 
--- ===== 通用Tab（原版所有功能 + 飞行 + 飞车） =====
-local GeneralTab = UILibrary:Tab("『通用』", "")
+-- ===== 通用Tab =====
+local GeneralTab = UILibrary:Tab("『通用』", "18930406865")
 local GeneralSection = GeneralTab:section("通用功能", true)
 
 GeneralSection:Toggle("夜视", "Light", false, function(enabled)
@@ -704,7 +698,7 @@ GeneralSection:Button("保存游戏", function()
 end)
 
 -- ===== 车辆加速Tab =====
-local VehicleTab = UILibrary:Tab("『车辆加速』", "")
+local VehicleTab = UILibrary:Tab("『车辆加速』", "18930406865")
 local VehicleSection = VehicleTab:section("车辆加速", true)
 VehicleSection:Label("🚗 坐上车辆后自动加速")
 getgenv().VehicleSpeed = 80
@@ -758,7 +752,7 @@ VehicleSection:Slider("车辆速度", "VehicleSpeed", 80, 20, 200, false, functi
 end)
 
 -- ===== 设置Tab =====
-local SettingsTab = UILibrary:Tab("『设置』", "")
+local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
 SettingsSection:Button("关闭脚本", function()
     getgenv().HitboxEnabled = false
