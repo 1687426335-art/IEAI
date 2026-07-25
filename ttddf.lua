@@ -1,4 +1,4 @@
--- ===== wdfex San Aurie 完整版（过检测 + 加速输入框 + 范围 + 透视 + 自瞄 + 原版飞行 + 加载UI） =====
+-- ===== wdfex San Aurie 完整版（全部功能集成，黑色悬浮窗） =====
 
 -- ===== 1. 过检测 =====
 local function SanAurieBypass()
@@ -113,11 +113,34 @@ local function Notify(text, duration)
 end
 Notify("✅ wdfex 已加载", 2)
 
--- ===== 4. 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
+-- ===== 4. 加载UI（黑色悬浮窗，无图案） =====
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new({
+    Title = "wdfex",
+    Icon = "",
+    Style = 3,
+    Size = UDim2.new(0, 500, 0, 350),
+    Draggable = true,
+    Theme = "Dark",
+})
+
+-- 把悬浮窗背景改成黑色
+pcall(function()
+    local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
+    if frosty then
+        local main = frosty:FindFirstChild("Main")
+        if main then
+            main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+            main.BackgroundTransparency = 0
+            main.BorderSizePixel = 0
+            -- 删除图标
+            local icon = main:FindFirstChild("Icon")
+            if icon then icon:Destroy() end
+        end
+    end
+end)
 
 -- ===== 公告Tab =====
-local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
+local AnnounceTab = UILibrary:Tab("『公告』", "")
 local AnnounceSection = AnnounceTab:section("🛡️ 系统状态", true)
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 AnnounceSection:Label("✅ 过检测已启动")
@@ -125,11 +148,10 @@ AnnounceSection:Label("✅ 防267已启动")
 AnnounceSection:Label("✅ 防挂机已启动")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 AnnounceSection:Label("📢 永久免费 | 禁止倒卖")
-AnnounceSection:Label("📢 速度1-300 | 低调使用")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
 -- ===== 加速Tab（输入框） =====
-local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
+local SpeedTab = UILibrary:Tab("『加速』", "")
 local SpeedSection = SpeedTab:section("速度控制", true)
 SpeedSection:Label("⚠️ 输入速度数值 1-300")
 
@@ -225,7 +247,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 end)
 
 -- ===== 范围Tab =====
-local RangeTab = UILibrary:Tab("『范围』", "18930406865")
+local RangeTab = UILibrary:Tab("『范围』", "")
 local RangeSection = RangeTab:section("范围设置", true)
 getgenv().HitboxSize = 15
 getgenv().HitboxTransparency = 0.7
@@ -285,7 +307,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 -- ===== 透视Tab =====
-local ESPTab = UILibrary:Tab("『透视』", "18930406865")
+local ESPTab = UILibrary:Tab("『透视』", "")
 local ESPSection = ESPTab:section("透视绘制", true)
 getgenv().ESPEnabled = false
 getgenv().ShowBox = false
@@ -417,7 +439,7 @@ ESPSection:Toggle("射线", "Tracer", false, function(e)
 end)
 
 -- ===== 自瞄Tab =====
-local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
+local AimTab = UILibrary:Tab("『自瞄』", "")
 local AimSection = AimTab:section("圈圈自瞄", true)
 AimSection:Label("🟢 绿色=空闲 | 🔴 红色=锁定")
 
@@ -558,15 +580,128 @@ AimSection:Toggle("掩体判断", "Wall", true, function(e)
     getgenv().AimWallCheck = e
 end)
 
--- ===== 原版飞行（在通用Tab里） =====
-local GeneralTab = UILibrary:Tab("『通用』", "18930406865")
-local GeneralSection = GeneralTab:section("通用", true)
+-- ===== 通用Tab（原版所有功能） =====
+local GeneralTab = UILibrary:Tab("『通用』", "")
+local GeneralSection = GeneralTab:section("通用功能", true)
+
+GeneralSection:Toggle("夜视", "Light", false, function(enabled)
+    spawn(function()
+        while task.wait() do
+            local lighting = game.Lighting
+            if enabled then
+                lighting.Ambient = Color3.new(1, 1, 1)
+            else
+                lighting.Ambient = Color3.new(0, 0, 0)
+            end
+        end
+    end)
+end)
+
+GeneralSection:Button("透视", function()
+    loadstring(game:HttpGet("https://pastefy.app/LE2hzECZ/raw"))()
+end)
+
+GeneralSection:Toggle("无限跳", "IJ", false, function(enabled)
+    getgenv().InfJ = enabled
+    game:GetService("UserInputService").JumpRequest:connect(function()
+        if getgenv().InfJ == true then
+            game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+        end
+    end)
+end)
+
+GeneralSection:Toggle("穿墙", "NoClip", false, function(enabled)
+    local workspace = game:GetService("Workspace")
+    local Players = game:GetService("Players")
+    if enabled then
+        Clipon = true
+    else
+        Clipon = false
+    end
+    Stepped = game:GetService("RunService").Stepped:Connect(function()
+        if Clipon then
+            for _, child in pairs(workspace:GetChildren()) do
+                if child.Name == Players.LocalPlayer.Name then
+                    for _, part in pairs(workspace[Players.LocalPlayer.Name]:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        else
+            Stepped:Disconnect()
+        end
+    end)
+end)
+
 GeneralSection:Button("wdfex飞行", function()
     loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua]]))()
 end)
 
+GeneralSection:Button("wdfex自瞄", function()
+    loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/3683e49998644fb7.txt_2024-08-09_094310.OTed.lua]]))()
+end)
+
+GeneralSection:Button("iw指令", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", true))()
+end)
+
+GeneralSection:Button("工具包", function()
+    loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/BTools.txt"))()
+end)
+
+GeneralSection:Button("Dex", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/renlua/Script-Tutorial/refs/heads/main/dex.lua"))()
+end)
+
+GeneralSection:Toggle("人物不可见状态(隐身)", "Invisible Character", false, function(enabled)
+    local localPlayer = game.Players.LocalPlayer
+    for _, child in pairs((localPlayer.Character or localPlayer.CharacterAdded:Wait()):GetChildren()) do
+        local isBasePart = child:IsA("BasePart")
+        if isBasePart then
+            if enabled then
+                isBasePart = 1
+            else
+                isBasePart = 0
+            end
+            child.Transparency = isBasePart
+            child.CanCollide = not enabled
+        elseif child:IsA("Accessory") then
+            local handle = child.Handle
+            local transparency = nil
+            if enabled then
+                transparency = 1
+            else
+                transparency = 0
+            end
+            handle.Transparency = transparency
+        end
+    end
+end)
+
+GeneralSection:Button("自杀", function()
+    game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end)
+
+GeneralSection:Button("离开游戏", function()
+    game:Shutdown()
+end)
+
+GeneralSection:Button("重新加入游戏", function()
+    loadstring(game:HttpGet("https://pastefy.app/XXabqNiv/raw"))()
+end)
+
+GeneralSection:Button("显示FPS", function()
+    loadstring(game:HttpGet("https://pastebin.com/raw/g54KFcUU"))()
+end)
+
+GeneralSection:Button("保存游戏", function()
+    saveinstance()
+end)
+
 -- ===== 车辆加速Tab =====
-local VehicleTab = UILibrary:Tab("『车辆加速』", "18930406865")
+local VehicleTab = UILibrary:Tab("『车辆加速』", "")
 local VehicleSection = VehicleTab:section("车辆加速", true)
 VehicleSection:Label("🚗 坐上车辆后自动加速")
 getgenv().VehicleSpeed = 80
@@ -620,7 +755,7 @@ VehicleSection:Slider("车辆速度", "VehicleSpeed", 80, 20, 200, false, functi
 end)
 
 -- ===== 设置Tab =====
-local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
+local SettingsTab = UILibrary:Tab("『设置』", "")
 local SettingsSection = SettingsTab:section("控制", true)
 SettingsSection:Button("关闭脚本", function()
     getgenv().HitboxEnabled = false
