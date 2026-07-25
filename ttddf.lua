@@ -1,4 +1,4 @@
--- ===== wdfex San Aurie 完整版（修复UI不显示Tab问题） =====
+-- ===== wdfex 完整版（过检测 + 加速 + 范围 + 透视 + 自瞄 + 飞车 + 动作 + 绘制 + 飞天 + 子弹追踪） =====
 
 -- ===== 1. 过检测 =====
 local function SanAurieBypass()
@@ -113,661 +113,638 @@ local function Notify(text, duration)
 end
 Notify("✅ wdfex 已加载", 2)
 
--- ===== 4. 加载UI（修复版） =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex")
-
--- 把悬浮窗背景改成黑色
-task.wait(0.5)
-pcall(function()
-    local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
-    if frosty then
-        local main = frosty:FindFirstChild("Main")
-        if main then
-            main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-            main.BackgroundTransparency = 0
-            main.BorderSizePixel = 0
-            local icon = main:FindFirstChild("Icon")
-            if icon then icon:Destroy() end
-        end
-    end
-end)
+-- ===== 4. 加载UI =====
+loadstring(game:HttpGet("https://pastebin.com/raw/iXGNieAz"))()
+local Window = OrionLib:MakeWindow({
+    Name = "wdfex",
+    HidePremium = false,
+    SaveConfig = true,
+    IntroText = "wdfex启动",
+    ConfigFolder = "wdfex"
+})
 
 -- ===== 公告Tab =====
-local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
-local AnnounceSection = AnnounceTab:section("🛡️ 系统状态", true)
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AnnounceSection:Label("✅ 过检测已启动")
-AnnounceSection:Label("✅ 防267已启动")
-AnnounceSection:Label("✅ 防挂机已启动")
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AnnounceSection:Label("📢 永久免费 | 禁止倒卖")
-AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
-
--- ===== 加速Tab =====
-local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
-local SpeedSection = SpeedTab:section("速度控制", true)
-SpeedSection:Label("⚠️ 输入速度数值 1-300")
-
-local currentSpeedLabel = SpeedSection:Label("当前速度: 30")
-
-SpeedSection:Textbox("输入速度", "SpeedInput", "输入1-300", function(value)
-    local speed = tonumber(value)
-    if speed then
-        if speed < 1 then speed = 1 end
-        if speed > 300 then speed = 300 end
-        getgenv().PlayerSpeed = speed
-        pcall(function()
-            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = speed end
-        end)
-        pcall(function()
-            if currentSpeedLabel then
-                currentSpeedLabel.Text = "当前速度: " .. tostring(speed)
-            end
-        end)
-        Notify("✅ 速度已设为: " .. tostring(speed), 1)
-    else
-        Notify("⚠️ 请输入有效数字", 2)
-    end
-end)
-
-SpeedSection:Button("速度 50", function()
-    getgenv().PlayerSpeed = 50
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 50 end
-    end)
-    pcall(function()
-        if currentSpeedLabel then
-            currentSpeedLabel.Text = "当前速度: 50"
-        end
-    end)
-    Notify("✅ 速度已设为: 50", 1)
-end)
-
-SpeedSection:Button("速度 100", function()
-    getgenv().PlayerSpeed = 100
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 100 end
-    end)
-    pcall(function()
-        if currentSpeedLabel then
-            currentSpeedLabel.Text = "当前速度: 100"
-        end
-    end)
-    Notify("✅ 速度已设为: 100", 1)
-end)
-
-SpeedSection:Button("速度 200", function()
-    getgenv().PlayerSpeed = 200
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 200 end
-    end)
-    pcall(function()
-        if currentSpeedLabel then
-            currentSpeedLabel.Text = "当前速度: 200"
-        end
-    end)
-    Notify("✅ 速度已设为: 200", 1)
-end)
-
-SpeedSection:Button("速度 300", function()
-    getgenv().PlayerSpeed = 300
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 300 end
-    end)
-    pcall(function()
-        if currentSpeedLabel then
-            currentSpeedLabel.Text = "当前速度: 300"
-        end
-    end)
-    Notify("✅ 速度已设为: 300", 1)
-end)
-
-getgenv().PlayerSpeed = 30
-game:GetService("RunService").Heartbeat:Connect(function()
-    pcall(function()
-        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            if hum.WalkSpeed ~= getgenv().PlayerSpeed then
-                hum.WalkSpeed = getgenv().PlayerSpeed
-            end
-        end
-    end)
-end)
-
--- ===== 范围Tab =====
-local RangeTab = UILibrary:Tab("『范围』", "18930406865")
-local RangeSection = RangeTab:section("范围设置", true)
-getgenv().HitboxSize = 15
-getgenv().HitboxTransparency = 0.7
-getgenv().HitboxEnabled = false
-getgenv().HitboxColor = "Really red"
-getgenv().TeamCheck = false
-
-RangeSection:Toggle("开启范围", "Hitbox", false, function(e)
-    getgenv().HitboxEnabled = e
-end)
-RangeSection:Slider("大小", "Size", 15, 5, 80, false, function(s)
-    getgenv().HitboxSize = s
-end)
-RangeSection:Slider("透明度", "Trans", 0.7, 0, 1, false, function(t)
-    getgenv().HitboxTransparency = t
-end)
-RangeSection:Toggle("队伍检测", "Team", false, function(e)
-    getgenv().TeamCheck = e
-end)
-RangeSection:Dropdown("颜色", "Color", {"Really red","Really blue","Really green","Really yellow","Really purple","Really black"}, function(c)
-    getgenv().HitboxColor = c
-end)
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().HitboxEnabled then
-        for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-            if p ~= game.Players.LocalPlayer then
-                if getgenv().TeamCheck and p.Team == game.Players.LocalPlayer.Team then else
-                    pcall(function()
-                        local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            hrp.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
-                            hrp.Transparency = getgenv().HitboxTransparency
-                            hrp.BrickColor = BrickColor.new(getgenv().HitboxColor)
-                            hrp.Material = "Neon"
-                            hrp.CanCollide = false
-                        end
-                    end)
-                end
-            end
-        end
-    else
-        for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-            if p ~= game.Players.LocalPlayer then
-                pcall(function()
-                    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Vector3.new(2,2,1)
-                        hrp.Transparency = 1
-                        hrp.Material = "Plastic"
-                        hrp.CanCollide = false
-                    end
-                end)
-            end
-        end
-    end
-end)
-
--- ===== 透视Tab =====
-local ESPTab = UILibrary:Tab("『透视』", "18930406865")
-local ESPSection = ESPTab:section("透视绘制", true)
-getgenv().ESPEnabled = false
-getgenv().ShowBox = false
-getgenv().ShowName = false
-getgenv().ShowHealth = false
-getgenv().ShowDistance = false
-getgenv().ShowTracer = false
-
-local espObjs = {}
-local function ClearESP()
-    for _, o in pairs(espObjs) do pcall(function() o:Remove() end) end
-    espObjs = {}
-end
-
-local function CreateESP(p)
-    if p == game.Players.LocalPlayer then return end
-    local square = Drawing.new("Square")
-    square.Visible = false
-    square.Color = Color3.new(1,0,0)
-    square.Thickness = 1
-    square.Filled = false
-    square.Transparency = 0.5
-    local nameText = Drawing.new("Text")
-    nameText.Visible = false
-    nameText.Color = Color3.new(1,1,1)
-    nameText.Size = 14
-    nameText.Center = true
-    local healthText = Drawing.new("Text")
-    healthText.Visible = false
-    healthText.Color = Color3.new(0,1,0)
-    healthText.Size = 12
-    healthText.Center = true
-    local distText = Drawing.new("Text")
-    distText.Visible = false
-    distText.Color = Color3.new(1,1,0)
-    distText.Size = 12
-    distText.Center = true
-    local tracer = Drawing.new("Line")
-    tracer.Visible = false
-    tracer.Color = Color3.new(1,0,0)
-    tracer.Thickness = 1
-    table.insert(espObjs, square)
-    table.insert(espObjs, nameText)
-    table.insert(espObjs, healthText)
-    table.insert(espObjs, distText)
-    table.insert(espObjs, tracer)
-
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if not getgenv().ESPEnabled then
-            square.Visible = false; nameText.Visible = false; healthText.Visible = false; distText.Visible = false; tracer.Visible = false
-            return
-        end
-        pcall(function()
-            local char = p.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            local cam = workspace.CurrentCamera
-            if hrp and hum and hum.Health > 0 then
-                local pos, on = cam:WorldToViewportPoint(hrp.Position)
-                local top, _ = cam:WorldToViewportPoint(hrp.Position + Vector3.new(0,3,0))
-                local bot, _ = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0,3,0))
-                if on then
-                    local h = top.Y - bot.Y
-                    local w = h * 0.6
-                    if getgenv().ShowBox then
-                        square.Visible = true
-                        square.Size = Vector2.new(w, h)
-                        square.Position = Vector2.new(pos.X - w/2, pos.Y - h/2)
-                        square.Color = p.Team and p.Team.TeamColor.Color or Color3.new(1,1,1)
-                    else square.Visible = false end
-                    if getgenv().ShowName then
-                        nameText.Visible = true
-                        nameText.Position = Vector2.new(pos.X, pos.Y - h/2 - 20)
-                        nameText.Text = p.Name
-                    else nameText.Visible = false end
-                    if getgenv().ShowHealth then
-                        healthText.Visible = true
-                        healthText.Position = Vector2.new(pos.X, pos.Y + h/2 + 5)
-                        healthText.Text = "❤ " .. math.floor(hum.Health)
-                        healthText.Color = hum.Health > 50 and Color3.new(0,1,0) or Color3.new(1,0,0)
-                    else healthText.Visible = false end
-                    if getgenv().ShowDistance then
-                        distText.Visible = true
-                        distText.Position = Vector2.new(pos.X, pos.Y + h/2 + 25)
-                        local lp = game.Players.LocalPlayer
-                        local lhrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-                        local d = lhrp and (hrp.Position - lhrp.Position).Magnitude or 0
-                        distText.Text = math.floor(d) .. "m"
-                    else distText.Visible = false end
-                    if getgenv().ShowTracer then
-                        tracer.Visible = true
-                        tracer.From = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y)
-                        tracer.To = Vector2.new(pos.X, pos.Y)
-                    else tracer.Visible = false end
-                else
-                    square.Visible = false; nameText.Visible = false; healthText.Visible = false; distText.Visible = false; tracer.Visible = false
-                end
-            else
-                square.Visible = false; nameText.Visible = false; healthText.Visible = false; distText.Visible = false; tracer.Visible = false
-            end
-        end)
-    end)
-end
-
-for _, p in pairs(game.Players:GetPlayers()) do
-    if p ~= game.Players.LocalPlayer then CreateESP(p) end
-end
-game.Players.PlayerAdded:Connect(function(p)
-    if p ~= game.Players.LocalPlayer then CreateESP(p) end
-end)
-
-ESPSection:Toggle("ESP总开关", "ESP", false, function(e)
-    getgenv().ESPEnabled = e
-end)
-ESPSection:Toggle("方框", "Box", false, function(e)
-    getgenv().ShowBox = e
-end)
-ESPSection:Toggle("名字", "Name", false, function(e)
-    getgenv().ShowName = e
-end)
-ESPSection:Toggle("血量", "Health", false, function(e)
-    getgenv().ShowHealth = e
-end)
-ESPSection:Toggle("距离", "Dist", false, function(e)
-    getgenv().ShowDistance = e
-end)
-ESPSection:Toggle("射线", "Tracer", false, function(e)
-    getgenv().ShowTracer = e
-end)
-
--- ===== 自瞄Tab =====
-local AimTab = UILibrary:Tab("『自瞄』", "18930406865")
-local AimSection = AimTab:section("圈圈自瞄", true)
-AimSection:Label("🟢 绿色=空闲 | 🔴 红色=锁定")
-
-getgenv().AimFOV = 200
-getgenv().AimPart = "Head"
-getgenv().AimSmoothness = 5
-getgenv().AimRange = 250
-getgenv().AimEnabled = false
-getgenv().AimTeamCheck = false
-getgenv().AimWallCheck = true
-
-local fovCircle = Drawing.new("Circle")
-fovCircle.Visible = false
-fovCircle.Radius = getgenv().AimFOV
-fovCircle.Thickness = 2
-fovCircle.Color = Color3.fromRGB(0,255,0)
-fovCircle.Filled = false
-fovCircle.Transparency = 0.5
-fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
-
-local function IsVisible(targetPart)
-    if not getgenv().AimWallCheck then return true end
-    local success, result = pcall(function()
-        local cam = workspace.CurrentCamera
-        local start = cam.CFrame.Position
-        local target = targetPart.Position
-        local ray = Ray.new(start, (target - start).Unit * (target - start).Magnitude)
-        local hit = workspace:FindPartOnRayWithIgnoreList(ray, {game.Players.LocalPlayer.Character})
-        if hit then
-            if hit:IsDescendantOf(targetPart.Parent) then return true end
-            return false
-        end
-        return true
-    end)
-    return result
-end
-
-local function GetClosestEnemy()
-    local player = game.Players.LocalPlayer
-    local cam = workspace.CurrentCamera
-    local closest = nil
-    local closestDist = getgenv().AimFOV
-    for _, enemy in pairs(game.Players:GetPlayers()) do
-        if enemy ~= player then
-            if getgenv().AimTeamCheck and enemy.Team == player.Team then else
-                local char = enemy.Character
-                if char then
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local targetPart = char:FindFirstChild(getgenv().AimPart or "Head")
-                        if not targetPart then targetPart = char:FindFirstChild("HumanoidRootPart") end
-                        if targetPart then
-                            if not IsVisible(targetPart) then else
-                                local pos, on = cam:WorldToViewportPoint(targetPart.Position)
-                                if on then
-                                    local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)).Magnitude
-                                    local world = (targetPart.Position - cam.CFrame.Position).Magnitude
-                                    if dist < closestDist and world <= getgenv().AimRange then
-                                        closestDist = dist
-                                        closest = enemy
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return closest
-end
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().AimEnabled then
-        fovCircle.Position = workspace.CurrentCamera.ViewportSize / 2
-        fovCircle.Radius = getgenv().AimFOV
-        fovCircle.Visible = true
-        local target = GetClosestEnemy()
-        if target then
-            local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
-            if not targetPart then targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart") end
-            if targetPart and IsVisible(targetPart) then
-                fovCircle.Color = Color3.fromRGB(255,0,0)
-            else
-                fovCircle.Color = Color3.fromRGB(0,255,0)
-            end
-        else
-            fovCircle.Color = Color3.fromRGB(0,255,0)
-        end
-    else
-        fovCircle.Visible = false
-    end
-end)
-
-game:GetService("RunService").RenderStepped:Connect(function()
-    if getgenv().AimEnabled then
-        pcall(function()
-            local target = GetClosestEnemy()
-            if target then
-                local targetPart = target.Character and target.Character:FindFirstChild(getgenv().AimPart or "Head")
-                if not targetPart then targetPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart") end
-                if targetPart and IsVisible(targetPart) then
-                    local cam = workspace.CurrentCamera
-                    local targetPos = targetPart.Position
-                    local current = cam.CFrame
-                    local newCF = CFrame.new(current.Position, targetPos)
-                    local smooth = getgenv().AimSmoothness or 5
-                    local lerp = math.min(1, 1 / smooth)
-                    cam.CFrame = current:Lerp(newCF, lerp)
-                end
-            end
-        end)
-    end
-end)
-
-AimSection:Toggle("开启自瞄", "Aim", false, function(e)
-    getgenv().AimEnabled = e
-    Notify(e and "✅ 自瞄已开启" or "❌ 自瞄已关闭", 2)
-end)
-AimSection:Slider("FOV范围", "FOV", 200, 30, 500, false, function(v)
-    getgenv().AimFOV = v
-    fovCircle.Radius = v
-end)
-AimSection:Slider("距离", "Range", 250, 50, 500, false, function(v)
-    getgenv().AimRange = v
-end)
-AimSection:Slider("平滑度", "Smooth", 5, 1, 20, false, function(v)
-    getgenv().AimSmoothness = v
-end)
-AimSection:Dropdown("部位", "Part", {"头部","躯干","腿部"}, function(part)
-    local parts = { ["头部"] = "Head", ["躯干"] = "HumanoidRootPart", ["腿部"] = "Right Leg" }
-    getgenv().AimPart = parts[part] or "Head"
-end)
-AimSection:Toggle("队伍检测", "Team", false, function(e)
-    getgenv().AimTeamCheck = e
-end)
-AimSection:Toggle("掩体判断", "Wall", true, function(e)
-    getgenv().AimWallCheck = e
-end)
-
--- ===== 通用Tab =====
-local GeneralTab = UILibrary:Tab("『通用』", "18930406865")
-local GeneralSection = GeneralTab:section("通用功能", true)
-
-GeneralSection:Toggle("夜视", "Light", false, function(enabled)
-    spawn(function()
-        while task.wait() do
-            local lighting = game.Lighting
-            if enabled then
-                lighting.Ambient = Color3.new(1, 1, 1)
-            else
-                lighting.Ambient = Color3.new(0, 0, 0)
-            end
-        end
-    end)
-end)
-
-GeneralSection:Button("透视", function()
-    loadstring(game:HttpGet("https://pastefy.app/LE2hzECZ/raw"))()
-end)
-
-GeneralSection:Toggle("无限跳", "IJ", false, function(enabled)
-    getgenv().InfJ = enabled
-    game:GetService("UserInputService").JumpRequest:connect(function()
-        if getgenv().InfJ == true then
-            game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-        end
-    end)
-end)
-
-GeneralSection:Toggle("穿墙", "NoClip", false, function(enabled)
-    local workspace = game:GetService("Workspace")
-    local Players = game:GetService("Players")
-    if enabled then
-        Clipon = true
-    else
-        Clipon = false
-    end
-    Stepped = game:GetService("RunService").Stepped:Connect(function()
-        if Clipon then
-            for _, child in pairs(workspace:GetChildren()) do
-                if child.Name == Players.LocalPlayer.Name then
-                    for _, part in pairs(workspace[Players.LocalPlayer.Name]:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-        else
-            Stepped:Disconnect()
-        end
-    end)
-end)
-
-GeneralSection:Button("wdfex飞行", function()
-    loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua]]))()
-end)
-
-GeneralSection:Button("wdfex飞车", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
-end)
-
-GeneralSection:Button("wdfex自瞄", function()
-    loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/3683e49998644fb7.txt_2024-08-09_094310.OTed.lua]]))()
-end)
-
-GeneralSection:Button("iw指令", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source", true))()
-end)
-
-GeneralSection:Button("工具包", function()
-    loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/BTools.txt"))()
-end)
-
-GeneralSection:Button("Dex", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/renlua/Script-Tutorial/refs/heads/main/dex.lua"))()
-end)
-
-GeneralSection:Toggle("人物不可见状态(隐身)", "Invisible Character", false, function(enabled)
-    local localPlayer = game.Players.LocalPlayer
-    for _, child in pairs((localPlayer.Character or localPlayer.CharacterAdded:Wait()):GetChildren()) do
-        local isBasePart = child:IsA("BasePart")
-        if isBasePart then
-            if enabled then
-                isBasePart = 1
-            else
-                isBasePart = 0
-            end
-            child.Transparency = isBasePart
-            child.CanCollide = not enabled
-        elseif child:IsA("Accessory") then
-            local handle = child.Handle
-            local transparency = nil
-            if enabled then
-                transparency = 1
-            else
-                transparency = 0
-            end
-            handle.Transparency = transparency
-        end
-    end
-end)
-
-GeneralSection:Button("自杀", function()
-    game.Players.LocalPlayer.Character.Humanoid.Health = 0
-end)
-
-GeneralSection:Button("离开游戏", function()
-    game:Shutdown()
-end)
-
-GeneralSection:Button("重新加入游戏", function()
-    loadstring(game:HttpGet("https://pastefy.app/XXabqNiv/raw"))()
-end)
-
-GeneralSection:Button("显示FPS", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/g54KFcUU"))()
-end)
-
-GeneralSection:Button("保存游戏", function()
-    saveinstance()
-end)
-
--- ===== 车辆加速Tab =====
-local VehicleTab = UILibrary:Tab("『车辆加速』", "18930406865")
-local VehicleSection = VehicleTab:section("车辆加速", true)
-VehicleSection:Label("🚗 坐上车辆后自动加速")
-getgenv().VehicleSpeed = 80
-getgenv().VehicleAccelEnabled = false
-
-local function GetCurrentVehicle()
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        local char = player.Character
-        if not char then return nil end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum then return nil end
-        local seat = hum.SeatPart
-        if not seat then return nil end
-        local vehicle = seat.Parent
-        if vehicle and (vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChildOfClass("VehicleSeat")) then
-            return vehicle
-        end
-        return nil
-    end)
-    return nil
-end
-
-game:GetService("RunService").Heartbeat:Connect(function()
-    if getgenv().VehicleAccelEnabled then
-        pcall(function()
-            local vehicle = GetCurrentVehicle()
-            if vehicle then
-                local hrp = vehicle:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    local bv = hrp:FindFirstChild("VehicleBV")
-                    if not bv then
-                        bv = Instance.new("BodyVelocity")
-                        bv.Name = "VehicleBV"
-                        bv.Parent = hrp
-                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                    end
-                    bv.Velocity = hrp.CFrame.LookVector * getgenv().VehicleSpeed
-                end
-            end
-        end)
-    end
-end)
-
-VehicleSection:Toggle("开启车辆加速", "VehicleAccel", false, function(e)
-    getgenv().VehicleAccelEnabled = e
-    Notify(e and "🚗 车辆加速已开启" or "❌ 车辆加速已关闭", 2)
-end)
-VehicleSection:Slider("车辆速度", "VehicleSpeed", 80, 20, 200, false, function(s)
-    getgenv().VehicleSpeed = s
-end)
+local Tab = Window:MakeTab({
+    Name = "公告",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+Tab:AddParagraph("❤️wdfex脚本❤️")
+Tab:AddParagraph("本脚本主要更新通用和黑洞类")
+Tab:AddParagraph("阿尔宙斯注入器可能用不了")
+Tab:AddParagraph("永久免费 | 禁止倒卖")
 
 -- ===== 设置Tab =====
-local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
-local SettingsSection = SettingsTab:section("控制", true)
-SettingsSection:Button("关闭脚本", function()
-    getgenv().HitboxEnabled = false
-    getgenv().NoClip = false
-    getgenv().ESPEnabled = false
-    getgenv().AimEnabled = false
-    getgenv().VehicleAccelEnabled = false
-    ClearESP()
-    pcall(function() fovCircle:Remove() end)
-    pcall(function()
-        local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
-        if frosty then frosty:Destroy() end
-    end)
-end)
+local Tab = Window:MakeTab({
+    Name = "设置",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+Tab:AddParagraph("用户名: " .. game.Players.LocalPlayer.Name)
+Tab:AddParagraph("注入器: " .. (identifyexecutor and identifyexecutor() or "未知"))
+Tab:AddParagraph("服务器ID: " .. game.GameId)
 
-Notify("✅ wdfex 加载完成", 2)
-print("✅ wdfex San Aurie 完整版加载完成")
+Tab:AddTextbox({
+    Name = "跳跃高度设置",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        pcall(function()
+            game.Players.LocalPlayer.Character.Humanoid.JumpPower = tonumber(Value) or 50
+        end)
+    end
+})
+
+Tab:AddTextbox({
+    Name = "移动速度设置",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        pcall(function()
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(Value) or 16
+        end)
+    end
+})
+
+Tab:AddTextbox({
+    Name = "重力设置",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        pcall(function()
+            game.Workspace.Gravity = tonumber(Value) or 196.2
+        end)
+    end
+})
+
+Tab:AddTextbox({
+    Name = "血量设置",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        pcall(function()
+            game.Players.LocalPlayer.Character.Humanoid.Health = tonumber(Value) or 100
+        end)
+    end
+})
+
+Tab:AddTextbox({
+    Name = "视野设置",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        pcall(function()
+            workspace.CurrentCamera.FieldOfView = tonumber(Value) or 70
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "重新加入服务器",
+    Callback = function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game:GetService("Players").LocalPlayer)
+    end
+})
+
+Tab:AddButton({
+    Name = "离开服务器",
+    Callback = function()
+        game:Shutdown()
+    end
+})
+
+Tab:AddButton({
+    Name = "帧率显示",
+    Callback = function()
+        local ScreenGui = Instance.new("ScreenGui")
+        local FpsLabel = Instance.new("TextLabel")
+        ScreenGui.Name = "FPSGui"
+        ScreenGui.ResetOnSpawn = false
+        FpsLabel.Size = UDim2.new(0, 100, 0, 50)
+        FpsLabel.Position = UDim2.new(0, 10, 0, 10)
+        FpsLabel.BackgroundTransparency = 1
+        FpsLabel.Font = Enum.Font.SourceSansBold
+        FpsLabel.Text = "帧率: 0"
+        FpsLabel.TextSize = 20
+        FpsLabel.TextColor3 = Color3.new(1, 1, 1)
+        FpsLabel.Parent = ScreenGui
+        function updateFpsLabel()
+            local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
+            FpsLabel.Text = "帧率: " .. fps
+        end
+        game:GetService("RunService").RenderStepped:Connect(updateFpsLabel)
+        ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    end
+})
+
+Tab:AddButton({
+    Name = "显示时间",
+    Callback = function()
+        local LBLG = Instance.new("ScreenGui")
+        local LBL = Instance.new("TextLabel")
+        LBLG.Name = "LBLG"
+        LBLG.Parent = game.CoreGui
+        LBLG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        LBL.Name = "LBL"
+        LBL.Parent = LBLG
+        LBL.BackgroundColor3 = Color3.new(1, 1, 1)
+        LBL.BackgroundTransparency = 1
+        LBL.BorderColor3 = Color3.new(0, 0, 0)
+        LBL.Position = UDim2.new(0.75,0,0.010,0)
+        LBL.Size = UDim2.new(0, 133, 0, 30)
+        LBL.Font = Enum.Font.GothamSemibold
+        LBL.Text = "TextLabel"
+        LBL.TextColor3 = Color3.new(1, 1, 1)
+        LBL.TextScaled = true
+        LBL.TextWrapped = true
+        LBL.Visible = true
+        local FpsLabel = LBL
+        local Heartbeat = game:GetService("RunService").Heartbeat
+        local LastIteration, Start
+        local FrameUpdateTable = { }
+        function HeartbeatUpdate()
+            LastIteration = tick()
+            for Index = #FrameUpdateTable, 1, -1 do
+                FrameUpdateTable[Index + 1] = (FrameUpdateTable[Index] >= LastIteration - 1) and FrameUpdateTable[Index] or nil
+            end
+            FrameUpdateTable[1] = LastIteration
+            local CurrentFPS = (tick() - Start >= 1 and #FrameUpdateTable) or (#FrameUpdateTable / (tick() - Start))
+            CurrentFPS = CurrentFPS - CurrentFPS % 1
+            FpsLabel.Text = ("时间:"..os.date("%H").."时"..os.date("%M").."分"..os.date("%S")).."秒"
+        end
+        Start = tick()
+        Heartbeat:Connect(HeartbeatUpdate)
+    end
+})
+
+Tab:AddButton({
+    Name = "重开(删除头部)",
+    Callback = function()
+        pcall(function()
+            game.Players.LocalPlayer.Character.Head:Remove()
+        end)
+    end
+})
+
+-- ===== 通用1 Tab =====
+local Tab = Window:MakeTab({
+    Name = "通用1",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+
+Tab:AddToggle({
+    Name = "夜视",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            game.Lighting.Ambient = Color3.new(1, 1, 1)
+        else
+            game.Lighting.Ambient = Color3.new(0, 0, 0)
+        end
+    end
+})
+
+Tab:AddButton({
+    Name = "透视",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/LE2hzECZ/raw"))()
+    end
+})
+
+Tab:AddToggle({
+    Name = "无限跳",
+    Default = false,
+    Callback = function(Value)
+        getgenv().InfJ = Value
+        game:GetService("UserInputService").JumpRequest:connect(function()
+            if getgenv().InfJ == true then
+                game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "穿墙(可关闭)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScript/main/Noclip"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "阿尔宙斯注入器",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/chillz-workshop/main/Arceus%20X%20V3"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "子弹追踪",
+    Callback = function()
+        local Camera = game:GetService("Workspace").CurrentCamera
+        local Players = game:GetService("Players")
+        local LocalPlayer = game:GetService("Players").LocalPlayer
+
+        local function GetClosestPlayer()
+            local ClosestPlayer = nil
+            local FarthestDistance = math.huge
+            for i, v in pairs(Players.GetPlayers(Players)) do
+                if v ~= LocalPlayer and v.Character and v.Character.FindFirstChild(v.Character, "HumanoidRootPart") then
+                    local DistanceFromPlayer = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                    if DistanceFromPlayer < FarthestDistance then
+                        FarthestDistance = DistanceFromPlayer
+                        ClosestPlayer = v
+                    end
+                end
+            end
+            if ClosestPlayer then
+                return ClosestPlayer
+            end
+        end
+
+        local GameMetaTable = getrawmetatable(game)
+        local OldGameMetaTableNamecall = GameMetaTable.__namecall
+        setreadonly(GameMetaTable, false)
+        GameMetaTable.__namecall = newcclosure(function(object, ...)
+            local NamecallMethod = getnamecallmethod()
+            local Arguments = {...}
+            if tostring(NamecallMethod) == "FindPartOnRayWithIgnoreList" then
+                local ClosestPlayer = GetClosestPlayer()
+                if ClosestPlayer and ClosestPlayer.Character then
+                    Arguments[1] = Ray.new(Camera.CFrame.Position, (ClosestPlayer.Character.Head.Position - Camera.CFrame.Position).Unit * (Camera.CFrame.Position - ClosestPlayer.Character.Head.Position).Magnitude)
+                end
+            end
+            return OldGameMetaTableNamecall(object, unpack(Arguments))
+        end)
+        setreadonly(GameMetaTable, true)
+    end
+})
+
+Tab:AddButton({
+    Name = "飞行",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/pMyEyJN6"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "隐身",
+    Callback = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/3Rnd9rHf'))()
+    end
+})
+
+Tab:AddButton({
+    Name = "快速旋转",
+    Callback = function()
+        if game.Players.LocalPlayer.Character.Humanoid.RigType == Enum.HumanoidRigType.R6 then
+            spawn(function()
+                local speaker = game.Players.LocalPlayer
+                local Anim = Instance.new("Animation")
+                Anim.AnimationId = "rbxassetid://27432686"
+                local bruh = game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(Anim)
+                bruh:Play()
+                bruh:AdjustSpeed(0)
+                speaker.Character.Animate.Disabled = true
+                local hi = Instance.new("Sound")
+                hi.Name = "Sound"
+                hi.SoundId = "http://www.roblox.com/asset/?id=8114290584"
+                hi.Volume = 2
+                hi.Looped = false
+                hi.archivable = false
+                hi.Parent = game.Workspace
+                hi:Play()
+                wait(1.5)
+                local spinSpeed = 30
+                local Spin = Instance.new("BodyAngularVelocity")
+                Spin.Name = "Spinning"
+                Spin.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
+                Spin.MaxTorque = Vector3.new(0, math.huge, 0)
+                Spin.AngularVelocity = Vector3.new(0,spinSpeed,0)
+                wait(3.5)
+                while speaker.Character.Humanoid.Health > 0 do
+                    wait(0)
+                    speaker.Character.Humanoid.HipHeight = speaker.Character.Humanoid.HipHeight + 0
+                end
+            end)
+        else
+            spawn(function()
+                local speaker = game.Players.LocalPlayer
+                local Anim = Instance.new("Animation")
+                Anim.AnimationId = "rbxassetid://507776043"
+                local bruh = game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(Anim)
+                bruh:Play()
+                bruh:AdjustSpeed(0)
+                speaker.Character.Animate.Disabled = true
+                local hi = Instance.new("Sound")
+                hi.Name = "Sound"
+                hi.SoundId = "http://www.roblox.com/asset/?id=8114290584"
+                hi.Volume = 0
+                hi.Looped = false
+                hi.archivable = false
+                hi.Parent = game.Workspace
+                hi:Play()
+                wait()
+                local spinSpeed = 30
+                local Spin = Instance.new("BodyAngularVelocity")
+                Spin.Name = "Spinning"
+                Spin.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
+                Spin.MaxTorque = Vector3.new(0, math.huge, 0)
+                Spin.AngularVelocity = Vector3.new(0,spinSpeed,0)
+                wait(3.5)
+                while speaker.Character.Humanoid.Health > 0 do
+                    wait(0)
+                    speaker.Character.Humanoid.HipHeight = speaker.Character.Humanoid.HipHeight + 0
+                end
+            end)
+        end
+    end
+})
+
+Tab:AddButton({
+    Name = "锁定视角",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/gdLR5Z7X"))()
+    end
+})
+
+-- ===== 通用2 Tab =====
+local Tab = Window:MakeTab({
+    Name = "通用2",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "点击传送工具",
+    Callback = function()
+        mouse = game.Players.LocalPlayer:GetMouse()
+        tool = Instance.new("Tool")
+        tool.RequiresHandle = false
+        tool.Name = "[wdfex]传送工具"
+        tool.Activated:connect(function()
+            local pos = mouse.Hit + Vector3.new(0,2.5,0)
+            pos = CFrame.new(pos.X,pos.Y,pos.Z)
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+        end)
+        tool.Parent = game.Players.LocalPlayer.Backpack
+    end
+})
+
+Tab:AddButton({
+    Name = "飞车",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/gNqZiexm"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "动作(按,开启)",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/ws8cJmTD"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "爬墙",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/zXk4Rq2r"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "键盘",
+    Callback = function()
+        loadstring(game:HttpGet("https://gist.githubusercontent.com/RedZenXYZ/4d80bfd70ee27000660e4bfa7509c667/raw/da903c570249ab3c0c1a74f3467260972c3d87e6/KeyBoard%2520From%2520Ohio%2520Fr%2520Fr"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "工具包",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Bebo-Mods/BeboScripts/main/StandAwekening.lua"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "Dex",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/renlua/Script-Tutorial/refs/heads/main/dex.lua"))()
+    end
+})
+
+Tab:AddToggle({
+    Name = "隐身",
+    Default = false,
+    Callback = function(Value)
+        local localPlayer = game.Players.LocalPlayer
+        for _, child in pairs((localPlayer.Character or localPlayer.CharacterAdded:Wait()):GetChildren()) do
+            local isBasePart = child:IsA("BasePart")
+            if isBasePart then
+                if Value then
+                    child.Transparency = 1
+                    child.CanCollide = false
+                else
+                    child.Transparency = 0
+                    child.CanCollide = true
+                end
+            elseif child:IsA("Accessory") then
+                local handle = child.Handle
+                if Value then
+                    handle.Transparency = 1
+                else
+                    handle.Transparency = 0
+                end
+            end
+        end
+    end
+})
+
+Tab:AddButton({
+    Name = "自杀",
+    Callback = function()
+        game.Players.LocalPlayer.Character.Humanoid.Health = 0
+    end
+})
+
+Tab:AddButton({
+    Name = "重新加入游戏",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/XXabqNiv/raw"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "保存游戏",
+    Callback = function()
+        saveinstance()
+    end
+})
+
+-- ===== 范围Tab =====
+local Tab = Window:MakeTab({
+    Name = "范围",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "0范围",
+    Callback = function()
+        _G.HeadSize = 0
+        _G.Disabled = true
+        game:GetService('RunService').RenderStepped:connect(function()
+            if _G.Disabled then
+                for i,v in next, game:GetService('Players'):GetPlayers() do
+                    if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+                        pcall(function()
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "普通范围",
+    Callback = function()
+        _G.HeadSize = 30
+        _G.Disabled = true
+        game:GetService('RunService').RenderStepped:connect(function()
+            if _G.Disabled then
+                for i,v in next, game:GetService('Players'):GetPlayers() do
+                    if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+                        pcall(function()
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "中等范围",
+    Callback = function()
+        _G.HeadSize = 100
+        _G.Disabled = true
+        game:GetService('RunService').RenderStepped:connect(function()
+            if _G.Disabled then
+                for i,v in next, game:GetService('Players'):GetPlayers() do
+                    if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+                        pcall(function()
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "全图范围",
+    Callback = function()
+        _G.HeadSize = 500
+        _G.Disabled = true
+        game:GetService('RunService').RenderStepped:connect(function()
+            if _G.Disabled then
+                for i,v in next, game:GetService('Players'):GetPlayers() do
+                    if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+                        pcall(function()
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+Tab:AddButton({
+    Name = "终极范围",
+    Callback = function()
+        _G.HeadSize = 2500
+        _G.Disabled = true
+        game:GetService('RunService').RenderStepped:connect(function()
+            if _G.Disabled then
+                for i,v in next, game:GetService('Players'):GetPlayers() do
+                    if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+                        pcall(function()
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really red")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+-- ===== 自瞄Tab =====
+local Tab = Window:MakeTab({
+    Name = "自瞄",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "圈圈自瞄",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "自瞄",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/tYuVRD8r"))()
+    end
+})
+
+-- ===== 绘制Tab =====
+local Tab = Window:MakeTab({
+    Name = "绘制",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "透视绘制",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucasfin000/SpaceHub/main/UESP"))()
+    end
+})
+
+Tab:AddButton({
+    Name = "人物绘制",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/pmgp7mdm"))()
+    end
+})
+
+print("✅ wdfex 加载完成")
 print("🛡️ 防267已启动")
