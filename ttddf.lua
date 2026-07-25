@@ -132,7 +132,6 @@ pcall(function()
             main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
             main.BackgroundTransparency = 0
             main.BorderSizePixel = 0
-            -- 删除图标
             local icon = main:FindFirstChild("Icon")
             if icon then icon:Destroy() end
         end
@@ -580,7 +579,7 @@ AimSection:Toggle("掩体判断", "Wall", true, function(e)
     getgenv().AimWallCheck = e
 end)
 
--- ===== 通用Tab（原版所有功能） =====
+-- ===== 通用Tab（原版所有功能 + 飞行 + 飞车） =====
 local GeneralTab = UILibrary:Tab("『通用』", "")
 local GeneralSection = GeneralTab:section("通用功能", true)
 
@@ -637,6 +636,10 @@ end)
 
 GeneralSection:Button("wdfex飞行", function()
     loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua]]))()
+end)
+
+GeneralSection:Button("wdfex飞车", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
 end)
 
 GeneralSection:Button("wdfex自瞄", function()
@@ -726,7 +729,7 @@ local function GetCurrentVehicle()
 end
 
 game:GetService("RunService").Heartbeat:Connect(function()
-    if getgenv().VehicleAccelEnabled and getgenv().CardVerified then
+    if getgenv().VehicleAccelEnabled then
         pcall(function()
             local vehicle = GetCurrentVehicle()
             if vehicle then
