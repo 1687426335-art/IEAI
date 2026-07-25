@@ -1,4 +1,4 @@
--- ===== wdfex San Aurie 完整版（过检测 + 加速输入框 + 范围 + 透视 + 自瞄 + 加载UI） =====
+-- ===== wdfex San Aurie 完整版（过检测 + 加速输入框 + 范围 + 透视 + 自瞄 + 原版飞行 + 加载UI） =====
 
 -- ===== 1. 过检测 =====
 local function SanAurieBypass()
@@ -133,19 +133,8 @@ local SpeedTab = UILibrary:Tab("『加速』", "18930406865")
 local SpeedSection = SpeedTab:section("速度控制", true)
 SpeedSection:Label("⚠️ 输入速度数值 1-300")
 
--- 当前速度显示（默认1）
-local currentSpeedLabel = SpeedSection:Label("当前速度: 1")
+local currentSpeedLabel = SpeedSection:Label("当前速度: 30")
 
--- 设置默认速度为1
-getgenv().PlayerSpeed = 1
-pcall(function()
-    local hum = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = 1
-    end
-end)
-
--- 速度输入框
 SpeedSection:Textbox("输入速度", "SpeedInput", "输入1-300", function(value)
     local speed = tonumber(value)
     if speed then
@@ -154,9 +143,7 @@ SpeedSection:Textbox("输入速度", "SpeedInput", "输入1-300", function(value
         getgenv().PlayerSpeed = speed
         pcall(function()
             local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.WalkSpeed = speed
-            end
+            if hum then hum.WalkSpeed = speed end
         end)
         pcall(function()
             if currentSpeedLabel then
@@ -169,7 +156,6 @@ SpeedSection:Textbox("输入速度", "SpeedInput", "输入1-300", function(value
     end
 end)
 
--- 预设速度按钮
 SpeedSection:Button("速度 50", function()
     getgenv().PlayerSpeed = 50
     pcall(function()
@@ -226,7 +212,7 @@ SpeedSection:Button("速度 300", function()
     Notify("✅ 速度已设为: 300", 1)
 end)
 
--- 速度守卫（防止被服务器拉回）
+getgenv().PlayerSpeed = 30
 game:GetService("RunService").Heartbeat:Connect(function()
     pcall(function()
         local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -572,6 +558,67 @@ AimSection:Toggle("掩体判断", "Wall", true, function(e)
     getgenv().AimWallCheck = e
 end)
 
+-- ===== 原版飞行（在通用Tab里） =====
+local GeneralTab = UILibrary:Tab("『通用』", "18930406865")
+local GeneralSection = GeneralTab:section("通用", true)
+GeneralSection:Button("wdfex飞行", function()
+    loadstring(game:HttpGet([[https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua]]))()
+end)
+
+-- ===== 车辆加速Tab =====
+local VehicleTab = UILibrary:Tab("『车辆加速』", "18930406865")
+local VehicleSection = VehicleTab:section("车辆加速", true)
+VehicleSection:Label("🚗 坐上车辆后自动加速")
+getgenv().VehicleSpeed = 80
+getgenv().VehicleAccelEnabled = false
+
+local function GetCurrentVehicle()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if not char then return nil end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return nil end
+        local seat = hum.SeatPart
+        if not seat then return nil end
+        local vehicle = seat.Parent
+        if vehicle and (vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChildOfClass("VehicleSeat")) then
+            return vehicle
+        end
+        return nil
+    end)
+    return nil
+end
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().VehicleAccelEnabled and getgenv().CardVerified then
+        pcall(function()
+            local vehicle = GetCurrentVehicle()
+            if vehicle then
+                local hrp = vehicle:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local bv = hrp:FindFirstChild("VehicleBV")
+                    if not bv then
+                        bv = Instance.new("BodyVelocity")
+                        bv.Name = "VehicleBV"
+                        bv.Parent = hrp
+                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    end
+                    bv.Velocity = hrp.CFrame.LookVector * getgenv().VehicleSpeed
+                end
+            end
+        end)
+    end
+end)
+
+VehicleSection:Toggle("开启车辆加速", "VehicleAccel", false, function(e)
+    getgenv().VehicleAccelEnabled = e
+    Notify(e and "🚗 车辆加速已开启" or "❌ 车辆加速已关闭", 2)
+end)
+VehicleSection:Slider("车辆速度", "VehicleSpeed", 80, 20, 200, false, function(s)
+    getgenv().VehicleSpeed = s
+end)
+
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
@@ -580,6 +627,7 @@ SettingsSection:Button("关闭脚本", function()
     getgenv().NoClip = false
     getgenv().ESPEnabled = false
     getgenv().AimEnabled = false
+    getgenv().VehicleAccelEnabled = false
     ClearESP()
     pcall(function() fovCircle:Remove() end)
     pcall(function()
