@@ -351,7 +351,8 @@ SettingsSection:Button("关闭脚本", function()
     end)
 end)
 
-Notify = function(text)
+-- 通知
+local function Notify(text)
     pcall(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "wdfex",
