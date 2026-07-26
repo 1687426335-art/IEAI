@@ -1,29 +1,18 @@
--- ========== 恐脚本UI + 飞车/飞天 过检测版 ==========
--- 恐脚本UI风格 | 飞车+飞天 | 速度调节 | 过检测
+-- ========== wdfex飞车 过检测版 ==========
+-- 防踢 | 防封 | 防拉回 | 防按键乱跳
+-- 恐脚本UI风格 | 速度可调
 
-local player = game:GetService("Players").LocalPlayer
-local plrId = player.UserId
-local filename = "script_count_" .. plrId .. ".txt"
-local count = 0
-if pcall(function() return readfile(filename) end) then
-    local data = readfile(filename)
-    count = tonumber(data) or 0
-end
-count = count + 1
-pcall(function()
-    writefile(filename, tostring(count))
-end)
-
-local VirtualUser = game:GetService("VirtualUser")
-local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
 
--- ==================== 过检测 ====================
+-- ==================== 过检测系统 ====================
 local bypassActive = false
 local bypassConnections = {}
 
@@ -32,19 +21,21 @@ local function startBypass()
     bypassActive = true
     print("🛡️ 启动过检测...")
 
+    -- 1. 防踢出
     pcall(function()
-        local oldKick = player.Kick
-        player.Kick = function(self, msg)
+        local oldKick = LocalPlayer.Kick
+        LocalPlayer.Kick = function(self, msg)
             print("🛡️ 拦截踢出: " .. tostring(msg))
             return nil
         end
         table.insert(bypassConnections, {Disconnect = function()
-            player.Kick = oldKick
+            LocalPlayer.Kick = oldKick
         end})
     end)
 
+    -- 2. 防死亡
     pcall(function()
-        local char = player.Character
+        local char = LocalPlayer.Character
         if char then
             local hum = char:FindFirstChild("Humanoid")
             if hum then
@@ -61,9 +52,10 @@ local function startBypass()
         end
     end)
 
+    -- 3. 防拉回
     pcall(function()
         local function antiTeleport()
-            local char = player.Character
+            local char = LocalPlayer.Character
             if char then
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if hrp then
@@ -80,12 +72,13 @@ local function startBypass()
             end
         end
         antiTeleport()
-        player.CharacterAdded:Connect(function()
+        LocalPlayer.CharacterAdded:Connect(function()
             task.wait(0.5)
             antiTeleport()
         end)
     end)
 
+    -- 4. 伪装行为
     pcall(function()
         local conn = RunService.Heartbeat:Connect(function()
             if math.random(1, 100) > 95 then
@@ -96,41 +89,73 @@ local function startBypass()
         table.insert(bypassConnections, conn)
     end)
 
+    -- 5. 自动重连
     pcall(function()
-        local conn = player:GetPropertyChangedSignal("Parent"):Connect(function()
-            if not player.Parent then
+        local conn = LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not LocalPlayer.Parent then
                 print("🔄 被踢出，重连中...")
                 task.wait(2)
-                TeleportService:Teleport(game.PlaceId, player)
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
             end
         end)
         table.insert(bypassConnections, conn)
     end)
 
-    print("✅ 过检测已启动")
+    -- 6. 伪装网络数据
+    pcall(function()
+        local network = game:GetService("NetworkClient")
+        if network then
+            network:SetOutgoingKBPSLimit(999999)
+        end
+    end)
+
+    -- 7. 速度伪装
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local conn = RunService.Heartbeat:Connect(function()
+                    if hrp and hrp.Parent then
+                        local realVel = hrp.Velocity
+                        if realVel.Magnitude > 50 then
+                            hrp.Velocity = realVel * 0.3
+                            task.wait(0.03)
+                            hrp.Velocity = realVel
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, conn)
+            end
+        end
+    end)
+
+    print("✅ 过检测已启动 (7层防护)")
 end
 
 -- ==================== 飞车/飞天功能 ====================
-local carFlyEnabled = false
-local carSpeed = 50
-local carBV = nil
-local carBG = nil
+local flyMode = "飞车"  -- "飞车" 或 "飞天"
+local flyEnabled = false
+local flySpeed = 50
+local flyBV = nil
+local flyBG = nil
 local flyConn = nil
-local moveForward = 0
-local moveBackward = 0
-local moveLeft = 0
-local moveRight = 0
-local moveUp = 0
-local moveDown = 0
+local flyUp = 0
+local flyForward = 0
+local flyBackward = 0
+local flyLeft = 0
+local flyRight = 0
+local currentSpeed = 0
 
-local function toggleCarFly()
-    carFlyEnabled = not carFlyEnabled
+local function toggleFly(mode)
+    flyMode = mode or flyMode
+    flyEnabled = not flyEnabled
     
-    if carFlyEnabled then
-        local char = player.Character
+    if flyEnabled then
+        local char = LocalPlayer.Character
         if not char then
             print("❌ 没有角色")
-            carFlyEnabled = false
+            flyEnabled = false
             return
         end
         
@@ -138,86 +163,94 @@ local function toggleCarFly()
         local hum = char:FindFirstChild("Humanoid")
         if not hrp or not hum then
             print("❌ 找不到 HumanoidRootPart")
-            carFlyEnabled = false
+            flyEnabled = false
             return
         end
         
-        print("✅ 飞车开启")
+        print("✅ " .. flyMode .. "开启")
         hum.PlatformStand = true
         
-        carBV = Instance.new("BodyVelocity")
-        carBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        carBV.Velocity = Vector3.new(0, 0, 0)
-        carBV.Parent = hrp
+        -- 清空旧的
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+        if flyConn then flyConn:Disconnect() end
         
-        carBG = Instance.new("BodyGyro")
-        carBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-        carBG.D = 5000
-        carBG.P = 50000
-        carBG.CFrame = Camera.CFrame
-        carBG.Parent = hrp
+        flyBV = Instance.new("BodyVelocity")
+        flyBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        flyBV.Velocity = Vector3.new(0, 20, 0)
+        flyBV.Parent = hrp
         
-        -- 按键监听
-        local keyBegan = UserInputService.InputBegan:Connect(function(input, gp)
-            if gp then return end
-            if input.KeyCode == Enum.KeyCode.W then moveForward = 1 end
-            if input.KeyCode == Enum.KeyCode.S then moveBackward = 1 end
-            if input.KeyCode == Enum.KeyCode.A then moveLeft = 1 end
-            if input.KeyCode == Enum.KeyCode.D then moveRight = 1 end
-            if input.KeyCode == Enum.KeyCode.Space then moveUp = 1 end
-            if input.KeyCode == Enum.KeyCode.LeftShift then moveDown = 1 end
-        end)
+        flyBG = Instance.new("BodyGyro")
+        flyBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        flyBG.D = 5000
+        flyBG.P = 50000
+        flyBG.CFrame = Camera.CFrame
+        flyBG.Parent = hrp
         
-        local keyEnded = UserInputService.InputEnded:Connect(function(input, gp)
-            if gp then return end
-            if input.KeyCode == Enum.KeyCode.W then moveForward = 0 end
-            if input.KeyCode == Enum.KeyCode.S then moveBackward = 0 end
-            if input.KeyCode == Enum.KeyCode.A then moveLeft = 0 end
-            if input.KeyCode == Enum.KeyCode.D then moveRight = 0 end
-            if input.KeyCode == Enum.KeyCode.Space then moveUp = 0 end
-            if input.KeyCode == Enum.KeyCode.LeftShift then moveDown = 0 end
-        end)
+        -- 重置按键状态
+        flyUp = 0
+        flyForward = 0
+        flyBackward = 0
+        flyLeft = 0
+        flyRight = 0
+        currentSpeed = 0
         
         flyConn = RunService.Heartbeat:Connect(function()
-            if not carFlyEnabled then
-                if flyConn then flyConn:Disconnect(); flyConn = nil end
-                keyBegan:Disconnect()
-                keyEnded:Disconnect()
+            if not flyEnabled then
+                if flyConn then
+                    flyConn:Disconnect()
+                    flyConn = nil
+                end
                 return
             end
             if not hrp or not hrp.Parent then
-                carFlyEnabled = false
-                if flyConn then flyConn:Disconnect(); flyConn = nil end
-                keyBegan:Disconnect()
-                keyEnded:Disconnect()
+                flyEnabled = false
+                if flyConn then
+                    flyConn:Disconnect()
+                    flyConn = nil
+                end
                 return
             end
             
-            local look = Camera.CFrame.LookVector
-            local right = Camera.CFrame.RightVector
-            local up = Camera.CFrame.UpVector
-            
             local moveDir = Vector3.new(0, 0, 0)
-            moveDir = moveDir + look * (moveForward - moveBackward) * carSpeed
-            moveDir = moveDir + right * (moveRight - moveLeft) * carSpeed
-            moveDir = moveDir + up * (moveUp - moveDown) * carSpeed
             
-            if moveDir.Magnitude > 0 then
-                carBV.Velocity = moveDir
+            if flyMode == "飞车" then
+                -- 飞车模式：基于视角方向
+                local look = Camera.CFrame.LookVector
+                local right = Camera.CFrame.RightVector
+                local up = Camera.CFrame.UpVector
+                
+                moveDir = moveDir + look * (flyForward - flyBackward) * flySpeed
+                moveDir = moveDir + right * (flyRight - flyLeft) * flySpeed
+                moveDir = moveDir + up * flyUp * flySpeed
+                
             else
-                carBV.Velocity = Vector3.new(0, 0, 0)
+                -- 飞天模式：基于角色朝向
+                local look = hrp.CFrame.LookVector
+                local right = hrp.CFrame.RightVector
+                local up = hrp.CFrame.UpVector
+                
+                moveDir = moveDir + look * (flyForward - flyBackward) * flySpeed
+                moveDir = moveDir + right * (flyRight - flyLeft) * flySpeed
+                moveDir = moveDir + up * flyUp * flySpeed
             end
             
-            carBG.CFrame = Camera.CFrame
+            if moveDir.Magnitude > 0 then
+                flyBV.Velocity = moveDir
+            else
+                flyBV.Velocity = Vector3.new(0, 0, 0)
+            end
+            
+            flyBG.CFrame = Camera.CFrame
         end)
         
         -- 升空
         task.spawn(function()
-            local targetHeight = hrp.Position.Y + 15
-            while carFlyEnabled and hrp and hrp.Parent do
+            local targetHeight = hrp.Position.Y + 10
+            while flyEnabled and hrp and hrp.Parent do
                 if hrp.Position.Y < targetHeight then
-                    if carBV then
-                        carBV.Velocity = Vector3.new(0, 20, 0)
+                    if flyBV then
+                        flyBV.Velocity = Vector3.new(0, 20, 0)
                     end
                 else
                     break
@@ -227,17 +260,17 @@ local function toggleCarFly()
         end)
         
     else
-        print("❌ 飞车关闭")
-        if carBV then carBV:Destroy(); carBV = nil end
-        if carBG then carBG:Destroy(); carBG = nil end
+        print("❌ " .. flyMode .. "关闭")
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+        if flyBG then flyBG:Destroy(); flyBG = nil end
         if flyConn then flyConn:Disconnect(); flyConn = nil end
-        moveForward = 0
-        moveBackward = 0
-        moveLeft = 0
-        moveRight = 0
-        moveUp = 0
-        moveDown = 0
-        local char = player.Character
+        flyUp = 0
+        flyForward = 0
+        flyBackward = 0
+        flyLeft = 0
+        flyRight = 0
+        currentSpeed = 0
+        local char = LocalPlayer.Character
         if char then
             local hum = char:FindFirstChild("Humanoid")
             if hum then hum.PlatformStand = false end
@@ -245,400 +278,352 @@ local function toggleCarFly()
     end
 end
 
--- ==================== 恐脚本UI ====================
-local function createUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "UniversalUI"
-    ScreenGui.Parent = LocalPlayer.PlayerGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.ResetOnSpawn = false
+-- ==================== 按键监听（彻底修复按键乱跳） ====================
+local keyState = {
+    W = false, S = false, A = false, D = false,
+    Space = false, Shift = false
+}
 
-    local Main = Instance.new("Frame")
-    Main.Name = "Main"
-    Main.Parent = ScreenGui
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Main.Position = UDim2.new(0.5, 0, 0.5, 10)
-    Main.Size = UDim2.new(0, 650, 0, 280)
-    Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.Visible = false
-    Main.ZIndex = 10
-    Main.ClipsDescendants = true
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = Main
-    local MainStroke = Instance.new("UIStroke")
-    MainStroke.Thickness = 2
-    MainStroke.Color = Color3.new(1, 0, 0)
-    MainStroke.Parent = Main
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if not flyEnabled then return end
+    
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then keyState.W = true; flyForward = 1 end
+    if key == Enum.KeyCode.S then keyState.S = true; flyBackward = 1 end
+    if key == Enum.KeyCode.A then keyState.A = true; flyLeft = 1 end
+    if key == Enum.KeyCode.D then keyState.D = true; flyRight = 1 end
+    if key == Enum.KeyCode.Space then keyState.Space = true; flyUp = 1 end
+    if key == Enum.KeyCode.LeftShift then keyState.Shift = true; flyUp = -1 end
+end)
 
-    local BeanBack = Instance.new("Frame")
-    BeanBack.Name = "BeanBackground"
-    BeanBack.Parent = Main
-    BeanBack.BackgroundTransparency = 1
-    BeanBack.Size = UDim2.new(1, 0, 1, 0)
-    BeanBack.ZIndex = 1
+UserInputService.InputEnded:Connect(function(input, gp)
+    if gp then return end
+    if not flyEnabled then return end
+    
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then keyState.W = false; flyForward = 0 end
+    if key == Enum.KeyCode.S then keyState.S = false; flyBackward = 0 end
+    if key == Enum.KeyCode.A then keyState.A = false; flyLeft = 0 end
+    if key == Enum.KeyCode.D then keyState.D = false; flyRight = 0 end
+    if key == Enum.KeyCode.Space then keyState.Space = false; flyUp = 0 end
+    if key == Enum.KeyCode.LeftShift then keyState.Shift = false; flyUp = 0 end
+end)
 
-    local Line = Instance.new("Frame")
-    Line.Parent = Main
-    Line.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Line.Position = UDim2.new(0.3, 0, 0, 40)
-    Line.Size = UDim2.new(0, 2, 1, -40)
-    Line.ZIndex = 11
+-- ==================== 创建UI（恐脚本风格） ====================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = CoreGui
+screenGui.Name = "wdfexFly"
+screenGui.ResetOnSpawn = false
 
-    local CategoryArea = Instance.new("Frame")
-    CategoryArea.Name = "CategoryArea"
-    CategoryArea.Parent = Main
-    CategoryArea.BackgroundTransparency = 1
-    CategoryArea.Size = UDim2.new(0.3, -10, 1, -40)
-    CategoryArea.Position = UDim2.new(0, 10, 0, 40)
-    CategoryArea.ZIndex = 20
+local mainFrame = Instance.new("Frame")
+mainFrame.Parent = screenGui
+mainFrame.Size = UDim2.new(0, 260, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 35)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
 
-    local ContentArea = Instance.new("Frame")
-    ContentArea.Name = "ContentArea"
-    ContentArea.Parent = Main
-    ContentArea.BackgroundTransparency = 1
-    ContentArea.Size = UDim2.new(0.7, -12, 1, -40)
-    ContentArea.Position = UDim2.new(0.3, 12, 0, 40)
-    ContentArea.ZIndex = 20
-    ContentArea.ClipsDescendants = true
+local mainCorner = Instance.new("UICorner")
+mainCorner.Parent = mainFrame
+mainCorner.CornerRadius = UDim.new(0, 14)
 
-    local ScrollingFrame = Instance.new("ScrollingFrame")
-    ScrollingFrame.Parent = ContentArea
-    ScrollingFrame.BackgroundTransparency = 1
-    ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 5, 0)
-    ScrollingFrame.ScrollBarThickness = 6
-    ScrollingFrame.BorderSizePixel = 0
-    ScrollingFrame.ZIndex = 20
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Parent = mainFrame
+mainStroke.Thickness = 1.5
+mainStroke.Color = Color3.fromRGB(0, 200, 255)
+mainStroke.Transparency = 0.3
 
-    local categories = {}
-    local pages = {}
-    local selected = nil
-    local catNames = {"飞车控制", "信息"}
+-- 标题栏
+local titleBar = Instance.new("Frame")
+titleBar.Parent = mainFrame
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+titleBar.BackgroundTransparency = 0.15
+titleBar.BorderSizePixel = 0
 
-    -- ========== 飞车控制页面 ==========
-    local function createCarFlyPage()
-        local page = Instance.new("Frame")
-        page.Name = "Page1"
-        page.Parent = ScrollingFrame
-        page.BackgroundTransparency = 1
-        page.Size = UDim2.new(1, 0, 1, 0)
-        page.Visible = false
-        page.ZIndex = 20
+local titleCorner = Instance.new("UICorner")
+titleCorner.Parent = titleBar
+titleCorner.CornerRadius = UDim.new(0, 14)
 
-        local function addButton(parent, txt, y, callback)
-            local btn = Instance.new("TextButton")
-            btn.Parent = parent
-            btn.BackgroundColor3 = Color3.new(0, 0, 0)
-            btn.BackgroundTransparency = 0.5
-            btn.Size = UDim2.new(0.48, 0, 0, 40)
-            btn.Position = UDim2.new(0.5, -120, 0, y)
-            btn.Text = txt
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.TextSize = 14
-            btn.AutoButtonColor = false
-            btn.ZIndex = 21
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 6)
-            corner.Parent = btn
-            if callback then
-                btn.MouseButton1Click:Connect(callback)
-            end
-            return btn
-        end
+local titleText = Instance.new("TextLabel")
+titleText.Parent = titleBar
+titleText.Size = UDim2.new(1, -70, 1, 0)
+titleText.Position = UDim2.new(0, 12, 0, 0)
+titleText.Text = "⚡ wdfex飞车"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.BackgroundTransparency = 1
+titleText.TextSize = 16
+titleText.Font = Enum.Font.GothamBold
+titleText.TextXAlignment = Enum.TextXAlignment.Left
 
-        local function addSlider(parent, txt, y, min, max, default, callback)
-            local frame = Instance.new("Frame")
-            frame.Parent = parent
-            frame.BackgroundTransparency = 1
-            frame.Size = UDim2.new(0.9, 0, 0, 50)
-            frame.Position = UDim2.new(0.05, 0, 0, y)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Parent = titleBar
+closeBtn.Size = UDim2.new(0, 32, 1, 0)
+closeBtn.Position = UDim2.new(1, -32, 0, 0)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.BackgroundTransparency = 1
+closeBtn.TextSize = 16
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
 
-            local label = Instance.new("TextLabel")
-            label.Parent = frame
-            label.Size = UDim2.new(1, 0, 0, 20)
-            label.Position = UDim2.new(0, 0, 0, 0)
-            label.BackgroundTransparency = 1
-            label.Text = txt .. ": " .. tostring(default)
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextSize = 14
-            label.Font = Enum.Font.SourceSans
+local minBtn = Instance.new("TextButton")
+minBtn.Parent = titleBar
+minBtn.Size = UDim2.new(0, 32, 1, 0)
+minBtn.Position = UDim2.new(1, -64, 0, 0)
+minBtn.Text = "─"
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.BackgroundTransparency = 1
+minBtn.TextSize = 16
+minBtn.Font = Enum.Font.GothamBold
+minBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    miniBall.Visible = true
+end)
 
-            local slider = Instance.new("Frame")
-            slider.Parent = frame
-            slider.Size = UDim2.new(1, 0, 0, 20)
-            slider.Position = UDim2.new(0, 0, 0, 25)
-            slider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+-- 最小化圆球
+local miniBall = Instance.new("TextButton")
+miniBall.Parent = screenGui
+miniBall.Size = UDim2.new(0, 50, 0, 50)
+miniBall.Position = UDim2.new(1, -70, 0.9, 0)
+miniBall.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+miniBall.Text = "✈️"
+miniBall.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniBall.TextSize = 24
+miniBall.Font = Enum.Font.GothamBold
+miniBall.BorderSizePixel = 0
+miniBall.Visible = false
 
-            local fill = Instance.new("Frame")
-            fill.Parent = slider
-            fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-            fill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-            fill.BorderSizePixel = 0
+local ballCorner = Instance.new("UICorner")
+ballCorner.Parent = miniBall
+ballCorner.CornerRadius = UDim.new(1, 0)
 
-            local knob = Instance.new("TextButton")
-            knob.Parent = slider
-            knob.Size = UDim2.new(0, 20, 0, 20)
-            knob.Position = UDim2.new((default - min) / (max - min), -10, 0.5, -10)
-            knob.Text = ""
-            knob.BackgroundColor3 = Color3.new(1, 1, 1)
-            knob.AutoButtonColor = false
+miniBall.MouseButton1Click:Connect(function()
+    miniBall.Visible = false
+    mainFrame.Visible = true
+end)
 
-            local dragging = false
-            knob.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                end
-            end)
-
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local sliderAbs = slider.AbsolutePosition
-                    local sliderSize = slider.AbsoluteSize
-                    local relativeX = math.clamp(mousePos.X - sliderAbs.X, 0, sliderSize.X)
-                    local percent = relativeX / sliderSize.X
-                    local val = math.floor(min + (max - min) * percent)
-                    fill.Size = UDim2.new(percent, 0, 1, 0)
-                    knob.Position = UDim2.new(percent, -10, 0.5, -10)
-                    label.Text = txt .. ": " .. tostring(val)
-                    if callback then callback(val) end
-                end
-            end)
-
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-
-            return {frame = frame, label = label, slider = slider, fill = fill, knob = knob}
-        end
-
-        local carFlyBtn = addButton(page, "🚗 飞车: 关", 10, function()
-            toggleCarFly()
-            carFlyBtn.Text = carFlyEnabled and "🚗 飞车: 开" or "🚗 飞车: 关"
-            carFlyBtn.BackgroundColor3 = carFlyEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 80)
-        end)
-
-        local speedSlider = addSlider(page, "飞行速度", 65, 10, 200, 50, function(val)
-            carSpeed = val
-        end)
-
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Parent = page
-        infoLabel.Size = UDim2.new(0.9, 0, 0, 60)
-        infoLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.Text = "🛡️ 过检测已启动\nWASD控制方向 | 空格上升 | Shift下降"
-        infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        infoLabel.TextSize = 13
-        infoLabel.Font = Enum.Font.SourceSans
-        infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Parent = page
-        statusLabel.Size = UDim2.new(0.9, 0, 0, 20)
-        statusLabel.Position = UDim2.new(0.05, 0, 0.85, 0)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Text = "🟢 运行中"
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        statusLabel.TextSize = 12
-        statusLabel.Font = Enum.Font.SourceSans
-
-        return page
+-- ========== 内容 ==========
+local function createBtn(parent, text, y, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.Size = UDim2.new(0, 200, 0, 38)
+    btn.Position = UDim2.new(0.5, -100, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 15
+    btn.Font = Enum.Font.GothamBold
+    btn.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.Parent = btn
+    corner.CornerRadius = UDim.new(0, 8)
+    
+    if callback then
+        btn.MouseButton1Click:Connect(callback)
     end
-
-    -- ========== 信息页面 ==========
-    local function createInfoPage()
-        local page = Instance.new("Frame")
-        page.Name = "Page2"
-        page.Parent = ScrollingFrame
-        page.BackgroundTransparency = 1
-        page.Size = UDim2.new(1, 0, 1, 0)
-        page.Visible = false
-        page.ZIndex = 20
-
-        local info = Instance.new("TextLabel")
-        info.Parent = page
-        info.Size = UDim2.new(0.9, 0, 0, 200)
-        info.Position = UDim2.new(0.05, 0, 0.05, 0)
-        info.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        info.Text = "恐脚本--飞车版\n\n创作者：恐拜大帝\n\n🛡️ 过检测已启动\n\n您已执行 " .. count .. " 次"
-        info.TextColor3 = Color3.new(1, 1, 1)
-        info.TextWrapped = true
-        info.Font = Enum.Font.SourceSans
-        info.TextSize = 16
-        info.TextXAlignment = Enum.TextXAlignment.Center
-        info.TextYAlignment = Enum.TextYAlignment.Center
-        local infoCorner = Instance.new("UICorner")
-        infoCorner.CornerRadius = UDim.new(0, 6)
-        infoCorner.Parent = info
-
-        return page
-    end
-
-    -- ========== 创建分类按钮 ==========
-    for i, name in ipairs(catNames) do
-        local cat = Instance.new("TextButton")
-        cat.Name = "Cat" .. i
-        cat.Parent = CategoryArea
-        cat.BackgroundTransparency = 0.8
-        cat.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        cat.Size = UDim2.new(1, 0, 0, 35)
-        cat.Position = UDim2.new(0, 0, 0, (i - 1) * 40)
-        cat.Text = name
-        cat.TextColor3 = Color3.new(1, 1, 1)
-        cat.TextSize = 14
-        cat.AutoButtonColor = false
-        cat.ZIndex = 21
-
-        local page
-        if i == 1 then
-            page = createCarFlyPage()
-        else
-            page = createInfoPage()
-        end
-
-        cat.MouseButton1Click:Connect(function()
-            if selected then
-                selected.BackgroundTransparency = 0.8
-                selected.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-            end
-            cat.BackgroundTransparency = 0.5
-            cat.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-            selected = cat
-            for _, p in pairs(pages) do
-                p.Visible = false
-            end
-            page.Visible = true
-        end)
-
-        table.insert(categories, cat)
-        table.insert(pages, page)
-    end
-
-    -- ========== 顶部栏 ==========
-    local TopBar = Instance.new("Frame")
-    TopBar.Name = "TopBar"
-    TopBar.Parent = Main
-    TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    TopBar.Size = UDim2.new(1, 0, 0, 40)
-    TopBar.ZIndex = 15
-    local TopUICorner = Instance.new("UICorner")
-    TopUICorner.CornerRadius = UDim.new(0, 10)
-    TopUICorner.Parent = TopBar
-
-    local Title = Instance.new("TextLabel")
-    Title.Name = "Title"
-    Title.Parent = TopBar
-    Title.BackgroundTransparency = 1
-    Title.Size = UDim2.new(1, -100, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
-    Title.Font = Enum.Font.ArialBold
-    Title.Text = "恐脚本--飞车版" .. string.rep(" ", 6) .. "您已执行 " .. count .. " 次"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 18
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.ZIndex = 16
-
-    local MinimizeBtn = Instance.new("TextButton")
-    MinimizeBtn.Parent = TopBar
-    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    MinimizeBtn.Size = UDim2.new(0, 36, 0, 32)
-    MinimizeBtn.Position = UDim2.new(1, -86, 0, 4)
-    MinimizeBtn.Font = Enum.Font.ArialBold
-    MinimizeBtn.Text = "—"
-    MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinimizeBtn.TextSize = 20
-    MinimizeBtn.ZIndex = 17
-    local MinCorner = Instance.new("UICorner")
-    MinCorner.CornerRadius = UDim.new(0, 6)
-    MinCorner.Parent = MinimizeBtn
-
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Parent = TopBar
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    CloseBtn.Size = UDim2.new(0, 36, 0, 32)
-    CloseBtn.Position = UDim2.new(1, -46, 0, 4)
-    CloseBtn.Font = Enum.Font.ArialBold
-    CloseBtn.Text = "X"
-    CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-    CloseBtn.TextSize = 20
-    CloseBtn.ZIndex = 17
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 6)
-    CloseCorner.Parent = CloseBtn
-
-    local ToggleBtn = Instance.new("TextButton")
-    ToggleBtn.Parent = ScreenGui
-    ToggleBtn.BackgroundColor3 = Color3.new(0, 0, 0)
-    ToggleBtn.BackgroundTransparency = 0.5
-    ToggleBtn.Position = UDim2.new(0.8, 0, 0.3, 0)
-    ToggleBtn.Size = UDim2.new(0, 140, 0, 50)
-    ToggleBtn.Font = Enum.Font.ArialBold
-    ToggleBtn.Text = "打开菜单"
-    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleBtn.TextSize = 20
-    ToggleBtn.ZIndex = 100
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(0, 8)
-    ToggleCorner.Parent = ToggleBtn
-
-    local dragging, dragInput, dragStartPos, btnStartPos = false, nil, nil, nil
-    ToggleBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not dragging and not dragInput then
-                dragging = true
-                dragInput = input
-                dragStartPos = input.Position
-                btnStartPos = ToggleBtn.Position
-            end
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            local delta = input.Position - dragStartPos
-            ToggleBtn.Position = UDim2.new(btnStartPos.X.Scale, btnStartPos.X.Offset + delta.X, btnStartPos.Y.Scale, btnStartPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    ToggleBtn.InputEnded:Connect(function(input)
-        if input == dragInput then
-            dragging = false
-            dragInput = nil
-        end
-    end)
-
-    ToggleBtn.MouseButton1Click:Connect(function()
-        Main.Visible = not Main.Visible
-        ToggleBtn.Text = Main.Visible and "关闭菜单" or "打开菜单"
-    end)
-
-    MinimizeBtn.MouseButton1Click:Connect(function()
-        Main.Visible = false
-        ToggleBtn.Text = "打开菜单"
-    end)
-
-    CloseBtn.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
-
-    -- 默认显示第一个分类
-    if categories[1] then
-        categories[1]:MouseButton1Click()
-    end
+    
+    return btn
 end
+
+-- 开关按钮
+local toggleBtn = createBtn(mainFrame, "✈️ 飞车: 关", 50)
+toggleBtn.MouseButton1Click:Connect(function()
+    if flyEnabled then
+        toggleFly("飞车")
+        toggleBtn.Text = "✈️ 飞车: 关"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        modeBtn.Text = "🚗 切换飞天"
+    else
+        toggleFly("飞车")
+        toggleBtn.Text = "✈️ 飞车: 开"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        modeBtn.Text = "🚗 切换飞天"
+    end
+end)
+
+-- 切换模式按钮
+local modeBtn = createBtn(mainFrame, "🚗 切换飞天", 95)
+modeBtn.MouseButton1Click:Connect(function()
+    if flyEnabled then
+        flyEnabled = false
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+        if flyBG then flyBG:Destroy(); flyBG = nil end
+        if flyConn then flyConn:Disconnect(); flyConn = nil end
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then hum.PlatformStand = false end
+        end
+        toggleBtn.Text = "✈️ 飞车: 关"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    end
+    
+    if flyMode == "飞车" then
+        flyMode = "飞天"
+        modeBtn.Text = "🚗 切换飞车"
+        toggleBtn.Text = "🚀 飞天: 关"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        print("🔄 切换到飞天模式")
+    else
+        flyMode = "飞车"
+        modeBtn.Text = "🚗 切换飞天"
+        toggleBtn.Text = "✈️ 飞车: 关"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        print("🔄 切换到飞车模式")
+    end
+end)
+
+-- 速度控制
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Parent = mainFrame
+speedLabel.Size = UDim2.new(1, 0, 0, 25)
+speedLabel.Position = UDim2.new(0, 0, 0, 148)
+speedLabel.Text = "速度: " .. flySpeed
+speedLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextSize = 14
+speedLabel.Font = Enum.Font.Gotham
+
+local speedDown = Instance.new("TextButton")
+speedDown.Parent = mainFrame
+speedDown.Size = UDim2.new(0, 40, 0, 30)
+speedDown.Position = UDim2.new(0, 15, 0, 175)
+speedDown.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+speedDown.Text = "-"
+speedDown.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedDown.TextSize = 18
+speedDown.Font = Enum.Font.GothamBold
+speedDown.BorderSizePixel = 0
+
+local speedDownCorner = Instance.new("UICorner")
+speedDownCorner.Parent = speedDown
+speedDownCorner.CornerRadius = UDim.new(0, 6)
+
+speedDown.MouseButton1Click:Connect(function()
+    flySpeed = math.max(flySpeed - 5, 10)
+    speedLabel.Text = "速度: " .. flySpeed
+    speedInput.Text = tostring(flySpeed)
+end)
+
+local speedInput = Instance.new("TextBox")
+speedInput.Parent = mainFrame
+speedInput.Size = UDim2.new(0, 80, 0, 30)
+speedInput.Position = UDim2.new(0.5, -40, 0, 175)
+speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedInput.Text = tostring(flySpeed)
+speedInput.PlaceholderText = "速度"
+speedInput.TextSize = 15
+speedInput.Font = Enum.Font.Gotham
+speedInput.BorderSizePixel = 0
+
+local speedInputCorner = Instance.new("UICorner")
+speedInputCorner.Parent = speedInput
+speedInputCorner.CornerRadius = UDim.new(0, 6)
+
+speedInput.FocusLost:Connect(function()
+    local v = tonumber(speedInput.Text)
+    if v then
+        flySpeed = math.clamp(v, 10, 200)
+        speedLabel.Text = "速度: " .. flySpeed
+    else
+        speedInput.Text = tostring(flySpeed)
+    end
+end)
+
+local speedUp = Instance.new("TextButton")
+speedUp.Parent = mainFrame
+speedUp.Size = UDim2.new(0, 40, 0, 30)
+speedUp.Position = UDim2.new(1, -55, 0, 175)
+speedUp.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+speedUp.Text = "+"
+speedUp.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedUp.TextSize = 18
+speedUp.Font = Enum.Font.GothamBold
+speedUp.BorderSizePixel = 0
+
+local speedUpCorner = Instance.new("UICorner")
+speedUpCorner.Parent = speedUp
+speedUpCorner.CornerRadius = UDim.new(0, 6)
+
+speedUp.MouseButton1Click:Connect(function()
+    flySpeed = math.min(flySpeed + 5, 200)
+    speedLabel.Text = "速度: " .. flySpeed
+    speedInput.Text = tostring(flySpeed)
+end)
+
+-- 状态标签
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = mainFrame
+statusLabel.Size = UDim2.new(1, 0, 0, 20)
+statusLabel.Position = UDim2.new(0, 0, 1, -25)
+statusLabel.Text = "🛡️ 过检测已启动"
+statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextSize = 12
+statusLabel.Font = Enum.Font.Gotham
+
+-- 快捷键提示
+local keyLabel = Instance.new("TextLabel")
+keyLabel.Parent = mainFrame
+keyLabel.Size = UDim2.new(1, 0, 0, 18)
+keyLabel.Position = UDim2.new(0, 0, 1, -48)
+keyLabel.Text = "WASD移动 | 空格上升 | Shift下降"
+keyLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
+keyLabel.BackgroundTransparency = 1
+keyLabel.TextSize = 11
+keyLabel.Font = Enum.Font.Gotham
+
+-- ==================== 快捷键 ====================
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        if flyEnabled then
+            toggleFly(flyMode)
+            toggleBtn.Text = (flyMode == "飞车" and "✈️ 飞车: 关" or "🚀 飞天: 关")
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        else
+            toggleFly(flyMode)
+            toggleBtn.Text = (flyMode == "飞车" and "✈️ 飞车: 开" or "🚀 飞天: 开")
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        end
+    end
+end)
+
+-- ==================== 角色重生 ====================
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if flyEnabled then
+        flyEnabled = false
+        if flyBV then flyBV:Destroy(); flyBV = nil end
+        if flyBG then flyBG:Destroy(); flyBG = nil end
+        if flyConn then flyConn:Disconnect(); flyConn = nil end
+        toggleBtn.Text = (flyMode == "飞车" and "✈️ 飞车: 关" or "🚀 飞天: 关")
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then hum.PlatformStand = false end
+        end
+    end
+end)
 
 -- ==================== 启动 ====================
 task.wait(0.5)
 startBypass()
-createUI()
 
 print("========================================")
-print("  ✅ 恐脚本--飞车版 加载成功")
-print("  🛡️ 过检测已启动")
-print("  🚗 WASD控制方向 | 空格上升 | Shift下降")
+print("  ✅ wdfex飞车 过检测版 加载成功")
+print("  点击按钮 或 按 F 键 开关")
+print("  恐脚本UI风格 | 速度可调")
+print("  🛡️ 过检测已启动 (7层防护)")
+print("  WASD移动 | 空格上升 | Shift下降")
+print("  点击'切换飞天'切换模式")
 print("========================================")
