@@ -1,4 +1,4 @@
--- ===== wdfex 圣奥里传送（整合飞行） =====
+-- ===== wdfex 圣奥里传送 =====
 
 -- 基础服务定义
 local Players = game:GetService("Players")
@@ -366,12 +366,12 @@ local Tab_Fly = Window:Tab({
 
 Tab_Fly:Section({
     TextSize = 17,
-    ["Title"] = "飞行功能",
+    ["Title"] = "wdfex飞行功能",
     TextXAlignment = "Left",
 })
 
 Tab_Fly:Button({
-    ["Title"] = "wdfex飞行",
+    ["Title"] = "wdfex飞行V3",
     ["Desc"] = "开启飞行",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/114514lzkill/-/refs/heads/main/%E9%A3%9E%E8%A1%8C%E8%84%9A%E6%9C%AC.lua"))()
