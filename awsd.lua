@@ -1,5 +1,9 @@
--- ===== wdfex 圣奥里传送脚本 =====
+-- ===== wdfex 圣奥里传送脚本（纯传送，无过检测无其他功能） =====
 
+-- ===== 加载UI =====
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里传送")
+
+-- ===== 传送函数 =====
 local function TeleportTo(pos)
     pcall(function()
         local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -71,7 +75,7 @@ TeleportSection:Button("🔧 车辆维修", function()
 end)
 
 TeleportSection:Button("🚗 车店", function()
-    TeleportTo(Vector3.new(0, 0, 0))
+    TeleportTo(Vector3.new(0, 0, 0))  -- 等你提供坐标
 end)
 
 -- ===== 自定义传送 =====
@@ -96,3 +100,16 @@ TeleportSection:Button("📌 传送到输入坐标", function()
     local z = getgenv().TeleportZ or 0
     TeleportTo(Vector3.new(x, y, z))
 end)
+
+-- ===== 设置Tab =====
+local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
+local SettingsSection = SettingsTab:section("控制", true)
+SettingsSection:Button("关闭脚本", function()
+    pcall(function()
+        local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
+        if frosty then frosty:Destroy() end
+    end)
+end)
+
+print("✅ wdfex 圣奥里传送已加载")
+print("📍 共14个传送点")
