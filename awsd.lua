@@ -220,13 +220,25 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "此版本为圣奥里传送脚本",
+    ["Title"] = "如果有什么需要的功能可以向作者提出建议",
     TextXAlignment = "Left",
 })
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "脚本无防踢，需要先执行皮脚本圣奥里",
+    ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "作者快手名字: wdfex",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "作者QQ: 1687426335",
     TextXAlignment = "Left",
 })
 
@@ -388,14 +400,6 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "非法交易点",
-    ["Desc"] = "传送至非法交易点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
-    end
-})
-
-Tab_Teleport:Button({
     ["Title"] = "送货队伍",
     ["Desc"] = "传送至送货队伍",
     ["Callback"] = function()
@@ -424,6 +428,29 @@ Tab_Teleport:Button({
     ["Desc"] = "传送至车店",
     ["Callback"] = function()
         TeleportTo(Vector3.new(0, 0, 0))
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 非法交易区
+-------------------------------------------------------------------------
+local Tab_Illegal = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "非法交易区",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Illegal:Section({
+    TextSize = 17,
+    ["Title"] = "非法交易传送点",
+    TextXAlignment = "Left",
+})
+
+Tab_Illegal:Button({
+    ["Title"] = "非法交易任务接取点1",
+    ["Desc"] = "传送至非法交易任务接取点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
     end
 })
 
@@ -550,14 +577,6 @@ Tab_ESP:Toggle({
                 ToggleESP()
             end
         end
-    end
-})
-
-Tab_ESP:Button({
-    ["Title"] = "查看游戏中的所有玩家（包括血量条）",
-    ["Desc"] = "显示所有玩家的血量",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))()
     end
 })
 
@@ -697,6 +716,29 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 自瞄
+-------------------------------------------------------------------------
+local Tab_Aimbot = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "自瞄",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Aimbot:Section({
+    TextSize = 17,
+    ["Title"] = "皮脚本自瞄",
+    TextXAlignment = "Left",
+})
+
+Tab_Aimbot:Button({
+    ["Title"] = "开启皮脚本自瞄",
+    ["Desc"] = "点击开启皮脚本自瞄",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 飞行与飞车
 -------------------------------------------------------------------------
 local Tab_FlyCar = Window:Tab({
@@ -719,4 +761,108 @@ Tab_FlyCar:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
+    end
+})
+
+Tab_FlyCar:Section({
+    TextSize = 17,
+    ["Title"] = "飞车功能",
+    TextXAlignment = "Left",
+})
+
+Tab_FlyCar:Button({
+    ["Title"] = "wdfex飞车",
+    ["Desc"] = "点击开启皮脚本飞车",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 设置
+-------------------------------------------------------------------------
+local Tab_Settings = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "设置",
+    ["Icon"] = "rbxassetid://14895392107",
+})
+
+Tab_Settings:Section({
+    TextSize = 17,
+    ["Title"] = "控制",
+    TextXAlignment = "Left",
+})
+
+Tab_Settings:Button({
+    ["Title"] = "关闭脚本",
+    ["Desc"] = "关闭脚本并清理UI",
+    ["Callback"] = function()
+        getgenv().EasterEgg = false
+        if _G.RangeConn then
+            _G.RangeConn:Disconnect()
+            _G.RangeConn = nil
+        end
+        pcall(function()
+            local frosty = CoreGui:FindFirstChild("frosty")
+            if frosty then frosty:Destroy() end
+            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+            if eggGui then eggGui:Destroy() end
+            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
+            if welcomeGui then welcomeGui:Destroy() end
+            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
+            if borderGui then borderGui:Destroy() end
+            local hubGui = CoreGui:FindFirstChild("wdfexHub")
+            if hubGui then hubGui:Destroy() end
+        end)
+        Window:Close()
+    end
+})
+
+-- 彩蛋开关
+local easterEggEnabled = false
+Tab_Settings:Toggle({
+    ["Title"] = "彩蛋开关",
+    ["Desc"] = "开启彩蛋功能",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        easterEggEnabled = bool
+        getgenv().EasterEgg = bool
+        
+        if bool then
+            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            
+            pcall(function()
+                local eggGui = Instance.new("ScreenGui")
+                eggGui.Name = "EasterEggGui"
+                eggGui.Parent = CoreGui
+                eggGui.ResetOnSpawn = false
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Name = "EggLabel"
+                textLabel.Parent = eggGui
+                textLabel.Size = UDim2.new(0, 220, 0, 30)
+                textLabel.Position = UDim2.new(1, -230, 1, -40)
+                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.BackgroundTransparency = 0.4
+                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                textLabel.TextSize = 16
+                textLabel.Font = Enum.Font.GothamBold
+                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
+                textLabel.TextScaled = true
+                
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 8)
+                corner.Parent = textLabel
+            end)
+        else
+            pcall(function()
+                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+                if eggGui then eggGui:Destroy() end
+            end)
+        end
+    end
+})
+
+print("wdfex-圣奥里已加载")
+print("共23个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
