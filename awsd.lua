@@ -747,17 +747,27 @@ local Tab_FlyCar = Window:Tab({
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_FlyCar:Section({
-    TextSize = 17,
-    ["Title"] = "飞行功能",
-    TextXAlignment = "Left",
+local FlySection = Tab_FlyCar:section("飞行功能", true)
+
+FlySection:Button({
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    ["Desc"] = "",
+    ["Callback"] = function() end
 })
 
-Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
-Tab_FlyCar:Label("飞天和飞车由皮脚本作者提供")
-Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
+FlySection:Button({
+    ["Title"] = "飞天和飞车由皮脚本作者提供",
+    ["Desc"] = "",
+    ["Callback"] = function() end
+})
 
-Tab_FlyCar:Button({
+FlySection:Button({
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    ["Desc"] = "",
+    ["Callback"] = function() end
+})
+
+FlySection:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
@@ -765,13 +775,9 @@ Tab_FlyCar:Button({
     end
 })
 
-Tab_FlyCar:Section({
-    TextSize = 17,
-    ["Title"] = "飞车功能",
-    TextXAlignment = "Left",
-})
+local CarSection = Tab_FlyCar:section("飞车功能", true)
 
-Tab_FlyCar:Button({
+CarSection:Button({
     ["Title"] = "wdfex飞车",
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
@@ -865,4 +871,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共23个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
+print("共24个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
