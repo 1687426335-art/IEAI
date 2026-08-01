@@ -188,11 +188,6 @@ local function TeleportTo(pos)
     end)
 end
 
--- ===== 皮飞行（通用功能里的那个） =====
-local function PiFly()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
-end
-
 -- 显示欢迎弹窗
 ShowWelcome()
 
@@ -718,9 +713,9 @@ Tab_FlyCar:Section({
 
 Tab_FlyCar:Button({
     ["Title"] = "wdfex飞行",
-    ["Desc"] = "皮脚本通用功能里的飞行",
+    ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
-        PiFly()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
     end
 })
 
@@ -732,7 +727,7 @@ Tab_FlyCar:Section({
 
 Tab_FlyCar:Button({
     ["Title"] = "wdfex飞车",
-    ["Desc"] = "皮飞车",
+    ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
     end
