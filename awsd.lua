@@ -84,7 +84,7 @@ local Library = loadstring(game:HttpGet(UI_Library_URL))()
 -- 创建窗口
 local Window = Library:CreateWindow({
     ["Folder"] = "wdfexHub",
-    ["Title"] = "wdfex 圣奥里传送",
+    ["Title"] = "wdfex-圣奥里",
     ["Author"] = "wdfex",
     ["Icon"] = "rbxassetid://7734068321",
     HideSearchBar = false,
@@ -220,13 +220,25 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "此版本为圣奥里传送脚本",
+    ["Title"] = "如果有什么需要的功能可以向作者提出建议",
     TextXAlignment = "Left",
 })
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "脚本无防踢，需要先执行皮脚本圣奥里",
+    ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "作者快手名字: wdfex",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "作者QQ: 1687426335",
     TextXAlignment = "Left",
 })
 
@@ -388,14 +400,6 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "非法交易点",
-    ["Desc"] = "传送至非法交易点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
-    end
-})
-
-Tab_Teleport:Button({
     ["Title"] = "送货队伍",
     ["Desc"] = "传送至送货队伍",
     ["Callback"] = function()
@@ -424,6 +428,29 @@ Tab_Teleport:Button({
     ["Desc"] = "传送至车店",
     ["Callback"] = function()
         TeleportTo(Vector3.new(0, 0, 0))
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 非法交易区
+-------------------------------------------------------------------------
+local Tab_Illegal = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "非法交易区",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Illegal:Section({
+    TextSize = 17,
+    ["Title"] = "非法交易传送点",
+    TextXAlignment = "Left",
+})
+
+Tab_Illegal:Button({
+    ["Title"] = "非法交易任务接取点1",
+    ["Desc"] = "传送至非法交易任务接取点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
     end
 })
 
@@ -550,14 +577,6 @@ Tab_ESP:Toggle({
                 ToggleESP()
             end
         end
-    end
-})
-
-Tab_ESP:Button({
-    ["Title"] = "查看游戏中的所有玩家（包括血量条）",
-    ["Desc"] = "显示所有玩家的血量",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))()
     end
 })
 
@@ -697,6 +716,29 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 自瞄
+-------------------------------------------------------------------------
+local Tab_Aimbot = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "自瞄",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Aimbot:Section({
+    TextSize = 17,
+    ["Title"] = "皮脚本自瞄",
+    TextXAlignment = "Left",
+})
+
+Tab_Aimbot:Button({
+    ["Title"] = "开启皮脚本自瞄",
+    ["Desc"] = "点击开启皮脚本自瞄",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 飞行与飞车
 -------------------------------------------------------------------------
 local Tab_FlyCar = Window:Tab({
@@ -705,13 +747,27 @@ local Tab_FlyCar = Window:Tab({
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_FlyCar:Section({
-    TextSize = 17,
-    ["Title"] = "飞行功能",
-    TextXAlignment = "Left",
+local FlySection = Tab_FlyCar:section("飞行功能", true)
+
+FlySection:Button({
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    ["Desc"] = "",
+    ["Callback"] = function() end
 })
 
-Tab_FlyCar:Button({
+FlySection:Button({
+    ["Title"] = "飞天和飞车由皮脚本作者提供",
+    ["Desc"] = "",
+    ["Callback"] = function() end
+})
+
+FlySection:Button({
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    ["Desc"] = "",
+    ["Callback"] = function() end
+})
+
+FlySection:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
@@ -719,13 +775,9 @@ Tab_FlyCar:Button({
     end
 })
 
-Tab_FlyCar:Section({
-    TextSize = 17,
-    ["Title"] = "飞车功能",
-    TextXAlignment = "Left",
-})
+local CarSection = Tab_FlyCar:section("飞车功能", true)
 
-Tab_FlyCar:Button({
+CarSection:Button({
     ["Title"] = "wdfex飞车",
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
@@ -785,7 +837,6 @@ Tab_Settings:Toggle({
         
         if bool then
             TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            Notify("彩蛋已开启")
             
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
@@ -815,10 +866,9 @@ Tab_Settings:Toggle({
                 local eggGui = CoreGui:FindFirstChild("EasterEggGui")
                 if eggGui then eggGui:Destroy() end
             end)
-            Notify("彩蛋已关闭")
         end
     end
 })
 
-print("wdfex 圣奥里传送已加载")
-print("共23个传送点 + 透视 + 范围 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
+print("wdfex-圣奥里已加载")
+print("共24个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
