@@ -166,76 +166,24 @@ local function CreateColorfulBorder()
     end)
 end
 
--- ===== 彩虹颜色函数 =====
-local function GetRainbowColor()
-    local hue = tick() % 5 / 5
-    return Color3.fromHSV(hue, 1, 1)
-end
-
--- ===== 应用彩虹渐变到所有文字 =====
-local function ApplyRainbowToAll()
+-- ===== 通知函数 =====
+local function Notify(text)
     pcall(function()
-        task.wait(0.8)
-        local hubGui = CoreGui:FindFirstChild("wdfexHub")
-        if not hubGui then return end
-        
-        local function recursiveApply(parent)
-            for _, child in ipairs(parent:GetChildren()) do
-                if child:IsA("TextLabel") or child:IsA("TextButton") then
-                    local gradient = Instance.new("UIGradient")
-                    gradient.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-                        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-                        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
-                        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
-                    })
-                    gradient.Rotation = 0
-                    gradient.Parent = child
-                    
-                    local tween = TweenService:Create(gradient, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {
-                        Rotation = 360
-                    })
-                    tween:Play()
-                end
-                recursiveApply(child)
-            end
-        end
-        recursiveApply(hubGui)
+        StarterGui:SetCore("SendNotification", {
+            Title = "wdfex",
+            Text = text,
+            Icon = "rbxassetid://18941716391",
+            Duration = 2,
+        })
     end)
 end
 
--- ===== 窗口标题彩色（标题栏） =====
-local function MakeTitleRainbow()
+-- ===== 传送函数 =====
+local function TeleportTo(pos)
     pcall(function()
-        task.wait(1)
-        local hubGui = CoreGui:FindFirstChild("wdfexHub")
-        if not hubGui then return end
-        
-        local titleBar = hubGui:FindFirstChild("Main")
-        if titleBar then
-            local titleLabel = titleBar:FindFirstChild("ScriptTitle")
-            if titleLabel then
-                local gradient = Instance.new("UIGradient")
-                gradient.Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-                    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
-                    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
-                })
-                gradient.Rotation = 0
-                gradient.Parent = titleLabel
-                
-                local tween = TweenService:Create(gradient, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {
-                    Rotation = 360
-                })
-                tween:Play()
-            end
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(pos)
         end
     end)
 end
@@ -247,13 +195,6 @@ ShowWelcome()
 task.spawn(function()
     task.wait(0.8)
     CreateColorfulBorder()
-end)
-
--- 应用彩虹文字
-task.spawn(function()
-    task.wait(1.2)
-    ApplyRainbowToAll()
-    MakeTitleRainbow()
 end)
 
 -------------------------------------------------------------------------
@@ -294,6 +235,59 @@ Tab_Notice:Section({
     ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
     TextXAlignment = "Left",
 })
+
+-------------------------------------------------------------------------
+-- Tab: 玩家信息
+-------------------------------------------------------------------------
+local Tab_PlayerInfo = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "玩家信息",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+local infoSection = Tab_PlayerInfo:section("信息", true)
+
+-- 在线人数Label
+local playerCountLabel = infoSection:Label("服务器在线人数: 0")
+-- 金钱Label
+local moneyLabel = infoSection:Label("当前金钱: $0")
+
+-- 更新信息
+task.spawn(function()
+    while true do
+        pcall(function()
+            local count = #Players:GetPlayers()
+            playerCountLabel:Set("服务器在线人数: " .. count)
+            
+            -- 尝试获取金钱（不同游戏金钱位置不同）
+            local money = 0
+            -- 方法1: leaderstats
+            if LocalPlayer:FindFirstChild("leaderstats") then
+                for _, stat in pairs(LocalPlayer.leaderstats:GetChildren()) do
+                    local name = stat.Name:lower()
+                    if name:find("cash") or name:find("money") or name:find("gold") or name:find("coin") or name:find("dollar") or name:find("balance") then
+                        money = stat.Value
+                        break
+                    end
+                end
+            end
+            -- 方法2: 如果没有找到，尝试从Character找
+            if money == 0 and LocalPlayer.Character then
+                for _, child in pairs(LocalPlayer.Character:GetChildren()) do
+                    if child:IsA("NumberValue") then
+                        local name = child.Name:lower()
+                        if name:find("cash") or name:find("money") or name:find("gold") or name:find("coin") then
+                            money = child.Value
+                            break
+                        end
+                    end
+                end
+            end
+            moneyLabel:Set("当前金钱: $" .. money)
+        end)
+        task.wait(2)
+    end
+end)
 
 -------------------------------------------------------------------------
 -- Tab: 实用传送
@@ -881,5 +875,5 @@ Tab_Settings:Toggle({
     end
 })
 
-print("wdfex 圣奥里传送已加载")
+print("wdfex-圣奥里已加载")
 print("共23个传送点 + 透视 + 范围 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
