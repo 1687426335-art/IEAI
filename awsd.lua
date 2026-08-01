@@ -25,6 +25,43 @@ local function TeleportTo(pos)
     end)
 end
 
+-- ===== ATM列表数据 =====
+local atmList = {}
+local atmListUI = nil
+
+-- ===== 刷新ATM列表 =====
+local function RefreshATMList()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            Notify("未找到角色")
+            return
+        end
+
+        atmList = {}
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Position then
+                local name = obj.Name:lower()
+                if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") then
+                    local dist = (hrp.Position - obj.Position).Magnitude
+                    if dist < 500 then
+                        table.insert(atmList, {
+                            Name = obj.Name,
+                            Position = obj.Position,
+                            Distance = dist
+                        })
+                    end
+                end
+            end
+        end
+
+        table.sort(atmList, function(a, b) return a.Distance < b.Distance end)
+
+        Notify("找到 " .. #atmList .. " 个ATM机")
+    end)
+end
+
 -- ===== 公告Tab =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
 local AnnounceSection = AnnounceTab:section("公告", true)
@@ -149,15 +186,42 @@ DeliverySection:Button("北方圣奥里取餐点", function()
     TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
 end)
 
--- ===== 外卖员工功能专区Tab =====
-local WorkerTab = UILibrary:Tab("『外卖员工专区』", "18930406865")
-local WorkerSection = WorkerTab:section("外卖员工功能", true)
+-- ===== ATM Tab =====
+local AtmTab = UILibrary:Tab("『ATM』", "18930406865")
+local AtmSection = AtmTab:section("ATM查找", true)
 
-WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
-WorkerSection:Label("外卖员工专用功能")
-WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AtmSection:Label("点击下方按钮扫描500米内ATM")
+AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
-WorkerSection:Button("瞬移附近NPC", function()
+AtmSection:Button("刷新ATM列表", function()
+    RefreshATMList()
+end)
+
+AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
+AtmSection:Label("ATM列表（距离由近到远）")
+AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
+
+-- 显示ATM列表
+local atmDisplaySection = AtmTab:section("ATM列表", true)
+
+-- 更新ATM列表显示
+local function UpdateATMDisplay()
+    if #atmList == 0 then
+        atmDisplaySection:Label("未找到ATM机，点击刷新")
+        return
+    end
+    for i, atm in ipairs(atmList) do
+        atmDisplaySection:Button(string.format("[%dm] %s", math.floor(atm.Distance), atm.Name), function()
+            TeleportTo(atm.Position)
+            Notify("已传送到 " .. atm.Name)
+        end)
+    end
+end
+
+-- 重写刷新函数，更新显示
+local originalRefresh = RefreshATMList
+RefreshATMList = function()
     pcall(function()
         local player = game.Players.LocalPlayer
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -166,35 +230,39 @@ WorkerSection:Button("瞬移附近NPC", function()
             return
         end
 
-        local nearestNpc = nil
-        local nearestDist = 50
-
+        atmList = {}
         for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
+            if obj:IsA("BasePart") and obj.Position then
                 local name = obj.Name:lower()
-                if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") or name:find("delivery") or name:find("order") then
-                    local npcHrp = obj:FindFirstChild("HumanoidRootPart")
-                    if npcHrp and npcHrp.Position then
-                        local dist = (hrp.Position - npcHrp.Position).Magnitude
-                        if dist < nearestDist then
-                            nearestDist = dist
-                            nearestNpc = npcHrp.Position
-                        end
+                if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") or name:find("柜员机") then
+                    local dist = (hrp.Position - obj.Position).Magnitude
+                    if dist < 500 then
+                        table.insert(atmList, {
+                            Name = obj.Name,
+                            Position = obj.Position,
+                            Distance = dist
+                        })
                     end
                 end
             end
         end
 
-        if nearestNpc then
-            TeleportTo(nearestNpc)
-            Notify("已瞬移到附近NPC")
-        else
-            Notify("50米内未找到NPC")
-        end
-    end)
-end)
+        table.sort(atmList, function(a, b) return a.Distance < b.Distance end)
 
-WorkerSection:Label("点击后自动瞬移到50米内的NPC")
+        Notify("找到 " .. #atmList .. " 个ATM机")
+        UpdateATMDisplay()
+    end)
+end
+
+-- ===== 外卖员工功能专区Tab =====
+local WorkerTab = UILibrary:Tab("『外卖员工专区』", "18930406865")
+local WorkerSection = WorkerTab:section("功能", true)
+
+WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+WorkerSection:Label("外卖员工专用功能")
+WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+
+WorkerSection:Label("暂无功能，等待更新...")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
@@ -251,4 +319,4 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
 end)
 
 print("wdfex 圣奥里传送脚本已加载")
-print("共25个传送点")
+print("共24个传送点")
