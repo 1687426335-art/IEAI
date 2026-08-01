@@ -173,13 +173,22 @@ local homeTab = Window:Tab({
     Icon = "home",
 })
 
-homeTab:Paragraph({
-    Image = "rbxassetid://128586210657724",
-    Title = "wdfex 圣奥里传送",
-    Buttons = {},
-    ImageSize = 68,
-    Desc = "作者: wdfex\n此版本为圣奥里传送脚本\n本脚本悬浮窗UI由皮脚本作者提供\n脚本无防踢\n需要先执行皮脚本圣奥里再执行本脚本\n否则概率被踢出",
+local homeSection = homeTab:Section({
+    Title = "公告",
+    Opened = true,
 })
+
+homeSection:Label("━━━━━━━━━━━━━━━━━━━━")
+homeSection:Label("作者: wdfex")
+homeSection:Label("━━━━━━━━━━━━━━━━━━━━")
+homeSection:Label("此版本为圣奥里传送脚本")
+homeSection:Label("━━━━━━━━━━━━━━━━━━━━")
+homeSection:Label("本脚本悬浮窗UI由皮脚本作者提供")
+homeSection:Label("━━━━━━━━━━━━━━━━━━━━")
+homeSection:Label("脚本无防踢")
+homeSection:Label("需要先执行皮脚本圣奥里再执行本脚本")
+homeSection:Label("否则概率被踢出")
+homeSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
 -- ===== 实用传送Tab =====
 local teleportTab = Window:Tab({
@@ -389,10 +398,10 @@ local workerSection = workerTab:Section({
     Opened = true,
 })
 
-workerSection:Paragraph({
-    Title = "外卖员工专用功能",
-    Desc = "暂无功能，等待更新...",
-})
+workerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+workerSection:Label("外卖员工专用功能")
+workerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+workerSection:Label("暂无功能，等待更新...")
 
 -- ===== 设置Tab =====
 local settingsTab = Window:Tab({
