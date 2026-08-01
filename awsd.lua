@@ -9,106 +9,75 @@ local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
--- ===== 创建彩色边框 =====
-local function CreateColorfulBorder()
+-- ===== 欢迎弹窗 =====
+local function ShowWelcome()
     pcall(function()
-        -- 检查是否已存在边框
-        if CoreGui:FindFirstChild("wdfexBorder") then
-            CoreGui:FindFirstChild("wdfexBorder"):Destroy()
-        end
+        local welcomeGui = Instance.new("ScreenGui")
+        welcomeGui.Name = "wdfexWelcome"
+        welcomeGui.ResetOnSpawn = false
+        welcomeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        welcomeGui.Parent = CoreGui
         
-        local borderGui = Instance.new("ScreenGui")
-        borderGui.Name = "wdfexBorder"
-        borderGui.ResetOnSpawn = false
-        borderGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        borderGui.Parent = CoreGui
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 320, 0, 60)
+        frame.Position = UDim2.new(1, -340, 0, 10)
+        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        frame.BackgroundTransparency = 0.15
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        frame.ClipsDescendants = true
+        frame.Parent = welcomeGui
         
-        local colors = {
-            Color3.fromRGB(255, 0, 0),   -- 红
-            Color3.fromRGB(255, 165, 0), -- 橙
-            Color3.fromRGB(255, 255, 0), -- 黄
-            Color3.fromRGB(0, 255, 0),   -- 绿
-            Color3.fromRGB(0, 0, 255),   -- 蓝
-            Color3.fromRGB(255, 0, 255)  -- 紫
-        }
+        -- 圆角
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = frame
         
-        local borderSize = 3
-        local screenSize = Instance.new("ScreenGui").AbsoluteSize or Vector2.new(1920, 1080)
+        -- 左边彩色条
+        local colorBar = Instance.new("Frame")
+        colorBar.Size = UDim2.new(0, 5, 1, 0)
+        colorBar.Position = UDim2.new(0, 0, 0, 0)
+        colorBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+        colorBar.BorderSizePixel = 0
+        colorBar.Parent = frame
         
-        -- 上边框
-        local topBar = Instance.new("Frame")
-        topBar.Size = UDim2.new(1, 0, 0, borderSize)
-        topBar.Position = UDim2.new(0, 0, 0, 0)
-        topBar.BackgroundColor3 = colors[1]
-        topBar.BorderSizePixel = 0
-        topBar.Parent = borderGui
+        local corner2 = Instance.new("UICorner")
+        corner2.CornerRadius = UDim.new(0, 5)
+        corner2.Parent = colorBar
         
-        -- 下边框
-        local bottomBar = Instance.new("Frame")
-        bottomBar.Size = UDim2.new(1, 0, 0, borderSize)
-        bottomBar.Position = UDim2.new(0, 0, 1, -borderSize)
-        bottomBar.BackgroundColor3 = colors[4]
-        bottomBar.BorderSizePixel = 0
-        bottomBar.Parent = borderGui
+        -- 文字
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -15, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "🎉 欢迎使用 wdfex 脚本"
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextSize = 18
+        label.Font = Enum.Font.GothamBold
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = frame
         
-        -- 左边框
-        local leftBar = Instance.new("Frame")
-        leftBar.Size = UDim2.new(0, borderSize, 1, 0)
-        leftBar.Position = UDim2.new(0, 0, 0, 0)
-        leftBar.BackgroundColor3 = colors[6]
-        leftBar.BorderSizePixel = 0
-        leftBar.Parent = borderGui
+        -- 进入动画（从右滑入）
+        frame.Position = UDim2.new(1, 0, 0, 10)
+        local tween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -340, 0, 10)
+        })
+        tween:Play()
         
-        -- 右边框
-        local rightBar = Instance.new("Frame")
-        rightBar.Size = UDim2.new(0, borderSize, 1, 0)
-        rightBar.Position = UDim2.new(1, -borderSize, 0, 0)
-        rightBar.BackgroundColor3 = colors[3]
-        rightBar.BorderSizePixel = 0
-        rightBar.Parent = borderGui
+        -- 3秒后消失
+        task.wait(3)
         
-        -- 四角光晕（小方块）
-        local cornerSize = 20
-        local corners = {
-            {pos = UDim2.new(0, 0, 0, 0), color = colors[1]},
-            {pos = UDim2.new(1, -cornerSize, 0, 0), color = colors[2]},
-            {pos = UDim2.new(0, 0, 1, -cornerSize), color = colors[5]},
-            {pos = UDim2.new(1, -cornerSize, 1, -cornerSize), color = colors[4]},
-        }
-        
-        for _, corner in ipairs(corners) do
-            local cornerFrame = Instance.new("Frame")
-            cornerFrame.Size = UDim2.new(0, cornerSize, 0, cornerSize)
-            cornerFrame.Position = corner.pos
-            cornerFrame.BackgroundColor3 = corner.color
-            cornerFrame.BorderSizePixel = 0
-            cornerFrame.Parent = borderGui
-        end
-        
-        -- 渐变光效（彩色流光）
-        local glow = Instance.new("Frame")
-        glow.Size = UDim2.new(1, 0, 0, 2)
-        glow.Position = UDim2.new(0, 0, 0, 0)
-        glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        glow.BackgroundTransparency = 0.7
-        glow.BorderSizePixel = 0
-        glow.Parent = borderGui
-        
-        -- 流光动画
-        local glowSpeed = 0.02
-        local glowPos = 0
-        RunService.Heartbeat:Connect(function()
-            if not borderGui.Parent then return end
-            glowPos = (glowPos + glowSpeed) % 1
-            glow.Position = UDim2.new(glowPos, 0, 0, 0)
-            -- 动态改变颜色
-            local idx = math.floor(glowPos * 6) % 6 + 1
-            glow.BackgroundColor3 = colors[idx] or colors[1]
-        end)
+        local outTween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = UDim2.new(1, 0, 0, 10)
+        })
+        outTween:Play()
+        outTween.Completed:Wait()
+        welcomeGui:Destroy()
     end)
 end
 
@@ -125,8 +94,82 @@ local Window = Library:CreateWindow({
     HideSearchBar = false,
 })
 
--- 创建彩色边框
-CreateColorfulBorder()
+-- ===== 创建彩色边框（窗口边框） =====
+local function CreateColorfulBorder()
+    pcall(function()
+        -- 延迟执行，等UI加载完成
+        task.wait(0.5)
+        
+        local mainGui = CoreGui:FindFirstChild("wdfexHub")
+        if not mainGui then
+            for _, child in ipairs(CoreGui:GetChildren()) do
+                if child:IsA("ScreenGui") and (child.Name:find("wdfex") or child.Name:find("MyTestHub")) then
+                    mainGui = child
+                    break
+                end
+            end
+        end
+        
+        if not mainGui then return end
+        
+        local oldBorder = mainGui:FindFirstChild("wdfexBorder")
+        if oldBorder then oldBorder:Destroy() end
+        
+        local borderGui = Instance.new("Frame")
+        borderGui.Name = "wdfexBorder"
+        borderGui.Size = UDim2.new(1, 12, 1, 12)
+        borderGui.Position = UDim2.new(0, -6, 0, -6)
+        borderGui.BackgroundTransparency = 1
+        borderGui.ZIndex = -1
+        borderGui.Parent = mainGui
+        
+        local colors = {
+            Color3.fromRGB(255, 50, 50),
+            Color3.fromRGB(255, 200, 50),
+            Color3.fromRGB(50, 255, 50),
+            Color3.fromRGB(50, 150, 255),
+            Color3.fromRGB(255, 50, 255),
+            Color3.fromRGB(255, 100, 200),
+        }
+        
+        local borderSize = 3
+        
+        local sides = {
+            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 0, 0)},
+            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 1, -borderSize)},
+            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(0, 0, 0, 0)},
+            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(1, -borderSize, 0, 0)},
+        }
+        
+        for i, side in ipairs(sides) do
+            local bar = Instance.new("Frame")
+            bar.Size = side.size
+            bar.Position = side.pos
+            bar.BackgroundColor3 = colors[i]
+            bar.BackgroundTransparency = 0.15
+            bar.BorderSizePixel = 0
+            bar.Parent = borderGui
+        end
+        
+        local cornerSize = 12
+        local corners = {
+            {pos = UDim2.new(0, 0, 0, 0), color = colors[1]},
+            {pos = UDim2.new(1, -cornerSize, 0, 0), color = colors[2]},
+            {pos = UDim2.new(0, 0, 1, -cornerSize), color = colors[4]},
+            {pos = UDim2.new(1, -cornerSize, 1, -cornerSize), color = colors[5]},
+        }
+        
+        for _, cornerData in ipairs(corners) do
+            local cornerFrame = Instance.new("Frame")
+            cornerFrame.Size = UDim2.new(0, cornerSize, 0, cornerSize)
+            cornerFrame.Position = cornerData.pos
+            cornerFrame.BackgroundColor3 = cornerData.color
+            cornerFrame.BackgroundTransparency = 0.2
+            cornerFrame.BorderSizePixel = 0
+            cornerFrame.Parent = borderGui
+        end
+    end)
+end
 
 -- ===== 通知函数 =====
 local function Notify(text)
@@ -149,6 +192,15 @@ local function TeleportTo(pos)
         end
     end)
 end
+
+-- 显示欢迎弹窗
+ShowWelcome()
+
+-- 创建彩色边框（延迟执行确保UI已加载）
+task.spawn(function()
+    task.wait(0.8)
+    CreateColorfulBorder()
+end)
 
 -------------------------------------------------------------------------
 -- Tab: 公告
@@ -483,8 +535,12 @@ Tab_Settings:Button({
             if frosty then frosty:Destroy() end
             local eggGui = game:GetService("CoreGui"):FindFirstChild("EasterEggGui")
             if eggGui then eggGui:Destroy() end
+            local welcomeGui = game:GetService("CoreGui"):FindFirstChild("wdfexWelcome")
+            if welcomeGui then welcomeGui:Destroy() end
             local borderGui = game:GetService("CoreGui"):FindFirstChild("wdfexBorder")
             if borderGui then borderGui:Destroy() end
+            local hubGui = game:GetService("CoreGui"):FindFirstChild("wdfexHub")
+            if hubGui then hubGui:Destroy() end
         end)
         Window:Close()
     end
@@ -538,4 +594,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex 圣奥里传送已加载")
-print("共23个传送点 + 彩色边框")
+print("共23个传送点 + 彩色边框 + 欢迎弹窗")
