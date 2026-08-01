@@ -84,7 +84,7 @@ local Library = loadstring(game:HttpGet(UI_Library_URL))()
 -- 创建窗口
 local Window = Library:CreateWindow({
     ["Folder"] = "wdfexHub",
-    ["Title"] = "wdfex 圣奥里传送",
+    ["Title"] = "wdfex-圣奥里",
     ["Author"] = "wdfex",
     ["Icon"] = "rbxassetid://7734068321",
     HideSearchBar = false,
@@ -188,6 +188,43 @@ local function TeleportTo(pos)
     end)
 end
 
+-- ===== 彩色文字渐变效果（应用到UI） =====
+local function ApplyRainbowText()
+    pcall(function()
+        task.wait(1)
+        local hubGui = CoreGui:FindFirstChild("wdfexHub")
+        if not hubGui then return end
+        
+        -- 查找所有TextLabel和TextButton，应用彩虹颜色
+        local function recursiveApply(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") then
+                    local gradient = Instance.new("UIGradient")
+                    gradient.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+                        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+                        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+                        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+                        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+                    })
+                    gradient.Rotation = 0
+                    gradient.Parent = child
+                    
+                    -- 动画旋转
+                    local tween = TweenService:Create(gradient, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {
+                        Rotation = 360
+                    })
+                    tween:Play()
+                end
+                recursiveApply(child)
+            end
+        end
+        recursiveApply(hubGui)
+    end)
+end
+
 -- 显示欢迎弹窗
 ShowWelcome()
 
@@ -195,6 +232,12 @@ ShowWelcome()
 task.spawn(function()
     task.wait(0.8)
     CreateColorfulBorder()
+end)
+
+-- 应用彩色文字
+task.spawn(function()
+    task.wait(1.5)
+    ApplyRainbowText()
 end)
 
 -------------------------------------------------------------------------
@@ -711,6 +754,10 @@ Tab_FlyCar:Section({
     TextXAlignment = "Left",
 })
 
+Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_FlyCar:Label("飞天和飞车由皮脚本作者提供")
+Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
+
 Tab_FlyCar:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
@@ -785,7 +832,6 @@ Tab_Settings:Toggle({
         
         if bool then
             TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            Notify("彩蛋已开启")
             
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
@@ -815,7 +861,6 @@ Tab_Settings:Toggle({
                 local eggGui = CoreGui:FindFirstChild("EasterEggGui")
                 if eggGui then eggGui:Destroy() end
             end)
-            Notify("彩蛋已关闭")
         end
     end
 })
