@@ -383,4 +383,106 @@ Tab_Teleport:Button({
     ["Title"] = "拆车场",
     ["Desc"] = "传送至拆车场",
     ["Callback"] = function()
-        TeleportTo(Vector3.new(3434.49, 42.
+        TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "非法交易点",
+    ["Desc"] = "传送至非法交易点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "送货队伍",
+    ["Desc"] = "传送至送货队伍",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "道路服务",
+    ["Desc"] = "传送至道路服务",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "消防队伍",
+    ["Desc"] = "传送至消防队伍",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "车店",
+    ["Desc"] = "传送至车店",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(0, 0, 0))
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 外卖员
+-------------------------------------------------------------------------
+local Tab_Delivery = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "外卖员",
+    ["Icon"] = "rbxassetid://15440802720",
+})
+
+Tab_Delivery:Section({
+    TextSize = 17,
+    ["Title"] = "外卖员传送点",
+    TextXAlignment = "Left",
+})
+
+Tab_Delivery:Button({
+    ["Title"] = "圣奥里取餐点",
+    ["Desc"] = "传送至圣奥里取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
+    end
+})
+
+Tab_Delivery:Button({
+    ["Title"] = "莱斯维尔取餐点",
+    ["Desc"] = "传送至莱斯维尔取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
+    end
+})
+
+Tab_Delivery:Button({
+    ["Title"] = "北方圣奥里取餐点",
+    ["Desc"] = "传送至北方圣奥里取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 透视
+-------------------------------------------------------------------------
+local Tab_ESP = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "透视",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_ESP:Section({
+    TextSize = 17,
+    ["Title"] = "玩家透视",
+    TextXAlignment = "Left",
+})
+
+local espEnabled = false
+local espObjects = {}
+
+local function ToggleESP()
+    espEnabled =
