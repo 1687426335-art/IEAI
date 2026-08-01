@@ -244,7 +244,7 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
             textLabel.TextSize = 16
             textLabel.Font = Enum.Font.GothamBold
-            textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
+            textLabel.Text = "你还想要彩蛋赶紧去送货吧🤓（把彩蛋关掉即可把你右下角这些字去掉）"
             textLabel.TextScaled = true
             
             local corner = Instance.new("UICorner")
