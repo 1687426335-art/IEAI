@@ -237,59 +237,6 @@ Tab_Notice:Section({
 })
 
 -------------------------------------------------------------------------
--- Tab: 玩家信息
--------------------------------------------------------------------------
-local Tab_PlayerInfo = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "玩家信息",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-local infoSection = Tab_PlayerInfo:section("信息", true)
-
--- 在线人数Label
-local playerCountLabel = infoSection:Label("服务器在线人数: 0")
--- 金钱Label
-local moneyLabel = infoSection:Label("当前金钱: $0")
-
--- 更新信息
-task.spawn(function()
-    while true do
-        pcall(function()
-            local count = #Players:GetPlayers()
-            playerCountLabel:Set("服务器在线人数: " .. count)
-            
-            -- 尝试获取金钱（不同游戏金钱位置不同）
-            local money = 0
-            -- 方法1: leaderstats
-            if LocalPlayer:FindFirstChild("leaderstats") then
-                for _, stat in pairs(LocalPlayer.leaderstats:GetChildren()) do
-                    local name = stat.Name:lower()
-                    if name:find("cash") or name:find("money") or name:find("gold") or name:find("coin") or name:find("dollar") or name:find("balance") then
-                        money = stat.Value
-                        break
-                    end
-                end
-            end
-            -- 方法2: 如果没有找到，尝试从Character找
-            if money == 0 and LocalPlayer.Character then
-                for _, child in pairs(LocalPlayer.Character:GetChildren()) do
-                    if child:IsA("NumberValue") then
-                        local name = child.Name:lower()
-                        if name:find("cash") or name:find("money") or name:find("gold") or name:find("coin") then
-                            money = child.Value
-                            break
-                        end
-                    end
-                end
-            end
-            moneyLabel:Set("当前金钱: $" .. money)
-        end)
-        task.wait(2)
-    end
-end)
-
--------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
 local Tab_Teleport = Window:Tab({
@@ -520,7 +467,7 @@ Tab_Delivery:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 透视
+-- Tab: 透视（皮脚本原版透视）
 -------------------------------------------------------------------------
 local Tab_ESP = Window:Tab({
     ["Locked"] = false,
@@ -530,87 +477,15 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "玩家透视",
+    ["Title"] = "皮脚本透视",
     TextXAlignment = "Left",
 })
 
-local espEnabled = false
-local espObjects = {}
-
-local function ToggleESP()
-    espEnabled = not espEnabled
-    
-    if espEnabled then
-        for _, obj in ipairs(espObjects) do
-            pcall(function() obj:Destroy() end)
-        end
-        espObjects = {}
-        
-        local found = 0
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = player.Character.HumanoidRootPart
-                
-                local box = Instance.new("BoxHandleAdornment")
-                box.Size = Vector3.new(4, 5, 2)
-                box.Adornee = hrp
-                box.Color3 = Color3.fromRGB(0, 255, 0)
-                box.Transparency = 0.5
-                box.ZIndex = 0
-                box.Parent = hrp
-                table.insert(espObjects, box)
-                
-                local billboard = Instance.new("BillboardGui")
-                billboard.Size = UDim2.new(0, 120, 0, 30)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Parent = hrp
-                
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = player.Name
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 14
-                label.Font = Enum.Font.GothamBold
-                label.Parent = billboard
-                table.insert(espObjects, billboard)
-                
-                found = found + 1
-            end
-        end
-        Notify("透视开启，找到 " .. found .. " 个玩家")
-    else
-        for _, obj in ipairs(espObjects) do
-            pcall(function() obj:Destroy() end)
-        end
-        espObjects = {}
-        Notify("透视已关闭")
-    end
-end
-
-Tab_ESP:Toggle({
-    ["Title"] = "玩家透视",
-    ["Desc"] = "显示所有玩家的位置",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        if bool then
-            if not espEnabled then
-                ToggleESP()
-            end
-        else
-            if espEnabled then
-                ToggleESP()
-            end
-        end
-    end
-})
-
 Tab_ESP:Button({
-    ["Title"] = "查看游戏中的所有玩家（包括血量条）",
-    ["Desc"] = "显示所有玩家的血量",
+    ["Title"] = "开启皮脚本透视",
+    ["Desc"] = "点击开启皮脚本透视",
     ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))()
+        loadstring(game:HttpGet("https://pastefy.app/LE2hzECZ/raw"))()
     end
 })
 
@@ -750,6 +625,29 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 自瞄（皮脚本原版自瞄）
+-------------------------------------------------------------------------
+local Tab_Aimbot = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "自瞄",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Aimbot:Section({
+    TextSize = 17,
+    ["Title"] = "皮脚本自瞄",
+    TextXAlignment = "Left",
+})
+
+Tab_Aimbot:Button({
+    ["Title"] = "开启皮脚本自瞄",
+    ["Desc"] = "点击开启皮脚本自瞄",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 飞行与飞车
 -------------------------------------------------------------------------
 local Tab_FlyCar = Window:Tab({
@@ -876,4 +774,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共23个传送点 + 透视 + 范围 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
+print("共23个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
