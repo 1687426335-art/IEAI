@@ -220,13 +220,13 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "此版本为圣奥里传送脚本",
+    ["Title"] = "有什么需要的功能可以向作者提出建议",
     TextXAlignment = "Left",
 })
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "脚本无防踢，需要先执行皮脚本圣奥里",
+    ["Title"] = "脚本无防需要先执行皮脚本圣奥里否则概率被服务器“踢出”",
     TextXAlignment = "Left",
 })
 
@@ -467,7 +467,7 @@ Tab_Delivery:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 透视（皮脚本原版透视）
+-- Tab: 透视
 -------------------------------------------------------------------------
 local Tab_ESP = Window:Tab({
     ["Locked"] = false,
@@ -477,15 +477,87 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "皮脚本透视",
+    ["Title"] = "玩家透视",
     TextXAlignment = "Left",
 })
 
+local espEnabled = false
+local espObjects = {}
+
+local function ToggleESP()
+    espEnabled = not espEnabled
+    
+    if espEnabled then
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+        
+        local found = 0
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                
+                local box = Instance.new("BoxHandleAdornment")
+                box.Size = Vector3.new(4, 5, 2)
+                box.Adornee = hrp
+                box.Color3 = Color3.fromRGB(0, 255, 0)
+                box.Transparency = 0.5
+                box.ZIndex = 0
+                box.Parent = hrp
+                table.insert(espObjects, box)
+                
+                local billboard = Instance.new("BillboardGui")
+                billboard.Size = UDim2.new(0, 120, 0, 30)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                billboard.Parent = hrp
+                
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = player.Name
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextSize = 14
+                label.Font = Enum.Font.GothamBold
+                label.Parent = billboard
+                table.insert(espObjects, billboard)
+                
+                found = found + 1
+            end
+        end
+        Notify("透视开启，找到 " .. found .. " 个玩家")
+    else
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+        Notify("透视已关闭")
+    end
+end
+
+Tab_ESP:Toggle({
+    ["Title"] = "玩家透视",
+    ["Desc"] = "显示所有玩家的位置",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            if not espEnabled then
+                ToggleESP()
+            end
+        else
+            if espEnabled then
+                ToggleESP()
+            end
+        end
+    end
+})
+
 Tab_ESP:Button({
-    ["Title"] = "开启皮脚本透视",
-    ["Desc"] = "点击开启皮脚本透视",
+    ["Title"] = "查看游戏中的所有玩家（包括血量条）",
+    ["Desc"] = "显示所有玩家的血量",
     ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastefy.app/LE2hzECZ/raw"))()
+        loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))()
     end
 })
 
@@ -625,29 +697,6 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 自瞄（皮脚本原版自瞄）
--------------------------------------------------------------------------
-local Tab_Aimbot = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "自瞄",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Aimbot:Section({
-    TextSize = 17,
-    ["Title"] = "皮脚本自瞄",
-    TextXAlignment = "Left",
-})
-
-Tab_Aimbot:Button({
-    ["Title"] = "开启皮脚本自瞄",
-    ["Desc"] = "点击开启皮脚本自瞄",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 飞行与飞车
 -------------------------------------------------------------------------
 local Tab_FlyCar = Window:Tab({
@@ -670,108 +719,4 @@ Tab_FlyCar:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
-    end
-})
-
-Tab_FlyCar:Section({
-    TextSize = 17,
-    ["Title"] = "飞车功能",
-    TextXAlignment = "Left",
-})
-
-Tab_FlyCar:Button({
-    ["Title"] = "wdfex飞车",
-    ["Desc"] = "点击开启皮脚本飞车",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 设置
--------------------------------------------------------------------------
-local Tab_Settings = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "设置",
-    ["Icon"] = "rbxassetid://14895392107",
-})
-
-Tab_Settings:Section({
-    TextSize = 17,
-    ["Title"] = "控制",
-    TextXAlignment = "Left",
-})
-
-Tab_Settings:Button({
-    ["Title"] = "关闭脚本",
-    ["Desc"] = "关闭脚本并清理UI",
-    ["Callback"] = function()
-        getgenv().EasterEgg = false
-        if _G.RangeConn then
-            _G.RangeConn:Disconnect()
-            _G.RangeConn = nil
-        end
-        pcall(function()
-            local frosty = CoreGui:FindFirstChild("frosty")
-            if frosty then frosty:Destroy() end
-            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-            if eggGui then eggGui:Destroy() end
-            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
-            if welcomeGui then welcomeGui:Destroy() end
-            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
-            if borderGui then borderGui:Destroy() end
-            local hubGui = CoreGui:FindFirstChild("wdfexHub")
-            if hubGui then hubGui:Destroy() end
-        end)
-        Window:Close()
-    end
-})
-
--- 彩蛋开关
-local easterEggEnabled = false
-Tab_Settings:Toggle({
-    ["Title"] = "彩蛋开关",
-    ["Desc"] = "开启彩蛋功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        easterEggEnabled = bool
-        getgenv().EasterEgg = bool
-        
-        if bool then
-            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            
-            pcall(function()
-                local eggGui = Instance.new("ScreenGui")
-                eggGui.Name = "EasterEggGui"
-                eggGui.Parent = CoreGui
-                eggGui.ResetOnSpawn = false
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Name = "EggLabel"
-                textLabel.Parent = eggGui
-                textLabel.Size = UDim2.new(0, 220, 0, 30)
-                textLabel.Position = UDim2.new(1, -230, 1, -40)
-                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                textLabel.BackgroundTransparency = 0.4
-                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                textLabel.TextSize = 16
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
-                textLabel.TextScaled = true
-                
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 8)
-                corner.Parent = textLabel
-            end)
-        else
-            pcall(function()
-                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-                if eggGui then eggGui:Destroy() end
-            end)
-        end
-    end
-})
-
-print("wdfex-圣奥里已加载")
-print("共23个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi
