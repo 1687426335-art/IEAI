@@ -1,7 +1,7 @@
--- ===== wdfex 圣奥里完整版（传送 + 飞车 + 绘制 + ATM） =====
+-- ===== wdfex 圣奥里暴力完整版（无爆炸功能） =====
 
 -- ===== 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里")
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里暴力版")
 
 -- ===== 通知函数 =====
 local function Notify(text)
@@ -23,6 +23,46 @@ local function TeleportTo(pos)
             hrp.CFrame = CFrame.new(pos)
         end
     end)
+end
+
+-- ===== 获取最近玩家 =====
+local function GetClosestPlayer()
+    local player = game.Players.LocalPlayer
+    local char = player.Character
+    if not char then return nil end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local closest = nil
+    local closestDist = math.huge
+    
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= player then
+            local c = p.Character
+            if c then
+                local h = c:FindFirstChild("HumanoidRootPart")
+                if h then
+                    local dist = (hrp.Position - h.Position).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closest = p
+                    end
+                end
+            end
+        end
+    end
+    return closest, closestDist
+end
+
+-- ===== 获取所有玩家 =====
+local function GetAllPlayers()
+    local players = {}
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer then
+            table.insert(players, p)
+        end
+    end
+    return players
 end
 
 -- ===== 传送Tab =====
@@ -261,7 +301,6 @@ local DrawSection = DrawTab:section("玩家头顶绘制", true)
 DrawSection:Label("👁️ 在玩家头顶显示通缉状态")
 DrawSection:Label("🔴 通缉中 | 🟢 未通缉 | 👮 警察")
 DrawSection:Label("📏 最大显示距离: 300米")
-DrawSection:Label("🧱 墙后可见")
 
 getgenv().DrawEnabled = false
 local drawObjects = {}
@@ -389,12 +428,545 @@ DrawSection:Button("刷新绘制", function()
     end
 end)
 
+-- ===== 暴力Tab（无爆炸） =====
+local ViolenceTab = UILibrary:Tab("『暴力』", "18930406865")
+local ViolenceSection = ViolenceTab:section("暴力功能（别人可见）", true)
+
+ViolenceSection:Label("💀 暴力功能 | ⚠️ 使用风险自负")
+ViolenceSection:Label("━━━━━━━━━━━━━━━━━━━━")
+
+-- 1. 无限血量
+ViolenceSection:Toggle("❤️ 无限血量", "GodMode", false, function(enabled)
+    getgenv().GodMode = enabled
+    if enabled then
+        pcall(function()
+            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.MaxHealth = 999999
+                hum.Health = 999999
+            end
+        end)
+        Notify("❤️ 无限血量已开启")
+    else
+        Notify("❤️ 无限血量已关闭")
+    end
+end)
+
+-- 2. 无限体力
+ViolenceSection:Toggle("⚡ 无限体力", "InfStamina", false, function(enabled)
+    getgenv().InfStamina = enabled
+    if enabled then
+        Notify("⚡ 无限体力已开启")
+    else
+        Notify("⚡ 无限体力已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().InfStamina then
+        pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.Stamina = 100
+                end
+                local stamina = char:FindFirstChild("Stamina")
+                if stamina then
+                    stamina.Value = 100
+                end
+                local energy = char:FindFirstChild("Energy")
+                if energy then
+                    energy.Value = 100
+                end
+            end
+        end)
+    end
+end)
+
+-- 3. 无限饥饿值
+ViolenceSection:Toggle("🍔 无限饥饿值", "InfHunger", false, function(enabled)
+    getgenv().InfHunger = enabled
+    if enabled then
+        Notify("🍔 无限饥饿值已开启")
+    else
+        Notify("🍔 无限饥饿值已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().InfHunger then
+        pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                local hunger = char:FindFirstChild("Hunger")
+                if hunger then
+                    hunger.Value = 100
+                end
+                local food = char:FindFirstChild("Food")
+                if food then
+                    food.Value = 100
+                end
+            end
+        end)
+    end
+end)
+
+-- 4. 无限子弹
+ViolenceSection:Toggle("🔫 无限子弹", "InfAmmo", false, function(enabled)
+    getgenv().InfAmmo = enabled
+    if enabled then
+        Notify("🔫 无限子弹已开启")
+    else
+        Notify("🔫 无限子弹已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().InfAmmo then
+        pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild("Bullets") or tool:FindFirstChild("Magazine") or tool:FindFirstChild("Ammunition")
+                        if ammo then
+                            ammo.Value = 999
+                        end
+                        local clip = tool:FindFirstChild("Clip")
+                        if clip then
+                            clip.Value = 999
+                        end
+                        local maxAmmo = tool:FindFirstChild("MaxAmmo")
+                        if maxAmmo then
+                            maxAmmo.Value = 999
+                        end
+                    end
+                end
+                local backpack = game.Players.LocalPlayer.Backpack
+                if backpack then
+                    for _, tool in pairs(backpack:GetChildren()) do
+                        if tool:IsA("Tool") then
+                            local ammo = tool:FindFirstChild("Ammo") or tool:FindFirstChild("Bullets") or tool:FindFirstChild("Magazine")
+                            if ammo then
+                                ammo.Value = 999
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- 5. 超快射速
+ViolenceSection:Toggle("⚡ 超快射速", "FastFire", false, function(enabled)
+    getgenv().FastFire = enabled
+    if enabled then
+        Notify("⚡ 超快射速已开启")
+    else
+        Notify("⚡ 超快射速已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().FastFire then
+        pcall(function()
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        local fireRate = tool:FindFirstChild("FireRate") or tool:FindFirstChild("Rate") or tool:FindFirstChild("Cooldown")
+                        if fireRate then
+                            fireRate.Value = 0.01
+                        end
+                        local reloadTime = tool:FindFirstChild("ReloadTime") or tool:FindFirstChild("Reload")
+                        if reloadTime then
+                            reloadTime.Value = 0
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- 6. 甩飞最近玩家
+ViolenceSection:Button("💥 甩飞最近玩家", function()
+    local target, dist = GetClosestPlayer()
+    if not target then
+        Notify("❌ 附近没有玩家")
+        return
+    end
+    pcall(function()
+        local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Velocity = Vector3.new(0, 500, 0)
+            hrp.RotVelocity = Vector3.new(1000, 1000, 1000)
+            Notify("💥 已甩飞 " .. target.Name)
+        end
+    end)
+end)
+
+-- 7. 瞬移到最近玩家身后
+ViolenceSection:Button("🔪 瞬移到最近玩家身后", function()
+    local target, dist = GetClosestPlayer()
+    if not target then
+        Notify("❌ 附近没有玩家")
+        return
+    end
+    pcall(function()
+        local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local targetHrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+        if myHrp and targetHrp then
+            myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, -3)
+            Notify("🔪 已瞬移到 " .. target.Name .. " 身后")
+        end
+    end)
+end)
+
+-- 8. 秒杀最近目标
+ViolenceSection:Button("⚔️ 秒杀最近目标", function()
+    local target, dist = GetClosestPlayer()
+    if not target then
+        Notify("❌ 附近没有目标")
+        return
+    end
+    pcall(function()
+        local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.Health = 0
+            Notify("⚔️ 已秒杀 " .. target.Name)
+        end
+    end)
+end)
+
+-- 9. 全图冻结
+ViolenceSection:Toggle("❄️ 全图冻结", "FreezeAll", false, function(enabled)
+    getgenv().FreezeAll = enabled
+    if enabled then
+        Notify("❄️ 全图冻结已开启")
+    else
+        Notify("❄️ 全图冻结已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().FreezeAll then
+        for _, p in pairs(GetAllPlayers()) do
+            pcall(function()
+                local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Velocity = Vector3.new(0, 0, 0)
+                    hrp.RotVelocity = Vector3.new(0, 0, 0)
+                    hrp.Anchored = true
+                end
+                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.WalkSpeed = 0
+                    hum.JumpPower = 0
+                    hum.PlatformStand = true
+                end
+            end)
+        end
+    end
+end)
+
+-- 10. 全图甩飞
+ViolenceSection:Button("🌀 全图甩飞", function()
+    local count = 0
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.Velocity = Vector3.new(math.random(-500, 500), math.random(300, 800), math.random(-500, 500))
+                hrp.RotVelocity = Vector3.new(math.random(-2000, 2000), math.random(-2000, 2000), math.random(-2000, 2000))
+                count = count + 1
+            end
+        end)
+    end
+    Notify("🌀 已甩飞 " .. count .. " 个玩家")
+end)
+
+-- 11. 全图传送（所有玩家到你面前）
+ViolenceSection:Button("🌀 全图传送（所有玩家到你面前）", function()
+    local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myHrp then
+        Notify("❌ 没有角色")
+        return
+    end
+    local count = 0
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = myHrp.CFrame + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
+                count = count + 1
+            end
+        end)
+    end
+    Notify("🌀 已传送 " .. count .. " 个玩家到你面前")
+end)
+
+-- 12. 全图秒杀
+ViolenceSection:Button("☠️ 全图秒杀", function()
+    local count = 0
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = 0
+                count = count + 1
+            end
+        end)
+    end
+    Notify("☠️ 已秒杀 " .. count .. " 个玩家")
+end)
+
+-- 13. 全图火焰
+ViolenceSection:Button("🔥 全图火焰", function()
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local char = p.Character
+            if char then
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        local fire = Instance.new("Fire")
+                        fire.Parent = part
+                        fire.Size = 10
+                        fire.Heat = 20
+                    end
+                end
+            end
+        end)
+    end
+    Notify("🔥 所有玩家已着火")
+end)
+
+-- 14. 全图传送随机
+ViolenceSection:Button("🌀 全图传送随机位置", function()
+    local count = 0
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(
+                    math.random(-5000, 5000),
+                    math.random(50, 200),
+                    math.random(-5000, 5000)
+                )
+                count = count + 1
+            end
+        end)
+    end
+    Notify("🌀 已随机传送 " .. count .. " 个玩家")
+end)
+
+-- 15. 全图隐身
+ViolenceSection:Toggle("👻 全图隐身", "Invisible", false, function(enabled)
+    getgenv().Invisible = enabled
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    if enabled then
+                        part.Transparency = 1
+                    else
+                        part.Transparency = 0
+                    end
+                end
+            end
+        end
+    end)
+    Notify(enabled and "👻 隐身已开启" or "👻 隐身已关闭")
+end)
+
+-- 16. 全图高跳
+ViolenceSection:Toggle("🦘 全图高跳", "HighJump", false, function(enabled)
+    getgenv().HighJump = enabled
+    if enabled then
+        for _, p in pairs(GetAllPlayers()) do
+            pcall(function()
+                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.JumpPower = 200
+                end
+            end)
+        end
+        Notify("🦘 全图高跳已开启")
+    else
+        for _, p in pairs(GetAllPlayers()) do
+            pcall(function()
+                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.JumpPower = 50
+                end
+            end)
+        end
+        Notify("🦘 全图高跳已关闭")
+    end
+end)
+
+-- 17. 全图换肤
+ViolenceSection:Button("🎨 全图换肤", function()
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local char = p.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.BrickColor = BrickColor.new(Color3.fromHSV(math.random(), 1, 1))
+                    end
+                end
+            end
+        end)
+    end
+    Notify("🎨 所有玩家已变色")
+end)
+
+-- 18. 全图武器删除
+ViolenceSection:Button("🗑️ 全图武器删除", function()
+    local count = 0
+    for _, p in pairs(GetAllPlayers()) do
+        pcall(function()
+            local char = p.Character
+            if char then
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        tool:Destroy()
+                        count = count + 1
+                    end
+                end
+            end
+        end)
+    end
+    Notify("🗑️ 已删除 " .. count .. " 个武器")
+end)
+
+-- 19. 全图车辆传送
+ViolenceSection:Button("🚗 全图车辆传送", function()
+    local myPos = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myPos then return end
+    local count = 0
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("Model") and (obj:FindFirstChild("VehicleSeat") or obj:FindFirstChild("HumanoidRootPart")) then
+            pcall(function()
+                local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("VehicleSeat")
+                if hrp then
+                    hrp.CFrame = myPos.CFrame + Vector3.new(math.random(-20, 20), 0, math.random(-20, 20))
+                    count = count + 1
+                end
+            end)
+        end
+    end
+    Notify("🚗 已传送 " .. count .. " 辆车到你面前")
+end)
+
+-- 20. 全图NPC击杀
+ViolenceSection:Button("🤖 全图NPC击杀", function()
+    local count = 0
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                hum.Health = 0
+                count = count + 1
+            end
+        end
+    end
+    Notify("🤖 已击杀 " .. count .. " 个NPC")
+end)
+
+-- 21. 锁定血量
+ViolenceSection:Toggle("🔒 锁定血量", "LockHealth", false, function(enabled)
+    getgenv().LockHealth = enabled
+    if enabled then
+        Notify("🔒 血量锁定已开启")
+    else
+        Notify("🔒 血量锁定已关闭")
+    end
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().LockHealth then
+        pcall(function()
+            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = 999999
+            end
+        end)
+    end
+end)
+
+-- 22. 一键全部开启
+ViolenceSection:Label("━━━━━━━━━━━━━━━━━━━━")
+ViolenceSection:Button("⚡ 一键开启全部暴力", function()
+    getgenv().GodMode = true
+    getgenv().InfStamina = true
+    getgenv().InfHunger = true
+    getgenv().InfAmmo = true
+    getgenv().FastFire = true
+    getgenv().LockHealth = true
+    getgenv().Invisible = true
+    getgenv().HighJump = true
+    pcall(function()
+        local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.MaxHealth = 999999
+            hum.Health = 999999
+            hum.Stamina = 100
+        end
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 1
+                end
+            end
+        end
+    end)
+    Notify("⚡ 全部暴力功能已开启")
+end)
+
+ViolenceSection:Button("🔴 一键关闭全部暴力", function()
+    getgenv().GodMode = false
+    getgenv().InfStamina = false
+    getgenv().InfHunger = false
+    getgenv().InfAmmo = false
+    getgenv().FastFire = false
+    getgenv().FreezeAll = false
+    getgenv().LockHealth = false
+    getgenv().Invisible = false
+    getgenv().HighJump = false
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 0
+                end
+            end
+        end
+    end)
+    Notify("🔴 全部暴力功能已关闭")
+end)
+
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
 SettingsSection:Button("关闭脚本", function()
     getgenv().DrawEnabled = false
     getgenv().CarAccelEnabled = false
+    getgenv().GodMode = false
+    getgenv().InfStamina = false
+    getgenv().InfHunger = false
+    getgenv().InfAmmo = false
+    getgenv().FastFire = false
+    getgenv().FreezeAll = false
+    getgenv().LockHealth = false
+    getgenv().Invisible = false
+    getgenv().HighJump = false
     ClearDraw()
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
@@ -402,5 +974,5 @@ SettingsSection:Button("关闭脚本", function()
     end)
 end)
 
-print("✅ wdfex 圣奥里完整版已加载")
-print("📍 传送 | 🚗 飞车 | 🏧 ATM | 👁️ 绘制(300m)")
+print("✅ wdfex 圣奥里暴力完整版已加载（无爆炸）")
+print("📍 传送 | 🚗 飞车 | 🏧 ATM | 👁️ 绘制 | 💀 暴力")
