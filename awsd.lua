@@ -152,12 +152,66 @@ TeleportSection:Button("传送到输入坐标", function()
     TeleportTo(Vector3.new(x, y, z))
 end)
 
--- ===== 设置Tab（含彩蛋） =====
+-- ===== 飞车Tab（皮脚本原版飞车） =====
+local CarTab = UILibrary:Tab("『飞车』", "18930406865")
+local CarSection = CarTab:section("飞车控制", true)
+
+CarSection:Label("坐上车辆后自动加速")
+
+getgenv().CarSpeed = 80
+getgenv().CarAccelEnabled = false
+
+local function GetCurrentVehicle()
+    local char = game.Players.LocalPlayer.Character
+    if not char then return nil end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return nil end
+    local seat = hum.SeatPart
+    if not seat then return nil end
+    local vehicle = seat.Parent
+    if vehicle and (vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChildOfClass("VehicleSeat")) then
+        return vehicle
+    end
+    return nil
+end
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().CarAccelEnabled then
+        pcall(function()
+            local vehicle = GetCurrentVehicle()
+            if vehicle then
+                local hrp = vehicle:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local bv = hrp:FindFirstChild("CarBV")
+                    if not bv then
+                        bv = Instance.new("BodyVelocity")
+                        bv.Name = "CarBV"
+                        bv.Parent = hrp
+                        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                    end
+                    bv.Velocity = hrp.CFrame.LookVector * getgenv().CarSpeed
+                end
+            end
+        end)
+    end
+end)
+
+CarSection:Toggle("开启飞车", "CarAccel", false, function(e)
+    getgenv().CarAccelEnabled = e
+    Notify(e and "飞车已开启" or "飞车已关闭")
+end)
+
+CarSection:Slider("飞车速度", "CarSpeed", 80, 20, 300, false, function(s)
+    getgenv().CarSpeed = s
+end)
+
+-- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
 local SettingsSection = SettingsTab:section("控制", true)
 
 SettingsSection:Button("关闭脚本", function()
     getgenv().EasterEgg = false
+    getgenv().CarAccelEnabled = false
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
         if frosty then frosty:Destroy() end
@@ -171,11 +225,9 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
     getgenv().EasterEgg = enabled
     
     if enabled then
-        -- 传送到送货队伍
         TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-        Notify("彩蛋已开启，已传送到送货队伍")
+        Notify("彩蛋已开启")
         
-        -- 创建右下角提示
         pcall(function()
             local eggGui = Instance.new("ScreenGui")
             eggGui.Name = "EasterEggGui"
@@ -185,14 +237,14 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
             local textLabel = Instance.new("TextLabel")
             textLabel.Name = "EggLabel"
             textLabel.Parent = eggGui
-            textLabel.Size = UDim2.new(0, 250, 0, 30)
-            textLabel.Position = UDim2.new(1, -260, 1, -40)
+            textLabel.Size = UDim2.new(0, 220, 0, 30)
+            textLabel.Position = UDim2.new(1, -230, 1, -40)
             textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
             textLabel.BackgroundTransparency = 0.4
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
             textLabel.TextSize = 16
             textLabel.Font = Enum.Font.GothamBold
-            textLabel.Text = "你还想要彩蛋赶紧去送货吧🤓"
+            textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
             textLabel.TextScaled = true
             
             local corner = Instance.new("UICorner")
