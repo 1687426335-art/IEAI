@@ -84,7 +84,7 @@ local Library = loadstring(game:HttpGet(UI_Library_URL))()
 -- 创建窗口
 local Window = Library:CreateWindow({
     ["Folder"] = "wdfexHub",
-    ["Title"] = "wdfex-圣奥里",
+    ["Title"] = "wdfex 圣奥里传送",
     ["Author"] = "wdfex",
     ["Icon"] = "rbxassetid://7734068321",
     HideSearchBar = false,
@@ -485,4 +485,342 @@ local espEnabled = false
 local espObjects = {}
 
 local function ToggleESP()
-    espEnabled =
+    espEnabled = not espEnabled
+    
+    if espEnabled then
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+        
+        local found = 0
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                
+                local box = Instance.new("BoxHandleAdornment")
+                box.Size = Vector3.new(4, 5, 2)
+                box.Adornee = hrp
+                box.Color3 = Color3.fromRGB(0, 255, 0)
+                box.Transparency = 0.5
+                box.ZIndex = 0
+                box.Parent = hrp
+                table.insert(espObjects, box)
+                
+                local billboard = Instance.new("BillboardGui")
+                billboard.Size = UDim2.new(0, 120, 0, 30)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                billboard.Parent = hrp
+                
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = player.Name
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextSize = 14
+                label.Font = Enum.Font.GothamBold
+                label.Parent = billboard
+                table.insert(espObjects, billboard)
+                
+                found = found + 1
+            end
+        end
+        Notify("透视开启，找到 " .. found .. " 个玩家")
+    else
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+        Notify("透视已关闭")
+    end
+end
+
+Tab_ESP:Toggle({
+    ["Title"] = "玩家透视",
+    ["Desc"] = "显示所有玩家的位置",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            if not espEnabled then
+                ToggleESP()
+            end
+        else
+            if espEnabled then
+                ToggleESP()
+            end
+        end
+    end
+})
+
+Tab_ESP:Button({
+    ["Title"] = "查看游戏中的所有玩家（包括血量条）",
+    ["Desc"] = "显示所有玩家的血量",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/G2zb992X", true))()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 范围
+-------------------------------------------------------------------------
+local Tab_Range = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "范围",
+    ["Icon"] = "rbxassetid://87107069659024",
+})
+
+Tab_Range:Section({
+    TextSize = 17,
+    ["Title"] = "范围功能",
+    TextXAlignment = "Left",
+})
+
+_G.RangeConn = nil
+local function updateRange(size)
+    if _G.RangeConn then
+        _G.RangeConn:Disconnect()
+        _G.RangeConn = nil
+    end
+    if size == 0 then
+        Notify("已清空范围效果")
+        return
+    end
+    _G.HeadSize = size
+    _G.Disabled = true
+    _G.RangeConn = RunService.RenderStepped:Connect(function()
+        if _G.Disabled then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer then
+                    pcall(function()
+                        if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end
+                    end)
+                end
+            end
+        end
+    end)
+    Notify("范围已设置为 " .. size)
+end
+
+Tab_Range:Button({
+    ["Title"] = "清空范围效果",
+    ["Desc"] = "关闭范围修改",
+    ["Callback"] = function()
+        updateRange(0)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围10",
+    ["Desc"] = "设置碰撞箱大小为10",
+    ["Callback"] = function()
+        updateRange(10)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围20",
+    ["Desc"] = "设置碰撞箱大小为20",
+    ["Callback"] = function()
+        updateRange(20)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围30",
+    ["Desc"] = "设置碰撞箱大小为30",
+    ["Callback"] = function()
+        updateRange(30)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围50",
+    ["Desc"] = "设置碰撞箱大小为50",
+    ["Callback"] = function()
+        updateRange(50)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围70",
+    ["Desc"] = "设置碰撞箱大小为70",
+    ["Callback"] = function()
+        updateRange(70)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围120",
+    ["Desc"] = "设置碰撞箱大小为120",
+    ["Callback"] = function()
+        updateRange(120)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围300",
+    ["Desc"] = "设置碰撞箱大小为300",
+    ["Callback"] = function()
+        updateRange(300)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围500",
+    ["Desc"] = "设置碰撞箱大小为500",
+    ["Callback"] = function()
+        updateRange(500)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围999",
+    ["Desc"] = "设置碰撞箱大小为999",
+    ["Callback"] = function()
+        updateRange(999)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围999999999",
+    ["Desc"] = "设置碰撞箱大小为999999999",
+    ["Callback"] = function()
+        updateRange(999999999)
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 飞行与飞车
+-------------------------------------------------------------------------
+local Tab_FlyCar = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "飞行与飞车",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_FlyCar:Section({
+    TextSize = 17,
+    ["Title"] = "飞行功能",
+    TextXAlignment = "Left",
+})
+
+Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_FlyCar:Label("飞天和飞车由皮脚本作者提供")
+Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
+
+Tab_FlyCar:Button({
+    ["Title"] = "wdfex飞行",
+    ["Desc"] = "点击开启皮脚本飞行",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
+    end
+})
+
+Tab_FlyCar:Section({
+    TextSize = 17,
+    ["Title"] = "飞车功能",
+    TextXAlignment = "Left",
+})
+
+Tab_FlyCar:Button({
+    ["Title"] = "wdfex飞车",
+    ["Desc"] = "点击开启皮脚本飞车",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 设置
+-------------------------------------------------------------------------
+local Tab_Settings = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "设置",
+    ["Icon"] = "rbxassetid://14895392107",
+})
+
+Tab_Settings:Section({
+    TextSize = 17,
+    ["Title"] = "控制",
+    TextXAlignment = "Left",
+})
+
+Tab_Settings:Button({
+    ["Title"] = "关闭脚本",
+    ["Desc"] = "关闭脚本并清理UI",
+    ["Callback"] = function()
+        getgenv().EasterEgg = false
+        if _G.RangeConn then
+            _G.RangeConn:Disconnect()
+            _G.RangeConn = nil
+        end
+        pcall(function()
+            local frosty = CoreGui:FindFirstChild("frosty")
+            if frosty then frosty:Destroy() end
+            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+            if eggGui then eggGui:Destroy() end
+            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
+            if welcomeGui then welcomeGui:Destroy() end
+            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
+            if borderGui then borderGui:Destroy() end
+            local hubGui = CoreGui:FindFirstChild("wdfexHub")
+            if hubGui then hubGui:Destroy() end
+        end)
+        Window:Close()
+    end
+})
+
+-- 彩蛋开关（移除通知弹窗）
+local easterEggEnabled = false
+Tab_Settings:Toggle({
+    ["Title"] = "彩蛋开关",
+    ["Desc"] = "开启彩蛋功能",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        easterEggEnabled = bool
+        getgenv().EasterEgg = bool
+        
+        if bool then
+            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            
+            pcall(function()
+                local eggGui = Instance.new("ScreenGui")
+                eggGui.Name = "EasterEggGui"
+                eggGui.Parent = CoreGui
+                eggGui.ResetOnSpawn = false
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Name = "EggLabel"
+                textLabel.Parent = eggGui
+                textLabel.Size = UDim2.new(0, 220, 0, 30)
+                textLabel.Position = UDim2.new(1, -230, 1, -40)
+                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.BackgroundTransparency = 0.4
+                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                textLabel.TextSize = 16
+                textLabel.Font = Enum.Font.GothamBold
+                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
+                textLabel.TextScaled = true
+                
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 8)
+                corner.Parent = textLabel
+            end)
+        else
+            pcall(function()
+                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+                if eggGui then eggGui:Destroy() end
+            end)
+        end
+    end
+})
+
+print("wdfex 圣奥里传送已加载")
+print("共23个传送点 + 透视 + 范围 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
