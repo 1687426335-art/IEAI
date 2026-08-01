@@ -1,7 +1,7 @@
--- ===== wdfex 圣奥里传送+飞车+绘制版 =====
+-- ===== wdfex 圣奥里传送+飞车+绘制+ATM（手动传送+300米透视） =====
 
 -- ===== 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里")
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.comxiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里")
 
 -- ===== 通知函数 =====
 local function Notify(text)
@@ -189,12 +189,85 @@ VehicleSection:Slider("飞车速度", "CarSpeed", 80, 20, 300, false, function(s
     getgenv().CarSpeed = s
 end)
 
+-- ===== ATM机Tab =====
+local ATMTab = UILibrary:Tab("『ATM机』", "18930406865")
+local ATMSection = ATMTab:section("ATM机列表", true)
+
+ATMSection:Label("🏧 点击按钮传送到对应ATM")
+ATMSection:Label("━━━━━━━━━━━━━━━━━━━━")
+
+-- 存储ATM坐标
+local atmLocations = {}
+local atmNames = {}
+
+-- 扫描ATM机
+local function ScanATM()
+    atmLocations = {}
+    atmNames = {}
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            local name = obj.Name:lower()
+            if name:match("atm") and not name:match("bank") then
+                local pos = nil
+                if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
+                    pos = obj.HumanoidRootPart.Position
+                elseif obj:IsA("Part") then
+                    pos = obj.Position
+                end
+                if pos then
+                    local displayName = obj.Name:gsub("_", " "):gsub("ATM", ""):gsub("  ", " ")
+                    if displayName == "" or displayName == " " then
+                        displayName = "ATM #" .. (#atmLocations + 1)
+                    end
+                    table.insert(atmLocations, pos)
+                    table.insert(atmNames, displayName)
+                end
+            end
+        end
+    end
+end
+
+-- 首次扫描
+ScanATM()
+
+-- 刷新按钮
+ATMSection:Button("🔄 刷新ATM列表", function()
+    ScanATM()
+    Notify("✅ 已刷新，找到 " .. #atmLocations .. " 台ATM机")
+end)
+
+-- 动态生成ATM按钮（最多显示20个）
+local maxButtons = 20
+for i = 1, maxButtons do
+    local btn = ATMSection:Button("🏧 " .. (atmNames[i] or "加载中..."), function()
+        if atmLocations[i] then
+            TeleportTo(atmLocations[i] + Vector3.new(0, 2, 0))
+            Notify("✅ 已传送到 " .. (atmNames[i] or "ATM"))
+        else
+            Notify("❌ 该ATM不存在，请刷新列表")
+        end
+    end)
+    -- 隐藏多余的按钮（但保留占位）
+    if i > #atmLocations then
+        pcall(function()
+            btn.Text = "---"
+            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            btn.TextColor3 = Color3.fromRGB(100, 100, 100)
+        end)
+    end
+end
+
+ATMSection:Label("━━━━━━━━━━━━━━━━━━━━")
+ATMSection:Label("📌 共可显示 " .. maxButtons .. " 个ATM")
+
 -- ===== 绘制Tab =====
 local DrawTab = UILibrary:Tab("『绘制』", "18930406865")
 local DrawSection = DrawTab:section("玩家头顶绘制", true)
 
 DrawSection:Label("👁️ 在玩家头顶显示通缉状态")
 DrawSection:Label("🔴 通缉中 | 🟢 未通缉 | 👮 警察")
+DrawSection:Label("📏 最大显示距离: 300米")
+DrawSection:Label("🧱 墙后可见")
 
 getgenv().DrawEnabled = false
 local drawObjects = {}
@@ -214,7 +287,7 @@ local function CreatePlayerLabel(player)
     billboard.Size = UDim2.new(0, 150, 0, 30)
     billboard.StudsOffset = Vector3.new(0, 3.5, 0)
     billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 100
+    billboard.MaxDistance = 300  -- 300米最大距离
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
@@ -335,5 +408,5 @@ SettingsSection:Button("关闭脚本", function()
     end)
 end)
 
-print("✅ wdfex 圣奥里传送+飞车+绘制已加载")
-print("📍 20个传送点 | 🚗 飞车 | 👁️ 绘制")
+print("✅ wdfex 圣奥里完整版已加载")
+print("📍 传送 | 🚗 飞车 | 🏧 ATM | 👁️ 绘制(300m)")
