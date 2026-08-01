@@ -25,41 +25,90 @@ local function TeleportTo(pos)
     end)
 end
 
--- ===== ATM列表数据 =====
-local atmList = {}
-local atmListUI = nil
+-- ===== ATM透视标记 =====
+local atmMarkers = {}
+local atm透视开关 = false
 
--- ===== 刷新ATM列表 =====
-local function RefreshATMList()
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("未找到角色")
-            return
-        end
+local function ToggleATMPerspective()
+    atm透视开关 = not atm透视开关
+    
+    if atm透视开关 then
+        -- 开启透视
+        pcall(function()
+            local player = game.Players.LocalPlayer
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then
+                Notify("未找到角色")
+                return
+            end
 
-        atmList = {}
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position then
-                local name = obj.Name:lower()
-                if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < 500 then
-                        table.insert(atmList, {
-                            Name = obj.Name,
-                            Position = obj.Position,
-                            Distance = dist
-                        })
+            -- 清除旧标记
+            for _, marker in ipairs(atmMarkers) do
+                pcall(function() marker:Destroy() end)
+            end
+            atmMarkers = {}
+
+            local found = 0
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.Position then
+                    local name = obj.Name:lower()
+                    if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") or name:find("柜员") then
+                        local dist = (hrp.Position - obj.Position).Magnitude
+                        if dist < 500 then
+                            -- 创建标记球体
+                            local marker = Instance.new("Part")
+                            marker.Size = Vector3.new(1.5, 1.5, 1.5)
+                            marker.Shape = Enum.PartType.Ball
+                            marker.Position = obj.Position + Vector3.new(0, 2, 0)
+                            marker.Anchored = true
+                            marker.CanCollide = false
+                            marker.Transparency = 0.4
+                            marker.BrickColor = BrickColor.new("Bright green")
+                            marker.Name = "ATMPerspective"
+                            marker.Parent = workspace
+
+                            -- 发光框
+                            local box = Instance.new("SelectionBox")
+                            box.Adornee = marker
+                            box.Color3 = Color3.fromRGB(0, 255, 0)
+                            box.LineThickness = 0.15
+                            box.Transparency = 0.3
+                            box.Parent = marker
+
+                            -- 距离标签（BillboardGui）
+                            local billboard = Instance.new("BillboardGui")
+                            billboard.Size = UDim2.new(0, 100, 0, 30)
+                            billboard.StudsOffset = Vector3.new(0, 3, 0)
+                            billboard.AlwaysOnTop = true
+                            billboard.Parent = marker
+
+                            local label = Instance.new("TextLabel")
+                            label.Size = UDim2.new(1, 0, 1, 0)
+                            label.BackgroundTransparency = 1
+                            label.TextColor3 = Color3.fromRGB(0, 255, 0)
+                            label.TextStrokeTransparency = 0.3
+                            label.Text = string.format("ATM [%.1fm]", dist)
+                            label.TextSize = 14
+                            label.Font = Enum.Font.GothamBold
+                            label.Parent = billboard
+
+                            table.insert(atmMarkers, marker)
+                            found = found + 1
+                        end
                     end
                 end
             end
+
+            Notify("透视开启，找到 " .. found .. " 个ATM机")
+        end)
+    else
+        -- 关闭透视，清除标记
+        for _, marker in ipairs(atmMarkers) do
+            pcall(function() marker:Destroy() end)
         end
-
-        table.sort(atmList, function(a, b) return a.Distance < b.Distance end)
-
-        Notify("找到 " .. #atmList .. " 个ATM机")
-    end)
+        atmMarkers = {}
+        Notify("透视已关闭")
+    end
 end
 
 -- ===== 公告Tab =====
@@ -186,73 +235,26 @@ DeliverySection:Button("北方圣奥里取餐点", function()
     TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
 end)
 
--- ===== ATM Tab =====
-local AtmTab = UILibrary:Tab("『ATM』", "18930406865")
-local AtmSection = AtmTab:section("ATM查找", true)
+-- ===== ATM透视Tab =====
+local AtmTab = UILibrary:Tab("『ATM透视』", "18930406865")
+local AtmSection = AtmTab:section("ATM透视", true)
 
 AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AtmSection:Label("点击下方按钮扫描500米内ATM")
+AtmSection:Label("点击下方按钮开启/关闭ATM透视")
+AtmSection:Label("透视范围：500米")
 AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
-AtmSection:Button("刷新ATM列表", function()
-    RefreshATMList()
+AtmSection:Toggle("ATM透视开关", "ATMPerspective", false, function(enabled)
+    if enabled then
+        ToggleATMPerspective()
+    else
+        if atm透视开关 then
+            ToggleATMPerspective()
+        end
+    end
 end)
 
-AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AtmSection:Label("ATM列表（距离由近到远）")
-AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
-
--- 显示ATM列表
-local atmDisplaySection = AtmTab:section("ATM列表", true)
-
--- 更新ATM列表显示
-local function UpdateATMDisplay()
-    if #atmList == 0 then
-        atmDisplaySection:Label("未找到ATM机，点击刷新")
-        return
-    end
-    for i, atm in ipairs(atmList) do
-        atmDisplaySection:Button(string.format("[%dm] %s", math.floor(atm.Distance), atm.Name), function()
-            TeleportTo(atm.Position)
-            Notify("已传送到 " .. atm.Name)
-        end)
-    end
-end
-
--- 重写刷新函数，更新显示
-local originalRefresh = RefreshATMList
-RefreshATMList = function()
-    pcall(function()
-        local player = game.Players.LocalPlayer
-        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            Notify("未找到角色")
-            return
-        end
-
-        atmList = {}
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position then
-                local name = obj.Name:lower()
-                if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") or name:find("柜员机") then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < 500 then
-                        table.insert(atmList, {
-                            Name = obj.Name,
-                            Position = obj.Position,
-                            Distance = dist
-                        })
-                    end
-                end
-            end
-        end
-
-        table.sort(atmList, function(a, b) return a.Distance < b.Distance end)
-
-        Notify("找到 " .. #atmList .. " 个ATM机")
-        UpdateATMDisplay()
-    end)
-end
+AtmSection:Label("开启后ATM机会显示绿色球体+距离标签")
 
 -- ===== 外卖员工功能专区Tab =====
 local WorkerTab = UILibrary:Tab("『外卖员工专区』", "18930406865")
@@ -319,4 +321,4 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
 end)
 
 print("wdfex 圣奥里传送脚本已加载")
-print("共24个传送点")
+print("共24个传送点 + ATM透视功能")
