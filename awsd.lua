@@ -711,10 +711,6 @@ Tab_FlyCar:Section({
     TextXAlignment = "Left",
 })
 
-Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
-Tab_FlyCar:Label("飞天和飞车由皮脚本作者提供")
-Tab_FlyCar:Label("━━━━━━━━━━━━━━━━━━━━")
-
 Tab_FlyCar:Button({
     ["Title"] = "wdfex飞行",
     ["Desc"] = "点击开启皮脚本飞行",
@@ -777,7 +773,7 @@ Tab_Settings:Button({
     end
 })
 
--- 彩蛋开关（移除通知弹窗）
+-- 彩蛋开关
 local easterEggEnabled = false
 Tab_Settings:Toggle({
     ["Title"] = "彩蛋开关",
@@ -789,6 +785,7 @@ Tab_Settings:Toggle({
         
         if bool then
             TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            Notify("彩蛋已开启")
             
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
@@ -818,6 +815,7 @@ Tab_Settings:Toggle({
                 local eggGui = CoreGui:FindFirstChild("EasterEggGui")
                 if eggGui then eggGui:Destroy() end
             end)
+            Notify("彩蛋已关闭")
         end
     end
 })
