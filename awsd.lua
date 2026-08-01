@@ -133,7 +133,7 @@ TeleportSection:Button("车店", function()
     TeleportTo(Vector3.new(0, 0, 0))
 end)
 
--- ===== 外卖员传送Tab（独立分类栏） =====
+-- ===== 外卖员传送Tab（取餐点） =====
 local DeliveryTab = UILibrary:Tab("『外卖员』", "18930406865")
 local DeliverySection = DeliveryTab:section("外卖员传送点", true)
 
@@ -148,6 +148,74 @@ end)
 DeliverySection:Button("北方圣奥里取餐点", function()
     TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
 end)
+
+-- ===== 外卖员工功能专区Tab =====
+local WorkerTab = UILibrary:Tab("『外卖员工专区』", "18930406865")
+local WorkerSection = WorkerTab:section("外卖员工功能", true)
+
+WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+WorkerSection:Label("外卖员工专用功能")
+WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
+
+WorkerSection:Button("传送到任务标点", function()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            Notify("未找到角色")
+            return
+        end
+
+        local targetPos = nil
+        local found = false
+
+        -- 搜索Workspace里的任务标点
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Position then
+                local name = obj.Name:lower()
+                if name:find("waypoint") or name:find("marker") or name:find("objective") or 
+                   name:find("target") or name:find("npc") or name:find("mission") or
+                   name:find("task") or name:find("quest") or name:find("标点") or name:find("任务") then
+                    local distance = (hrp.Position - obj.Position).Magnitude
+                    if distance < 5000 then
+                        targetPos = obj.Position
+                        found = true
+                        break
+                    end
+                end
+            end
+        end
+
+        -- 搜索NPC任务点
+        if not found then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
+                    local name = obj.Name:lower()
+                    if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") or name:find("objective") then
+                        local hrpPart = obj:FindFirstChild("HumanoidRootPart")
+                        if hrpPart and hrpPart.Position then
+                            local distance = (hrp.Position - hrpPart.Position).Magnitude
+                            if distance < 3000 then
+                                targetPos = hrpPart.Position
+                                found = true
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        if found and targetPos then
+            TeleportTo(targetPos)
+            Notify("已传送到任务标点")
+        else
+            Notify("未找到任务标点")
+        end
+    end)
+end)
+
+WorkerSection:Label("点击后自动传送到最近的任务标点")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
