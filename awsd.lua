@@ -15,7 +15,7 @@ local function Notify(text)
     end)
 end
 
--- ===== 传送函数（瞬移） =====
+-- ===== 传送函数 =====
 local function TeleportTo(pos)
     pcall(function()
         local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -157,7 +157,7 @@ WorkerSection:Label("━━━━━━━━━━━━━━━━━━━�
 WorkerSection:Label("外卖员工专用功能")
 WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
-WorkerSection:Button("瞬移到任务标点", function()
+WorkerSection:Button("瞬移外卖目的地", function()
     pcall(function()
         local player = game.Players.LocalPlayer
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -168,35 +168,33 @@ WorkerSection:Button("瞬移到任务标点", function()
 
         local targetPos = nil
 
-        -- 方法1: 直接找workspace里名字带"waypoint"的标记（最准）
+        -- 找外卖订单目标标点（圣奥里专用）
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Position then
                 local name = obj.Name:lower()
-                if name == "waypoint" or name == "marker" or name == "target" or name:find("waypoint") then
-                    targetPos = obj.Position
-                    break
+                -- 匹配外卖任务相关的标点名称
+                if name:find("delivery") or name:find("order") or name:find("pizza") or 
+                   name:find("target") or name:find("marker") or name:find("waypoint") or
+                   name:find("destination") or name:find("goal") or name:find("point") then
+                    -- 排除非法交易点（固定坐标）
+                    local pos = obj.Position
+                    if not (
+                        (pos.X > 2270 and pos.X < 2300 and pos.Z > 2640 and pos.Z < 2660) or
+                        (pos.X > 4390 and pos.X < 4420 and pos.Z > 1595 and pos.Z < 1620)
+                    ) then
+                        targetPos = pos
+                        break
+                    end
                 end
             end
         end
 
-        -- 方法2: 如果没找到，找玩家当前任务目标（UI里带的坐标）
-        if not targetPos then
-            local gui = player.PlayerGui:GetDescendants()
-            for _, obj in ipairs(gui) do
-                local pos = obj:GetAttribute("TargetPosition") or obj:GetAttribute("WaypointPosition") or obj:GetAttribute("MarkerPosition")
-                if pos and type(pos) == "Vector3" then
-                    targetPos = pos
-                    break
-                end
-            end
-        end
-
-        -- 方法3: 找NPC任务点（名字带npc/mission的）
+        -- 如果没找到，找最近的任务NPC
         if not targetPos then
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
                     local name = obj.Name:lower()
-                    if name:find("mission") or name:find("quest") or name:find("task") or name:find("npc") then
+                    if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") then
                         local hrpPart = obj:FindFirstChild("HumanoidRootPart")
                         if hrpPart and hrpPart.Position then
                             targetPos = hrpPart.Position
@@ -209,14 +207,14 @@ WorkerSection:Button("瞬移到任务标点", function()
 
         if targetPos then
             TeleportTo(targetPos)
-            Notify("已瞬移到任务标点")
+            Notify("已瞬移到外卖目的地")
         else
-            Notify("未找到任务标点")
+            Notify("未找到外卖标点，请先接外卖任务")
         end
     end)
 end)
 
-WorkerSection:Label("点击后直接瞬移到任务标点位置")
+WorkerSection:Label("点击后直接瞬移到外卖订单目的地")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
