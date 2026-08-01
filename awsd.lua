@@ -15,7 +15,7 @@ local function Notify(text)
     end)
 end
 
--- ===== 传送函数 =====
+-- ===== 传送函数（瞬移） =====
 local function TeleportTo(pos)
     pcall(function()
         local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -157,7 +157,7 @@ WorkerSection:Label("━━━━━━━━━━━━━━━━━━━�
 WorkerSection:Label("外卖员工专用功能")
 WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
-WorkerSection:Button("传送到任务标点", function()
+WorkerSection:Button("瞬移到任务标点", function()
     pcall(function()
         local player = game.Players.LocalPlayer
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -167,55 +167,56 @@ WorkerSection:Button("传送到任务标点", function()
         end
 
         local targetPos = nil
-        local found = false
 
-        -- 搜索Workspace里的任务标点
+        -- 方法1: 直接找workspace里名字带"waypoint"的标记（最准）
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Position then
                 local name = obj.Name:lower()
-                if name:find("waypoint") or name:find("marker") or name:find("objective") or 
-                   name:find("target") or name:find("npc") or name:find("mission") or
-                   name:find("task") or name:find("quest") or name:find("标点") or name:find("任务") then
-                    local distance = (hrp.Position - obj.Position).Magnitude
-                    if distance < 5000 then
-                        targetPos = obj.Position
-                        found = true
-                        break
-                    end
+                if name == "waypoint" or name == "marker" or name == "target" or name:find("waypoint") then
+                    targetPos = obj.Position
+                    break
                 end
             end
         end
 
-        -- 搜索NPC任务点
-        if not found then
+        -- 方法2: 如果没找到，找玩家当前任务目标（UI里带的坐标）
+        if not targetPos then
+            local gui = player.PlayerGui:GetDescendants()
+            for _, obj in ipairs(gui) do
+                local pos = obj:GetAttribute("TargetPosition") or obj:GetAttribute("WaypointPosition") or obj:GetAttribute("MarkerPosition")
+                if pos and type(pos) == "Vector3" then
+                    targetPos = pos
+                    break
+                end
+            end
+        end
+
+        -- 方法3: 找NPC任务点（名字带npc/mission的）
+        if not targetPos then
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
                     local name = obj.Name:lower()
-                    if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") or name:find("objective") then
+                    if name:find("mission") or name:find("quest") or name:find("task") or name:find("npc") then
                         local hrpPart = obj:FindFirstChild("HumanoidRootPart")
                         if hrpPart and hrpPart.Position then
-                            local distance = (hrp.Position - hrpPart.Position).Magnitude
-                            if distance < 3000 then
-                                targetPos = hrpPart.Position
-                                found = true
-                                break
-                            end
+                            targetPos = hrpPart.Position
+                            break
                         end
                     end
                 end
             end
         end
 
-        if found and targetPos then
+        if targetPos then
             TeleportTo(targetPos)
-            Notify("已传送到任务标点")
+            Notify("已瞬移到任务标点")
         else
             Notify("未找到任务标点")
         end
     end)
 end)
 
-WorkerSection:Label("点击后自动传送到最近的任务标点")
+WorkerSection:Label("点击后直接瞬移到任务标点位置")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
