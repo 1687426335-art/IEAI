@@ -41,9 +41,13 @@ AnnounceSection:Label("需要先执行皮脚本圣奥里再执行本脚本")
 AnnounceSection:Label("否则概率被踢出")
 AnnounceSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
--- ===== 传送Tab =====
-local TeleportTab = UILibrary:Tab("『传送』", "18930406865")
-local TeleportSection = TeleportTab:section("圣奥里传送点", true)
+-- ===== 实用传送Tab =====
+local TeleportTab = UILibrary:Tab("『实用传送』", "18930406865")
+local TeleportSection = TeleportTab:section("实用传送点", true)
+
+TeleportSection:Button("枪店门口", function()
+    TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
+end)
 
 TeleportSection:Button("枪械商店", function()
     TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
@@ -129,120 +133,20 @@ TeleportSection:Button("车店", function()
     TeleportTo(Vector3.new(0, 0, 0))
 end)
 
--- ===== 自定义传送 =====
-TeleportSection:Label("━━━━━━━━━━━━━━━━━━━━")
-TeleportSection:Label("自定义坐标传送")
+-- ===== 外卖员传送Tab（独立分类栏） =====
+local DeliveryTab = UILibrary:Tab("『外卖员』", "18930406865")
+local DeliverySection = DeliveryTab:section("外卖员传送点", true)
 
-TeleportSection:Textbox("X坐标", "XInput", "输入X", function(x)
-    getgenv().TeleportX = tonumber(x) or 0
+DeliverySection:Button("圣奥里取餐点", function()
+    TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
 end)
 
-TeleportSection:Textbox("Y坐标", "YInput", "输入Y", function(y)
-    getgenv().TeleportY = tonumber(y) or 0
+DeliverySection:Button("莱斯维尔取餐点", function()
+    TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
 end)
 
-TeleportSection:Textbox("Z坐标", "ZInput", "输入Z", function(z)
-    getgenv().TeleportZ = tonumber(z) or 0
-end)
-
-TeleportSection:Button("传送到输入坐标", function()
-    local x = getgenv().TeleportX or 0
-    local y = getgenv().TeleportY or 0
-    local z = getgenv().TeleportZ or 0
-    TeleportTo(Vector3.new(x, y, z))
-end)
-
--- ===== 车辆飞天Tab =====
-local CarFlyTab = UILibrary:Tab("『车辆飞天』", "18930406865")
-local CarFlySection = CarFlyTab:section("车辆飞天控制", true)
-
-CarFlySection:Label("电脑端按W就能飞")
-CarFlySection:Label("手机端用手开")
-
-getgenv().CarFlySpeed = 139
-getgenv().CarFlyEnabled = false
-
-local function GetCurrentVehicle()
-    local char = game.Players.LocalPlayer.Character
-    if not char then return nil end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return nil end
-    local seat = hum.SeatPart
-    if not seat then return nil end
-    local vehicle = seat.Parent
-    if vehicle and (vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChildOfClass("VehicleSeat")) then
-        return vehicle
-    end
-    return nil
-end
-
-local carFlyConnection = nil
-
-CarFlySection:Toggle("开启车辆飞天", "CarFly", false, function(e)
-    getgenv().CarFlyEnabled = e
-    if e then
-        if carFlyConnection then
-            carFlyConnection:Disconnect()
-            carFlyConnection = nil
-        end
-        carFlyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            if getgenv().CarFlyEnabled then
-                pcall(function()
-                    local vehicle = GetCurrentVehicle()
-                    if vehicle then
-                        local hrp = vehicle:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            -- 清除旧的BodyVelocity
-                            local oldBV = hrp:FindFirstChild("CarFlyBV")
-                            if oldBV then oldBV:Destroy() end
-                            
-                            local bv = Instance.new("BodyVelocity")
-                            bv.Name = "CarFlyBV"
-                            bv.Parent = hrp
-                            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                            bv.Velocity = hrp.CFrame.LookVector * getgenv().CarFlySpeed
-                        end
-                    end
-                end)
-            end
-        end)
-        Notify("车辆飞天已开启 (速度: 139)")
-    else
-        if carFlyConnection then
-            carFlyConnection:Disconnect()
-            carFlyConnection = nil
-        end
-        pcall(function()
-            for _, obj in pairs(game.Workspace:GetDescendants()) do
-                if obj:IsA("BasePart") then
-                    local bv = obj:FindFirstChild("CarFlyBV")
-                    if bv then bv:Destroy() end
-                end
-            end
-        end)
-        Notify("车辆飞天已关闭")
-    end
-end)
-
-CarFlySection:Slider("飞天速度", "CarFlySpeed", 139, 50, 200, false, function(s)
-    getgenv().CarFlySpeed = s
-    Notify("速度已设为: " .. s)
-end)
-
-CarFlySection:Button("清除所有车辆飞天效果", function()
-    pcall(function()
-        local count = 0
-        for _, obj in pairs(game.Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                local bv = obj:FindFirstChild("CarFlyBV")
-                if bv then
-                    bv:Destroy()
-                    count = count + 1
-                end
-            end
-        end
-        Notify("已清除 " .. count .. " 个飞天效果")
-    end)
+DeliverySection:Button("北方圣奥里取餐点", function()
+    TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
 end)
 
 -- ===== 设置Tab =====
@@ -251,11 +155,6 @@ local SettingsSection = SettingsTab:section("控制", true)
 
 SettingsSection:Button("关闭脚本", function()
     getgenv().EasterEgg = false
-    getgenv().CarFlyEnabled = false
-    if carFlyConnection then
-        carFlyConnection:Disconnect()
-        carFlyConnection = nil
-    end
     pcall(function()
         local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
         if frosty then frosty:Destroy() end
@@ -288,7 +187,7 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
             textLabel.TextSize = 16
             textLabel.Font = Enum.Font.GothamBold
-            textLabel.Text = "你还想要彩蛋赶紧去送货吧🤓"
+            textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
             textLabel.TextScaled = true
             
             local corner = Instance.new("UICorner")
@@ -305,5 +204,4 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
 end)
 
 print("wdfex 圣奥里传送脚本已加载")
-print("共20个传送点")
-print("车辆飞天速度: 139")
+print("共24个传送点")
