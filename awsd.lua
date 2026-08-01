@@ -249,6 +249,37 @@ Tab_Notice:Section({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 通用
+-------------------------------------------------------------------------
+local Tab_General = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "通用",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_General:Section({
+    TextSize = 17,
+    ["Title"] = "通用功能",
+    TextXAlignment = "Left",
+})
+
+Tab_General:Button({
+    ["Title"] = "wdfex飞行",
+    ["Desc"] = "点击开启皮脚本飞行",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "wdfex飞车",
+    ["Desc"] = "点击开启皮脚本飞车",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
 local Tab_Teleport = Window:Tab({
@@ -739,53 +770,6 @@ Tab_Aimbot:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 飞行与飞车
--------------------------------------------------------------------------
-local Tab_FlyCar = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "飞行与飞车",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-local FlySection = Tab_FlyCar:section("飞行功能", true)
-
-FlySection:Button({
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    ["Desc"] = "",
-    ["Callback"] = function() end
-})
-
-FlySection:Button({
-    ["Title"] = "飞天和飞车由皮脚本作者提供",
-    ["Desc"] = "",
-    ["Callback"] = function() end
-})
-
-FlySection:Button({
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    ["Desc"] = "",
-    ["Callback"] = function() end
-})
-
-FlySection:Button({
-    ["Title"] = "wdfex飞行",
-    ["Desc"] = "点击开启皮脚本飞行",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
-    end
-})
-
-local CarSection = Tab_FlyCar:section("飞车功能", true)
-
-CarSection:Button({
-    ["Title"] = "wdfex飞车",
-    ["Desc"] = "点击开启皮脚本飞车",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 设置
 -------------------------------------------------------------------------
 local Tab_Settings = Window:Tab({
@@ -871,4 +855,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共24个传送点 + 透视 + 范围 + 自瞄 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
+print("共24个传送点 + 透视 + 范围 + 自瞄 + 通用 + 彩色边框 + 欢迎弹窗")
