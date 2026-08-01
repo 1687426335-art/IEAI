@@ -1,180 +1,21 @@
--- ===== wdfex 圣奥里传送 =====
+-- ===== wdfex 圣奥里传送（叶脚本UI风格） =====
 
--- 基础服务定义
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
-local VirtualUser = game:GetService("VirtualUser")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
-local CurrentCamera = Workspace.CurrentCamera
 
--- ===== 欢迎弹窗 =====
-local function ShowWelcome()
-    pcall(function()
-        local welcomeGui = Instance.new("ScreenGui")
-        welcomeGui.Name = "wdfexWelcome"
-        welcomeGui.ResetOnSpawn = false
-        welcomeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        welcomeGui.Parent = CoreGui
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 320, 0, 60)
-        frame.Position = UDim2.new(1, -340, 0, 10)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.15
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        frame.ClipsDescendants = true
-        frame.Parent = welcomeGui
-        
-        -- 圆角
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = frame
-        
-        -- 左边彩色条
-        local colorBar = Instance.new("Frame")
-        colorBar.Size = UDim2.new(0, 5, 1, 0)
-        colorBar.Position = UDim2.new(0, 0, 0, 0)
-        colorBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        colorBar.BorderSizePixel = 0
-        colorBar.Parent = frame
-        
-        local corner2 = Instance.new("UICorner")
-        corner2.CornerRadius = UDim.new(0, 5)
-        corner2.Parent = colorBar
-        
-        -- 文字
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -15, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = "🎉 欢迎使用 wdfex 脚本"
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 18
-        label.Font = Enum.Font.GothamBold
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
-        -- 进入动画（从右滑入）
-        frame.Position = UDim2.new(1, 0, 0, 10)
-        local tween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -340, 0, 10)
-        })
-        tween:Play()
-        
-        -- 3秒后消失
-        task.wait(3)
-        
-        local outTween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, 0, 0, 10)
-        })
-        outTween:Play()
-        outTween.Completed:Wait()
-        welcomeGui:Destroy()
-    end)
-end
-
--- 加载 UI 库
-local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
-local Library = loadstring(game:HttpGet(UI_Library_URL))()
-
--- 创建窗口
-local Window = Library:CreateWindow({
-    ["Folder"] = "wdfexHub",
-    ["Title"] = "wdfex 圣奥里传送",
-    ["Author"] = "wdfex",
-    ["Icon"] = "rbxassetid://7734068321",
-    HideSearchBar = false,
-})
-
--- ===== 创建彩色边框（窗口边框） =====
-local function CreateColorfulBorder()
-    pcall(function()
-        -- 延迟执行，等UI加载完成
-        task.wait(0.5)
-        
-        local mainGui = CoreGui:FindFirstChild("wdfexHub")
-        if not mainGui then
-            for _, child in ipairs(CoreGui:GetChildren()) do
-                if child:IsA("ScreenGui") and (child.Name:find("wdfex") or child.Name:find("MyTestHub")) then
-                    mainGui = child
-                    break
-                end
-            end
-        end
-        
-        if not mainGui then return end
-        
-        local oldBorder = mainGui:FindFirstChild("wdfexBorder")
-        if oldBorder then oldBorder:Destroy() end
-        
-        local borderGui = Instance.new("Frame")
-        borderGui.Name = "wdfexBorder"
-        borderGui.Size = UDim2.new(1, 12, 1, 12)
-        borderGui.Position = UDim2.new(0, -6, 0, -6)
-        borderGui.BackgroundTransparency = 1
-        borderGui.ZIndex = -1
-        borderGui.Parent = mainGui
-        
-        local colors = {
-            Color3.fromRGB(255, 50, 50),
-            Color3.fromRGB(255, 200, 50),
-            Color3.fromRGB(50, 255, 50),
-            Color3.fromRGB(50, 150, 255),
-            Color3.fromRGB(255, 50, 255),
-            Color3.fromRGB(255, 100, 200),
-        }
-        
-        local borderSize = 3
-        
-        local sides = {
-            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 0, 0)},
-            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 1, -borderSize)},
-            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(0, 0, 0, 0)},
-            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(1, -borderSize, 0, 0)},
-        }
-        
-        for i, side in ipairs(sides) do
-            local bar = Instance.new("Frame")
-            bar.Size = side.size
-            bar.Position = side.pos
-            bar.BackgroundColor3 = colors[i]
-            bar.BackgroundTransparency = 0.15
-            bar.BorderSizePixel = 0
-            bar.Parent = borderGui
-        end
-        
-        local cornerSize = 12
-        local corners = {
-            {pos = UDim2.new(0, 0, 0, 0), color = colors[1]},
-            {pos = UDim2.new(1, -cornerSize, 0, 0), color = colors[2]},
-            {pos = UDim2.new(0, 0, 1, -cornerSize), color = colors[4]},
-            {pos = UDim2.new(1, -cornerSize, 1, -cornerSize), color = colors[5]},
-        }
-        
-        for _, cornerData in ipairs(corners) do
-            local cornerFrame = Instance.new("Frame")
-            cornerFrame.Size = UDim2.new(0, cornerSize, 0, cornerSize)
-            cornerFrame.Position = cornerData.pos
-            cornerFrame.BackgroundColor3 = cornerData.color
-            cornerFrame.BackgroundTransparency = 0.2
-            cornerFrame.BorderSizePixel = 0
-            cornerFrame.Parent = borderGui
-        end
-    end)
-end
+-- ===== 加载叶脚本UI库 =====
+local UI_Library_URL = "https://raw.githubusercontent.com/roblox-ye/QQ515966991/refs/heads/main/66YEUIUI.txt"
+local Library = loadstring(game:HttpGet(UI_Library_URL))():new("wdfex 圣奥里传送 " .. identifyexecutor())
 
 -- ===== 通知函数 =====
 local function Notify(text)
     pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
+        StarterGui:SetCore("SendNotification", {
             Title = "wdfex",
             Text = text,
             Icon = "rbxassetid://18941716391",
@@ -193,405 +34,203 @@ local function TeleportTo(pos)
     end)
 end
 
--- 显示欢迎弹窗
-ShowWelcome()
-
--- 创建彩色边框（延迟执行确保UI已加载）
-task.spawn(function()
-    task.wait(0.8)
-    CreateColorfulBorder()
-end)
-
 -------------------------------------------------------------------------
 -- Tab: 公告
 -------------------------------------------------------------------------
-local Tab_Notice = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "公告",
-    ["Icon"] = "rbxassetid://115466270141583",
-})
+local Tab_Notice = Library:Tab("公告", "115466270141583")
+local Section_Notice = Tab_Notice:section("公告", true)
 
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "作者: wdfex",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "此版本为圣奥里传送脚本",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "脚本无防踢，需要先执行皮脚本圣奥里",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
+Section_Notice:Label("━━━━━━━━━━━━━━━━━━━━")
+Section_Notice:Label("作者: wdfex")
+Section_Notice:Label("━━━━━━━━━━━━━━━━━━━━")
+Section_Notice:Label("此版本为圣奥里传送脚本")
+Section_Notice:Label("━━━━━━━━━━━━━━━━━━━━")
+Section_Notice:Label("脚本无防踢，需要先执行皮脚本圣奥里")
+Section_Notice:Label("否则概率被踢出")
+Section_Notice:Label("━━━━━━━━━━━━━━━━━━━━")
 
 -------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
-local Tab_Teleport = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "实用传送",
-    ["Icon"] = "rbxassetid://18520370419",
-})
+local Tab_Teleport = Library:Tab("实用传送", "18520370419")
+local Section_Teleport = Tab_Teleport:section("实用传送点", true)
 
-Tab_Teleport:Section({
-    TextSize = 17,
-    ["Title"] = "实用传送点",
-    TextXAlignment = "Left",
-})
+Section_Teleport:Button("枪店门口", function()
+    TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "枪店门口",
-    ["Desc"] = "传送至枪店门口",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
-    end
-})
+Section_Teleport:Button("枪械商店", function()
+    TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "枪械商店",
-    ["Desc"] = "传送至枪械商店",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
-    end
-})
+Section_Teleport:Button("黑色市场", function()
+    TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "黑色市场",
-    ["Desc"] = "传送至黑色市场",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
-    end
-})
+Section_Teleport:Button("小银行", function()
+    TeleportTo(Vector3.new(-667.74, 2.63, -67.18))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "小银行",
-    ["Desc"] = "传送至小银行",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-667.74, 2.63, -67.18))
-    end
-})
+Section_Teleport:Button("大银行", function()
+    TeleportTo(Vector3.new(3134.64, 6.12, -169.70))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "大银行",
-    ["Desc"] = "传送至大银行",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3134.64, 6.12, -169.70))
-    end
-})
+Section_Teleport:Button("农场", function()
+    TeleportTo(Vector3.new(-1269.56, 2.57, 2559.51))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "农场",
-    ["Desc"] = "传送至农场",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-1269.56, 2.57, 2559.51))
-    end
-})
+Section_Teleport:Button("警察局", function()
+    TeleportTo(Vector3.new(3313.52, 3.02, -476.74))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "警察局",
-    ["Desc"] = "传送至警察局",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3313.52, 3.02, -476.74))
-    end
-})
+Section_Teleport:Button("医院", function()
+    TeleportTo(Vector3.new(3892.10, 3.02, -185.78))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "医院",
-    ["Desc"] = "传送至医院",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3892.10, 3.02, -185.78))
-    end
-})
+Section_Teleport:Button("游戏厅", function()
+    TeleportTo(Vector3.new(2936.71, 2.63, 1688.17))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "游戏厅",
-    ["Desc"] = "传送至游戏厅",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(2936.71, 2.63, 1688.17))
-    end
-})
+Section_Teleport:Button("超市", function()
+    TeleportTo(Vector3.new(3936.62, 3.04, 1136.92))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "超市",
-    ["Desc"] = "传送至超市",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3936.62, 3.04, 1136.92))
-    end
-})
+Section_Teleport:Button("平民出生点", function()
+    TeleportTo(Vector3.new(3741.79, 3.72, -438.95))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "平民出生点",
-    ["Desc"] = "传送至平民出生点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3741.79, 3.72, -438.95))
-    end
-})
+Section_Teleport:Button("约克镇出生点", function()
+    TeleportTo(Vector3.new(-221.64, 3.04, -84.56))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "约克镇出生点",
-    ["Desc"] = "传送至约克镇出生点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-221.64, 3.04, -84.56))
-    end
-})
+Section_Teleport:Button("躲藏点", function()
+    TeleportTo(Vector3.new(-1505.97, 253.98, -476.43))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "躲藏点",
-    ["Desc"] = "传送至躲藏点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-1505.97, 253.98, -476.43))
-    end
-})
+Section_Teleport:Button("游轮码头", function()
+    TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "游轮码头",
-    ["Desc"] = "传送至游轮码头",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
-    end
-})
+Section_Teleport:Button("车辆维修", function()
+    TeleportTo(Vector3.new(-409.58, 3.08, 2.80))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "车辆维修",
-    ["Desc"] = "传送至车辆维修",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-409.58, 3.08, 2.80))
-    end
-})
+Section_Teleport:Button("监狱", function()
+    TeleportTo(Vector3.new(-1605.21, 2.63, 1223.50))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "监狱",
-    ["Desc"] = "传送至监狱",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(-1605.21, 2.63, 1223.50))
-    end
-})
+Section_Teleport:Button("拆车场", function()
+    TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "拆车场",
-    ["Desc"] = "传送至拆车场",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
-    end
-})
+Section_Teleport:Button("非法交易点", function()
+    TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "非法交易点",
-    ["Desc"] = "传送至非法交易点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
-    end
-})
+Section_Teleport:Button("送货队伍", function()
+    TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "送货队伍",
-    ["Desc"] = "传送至送货队伍",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-    end
-})
+Section_Teleport:Button("道路服务", function()
+    TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "道路服务",
-    ["Desc"] = "传送至道路服务",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
-    end
-})
+Section_Teleport:Button("消防队伍", function()
+    TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
+end)
 
-Tab_Teleport:Button({
-    ["Title"] = "消防队伍",
-    ["Desc"] = "传送至消防队伍",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
-    end
-})
-
-Tab_Teleport:Button({
-    ["Title"] = "车店",
-    ["Desc"] = "传送至车店",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(0, 0, 0))
-    end
-})
+Section_Teleport:Button("车店", function()
+    TeleportTo(Vector3.new(0, 0, 0))
+end)
 
 -------------------------------------------------------------------------
 -- Tab: 外卖员
 -------------------------------------------------------------------------
-local Tab_Delivery = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "外卖员",
-    ["Icon"] = "rbxassetid://15440802720",
-})
+local Tab_Delivery = Library:Tab("外卖员", "15440802720")
+local Section_Delivery = Tab_Delivery:section("外卖员传送点", true)
 
-Tab_Delivery:Section({
-    TextSize = 17,
-    ["Title"] = "外卖员传送点",
-    TextXAlignment = "Left",
-})
+Section_Delivery:Button("圣奥里取餐点", function()
+    TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
+end)
 
-Tab_Delivery:Button({
-    ["Title"] = "圣奥里取餐点",
-    ["Desc"] = "传送至圣奥里取餐点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
-    end
-})
+Section_Delivery:Button("莱斯维尔取餐点", function()
+    TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
+end)
 
-Tab_Delivery:Button({
-    ["Title"] = "莱斯维尔取餐点",
-    ["Desc"] = "传送至莱斯维尔取餐点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
-    end
-})
-
-Tab_Delivery:Button({
-    ["Title"] = "北方圣奥里取餐点",
-    ["Desc"] = "传送至北方圣奥里取餐点",
-    ["Callback"] = function()
-        TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
-    end
-})
+Section_Delivery:Button("北方圣奥里取餐点", function()
+    TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
+end)
 
 -------------------------------------------------------------------------
 -- Tab: 外卖员工专区
 -------------------------------------------------------------------------
-local Tab_Worker = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "外卖员工专区",
-    ["Icon"] = "rbxassetid://108664063",
-})
+local Tab_Worker = Library:Tab("外卖员工专区", "108664063")
+local Section_Worker = Tab_Worker:section("功能", true)
 
-Tab_Worker:Section({
-    TextSize = 17,
-    ["Title"] = "功能",
-    TextXAlignment = "Left",
-})
-
-Tab_Worker:Section({
-    TextSize = 15,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
-
-Tab_Worker:Section({
-    TextSize = 15,
-    ["Title"] = "外卖员工专用功能",
-    TextXAlignment = "Left",
-})
-
-Tab_Worker:Section({
-    TextSize = 15,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
-
-Tab_Worker:Section({
-    TextSize = 15,
-    ["Title"] = "暂无功能，等待更新...",
-    TextXAlignment = "Left",
-})
+Section_Worker:Label("━━━━━━━━━━━━━━━━━━━━")
+Section_Worker:Label("外卖员工专用功能")
+Section_Worker:Label("━━━━━━━━━━━━━━━━━━━━")
+Section_Worker:Label("暂无功能，等待更新...")
 
 -------------------------------------------------------------------------
 -- Tab: 设置
 -------------------------------------------------------------------------
-local Tab_Settings = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "设置",
-    ["Icon"] = "rbxassetid://14895392107",
-})
+local Tab_Settings = Library:Tab("设置", "14895392107")
+local Section_Settings = Tab_Settings:section("控制", true)
 
-Tab_Settings:Section({
-    TextSize = 17,
-    ["Title"] = "控制",
-    TextXAlignment = "Left",
-})
+Section_Settings:Button("关闭脚本", function()
+    getgenv().EasterEgg = false
+    pcall(function()
+        local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
+        if frosty then frosty:Destroy() end
+        local eggGui = game:GetService("CoreGui"):FindFirstChild("EasterEggGui")
+        if eggGui then eggGui:Destroy() end
+        local hubGui = game:GetService("CoreGui"):FindFirstChild("wdfexHub")
+        if hubGui then hubGui:Destroy() end
+    end)
+    Library:Close()
+end)
 
-Tab_Settings:Button({
-    ["Title"] = "关闭脚本",
-    ["Desc"] = "关闭脚本并清理UI",
-    ["Callback"] = function()
-        getgenv().EasterEgg = false
+local easterEggEnabled = false
+Section_Settings:Toggle("彩蛋开关", "开启彩蛋功能", false, function(bool)
+    easterEggEnabled = bool
+    getgenv().EasterEgg = bool
+    
+    if bool then
+        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+        Notify("彩蛋已开启")
+        
         pcall(function()
-            local frosty = game:GetService("CoreGui"):FindFirstChild("frosty")
-            if frosty then frosty:Destroy() end
+            local eggGui = Instance.new("ScreenGui")
+            eggGui.Name = "EasterEggGui"
+            eggGui.Parent = game:GetService("CoreGui")
+            eggGui.ResetOnSpawn = false
+            
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Name = "EggLabel"
+            textLabel.Parent = eggGui
+            textLabel.Size = UDim2.new(0, 220, 0, 30)
+            textLabel.Position = UDim2.new(1, -230, 1, -40)
+            textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            textLabel.BackgroundTransparency = 0.4
+            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            textLabel.TextSize = 16
+            textLabel.Font = Enum.Font.GothamBold
+            textLabel.Text = "你还想要彩蛋？赶紧去送货吧！"
+            textLabel.TextScaled = true
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 8)
+            corner.Parent = textLabel
+        end)
+    else
+        pcall(function()
             local eggGui = game:GetService("CoreGui"):FindFirstChild("EasterEggGui")
             if eggGui then eggGui:Destroy() end
-            local welcomeGui = game:GetService("CoreGui"):FindFirstChild("wdfexWelcome")
-            if welcomeGui then welcomeGui:Destroy() end
-            local borderGui = game:GetService("CoreGui"):FindFirstChild("wdfexBorder")
-            if borderGui then borderGui:Destroy() end
-            local hubGui = game:GetService("CoreGui"):FindFirstChild("wdfexHub")
-            if hubGui then hubGui:Destroy() end
         end)
-        Window:Close()
+        Notify("彩蛋已关闭")
     end
-})
+end)
 
--- 彩蛋开关
-local easterEggEnabled = false
-Tab_Settings:Toggle({
-    ["Title"] = "彩蛋开关",
-    ["Desc"] = "开启彩蛋功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        easterEggEnabled = bool
-        getgenv().EasterEgg = bool
-        
-        if bool then
-            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            Notify("彩蛋已开启")
-            
-            pcall(function()
-                local eggGui = Instance.new("ScreenGui")
-                eggGui.Name = "EasterEggGui"
-                eggGui.Parent = game:GetService("CoreGui")
-                eggGui.ResetOnSpawn = false
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Name = "EggLabel"
-                textLabel.Parent = eggGui
-                textLabel.Size = UDim2.new(0, 220, 0, 30)
-                textLabel.Position = UDim2.new(1, -230, 1, -40)
-                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                textLabel.BackgroundTransparency = 0.4
-                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                textLabel.TextSize = 16
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
-                textLabel.TextScaled = true
-                
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 8)
-                corner.Parent = textLabel
-            end)
-        else
-            pcall(function()
-                local eggGui = game:GetService("CoreGui"):FindFirstChild("EasterEggGui")
-                if eggGui then eggGui:Destroy() end
-            end)
-            Notify("彩蛋已关闭")
-        end
-    end
-})
-
-print("wdfex 圣奥里传送已加载")
-print("共23个传送点 + 彩色边框 + 欢迎弹窗")
+print("wdfex 圣奥里传送已加载（叶脚本UI风格）")
+print("共23个传送点")
