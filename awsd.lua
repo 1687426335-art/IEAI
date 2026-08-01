@@ -188,55 +188,6 @@ local function TeleportTo(pos)
     end)
 end
 
--- ===== 无限子弹超快射速（圣奥里专用） =====
-local infiniteAmmoEnabled = false
-local infiniteAmmoThread = nil
-
-local function StartInfiniteAmmo()
-    if infiniteAmmoThread then
-        task.cancel(infiniteAmmoThread)
-        infiniteAmmoThread = nil
-    end
-    
-    infiniteAmmoThread = task.spawn(function()
-        while infiniteAmmoEnabled and RunService.Heartbeat:Wait() do
-            pcall(function()
-                local garbage = getgc(true)
-                for _, tbl in pairs(garbage) do
-                    if type(tbl) == "table" then
-                        if rawget(tbl, "SHOOT_MODE") then
-                            rawset(tbl, "SHOOT_MODE", 2)
-                        end
-                        if rawget(tbl, "RPM") then
-                            rawset(tbl, "RPM", math.huge)
-                        end
-                        if rawget(tbl, "DAMAGE") then
-                            rawset(tbl, "DAMAGE", math.huge)
-                        end
-                    end
-                end
-                
-                local characterFolder = workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(LocalPlayer.Name)
-                if characterFolder then
-                    for _, gun in ipairs(characterFolder:GetChildren()) do
-                        local config = gun:FindFirstChild("Config")
-                        if config then
-                            local Ammo = config:FindFirstChild("Ammo")
-                            local TotalAmmo = config:FindFirstChild("TotalAmmo")
-                            if Ammo then
-                                Ammo.Value = math.huge
-                            end
-                            if TotalAmmo then
-                                TotalAmmo.Value = math.huge
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-end
-
 -- 显示欢迎弹窗
 ShowWelcome()
 
@@ -746,97 +697,33 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 枪械功能
+-- Tab: 飞天与飞车
 -------------------------------------------------------------------------
-local Tab_Gun = Window:Tab({
+local Tab_Fly = Window:Tab({
     ["Locked"] = false,
-    ["Title"] = "枪械功能",
+    ["Title"] = "飞天与飞车",
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_Gun:Section({
+Tab_Fly:Section({
     TextSize = 17,
-    ["Title"] = "枪械辅助功能",
+    ["Title"] = "飞天与飞车功能",
     TextXAlignment = "Left",
 })
 
--- 无后座力
-local noRecoilEnabled = false
-Tab_Gun:Toggle({
-    ["Title"] = "无后座力",
-    ["Desc"] = "消除枪械后座力",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        noRecoilEnabled = bool
-        if bool then
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") then
-                local tool = LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") or character:FindFirstChildWhichIsA("Tool")
-                if tool then
-                    for _, child in ipairs(tool:GetDescendants()) do
-                        if child:IsA("NumberValue") and child.Name:find("Recoil") then
-                            child.Value = 0
-                        end
-                    end
-                end
-                Notify("无后座力已开启")
-            end
-        else
-            Notify("无后座力已关闭")
-        end
+Tab_Fly:Button({
+    ["Title"] = "飞行",
+    ["Desc"] = "普通飞行",
+    ["Callback"] = function()
+        loadstring(game:HttpGet('https://pastebin.com/raw/U27yQRxS'))()
     end
 })
 
--- 快速射击
-local fastShootEnabled = false
-local fastShootConn = nil
-Tab_Gun:Toggle({
-    ["Title"] = "快速射击",
-    ["Desc"] = "提高射击速度",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        fastShootEnabled = bool
-        if fastShootConn then
-            fastShootConn:Disconnect()
-            fastShootConn = nil
-        end
-        if bool then
-            fastShootConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
-                    if tool then
-                        for i = 1, 5 do
-                            tool:Activate()
-                            task.wait(0.05)
-                        end
-                    end
-                end
-            end)
-            Notify("快速射击已开启")
-        else
-            Notify("快速射击已关闭")
-        end
-    end
-})
-
--- 无限子弹超快射速
-Tab_Gun:Toggle({
-    ["Title"] = "无限子弹超快射速",
-    ["Desc"] = "无限子弹 + 超快射速 + 秒杀",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        infiniteAmmoEnabled = bool
-        if bool then
-            StartInfiniteAmmo()
-            Notify("无限子弹超快射速已开启")
-        else
-            if infiniteAmmoThread then
-                task.cancel(infiniteAmmoThread)
-                infiniteAmmoThread = nil
-            end
-            Notify("无限子弹超快射速已关闭")
-        end
+Tab_Fly:Button({
+    ["Title"] = "飞车",
+    ["Desc"] = "让车飞起来",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/MHE1cbWF"))()
     end
 })
 
@@ -860,14 +747,6 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
-        if infiniteAmmoThread then
-            task.cancel(infiniteAmmoThread)
-            infiniteAmmoThread = nil
-        end
-        if fastShootConn then
-            fastShootConn:Disconnect()
-            fastShootConn = nil
-        end
         if _G.RangeConn then
             _G.RangeConn:Disconnect()
             _G.RangeConn = nil
@@ -936,4 +815,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex 圣奥里传送已加载")
-print("共23个传送点 + 透视 + 范围 + 枪械功能 + 彩色边框 + 欢迎弹窗")
+print("共23个传送点 + 透视 + 范围 + 飞行 + 飞车 + 彩色边框 + 欢迎弹窗")
