@@ -226,7 +226,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "脚本无防需要先执行皮脚本圣奥里否则概率被服务器“踢出”",
+    ["Title"] = "脚本无防需要先执行皮脚本圣奥里再执行此脚本",
     TextXAlignment = "Left",
 })
 
