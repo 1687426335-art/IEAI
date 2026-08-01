@@ -1,7 +1,7 @@
 -- ===== wdfex 圣奥里传送脚本 =====
 
 -- ===== 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里传送")
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.comxiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里传送")
 
 -- ===== 通知函数 =====
 local function Notify(text)
@@ -168,53 +168,39 @@ WorkerSection:Button("瞬移外卖目的地", function()
 
         local targetPos = nil
 
-        -- 找外卖订单目标标点（圣奥里专用）
+        -- 检测workspace里所有带任务标点特征的物体
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Position then
                 local name = obj.Name:lower()
-                -- 匹配外卖任务相关的标点名称
-                if name:find("delivery") or name:find("order") or name:find("pizza") or 
-                   name:find("target") or name:find("marker") or name:find("waypoint") or
-                   name:find("destination") or name:find("goal") or name:find("point") then
-                    -- 排除非法交易点（固定坐标）
-                    local pos = obj.Position
-                    if not (
-                        (pos.X > 2270 and pos.X < 2300 and pos.Z > 2640 and pos.Z < 2660) or
-                        (pos.X > 4390 and pos.X < 4420 and pos.Z > 1595 and pos.Z < 1620)
-                    ) then
-                        targetPos = pos
-                        break
-                    end
+                -- 匹配常见标点名称
+                if name:find("waypoint") or name:find("marker") or name:find("target") or 
+                   name:find("destination") or name:find("goal") or name:find("point") or
+                   name:find("pizza") or name:find("delivery") or name:find("order") or
+                   name:find("箭头") or name:find("标点") or name:find("导航") then
+                    targetPos = obj.Position
+                    break
                 end
             end
         end
 
-        -- 如果没找到，找最近的任务NPC
+        -- 如果没找到，用鼠标位置
         if not targetPos then
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
-                    local name = obj.Name:lower()
-                    if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") then
-                        local hrpPart = obj:FindFirstChild("HumanoidRootPart")
-                        if hrpPart and hrpPart.Position then
-                            targetPos = hrpPart.Position
-                            break
-                        end
-                    end
-                end
+            local mouse = player:GetMouse()
+            if mouse and mouse.Hit then
+                targetPos = mouse.Hit.Position
             end
         end
 
         if targetPos then
             TeleportTo(targetPos)
-            Notify("已瞬移到外卖目的地")
+            Notify("已瞬移")
         else
-            Notify("未找到外卖标点，请先接外卖任务")
+            Notify("未找到标点")
         end
     end)
 end)
 
-WorkerSection:Label("点击后直接瞬移到外卖订单目的地")
+WorkerSection:Label("鼠标对准标点后点击传送")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
@@ -271,4 +257,4 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
 end)
 
 print("wdfex 圣奥里传送脚本已加载")
-print("共24个传送点")
+print("共25个传送点")
