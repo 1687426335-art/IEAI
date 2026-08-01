@@ -188,6 +188,208 @@ local function TeleportTo(pos)
     end)
 end
 
+-- ===== 皮飞行功能 =====
+local flyEnabled = false
+local flySpeed = 50
+local flyBodyVelocity = nil
+local flyBodyGyro = nil
+local flyConnection = nil
+
+local function ToggleFly()
+    flyEnabled = not flyEnabled
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    
+    if not character or not humanoid or not hrp then
+        Notify("未找到角色")
+        return
+    end
+    
+    if flyEnabled then
+        -- 清除旧飞行对象
+        if flyBodyVelocity then flyBodyVelocity:Destroy() end
+        if flyBodyGyro then flyBodyGyro:Destroy() end
+        if flyConnection then flyConnection:Disconnect() end
+        
+        -- 禁用人类状态
+        for _, state in pairs(Enum.HumanoidStateType:GetEnumItems()) do
+            humanoid:SetStateEnabled(state, false)
+        end
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+        humanoid.ChangeState(Enum.HumanoidStateType.Physics)
+        
+        character.Animate.Disabled = true
+        
+        -- 创建飞行物理
+        flyBodyVelocity = Instance.new("BodyVelocity")
+        flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyVelocity.Parent = hrp
+        
+        flyBodyGyro = Instance.new("BodyGyro")
+        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyGyro.P = 9e5
+        flyBodyGyro.D = 500
+        flyBodyGyro.Parent = hrp
+        
+        -- 飞行更新循环
+        flyConnection = RunService.Heartbeat:Connect(function()
+            if not flyEnabled or not hrp or not hrp.Parent then
+                return
+            end
+            local camera = CurrentCamera
+            local moveDirection = Vector3.new()
+            local forward = camera.CFrame.LookVector
+            local right = camera.CFrame.RightVector
+            local up = camera.CFrame.UpVector
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDirection = moveDirection + forward
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDirection = moveDirection - forward
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveDirection = moveDirection - right
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveDirection = moveDirection + right
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                moveDirection = moveDirection + up
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                moveDirection = moveDirection - up
+            end
+            
+            if moveDirection.Magnitude > 0 then
+                moveDirection = moveDirection.Unit * flySpeed
+            end
+            
+            flyBodyVelocity.Velocity = moveDirection
+            flyBodyGyro.CFrame = camera.CFrame
+        end)
+        
+        Notify("飞行已开启 (WASD移动, 空格上升, Shift下降)")
+    else
+        -- 关闭飞行
+        if flyBodyVelocity then
+            flyBodyVelocity:Destroy()
+            flyBodyVelocity = nil
+        end
+        if flyBodyGyro then
+            flyBodyGyro:Destroy()
+            flyBodyGyro = nil
+        end
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
+        
+        -- 恢复人类状态
+        if humanoid then
+            for _, state in pairs(Enum.HumanoidStateType:GetEnumItems()) do
+                humanoid:SetStateEnabled(state, true)
+            end
+        end
+        if character and character:FindFirstChild("Animate") then
+            character.Animate.Disabled = false
+        end
+        Notify("飞行已关闭")
+    end
+end
+
+-- ===== 皮飞车功能 =====
+local carFlyEnabled = false
+local carFlySpeed = 50
+local carBV = nil
+local carBG = nil
+local carConnection = nil
+
+local function ToggleCarFly()
+    carFlyEnabled = not carFlyEnabled
+    local vehicle = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and LocalPlayer.Character.Humanoid.SeatPart
+    if not vehicle then
+        Notify("请先坐在车上")
+        carFlyEnabled = false
+        return
+    end
+    
+    local parent = vehicle.Parent
+    local rootPart = parent and parent:FindFirstChild("HumanoidRootPart") or vehicle
+    
+    if carFlyEnabled then
+        if carBV then carBV:Destroy() end
+        if carBG then carBG:Destroy() end
+        if carConnection then carConnection:Disconnect() end
+        
+        carBV = Instance.new("BodyVelocity")
+        carBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        carBV.Parent = rootPart
+        
+        carBG = Instance.new("BodyGyro")
+        carBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        carBG.P = 9e5
+        carBG.D = 500
+        carBG.Parent = rootPart
+        
+        carConnection = RunService.Heartbeat:Connect(function()
+            if not carFlyEnabled or not rootPart or not rootPart.Parent then
+                return
+            end
+            local camera = CurrentCamera
+            local moveDirection = Vector3.new()
+            local forward = camera.CFrame.LookVector
+            local right = camera.CFrame.RightVector
+            local up = camera.CFrame.UpVector
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDirection = moveDirection + forward
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDirection = moveDirection - forward
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                moveDirection = moveDirection - right
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                moveDirection = moveDirection + right
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                moveDirection = moveDirection + up
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                moveDirection = moveDirection - up
+            end
+            
+            if moveDirection.Magnitude > 0 then
+                moveDirection = moveDirection.Unit * carFlySpeed
+            end
+            
+            carBV.Velocity = moveDirection
+            carBG.CFrame = camera.CFrame
+        end)
+        
+        Notify("飞车已开启 (WASD移动, 空格上升, Shift下降)")
+    else
+        if carBV then
+            carBV:Destroy()
+            carBV = nil
+        end
+        if carBG then
+            carBG:Destroy()
+            carBG = nil
+        end
+        if carConnection then
+            carConnection:Disconnect()
+            carConnection = nil
+        end
+        Notify("飞车已关闭")
+    end
+end
+
 -- 显示欢迎弹窗
 ShowWelcome()
 
@@ -697,33 +899,73 @@ Tab_Range:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 飞天与飞车
+-- Tab: 飞行与飞车
 -------------------------------------------------------------------------
-local Tab_Fly = Window:Tab({
+local Tab_FlyCar = Window:Tab({
     ["Locked"] = false,
-    ["Title"] = "飞天与飞车",
+    ["Title"] = "飞行与飞车",
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_Fly:Section({
+Tab_FlyCar:Section({
     TextSize = 17,
-    ["Title"] = "飞天与飞车功能",
+    ["Title"] = "飞行功能",
     TextXAlignment = "Left",
 })
 
-Tab_Fly:Button({
-    ["Title"] = "飞行",
-    ["Desc"] = "普通飞行",
-    ["Callback"] = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/U27yQRxS'))()
+Tab_FlyCar:Toggle({
+    ["Title"] = "wdfex飞行",
+    ["Desc"] = "WASD移动，空格上升，Shift下降",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            ToggleFly()
+        else
+            if flyEnabled then
+                ToggleFly()
+            end
+        end
     end
 })
 
-Tab_Fly:Button({
-    ["Title"] = "飞车",
-    ["Desc"] = "让车飞起来",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/MHE1cbWF"))()
+Tab_FlyCar:Slider({
+    ["Title"] = "飞行速度",
+    ["Step"] = 1,
+    ["Value"] = { Min = 10, Default = 50, Max = 200 },
+    ["Callback"] = function(value)
+        flySpeed = type(value) == "table" and value[1] or value
+        Notify("飞行速度已设为 " .. flySpeed)
+    end
+})
+
+Tab_FlyCar:Section({
+    TextSize = 17,
+    ["Title"] = "飞车功能",
+    TextXAlignment = "Left",
+})
+
+Tab_FlyCar:Toggle({
+    ["Title"] = "wdfex飞车",
+    ["Desc"] = "坐在车上后开启，WASD移动",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            ToggleCarFly()
+        else
+            if carFlyEnabled then
+                ToggleCarFly()
+            end
+        end
+    end
+})
+
+Tab_FlyCar:Slider({
+    ["Title"] = "飞车速度",
+    ["Step"] = 1,
+    ["Value"] = { Min = 10, Default = 50, Max = 200 },
+    ["Callback"] = function(value)
+        carFlySpeed = type(value) == "table" and value[1] or value
+        Notify("飞车速度已设为 " .. carFlySpeed)
     end
 })
 
@@ -747,6 +989,8 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
+        if flyEnabled then ToggleFly() end
+        if carFlyEnabled then ToggleCarFly() end
         if _G.RangeConn then
             _G.RangeConn:Disconnect()
             _G.RangeConn = nil
@@ -815,4 +1059,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex 圣奥里传送已加载")
-print("共23个传送点 + 透视 + 范围 + 飞行 + 飞车 + 彩色边框 + 欢迎弹窗")
+print("共23个传送点 + 透视 + 范围 + 飞行与飞车 + 彩色边框 + 欢迎弹窗")
