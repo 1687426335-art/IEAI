@@ -1,7 +1,7 @@
 -- ===== wdfex 圣奥里传送脚本 =====
 
 -- ===== 加载UI =====
-local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.comxiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里传送")
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里传送")
 
 -- ===== 通知函数 =====
 local function Notify(text)
@@ -157,7 +157,7 @@ WorkerSection:Label("━━━━━━━━━━━━━━━━━━━�
 WorkerSection:Label("外卖员工专用功能")
 WorkerSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
-WorkerSection:Button("瞬移外卖目的地", function()
+WorkerSection:Button("瞬移附近NPC", function()
     pcall(function()
         local player = game.Players.LocalPlayer
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -166,41 +166,35 @@ WorkerSection:Button("瞬移外卖目的地", function()
             return
         end
 
-        local targetPos = nil
+        local nearestNpc = nil
+        local nearestDist = 50
 
-        -- 检测workspace里所有带任务标点特征的物体
         for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position then
+            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj ~= player.Character then
                 local name = obj.Name:lower()
-                -- 匹配常见标点名称
-                if name:find("waypoint") or name:find("marker") or name:find("target") or 
-                   name:find("destination") or name:find("goal") or name:find("point") or
-                   name:find("pizza") or name:find("delivery") or name:find("order") or
-                   name:find("箭头") or name:find("标点") or name:find("导航") then
-                    targetPos = obj.Position
-                    break
+                if name:find("npc") or name:find("mission") or name:find("quest") or name:find("task") or name:find("delivery") or name:find("order") then
+                    local npcHrp = obj:FindFirstChild("HumanoidRootPart")
+                    if npcHrp and npcHrp.Position then
+                        local dist = (hrp.Position - npcHrp.Position).Magnitude
+                        if dist < nearestDist then
+                            nearestDist = dist
+                            nearestNpc = npcHrp.Position
+                        end
+                    end
                 end
             end
         end
 
-        -- 如果没找到，用鼠标位置
-        if not targetPos then
-            local mouse = player:GetMouse()
-            if mouse and mouse.Hit then
-                targetPos = mouse.Hit.Position
-            end
-        end
-
-        if targetPos then
-            TeleportTo(targetPos)
-            Notify("已瞬移")
+        if nearestNpc then
+            TeleportTo(nearestNpc)
+            Notify("已瞬移到附近NPC")
         else
-            Notify("未找到标点")
+            Notify("50米内未找到NPC")
         end
     end)
 end)
 
-WorkerSection:Label("鼠标对准标点后点击传送")
+WorkerSection:Label("点击后自动瞬移到50米内的NPC")
 
 -- ===== 设置Tab =====
 local SettingsTab = UILibrary:Tab("『设置』", "18930406865")
