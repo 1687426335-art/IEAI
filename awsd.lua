@@ -33,7 +33,6 @@ local function ToggleATMPerspective()
     atm透视开关 = not atm透视开关
     
     if atm透视开关 then
-        -- 开启透视
         pcall(function()
             local player = game.Players.LocalPlayer
             local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -42,7 +41,6 @@ local function ToggleATMPerspective()
                 return
             end
 
-            -- 清除旧标记
             for _, marker in ipairs(atmMarkers) do
                 pcall(function() marker:Destroy() end)
             end
@@ -55,19 +53,17 @@ local function ToggleATMPerspective()
                     if name:find("atm") or name:find("bank") or name:find("cash") or name:find("money") or name:find("取款") or name:find("柜员") then
                         local dist = (hrp.Position - obj.Position).Magnitude
                         if dist < 500 then
-                            -- 创建标记球体
                             local marker = Instance.new("Part")
                             marker.Size = Vector3.new(1.5, 1.5, 1.5)
                             marker.Shape = Enum.PartType.Ball
                             marker.Position = obj.Position + Vector3.new(0, 2, 0)
                             marker.Anchored = true
                             marker.CanCollide = false
-                            marker.Transparency = 0.4
+                            marker.Transparency = 0.3
                             marker.BrickColor = BrickColor.new("Bright green")
                             marker.Name = "ATMPerspective"
                             marker.Parent = workspace
 
-                            -- 发光框
                             local box = Instance.new("SelectionBox")
                             box.Adornee = marker
                             box.Color3 = Color3.fromRGB(0, 255, 0)
@@ -75,9 +71,8 @@ local function ToggleATMPerspective()
                             box.Transparency = 0.3
                             box.Parent = marker
 
-                            -- 距离标签（BillboardGui）
                             local billboard = Instance.new("BillboardGui")
-                            billboard.Size = UDim2.new(0, 100, 0, 30)
+                            billboard.Size = UDim2.new(0, 120, 0, 30)
                             billboard.StudsOffset = Vector3.new(0, 3, 0)
                             billboard.AlwaysOnTop = true
                             billboard.Parent = marker
@@ -99,17 +94,23 @@ local function ToggleATMPerspective()
                 end
             end
 
-            Notify("透视开启，找到 " .. found .. " 个ATM机")
+            Notify("ATM透视开启，找到 " .. found .. " 个")
         end)
     else
-        -- 关闭透视，清除标记
         for _, marker in ipairs(atmMarkers) do
             pcall(function() marker:Destroy() end)
         end
         atmMarkers = {}
-        Notify("透视已关闭")
+        Notify("ATM透视已关闭")
     end
 end
+
+-- ===== 键盘快捷键 =====
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.P then
+        ToggleATMPerspective()
+    end
+end)
 
 -- ===== 公告Tab =====
 local AnnounceTab = UILibrary:Tab("『公告』", "18930406865")
@@ -240,13 +241,15 @@ local AtmTab = UILibrary:Tab("『ATM透视』", "18930406865")
 local AtmSection = AtmTab:section("ATM透视", true)
 
 AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
-AtmSection:Label("点击下方按钮开启/关闭ATM透视")
+AtmSection:Label("按 P 键开启/关闭ATM透视")
 AtmSection:Label("透视范围：500米")
 AtmSection:Label("━━━━━━━━━━━━━━━━━━━━")
 
 AtmSection:Toggle("ATM透视开关", "ATMPerspective", false, function(enabled)
     if enabled then
-        ToggleATMPerspective()
+        if not atm透视开关 then
+            ToggleATMPerspective()
+        end
     else
         if atm透视开关 then
             ToggleATMPerspective()
@@ -321,4 +324,4 @@ SettingsSection:Toggle("彩蛋开关", "EasterEgg", false, function(enabled)
 end)
 
 print("wdfex 圣奥里传送脚本已加载")
-print("共24个传送点 + ATM透视功能")
+print("共24个传送点 + ATM透视（按P键）")
