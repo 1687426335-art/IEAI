@@ -220,13 +220,13 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "有什么需要的功能可以向作者提出建议",
+    ["Title"] = "此版本为圣奥里传送脚本",
     TextXAlignment = "Left",
 })
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "脚本无防需要先执行皮脚本圣奥里再执行此脚本",
+    ["Title"] = "脚本无防踢，需要先执行皮脚本圣奥里",
     TextXAlignment = "Left",
 })
 
