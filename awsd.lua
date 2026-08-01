@@ -166,36 +166,19 @@ local function CreateColorfulBorder()
     end)
 end
 
--- ===== 通知函数 =====
-local function Notify(text)
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "wdfex",
-            Text = text,
-            Icon = "rbxassetid://18941716391",
-            Duration = 2,
-        })
-    end)
+-- ===== 彩虹颜色函数 =====
+local function GetRainbowColor()
+    local hue = tick() % 5 / 5
+    return Color3.fromHSV(hue, 1, 1)
 end
 
--- ===== 传送函数 =====
-local function TeleportTo(pos)
+-- ===== 应用彩虹渐变到所有文字 =====
+local function ApplyRainbowToAll()
     pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = CFrame.new(pos)
-        end
-    end)
-end
-
--- ===== 彩色文字渐变效果（应用到UI） =====
-local function ApplyRainbowText()
-    pcall(function()
-        task.wait(1)
+        task.wait(0.8)
         local hubGui = CoreGui:FindFirstChild("wdfexHub")
         if not hubGui then return end
         
-        -- 查找所有TextLabel和TextButton，应用彩虹颜色
         local function recursiveApply(parent)
             for _, child in ipairs(parent:GetChildren()) do
                 if child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -212,7 +195,6 @@ local function ApplyRainbowText()
                     gradient.Rotation = 0
                     gradient.Parent = child
                     
-                    -- 动画旋转
                     local tween = TweenService:Create(gradient, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {
                         Rotation = 360
                     })
@@ -225,6 +207,39 @@ local function ApplyRainbowText()
     end)
 end
 
+-- ===== 窗口标题彩色（标题栏） =====
+local function MakeTitleRainbow()
+    pcall(function()
+        task.wait(1)
+        local hubGui = CoreGui:FindFirstChild("wdfexHub")
+        if not hubGui then return end
+        
+        local titleBar = hubGui:FindFirstChild("Main")
+        if titleBar then
+            local titleLabel = titleBar:FindFirstChild("ScriptTitle")
+            if titleLabel then
+                local gradient = Instance.new("UIGradient")
+                gradient.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+                    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+                    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+                })
+                gradient.Rotation = 0
+                gradient.Parent = titleLabel
+                
+                local tween = TweenService:Create(gradient, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), {
+                    Rotation = 360
+                })
+                tween:Play()
+            end
+        end
+    end)
+end
+
 -- 显示欢迎弹窗
 ShowWelcome()
 
@@ -234,10 +249,11 @@ task.spawn(function()
     CreateColorfulBorder()
 end)
 
--- 应用彩色文字
+-- 应用彩虹文字
 task.spawn(function()
-    task.wait(1.5)
-    ApplyRainbowText()
+    task.wait(1.2)
+    ApplyRainbowToAll()
+    MakeTitleRainbow()
 end)
 
 -------------------------------------------------------------------------
