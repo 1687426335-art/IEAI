@@ -1,4 +1,4 @@
--- ===== wdfex 圣奥里完整版（传送 + 飞车 + ATM + 绘制） =====
+-- ===== wdfex 圣奥里完整版（传送 + 飞车 + 绘制 + ATM） =====
 
 -- ===== 加载UI =====
 local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/%E7%9A%AE%E8%84%9A%E6%9C%ACUI%E6%BA%90%E7%A0%81.lua"))():new("wdfex 圣奥里")
