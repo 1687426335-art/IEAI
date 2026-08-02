@@ -487,7 +487,7 @@ Tab_Illegal:Button({
 
 Tab_Illegal:Button({
     ["Title"] = "非法交易任务接取点2",
-    ["Desc"] = "传送至非法交易任务接取点",
+    ["Desc"] = "传送至非法交易任务接取点2",
     ["Callback"] = function()
         TeleportTo(Vector3.new(4248.69, 3.02, 690.16))
     end
@@ -926,52 +926,133 @@ local Tab_Shop = Window:Tab({
     ["Icon"] = "rbxassetid://18520370419",
 })
 
--- 黑商区域
-local BlackMarketSection = Tab_Shop:section("黑商", true)
+Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_Shop:Label("黑商")
+Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
 
-local blackMarketItems = {
-    {name = "解密电路", desc = "用于入侵自动取款机", cost = "$150"},
-    {name = "撬锁装置", desc = "解锁建筑及大部分车辆", cost = "$400"},
-    {name = "入侵工具", desc = "入侵电子系统", cost = "$600"},
-    {name = "C4", desc = "炸毁已锁定的入口", cost = "$800"},
-    {name = "绿色USB", desc = "获取乔克镇银行账号", cost = "$750"},
-    {name = "工作人员涂鸦", desc = "将您的队伍标志喷涂在墙壁上", cost = "$250"},
-}
+Tab_Shop:Button({
+    ["Title"] = "解密电路  $150",
+    ["Desc"] = "用于入侵自动取款机",
+    ["Callback"] = function()
+        Notify("正在购买: 解密电路")
+    end
+})
 
-for _, item in ipairs(blackMarketItems) do
-    BlackMarketSection:Button({
-        ["Title"] = item.name .. "  " .. item.cost,
-        ["Desc"] = item.desc,
-        ["Callback"] = function()
-            Notify("正在购买: " .. item.name)
-        end
-    })
-end
+Tab_Shop:Button({
+    ["Title"] = "撬锁装置  $400",
+    ["Desc"] = "解锁建筑及大部分车辆",
+    ["Callback"] = function()
+        Notify("正在购买: 撬锁装置")
+    end
+})
 
--- 武器商店区域
-local WeaponSection = Tab_Shop:section("武器商店", true)
+Tab_Shop:Button({
+    ["Title"] = "入侵工具  $600",
+    ["Desc"] = "入侵电子系统",
+    ["Callback"] = function()
+        Notify("正在购买: 入侵工具")
+    end
+})
 
-local weapons = {
-    "格洛克17",
-    "战斧",
-    "球棒",
-    "镭刀",
-    "M19",
-    "死神44",
-    "MAC-11",
-    "MP5",
-    "P90",
-}
+Tab_Shop:Button({
+    ["Title"] = "C4  $800",
+    ["Desc"] = "炸毁已锁定的入口",
+    ["Callback"] = function()
+        Notify("正在购买: C4")
+    end
+})
 
-for _, weapon in ipairs(weapons) do
-    WeaponSection:Button({
-        ["Title"] = weapon,
-        ["Desc"] = "点击购买 " .. weapon,
-        ["Callback"] = function()
-            Notify("正在购买: " .. weapon)
-        end
-    })
-end
+Tab_Shop:Button({
+    ["Title"] = "绿色USB  $750",
+    ["Desc"] = "获取乔克镇银行账号",
+    ["Callback"] = function()
+        Notify("正在购买: 绿色USB")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "工作人员涂鸦  $250",
+    ["Desc"] = "将您的队伍标志喷涂在墙壁上",
+    ["Callback"] = function()
+        Notify("正在购买: 工作人员涂鸦")
+    end
+})
+
+Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_Shop:Label("武器商店")
+Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
+
+Tab_Shop:Button({
+    ["Title"] = "格洛克17",
+    ["Desc"] = "点击购买 格洛克17",
+    ["Callback"] = function()
+        Notify("正在购买: 格洛克17")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "战斧",
+    ["Desc"] = "点击购买 战斧",
+    ["Callback"] = function()
+        Notify("正在购买: 战斧")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "球棒",
+    ["Desc"] = "点击购买 球棒",
+    ["Callback"] = function()
+        Notify("正在购买: 球棒")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "镭刀",
+    ["Desc"] = "点击购买 镭刀",
+    ["Callback"] = function()
+        Notify("正在购买: 镭刀")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "M19",
+    ["Desc"] = "点击购买 M19",
+    ["Callback"] = function()
+        Notify("正在购买: M19")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "死神44",
+    ["Desc"] = "点击购买 死神44",
+    ["Callback"] = function()
+        Notify("正在购买: 死神44")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "MAC-11",
+    ["Desc"] = "点击购买 MAC-11",
+    ["Callback"] = function()
+        Notify("正在购买: MAC-11")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "MP5",
+    ["Desc"] = "点击购买 MP5",
+    ["Callback"] = function()
+        Notify("正在购买: MP5")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "P90",
+    ["Desc"] = "点击购买 P90",
+    ["Callback"] = function()
+        Notify("正在购买: P90")
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 设置
