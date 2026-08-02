@@ -523,12 +523,130 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "玩家透视",
+    ["Title"] = "玩家透视（含血量/距离/名字/骨骼）",
     TextXAlignment = "Left",
 })
 
 local espEnabled = false
 local espObjects = {}
+
+local function CreateSkeletonESP(player)
+    local character = player.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    -- 获取玩家信息
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local health = humanoid and math.floor(humanoid.Health) or 0
+    local distance = rootPart and math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) or 0)
+    
+    -- 主Billboard
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 200, 0, 80)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = rootPart
+    table.insert(espObjects, billboard)
+    
+    -- 名字
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 25)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextSize = 16
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextStrokeTransparency = 0.3
+    nameLabel.Parent = billboard
+    table.insert(espObjects, nameLabel)
+    
+    -- 血量条背景
+    local healthBg = Instance.new("Frame")
+    healthBg.Size = UDim2.new(0.8, 0, 0, 8)
+    healthBg.Position = UDim2.new(0.1, 0, 0, 28)
+    healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    healthBg.BorderSizePixel = 0
+    healthBg.Parent = billboard
+    table.insert(espObjects, healthBg)
+    
+    -- 血量条
+    local healthBar = Instance.new("Frame")
+    healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
+    healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+    healthBar.BorderSizePixel = 0
+    healthBar.Parent = healthBg
+    table.insert(espObjects, healthBar)
+    
+    -- 血量数值
+    local healthLabel = Instance.new("TextLabel")
+    healthLabel.Size = UDim2.new(1, 0, 0, 15)
+    healthLabel.Position = UDim2.new(0, 0, 0, 38)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.Text = health .. " HP"
+    healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    healthLabel.TextSize = 12
+    healthLabel.Font = Enum.Font.Gotham
+    healthLabel.Parent = billboard
+    table.insert(espObjects, healthLabel)
+    
+    -- 距离
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0, 15)
+    distLabel.Position = UDim2.new(0, 0, 0, 55)
+    distLabel.BackgroundTransparency = 1
+    distLabel.Text = distance .. "m"
+    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    distLabel.TextSize = 12
+    distLabel.Font = Enum.Font.Gotham
+    distLabel.Parent = billboard
+    table.insert(espObjects, distLabel)
+    
+    -- 骨骼（连接关节）
+    local joints = {
+        {"Head", "UpperTorso"},
+        {"UpperTorso", "LowerTorso"},
+        {"UpperTorso", "LeftUpperArm"},
+        {"UpperTorso", "RightUpperArm"},
+        {"LeftUpperArm", "LeftLowerArm"},
+        {"RightUpperArm", "RightLowerArm"},
+        {"LowerTorso", "LeftUpperLeg"},
+        {"LowerTorso", "RightUpperLeg"},
+        {"LeftUpperLeg", "LeftLowerLeg"},
+        {"RightUpperLeg", "RightLowerLeg"},
+    }
+    
+    for _, joint in ipairs(joints) do
+        local part1 = character:FindFirstChild(joint[1])
+        local part2 = character:FindFirstChild(joint[2])
+        if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
+            local line = Instance.new("SelectionBox")
+            line.Adornee = part1
+            line.Color3 = Color3.fromRGB(0, 255, 255)
+            line.LineThickness = 0.15
+            line.Transparency = 0.5
+            line.Parent = part1
+            table.insert(espObjects, line)
+        end
+    end
+    
+    -- 骨骼点标记
+    local boneParts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"}
+    for _, boneName in ipairs(boneParts) do
+        local part = character:FindFirstChild(boneName)
+        if part and part:IsA("BasePart") then
+            local sphere = Instance.new("SelectionBox")
+            sphere.Adornee = part
+            sphere.Color3 = Color3.fromRGB(0, 255, 255)
+            sphere.LineThickness = 0.1
+            sphere.Transparency = 0.3
+            sphere.Parent = part
+            table.insert(espObjects, sphere)
+        end
+    end
+end
 
 local function ToggleESP()
     espEnabled = not espEnabled
@@ -539,37 +657,9 @@ local function ToggleESP()
         end
         espObjects = {}
         
-        local found = 0
         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = player.Character.HumanoidRootPart
-                
-                local box = Instance.new("BoxHandleAdornment")
-                box.Size = Vector3.new(4, 5, 2)
-                box.Adornee = hrp
-                box.Color3 = Color3.fromRGB(0, 255, 0)
-                box.Transparency = 0.5
-                box.ZIndex = 0
-                box.Parent = hrp
-                table.insert(espObjects, box)
-                
-                local billboard = Instance.new("BillboardGui")
-                billboard.Size = UDim2.new(0, 120, 0, 30)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Parent = hrp
-                
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = player.Name
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 14
-                label.Font = Enum.Font.GothamBold
-                label.Parent = billboard
-                table.insert(espObjects, billboard)
-                
-                found = found + 1
+            if player ~= LocalPlayer then
+                CreateSkeletonESP(player)
             end
         end
     else
@@ -581,8 +671,8 @@ local function ToggleESP()
 end
 
 Tab_ESP:Toggle({
-    ["Title"] = "玩家透视",
-    ["Desc"] = "显示所有玩家的位置",
+    ["Title"] = "玩家透视（血量/距离/名字/骨骼）",
+    ["Desc"] = "显示所有玩家的完整信息",
     ["Default"] = false,
     ["Callback"] = function(bool)
         if bool then
