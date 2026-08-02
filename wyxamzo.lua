@@ -54,7 +54,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "🎉 欢迎使用 wdfex 脚本"
+        label.Text = " 欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -412,7 +412,7 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "拆车场",
+    ["Title"] = "拆车的地方",
     ["Desc"] = "传送至拆车场",
     ["Callback"] = function()
         TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
