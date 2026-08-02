@@ -272,14 +272,6 @@ Tab_General:Button({
 })
 
 Tab_General:Button({
-    ["Title"] = "飞行",
-    ["Desc"] = "点击开启皮脚本飞行V2",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/114514lzkill/-/refs/heads/main/%E9%A3%9E%E8%A1%8C%E8%84%9A%E6%9C%AC.lua"))()
-    end
-})
-
-Tab_General:Button({
     ["Title"] = "飞车",
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
