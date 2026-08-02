@@ -300,8 +300,8 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "黑色市场",
-    ["Desc"] = "传送至黑色市场",
+    ["Title"] = "黑市",
+    ["Desc"] = "传送至黑市",
     ["Callback"] = function()
         TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
     end
@@ -388,7 +388,7 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "游轮码头",
+    ["Title"] = "游艇码头",
     ["Desc"] = "传送至游轮码头",
     ["Callback"] = function()
         TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
