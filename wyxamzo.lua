@@ -264,7 +264,7 @@ Tab_General:Section({
 })
 
 Tab_General:Button({
-    ["Title"] = "wdfex飞行",
+    ["Title"] = "飞天",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
@@ -272,7 +272,15 @@ Tab_General:Button({
 })
 
 Tab_General:Button({
-    ["Title"] = "wdfex飞车",
+    ["Title"] = "飞行",
+    ["Desc"] = "点击开启皮脚本飞行V2",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/114514lzkill/-/refs/heads/main/%E9%A3%9E%E8%A1%8C%E8%84%9A%E6%9C%AC.lua"))()
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "飞车",
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
