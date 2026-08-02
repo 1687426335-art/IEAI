@@ -75,82 +75,6 @@ local function ShowWelcome()
         outTween:Play()
         outTween.Completed:Wait()
         welcomeGui:Destroy()
-        
-        -- 欢迎提示结束后显示防挂机与反作弊提示
-        ShowAntiCheatNotice()
-    end)
-end
-
--- ===== 防挂机与反作弊提示 =====
-local function ShowAntiCheatNotice()
-    pcall(function()
-        local noticeGui = Instance.new("ScreenGui")
-        noticeGui.Name = "wdfexNotice"
-        noticeGui.ResetOnSpawn = false
-        noticeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        noticeGui.Parent = CoreGui
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 360, 0, 50)
-        frame.Position = UDim2.new(1, -380, 0, 80)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.2
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(0, 255, 100)
-        frame.ClipsDescendants = true
-        frame.Parent = noticeGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = frame
-        
-        local colorBar = Instance.new("Frame")
-        colorBar.Size = UDim2.new(0, 5, 1, 0)
-        colorBar.Position = UDim2.new(0, 0, 0, 0)
-        colorBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-        colorBar.BorderSizePixel = 0
-        colorBar.Parent = frame
-        
-        local corner3 = Instance.new("UICorner")
-        corner3.CornerRadius = UDim.new(0, 5)
-        corner3.Parent = colorBar
-        
-        local icon = Instance.new("TextLabel")
-        icon.Size = UDim2.new(0, 30, 1, 0)
-        icon.Position = UDim2.new(0, 8, 0, 0)
-        icon.BackgroundTransparency = 1
-        icon.Text = "🛡️"
-        icon.TextColor3 = Color3.fromRGB(0, 255, 100)
-        icon.TextSize = 22
-        icon.Font = Enum.Font.GothamBold
-        icon.TextXAlignment = Enum.TextXAlignment.Center
-        icon.Parent = frame
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -45, 1, 0)
-        label.Position = UDim2.new(0, 40, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = "已开启防挂机与反作弊保护"
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 15
-        label.Font = Enum.Font.GothamBold
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
-        frame.Position = UDim2.new(1, 0, 0, 80)
-        local tween = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -380, 0, 80)
-        })
-        tween:Play()
-        
-        task.wait(6)
-        
-        local outTween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, 0, 0, 80)
-        })
-        outTween:Play()
-        outTween.Completed:Wait()
-        noticeGui:Destroy()
     end)
 end
 
@@ -283,12 +207,14 @@ local function SpoofMovement()
     local oldWalkSpeed = humanoid.WalkSpeed
     local oldJumpPower = humanoid.JumpPower
     
+    -- 每帧上报正常数据，掩盖真实速度
     RunService.RenderStepped:Connect(function()
         if not AntiCheat.enabled then return end
         if not LocalPlayer.Character then return end
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if not hum then return end
         
+        -- 限制最大速度，防止触发检测
         if hum.WalkSpeed > AntiCheat.speedLimit then
             hum.WalkSpeed = AntiCheat.speedLimit
         end
@@ -298,7 +224,7 @@ local function SpoofMovement()
     end)
 end
 
--- 传送伪装
+-- 传送伪装（防止瞬移检测）
 local function SafeTeleport(pos)
     if not AntiCheat.enabled then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -311,8 +237,10 @@ local function SafeTeleport(pos)
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
+    -- 先检查距离，如果太远则分段传送
     local distance = (hrp.Position - pos).Magnitude
     if distance > 100 then
+        -- 分段传送，模拟正常移动
         local steps = math.min(math.floor(distance / 10), 20)
         for i = 1, steps do
             local newPos = hrp.Position:Lerp(pos, i / steps)
@@ -338,6 +266,7 @@ end
 -- 隐藏注入器特征
 local function HideInjector()
     pcall(function()
+        -- 尝试清除常见检测变量
         if getgenv then
             local g = getgenv()
             for k, v in pairs(g) do
@@ -352,6 +281,7 @@ end
 -- 检测服务器反作弊事件并拦截
 local function BlockKickEvents()
     pcall(function()
+        -- 拦截踢出事件
         for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
             if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
                 local name = remote.Name:lower()
@@ -359,6 +289,7 @@ local function BlockKickEvents()
                     local oldFire = remote.FireServer
                     if oldFire then
                         remote.FireServer = function(...)
+                            -- 不执行，直接返回
                             return
                         end
                     end
@@ -376,6 +307,7 @@ local function InitAntiCheat()
     HideInjector()
     BlockKickEvents()
     
+    -- 每5秒清理一次检测痕迹
     task.spawn(function()
         while AntiCheat.enabled do
             task.wait(5)
@@ -387,7 +319,7 @@ end
 -- 启动过检测
 InitAntiCheat()
 
--- 显示欢迎弹窗（会自动触发防挂机提示）
+-- 显示欢迎弹窗
 ShowWelcome()
 
 -- 创建彩色边框
@@ -1169,8 +1101,6 @@ Tab_Settings:Button({
             if eggGui then eggGui:Destroy() end
             local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
             if welcomeGui then welcomeGui:Destroy() end
-            local noticeGui = CoreGui:FindFirstChild("wdfexNotice")
-            if noticeGui then noticeGui:Destroy() end
             local borderGui = CoreGui:FindFirstChild("wdfexBorder")
             if borderGui then borderGui:Destroy() end
             local hubGui = CoreGui:FindFirstChild("wdfexHub")
