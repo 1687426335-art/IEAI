@@ -267,18 +267,6 @@ Tab_General:Button({
     end
 })
 
-Tab_General:Textbox({
-    ["Title"] = "设置速度",
-    ["Desc"] = "输入步行速度数值",
-    ["Default"] = "",
-    ["Callback"] = function(value)
-        local speed = tonumber(value)
-        if speed and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = speed
-        end
-    end
-})
-
 -------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
@@ -542,6 +530,49 @@ Tab_ESP:Section({
 local espEnabled = false
 local espObjects = {}
 
+local function GetPlayerStatus(player)
+    local status = "平民"
+    local isWanted = false
+    
+    -- 检测是否有通缉状态
+    if player.Character then
+        for _, child in ipairs(player.Character:GetDescendants()) do
+            if child:IsA("BoolValue") or child:IsA("StringValue") then
+                local name = child.Name:lower()
+                if name:find("wanted") or name:find("通缉") or name:find("criminal") then
+                    isWanted = true
+                    break
+                end
+            end
+        end
+    end
+    
+    -- 检测队伍
+    if player.Team then
+        local teamName = player.Team.Name or ""
+        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+            status = "警察"
+        elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then
+            status = "匪徒"
+            isWanted = true
+        elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then
+            status = "医疗"
+        elseif teamName:find("消防") or teamName:find("Fire") then
+            status = "消防"
+        elseif teamName:find("道路") or teamName:find("Road") then
+            status = "道路"
+        else
+            status = "平民"
+        end
+    end
+    
+    if isWanted then
+        status = "通缉犯"
+    end
+    
+    return status
+end
+
 local function CreateSkeletonESP(player)
     local character = player.Character
     if not character then return end
@@ -552,34 +583,67 @@ local function CreateSkeletonESP(player)
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     local health = humanoid and math.floor(humanoid.Health) or 0
     local distance = rootPart and math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) or 0)
+    local status = GetPlayerStatus(player)
+    
+    -- 颜色根据状态变化
+    local statusColor = Color3.fromRGB(0, 255, 0)
+    if status == "通缉犯" then
+        statusColor = Color3.fromRGB(255, 0, 0)
+    elseif status == "警察" then
+        statusColor = Color3.fromRGB(0, 100, 255)
+    elseif status == "匪徒" then
+        statusColor = Color3.fromRGB(255, 100, 0)
+    elseif status == "医疗" then
+        statusColor = Color3.fromRGB(0, 255, 100)
+    elseif status == "消防" then
+        statusColor = Color3.fromRGB(255, 150, 0)
+    elseif status == "道路" then
+        statusColor = Color3.fromRGB(255, 255, 0)
+    end
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 160, 0, 60)
+    billboard.Size = UDim2.new(0, 160, 0, 80)
     billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = rootPart
     table.insert(espObjects, billboard)
     
+    -- 名字
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 18)
+    nameLabel.Size = UDim2.new(1, 0, 0, 16)
     nameLabel.Position = UDim2.new(0, 0, 0, 0)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = player.Name
     nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.TextSize = 13
+    nameLabel.TextSize = 12
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextStrokeTransparency = 0.3
     nameLabel.Parent = billboard
     table.insert(espObjects, nameLabel)
     
+    -- 状态（队伍/通缉）
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, 0, 0, 14)
+    statusLabel.Position = UDim2.new(0, 0, 0, 17)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = status
+    statusLabel.TextColor3 = statusColor
+    statusLabel.TextSize = 11
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.TextStrokeTransparency = 0.3
+    statusLabel.Parent = billboard
+    table.insert(espObjects, statusLabel)
+    
+    -- 血量条背景
     local healthBg = Instance.new("Frame")
-    healthBg.Size = UDim2.new(0.7, 0, 0, 6)
-    healthBg.Position = UDim2.new(0.15, 0, 0, 20)
+    healthBg.Size = UDim2.new(0.7, 0, 0, 5)
+    healthBg.Position = UDim2.new(0.15, 0, 0, 33)
     healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     healthBg.BorderSizePixel = 0
     healthBg.Parent = billboard
     table.insert(espObjects, healthBg)
     
+    -- 血量条
     local healthBar = Instance.new("Frame")
     healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
     healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
@@ -587,27 +651,57 @@ local function CreateSkeletonESP(player)
     healthBar.Parent = healthBg
     table.insert(espObjects, healthBar)
     
+    -- 血量数值
     local healthLabel = Instance.new("TextLabel")
-    healthLabel.Size = UDim2.new(1, 0, 0, 14)
-    healthLabel.Position = UDim2.new(0, 0, 0, 28)
+    healthLabel.Size = UDim2.new(1, 0, 0, 12)
+    healthLabel.Position = UDim2.new(0, 0, 0, 40)
     healthLabel.BackgroundTransparency = 1
     healthLabel.Text = health .. " HP"
-    healthLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    healthLabel.TextSize = 11
+    healthLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    healthLabel.TextSize = 10
     healthLabel.Font = Enum.Font.Gotham
     healthLabel.Parent = billboard
     table.insert(espObjects, healthLabel)
     
+    -- 距离
     local distLabel = Instance.new("TextLabel")
-    distLabel.Size = UDim2.new(1, 0, 0, 14)
-    distLabel.Position = UDim2.new(0, 0, 0, 42)
+    distLabel.Size = UDim2.new(1, 0, 0, 12)
+    distLabel.Position = UDim2.new(0, 0, 0, 54)
     distLabel.BackgroundTransparency = 1
     distLabel.Text = distance .. "m"
-    distLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    distLabel.TextSize = 11
+    distLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    distLabel.TextSize = 10
     distLabel.Font = Enum.Font.Gotham
     distLabel.Parent = billboard
     table.insert(espObjects, distLabel)
+end
+
+-- 更新血量循环
+local function UpdateESPHealth()
+    for _, obj in ipairs(espObjects) do
+        if obj:IsA("BillboardGui") then
+            local rootPart = obj.Parent
+            if rootPart and rootPart:IsA("BasePart") then
+                local character = rootPart.Parent
+                if character and character:IsA("Model") then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    local health = humanoid and math.floor(humanoid.Health) or 0
+                    for _, child in ipairs(obj:GetChildren()) do
+                        if child:IsA("TextLabel") and child.Text and child.Text:find("HP") then
+                            child.Text = health .. " HP"
+                        end
+                        if child:IsA("Frame") and child.Size then
+                            local healthBar = child:FindFirstChildWhichIsA("Frame")
+                            if healthBar then
+                                healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
+                                healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 local function ToggleESP()
@@ -624,6 +718,15 @@ local function ToggleESP()
                 CreateSkeletonESP(player)
             end
         end
+        
+        -- 启动血量更新循环
+        if espEnabled then
+            RunService.Heartbeat:Connect(function()
+                if espEnabled then
+                    UpdateESPHealth()
+                end
+            end)
+        end
     else
         for _, obj in ipairs(espObjects) do
             pcall(function() obj:Destroy() end)
@@ -633,8 +736,8 @@ local function ToggleESP()
 end
 
 Tab_ESP:Toggle({
-    ["Title"] = "玩家透视（血量/距离/名字/骨骼）",
-    ["Desc"] = "显示所有玩家的完整信息",
+    ["Title"] = "玩家透视（血量/距离/名字/队伍/通缉）",
+    ["Desc"] = "显示所有玩家的完整信息（含队伍和通缉状态）",
     ["Default"] = false,
     ["Callback"] = function(bool)
         if bool then
@@ -874,7 +977,7 @@ Tab_Settings:Toggle({
                 textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                 textLabel.TextSize = 16
                 textLabel.Font = Enum.Font.GothamBold
-                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
+                textLabel.Text = "你还想要彩蛋赶紧去送货吧🤣"
                 textLabel.TextScaled = true
                 
                 local corner = Instance.new("UICorner")
