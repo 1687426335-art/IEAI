@@ -167,141 +167,15 @@ local function CreateColorfulBorder()
     end)
 end
 
--- ===== 过检测与防封系统 =====
-local AntiCheat = {
-    enabled = true,
-    speedLimit = 60,
-    jumpLimit = 100,
-    teleportDelay = 0.15,
-    fakePing = true,
-    spoofMovement = true,
-}
-
--- 伪造网络延迟
-local function SpoofPing()
-    if not AntiCheat.fakePing then return end
+-- ===== 传送函数 =====
+local function TeleportTo(pos)
     pcall(function()
-        local metatable = getrawmetatable(game) or {}
-        local oldIndex = metatable.__index
-        if not oldIndex then return end
-        setreadonly(metatable, false)
-        metatable.__index = function(self, key)
-            if key == "Send" then
-                return function(...)
-                    task.wait(math.random(30, 120) / 1000)
-                    return oldIndex(self, key)(...)
-                end
-            end
-            return oldIndex(self, key)
-        end
-        setreadonly(metatable, true)
-    end)
-end
-
--- 伪造移动数据
-local function SpoofMovement()
-    if not AntiCheat.spoofMovement then return end
-    RunService.RenderStepped:Connect(function()
-        if not AntiCheat.enabled then return end
-        if not LocalPlayer.Character then return end
-        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-        if hum.WalkSpeed > AntiCheat.speedLimit then
-            hum.WalkSpeed = AntiCheat.speedLimit
-        end
-        if hum.JumpPower > AntiCheat.jumpLimit then
-            hum.JumpPower = AntiCheat.jumpLimit
-        end
-    end)
-end
-
--- 安全传送（防瞬移检测）
-local function SafeTeleport(pos)
-    if not AntiCheat.enabled then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             hrp.CFrame = CFrame.new(pos)
         end
-        return
-    end
-    
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    local distance = (hrp.Position - pos).Magnitude
-    if distance > 100 then
-        local steps = math.min(math.floor(distance / 10), 20)
-        for i = 1, steps do
-            local newPos = hrp.Position:Lerp(pos, i / steps)
-            hrp.CFrame = CFrame.new(newPos)
-            task.wait(AntiCheat.teleportDelay / steps)
-        end
-    end
-    
-    hrp.CFrame = CFrame.new(pos)
-    task.wait(AntiCheat.teleportDelay)
-end
-
--- 反挂机
-local function AntiAFK()
-    local vu = game:GetService("VirtualUser")
-    LocalPlayer.Idled:Connect(function()
-        vu:Button2Down(Vector2.new(0, 0), CurrentCamera.CFrame)
-        task.wait(1)
-        vu:Button2Up(Vector2.new(0, 0), CurrentCamera.CFrame)
     end)
 end
-
--- 隐藏注入器特征
-local function HideInjector()
-    pcall(function()
-        if getgenv then
-            local g = getgenv()
-            for k, v in pairs(g) do
-                if type(k) == "string" and (k:lower():find("inject") or k:lower():find("executor") or k:lower():find("cheat")) then
-                    g[k] = nil
-                end
-            end
-        end
-    end)
-end
-
--- 拦截踢出事件
-local function BlockKickEvents()
-    pcall(function()
-        for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                local name = remote.Name:lower()
-                if name:find("kick") or name:find("ban") or name:find("detect") or name:find("anticheat") then
-                    local oldFire = remote.FireServer
-                    if oldFire then
-                        remote.FireServer = function(...)
-                            return
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- 初始化过检测
-local function InitAntiCheat()
-    SpoofPing()
-    SpoofMovement()
-    AntiAFK()
-    HideInjector()
-    BlockKickEvents()
-    
-    task.spawn(function()
-        while AntiCheat.enabled do
-            task.wait(5)
-            HideInjector()
-        end
-    end)
-end
-
-InitAntiCheat()
 
 -- 显示欢迎弹窗
 ShowWelcome()
@@ -394,15 +268,6 @@ Tab_General:Button({
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "过检测防封",
-    ["Desc"] = "点击开启防封保护",
-    ["Callback"] = function()
-        AntiCheat.enabled = true
-        InitAntiCheat()
-    end
-})
-
 -------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
@@ -422,7 +287,7 @@ Tab_Teleport:Button({
     ["Title"] = "枪店门口",
     ["Desc"] = "传送至枪店门口",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-330.09, 2.63, 24.57))
+        TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
     end
 })
 
@@ -430,7 +295,7 @@ Tab_Teleport:Button({
     ["Title"] = "枪械商店",
     ["Desc"] = "传送至枪械商店",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-336.86, -205.07, 61.75))
+        TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
     end
 })
 
@@ -438,7 +303,7 @@ Tab_Teleport:Button({
     ["Title"] = "黑色市场",
     ["Desc"] = "传送至黑色市场",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(1040.91, -22.73, 899.80))
+        TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
     end
 })
 
@@ -446,7 +311,7 @@ Tab_Teleport:Button({
     ["Title"] = "小银行",
     ["Desc"] = "传送至小银行",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-667.74, 2.63, -67.18))
+        TeleportTo(Vector3.new(-667.74, 2.63, -67.18))
     end
 })
 
@@ -454,7 +319,7 @@ Tab_Teleport:Button({
     ["Title"] = "大银行",
     ["Desc"] = "传送至大银行",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3134.64, 6.12, -169.70))
+        TeleportTo(Vector3.new(3134.64, 6.12, -169.70))
     end
 })
 
@@ -462,7 +327,7 @@ Tab_Teleport:Button({
     ["Title"] = "农场",
     ["Desc"] = "传送至农场",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-1269.56, 2.57, 2559.51))
+        TeleportTo(Vector3.new(-1269.56, 2.57, 2559.51))
     end
 })
 
@@ -470,7 +335,7 @@ Tab_Teleport:Button({
     ["Title"] = "警察局",
     ["Desc"] = "传送至警察局",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3313.52, 3.02, -476.74))
+        TeleportTo(Vector3.new(3313.52, 3.02, -476.74))
     end
 })
 
@@ -478,7 +343,7 @@ Tab_Teleport:Button({
     ["Title"] = "医院",
     ["Desc"] = "传送至医院",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3892.10, 3.02, -185.78))
+        TeleportTo(Vector3.new(3892.10, 3.02, -185.78))
     end
 })
 
@@ -486,7 +351,7 @@ Tab_Teleport:Button({
     ["Title"] = "游戏厅",
     ["Desc"] = "传送至游戏厅",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(2936.71, 2.63, 1688.17))
+        TeleportTo(Vector3.new(2936.71, 2.63, 1688.17))
     end
 })
 
@@ -494,7 +359,7 @@ Tab_Teleport:Button({
     ["Title"] = "超市",
     ["Desc"] = "传送至超市",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3936.62, 3.04, 1136.92))
+        TeleportTo(Vector3.new(3936.62, 3.04, 1136.92))
     end
 })
 
@@ -502,7 +367,7 @@ Tab_Teleport:Button({
     ["Title"] = "平民出生点",
     ["Desc"] = "传送至平民出生点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3741.79, 3.72, -438.95))
+        TeleportTo(Vector3.new(3741.79, 3.72, -438.95))
     end
 })
 
@@ -510,7 +375,7 @@ Tab_Teleport:Button({
     ["Title"] = "约克镇出生点",
     ["Desc"] = "传送至约克镇出生点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-221.64, 3.04, -84.56))
+        TeleportTo(Vector3.new(-221.64, 3.04, -84.56))
     end
 })
 
@@ -518,7 +383,7 @@ Tab_Teleport:Button({
     ["Title"] = "躲藏点",
     ["Desc"] = "传送至躲藏点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-1505.97, 253.98, -476.43))
+        TeleportTo(Vector3.new(-1505.97, 253.98, -476.43))
     end
 })
 
@@ -526,7 +391,7 @@ Tab_Teleport:Button({
     ["Title"] = "游轮码头",
     ["Desc"] = "传送至游轮码头",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(985.45, -22.53, 1274.22))
+        TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
     end
 })
 
@@ -534,7 +399,7 @@ Tab_Teleport:Button({
     ["Title"] = "车辆维修",
     ["Desc"] = "传送至车辆维修",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-409.58, 3.08, 2.80))
+        TeleportTo(Vector3.new(-409.58, 3.08, 2.80))
     end
 })
 
@@ -542,7 +407,7 @@ Tab_Teleport:Button({
     ["Title"] = "监狱",
     ["Desc"] = "传送至监狱",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(-1605.21, 2.63, 1223.50))
+        TeleportTo(Vector3.new(-1605.21, 2.63, 1223.50))
     end
 })
 
@@ -550,7 +415,7 @@ Tab_Teleport:Button({
     ["Title"] = "拆车场",
     ["Desc"] = "传送至拆车场",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3434.49, 42.93, 2686.46))
+        TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
     end
 })
 
@@ -558,7 +423,7 @@ Tab_Teleport:Button({
     ["Title"] = "送货队伍",
     ["Desc"] = "传送至送货队伍",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(4402.39, 3.04, 1607.56))
+        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
     end
 })
 
@@ -566,7 +431,7 @@ Tab_Teleport:Button({
     ["Title"] = "道路服务",
     ["Desc"] = "传送至道路服务",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(4275.96, 2.63, 1200.88))
+        TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
     end
 })
 
@@ -574,7 +439,7 @@ Tab_Teleport:Button({
     ["Title"] = "消防队伍",
     ["Desc"] = "传送至消防队伍",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3578.02, 8.15, 577.34))
+        TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
     end
 })
 
@@ -582,7 +447,7 @@ Tab_Teleport:Button({
     ["Title"] = "车店",
     ["Desc"] = "传送至车店",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(0, 0, 0))
+        TeleportTo(Vector3.new(0, 0, 0))
     end
 })
 
@@ -605,7 +470,7 @@ Tab_Illegal:Button({
     ["Title"] = "非法交易任务接取点1",
     ["Desc"] = "传送至非法交易任务接取点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(2284.16, -16.97, 2652.88))
+        TeleportTo(Vector3.new(2284.16, -16.97, 2652.88))
     end
 })
 
@@ -628,7 +493,7 @@ Tab_Delivery:Button({
     ["Title"] = "圣奥里取餐点",
     ["Desc"] = "传送至圣奥里取餐点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(3070.80, 3.02, 451.35))
+        TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
     end
 })
 
@@ -636,7 +501,7 @@ Tab_Delivery:Button({
     ["Title"] = "莱斯维尔取餐点",
     ["Desc"] = "传送至莱斯维尔取餐点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(756.54, 3.04, 1006.94))
+        TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
     end
 })
 
@@ -644,7 +509,7 @@ Tab_Delivery:Button({
     ["Title"] = "北方圣奥里取餐点",
     ["Desc"] = "传送至北方圣奥里取餐点",
     ["Callback"] = function()
-        SafeTeleport(Vector3.new(4535.62, 2.60, 915.71))
+        TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
     end
 })
 
@@ -1053,7 +918,6 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
-        AntiCheat.enabled = false
         if _G.RangeConn then
             _G.RangeConn:Disconnect()
             _G.RangeConn = nil
@@ -1085,7 +949,7 @@ Tab_Settings:Toggle({
         getgenv().EasterEgg = bool
         
         if bool then
-            SafeTeleport(Vector3.new(4402.39, 3.04, 1607.56))
+            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
             
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
@@ -1120,4 +984,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共24个传送点 + 透视 + 范围 + 自瞄 + 通用 + 过检测 + 彩色边框 + 欢迎弹窗")
+print("共24个传送点 + 透视 + 范围 + 自瞄 + 通用 + 彩色边框 + 欢迎弹窗")
