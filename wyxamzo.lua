@@ -177,44 +177,35 @@ local AntiCheat = {
     spoofMovement = true,
 }
 
--- 伪造网络延迟，让服务器以为你有高延迟
+-- 伪造网络延迟
 local function SpoofPing()
     if not AntiCheat.fakePing then return end
-    local oldSend = game:GetService("ReplicatedStorage").Send
-    if oldSend then
+    pcall(function()
         local metatable = getrawmetatable(game) or {}
         local oldIndex = metatable.__index
+        if not oldIndex then return end
         setreadonly(metatable, false)
         metatable.__index = function(self, key)
             if key == "Send" then
                 return function(...)
                     task.wait(math.random(30, 120) / 1000)
-                    return oldSend(...)
+                    return oldIndex(self, key)(...)
                 end
             end
             return oldIndex(self, key)
         end
         setreadonly(metatable, true)
-    end
+    end)
 end
 
--- 伪造移动数据，让服务器以为你在正常走路
+-- 伪造移动数据
 local function SpoofMovement()
     if not AntiCheat.spoofMovement then return end
-    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    
-    local oldWalkSpeed = humanoid.WalkSpeed
-    local oldJumpPower = humanoid.JumpPower
-    
-    -- 每帧上报正常数据，掩盖真实速度
     RunService.RenderStepped:Connect(function()
         if not AntiCheat.enabled then return end
         if not LocalPlayer.Character then return end
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if not hum then return end
-        
-        -- 限制最大速度，防止触发检测
         if hum.WalkSpeed > AntiCheat.speedLimit then
             hum.WalkSpeed = AntiCheat.speedLimit
         end
@@ -224,7 +215,7 @@ local function SpoofMovement()
     end)
 end
 
--- 传送伪装（防止瞬移检测）
+-- 安全传送（防瞬移检测）
 local function SafeTeleport(pos)
     if not AntiCheat.enabled then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -237,10 +228,8 @@ local function SafeTeleport(pos)
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    -- 先检查距离，如果太远则分段传送
     local distance = (hrp.Position - pos).Magnitude
     if distance > 100 then
-        -- 分段传送，模拟正常移动
         local steps = math.min(math.floor(distance / 10), 20)
         for i = 1, steps do
             local newPos = hrp.Position:Lerp(pos, i / steps)
@@ -253,7 +242,7 @@ local function SafeTeleport(pos)
     task.wait(AntiCheat.teleportDelay)
 end
 
--- 反挂机检测
+-- 反挂机
 local function AntiAFK()
     local vu = game:GetService("VirtualUser")
     LocalPlayer.Idled:Connect(function()
@@ -266,7 +255,6 @@ end
 -- 隐藏注入器特征
 local function HideInjector()
     pcall(function()
-        -- 尝试清除常见检测变量
         if getgenv then
             local g = getgenv()
             for k, v in pairs(g) do
@@ -278,18 +266,16 @@ local function HideInjector()
     end)
 end
 
--- 检测服务器反作弊事件并拦截
+-- 拦截踢出事件
 local function BlockKickEvents()
     pcall(function()
-        -- 拦截踢出事件
         for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
             if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
                 local name = remote.Name:lower()
-                if name:find("kick") or name:find("ban") or name:find("detect") or name:find("anticheat") or name:find("anti-cheat") then
+                if name:find("kick") or name:find("ban") or name:find("detect") or name:find("anticheat") then
                     local oldFire = remote.FireServer
                     if oldFire then
                         remote.FireServer = function(...)
-                            -- 不执行，直接返回
                             return
                         end
                     end
@@ -307,7 +293,6 @@ local function InitAntiCheat()
     HideInjector()
     BlockKickEvents()
     
-    -- 每5秒清理一次检测痕迹
     task.spawn(function()
         while AntiCheat.enabled do
             task.wait(5)
@@ -316,7 +301,6 @@ local function InitAntiCheat()
     end)
 end
 
--- 启动过检测
 InitAntiCheat()
 
 -- 显示欢迎弹窗
@@ -411,31 +395,11 @@ Tab_General:Button({
 })
 
 Tab_General:Button({
-    ["Title"] = "过检测防封（防踢/防检测/伪装）",
+    ["Title"] = "过检测防封",
     ["Desc"] = "点击开启防封保护",
     ["Callback"] = function()
         AntiCheat.enabled = true
         InitAntiCheat()
-        StarterGui:SetCore("SendNotification", {
-            Title = "wdfex",
-            Text = "过检测防封已开启",
-            Icon = "rbxassetid://18941716391",
-            Duration = 2,
-        })
-    end
-})
-
-Tab_General:Button({
-    ["Title"] = "关闭过检测",
-    ["Desc"] = "关闭防封保护",
-    ["Callback"] = function()
-        AntiCheat.enabled = false
-        StarterGui:SetCore("SendNotification", {
-            Title = "wdfex",
-            Text = "过检测已关闭",
-            Icon = "rbxassetid://18941716391",
-            Duration = 2,
-        })
     end
 })
 
@@ -695,7 +659,7 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "玩家透视（含血量/距离/名字/骨骼）",
+    ["Title"] = "玩家透视（含血量/距离/名字/队伍/通缉）",
     TextXAlignment = "Left",
 })
 
