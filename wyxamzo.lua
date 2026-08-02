@@ -473,7 +473,7 @@ local Tab_Illegal = Window:Tab({
 
 Tab_Illegal:Section({
     TextSize = 17,
-    ["Title"] = "非法交易传送点",
+    ["Title"] = "非法交易接任务的地方",
     TextXAlignment = "Left",
 })
 
@@ -492,6 +492,28 @@ Tab_Illegal:Button({
         TeleportTo(Vector3.new(4248.69, 3.02, 690.16))
     end
 })
+
+Tab_Illegal:Button({
+    ["Title"] = "非法交易任务接取点3",
+    ["Desc"] = "传送至非法交易任务接取点3",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-162.73, 2.57, -775.27))
+    end
+})
+
+Tab_Illegal:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_Illegal:Label("非法交易的地方")
+Tab_Illegal:Label("━━━━━━━━━━━━━━━━━━━━")
+
+-- 这里放非法交易地方的传送点，目前先空着，你有坐标再往里加
+-- 例如：
+-- Tab_Illegal:Button({
+--     ["Title"] = "交易点1",
+--     ["Desc"] = "传送至非法交易点",
+--     ["Callback"] = function()
+--         TeleportTo(Vector3.new(0, 0, 0))
+--     end
+-- })
 
 -------------------------------------------------------------------------
 -- Tab: 外卖员
@@ -956,188 +978,4 @@ Tab_Shop:Button({
 
 Tab_Shop:Button({
     ["Title"] = "C4  $800",
-    ["Desc"] = "炸毁已锁定的入口",
-    ["Callback"] = function()
-        Notify("正在购买: C4")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "绿色USB  $750",
-    ["Desc"] = "获取乔克镇银行账号",
-    ["Callback"] = function()
-        Notify("正在购买: 绿色USB")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "工作人员涂鸦  $250",
-    ["Desc"] = "将您的队伍标志喷涂在墙壁上",
-    ["Callback"] = function()
-        Notify("正在购买: 工作人员涂鸦")
-    end
-})
-
-Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
-Tab_Shop:Label("武器商店")
-Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
-
-Tab_Shop:Button({
-    ["Title"] = "格洛克17",
-    ["Desc"] = "点击购买 格洛克17",
-    ["Callback"] = function()
-        Notify("正在购买: 格洛克17")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "战斧",
-    ["Desc"] = "点击购买 战斧",
-    ["Callback"] = function()
-        Notify("正在购买: 战斧")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "球棒",
-    ["Desc"] = "点击购买 球棒",
-    ["Callback"] = function()
-        Notify("正在购买: 球棒")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "镭刀",
-    ["Desc"] = "点击购买 镭刀",
-    ["Callback"] = function()
-        Notify("正在购买: 镭刀")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "M19",
-    ["Desc"] = "点击购买 M19",
-    ["Callback"] = function()
-        Notify("正在购买: M19")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "死神44",
-    ["Desc"] = "点击购买 死神44",
-    ["Callback"] = function()
-        Notify("正在购买: 死神44")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "MAC-11",
-    ["Desc"] = "点击购买 MAC-11",
-    ["Callback"] = function()
-        Notify("正在购买: MAC-11")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "MP5",
-    ["Desc"] = "点击购买 MP5",
-    ["Callback"] = function()
-        Notify("正在购买: MP5")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "P90",
-    ["Desc"] = "点击购买 P90",
-    ["Callback"] = function()
-        Notify("正在购买: P90")
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 设置
--------------------------------------------------------------------------
-local Tab_Settings = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "设置",
-    ["Icon"] = "rbxassetid://14895392107",
-})
-
-Tab_Settings:Section({
-    TextSize = 17,
-    ["Title"] = "控制",
-    TextXAlignment = "Left",
-})
-
-Tab_Settings:Button({
-    ["Title"] = "关闭脚本",
-    ["Desc"] = "关闭脚本并清理UI",
-    ["Callback"] = function()
-        getgenv().EasterEgg = false
-        if _G.RangeConn then
-            _G.RangeConn:Disconnect()
-            _G.RangeConn = nil
-        end
-        pcall(function()
-            local frosty = CoreGui:FindFirstChild("frosty")
-            if frosty then frosty:Destroy() end
-            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-            if eggGui then eggGui:Destroy() end
-            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
-            if welcomeGui then welcomeGui:Destroy() end
-            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
-            if borderGui then borderGui:Destroy() end
-            local hubGui = CoreGui:FindFirstChild("wdfexHub")
-            if hubGui then hubGui:Destroy() end
-        end)
-        Window:Close()
-    end
-})
-
--- 彩蛋开关
-local easterEggEnabled = false
-Tab_Settings:Toggle({
-    ["Title"] = "彩蛋开关",
-    ["Desc"] = "开启彩蛋功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        easterEggEnabled = bool
-        getgenv().EasterEgg = bool
-        
-        if bool then
-            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            
-            pcall(function()
-                local eggGui = Instance.new("ScreenGui")
-                eggGui.Name = "EasterEggGui"
-                eggGui.Parent = CoreGui
-                eggGui.ResetOnSpawn = false
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Name = "EggLabel"
-                textLabel.Parent = eggGui
-                textLabel.Size = UDim2.new(0, 220, 0, 30)
-                textLabel.Position = UDim2.new(1, -230, 1, -40)
-                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                textLabel.BackgroundTransparency = 0.4
-                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                textLabel.TextSize = 16
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
-                textLabel.TextScaled = true
-                
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 8)
-                corner.Parent = textLabel
-            end)
-        else
-            pcall(function()
-                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-                if eggGui then eggGui:Destroy() end
-            end)
-        end
-    end
-})
-
-print("wdfex-圣奥里已加载")
-print("共24个传送点 + 透视 + 范围 + 自瞄 + 远程购买 + 通用 + 彩色边框 + 欢迎弹窗")
+    ["Desc"] =
