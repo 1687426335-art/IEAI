@@ -505,16 +505,6 @@ Tab_Illegal:Label("━━━━━━━━━━━━━━━━━━━━"
 Tab_Illegal:Label("非法交易的地方")
 Tab_Illegal:Label("━━━━━━━━━━━━━━━━━━━━")
 
--- 这里放非法交易地方的传送点，目前先空着，你有坐标再往里加
--- 例如：
--- Tab_Illegal:Button({
---     ["Title"] = "交易点1",
---     ["Desc"] = "传送至非法交易点",
---     ["Callback"] = function()
---         TeleportTo(Vector3.new(0, 0, 0))
---     end
--- })
-
 -------------------------------------------------------------------------
 -- Tab: 外卖员
 -------------------------------------------------------------------------
@@ -940,42 +930,89 @@ Tab_Aimbot:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 远程购买
+-- Tab: 设置
 -------------------------------------------------------------------------
-local Tab_Shop = Window:Tab({
+local Tab_Settings = Window:Tab({
     ["Locked"] = false,
-    ["Title"] = "远程购买",
-    ["Icon"] = "rbxassetid://18520370419",
+    ["Title"] = "设置",
+    ["Icon"] = "rbxassetid://14895392107",
 })
 
-Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
-Tab_Shop:Label("黑商")
-Tab_Shop:Label("━━━━━━━━━━━━━━━━━━━━")
+Tab_Settings:Section({
+    TextSize = 17,
+    ["Title"] = "控制",
+    TextXAlignment = "Left",
+})
 
-Tab_Shop:Button({
-    ["Title"] = "解密电路  $150",
-    ["Desc"] = "用于入侵自动取款机",
+Tab_Settings:Button({
+    ["Title"] = "关闭脚本",
+    ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
-        Notify("正在购买: 解密电路")
+        getgenv().EasterEgg = false
+        if _G.RangeConn then
+            _G.RangeConn:Disconnect()
+            _G.RangeConn = nil
+        end
+        pcall(function()
+            local frosty = CoreGui:FindFirstChild("frosty")
+            if frosty then frosty:Destroy() end
+            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+            if eggGui then eggGui:Destroy() end
+            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
+            if welcomeGui then welcomeGui:Destroy() end
+            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
+            if borderGui then borderGui:Destroy() end
+            local hubGui = CoreGui:FindFirstChild("wdfexHub")
+            if hubGui then hubGui:Destroy() end
+        end)
+        Window:Close()
     end
 })
 
-Tab_Shop:Button({
-    ["Title"] = "撬锁装置  $400",
-    ["Desc"] = "解锁建筑及大部分车辆",
-    ["Callback"] = function()
-        Notify("正在购买: 撬锁装置")
+-- 彩蛋开关
+local easterEggEnabled = false
+Tab_Settings:Toggle({
+    ["Title"] = "彩蛋开关",
+    ["Desc"] = "开启彩蛋功能",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        easterEggEnabled = bool
+        getgenv().EasterEgg = bool
+        
+        if bool then
+            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            
+            pcall(function()
+                local eggGui = Instance.new("ScreenGui")
+                eggGui.Name = "EasterEggGui"
+                eggGui.Parent = CoreGui
+                eggGui.ResetOnSpawn = false
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Name = "EggLabel"
+                textLabel.Parent = eggGui
+                textLabel.Size = UDim2.new(0, 220, 0, 30)
+                textLabel.Position = UDim2.new(1, -230, 1, -40)
+                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.BackgroundTransparency = 0.4
+                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                textLabel.TextSize = 16
+                textLabel.Font = Enum.Font.GothamBold
+                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
+                textLabel.TextScaled = true
+                
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 8)
+                corner.Parent = textLabel
+            end)
+        else
+            pcall(function()
+                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+                if eggGui then eggGui:Destroy() end
+            end)
+        end
     end
 })
 
-Tab_Shop:Button({
-    ["Title"] = "入侵工具  $600",
-    ["Desc"] = "入侵电子系统",
-    ["Callback"] = function()
-        Notify("正在购买: 入侵工具")
-    end
-})
-
-Tab_Shop:Button({
-    ["Title"] = "C4  $800",
-    ["Desc"] =
+print("wdfex-圣奥里已加载")
+print("共24个传送点 + 透视 + 范围 + 自瞄 + 通用 + 彩色边框 + 欢迎弹窗")
