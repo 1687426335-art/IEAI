@@ -269,7 +269,7 @@ Tab_General:Button({
 
 Tab_General:Button({
     ["Title"] = "加速",
-    ["Desc"] = "点击开启皮脚本加速",
+    ["Desc"] = "点击开启加速",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://pastebin.com/raw/Zuw5T7DP", true))()
     end
@@ -549,7 +549,6 @@ local function CreateSkeletonESP(player)
     local health = humanoid and math.floor(humanoid.Health) or 0
     local distance = rootPart and math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) or 0)
     
-    -- 主Billboard
     local billboard = Instance.new("BillboardGui")
     billboard.Size = UDim2.new(0, 160, 0, 60)
     billboard.StudsOffset = Vector3.new(0, 2.5, 0)
@@ -557,7 +556,6 @@ local function CreateSkeletonESP(player)
     billboard.Parent = rootPart
     table.insert(espObjects, billboard)
     
-    -- 名字
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 0, 18)
     nameLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -570,7 +568,6 @@ local function CreateSkeletonESP(player)
     nameLabel.Parent = billboard
     table.insert(espObjects, nameLabel)
     
-    -- 血量条背景
     local healthBg = Instance.new("Frame")
     healthBg.Size = UDim2.new(0.7, 0, 0, 6)
     healthBg.Position = UDim2.new(0.15, 0, 0, 20)
@@ -579,7 +576,6 @@ local function CreateSkeletonESP(player)
     healthBg.Parent = billboard
     table.insert(espObjects, healthBg)
     
-    -- 血量条
     local healthBar = Instance.new("Frame")
     healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
     healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
@@ -587,7 +583,6 @@ local function CreateSkeletonESP(player)
     healthBar.Parent = healthBg
     table.insert(espObjects, healthBar)
     
-    -- 血量数值
     local healthLabel = Instance.new("TextLabel")
     healthLabel.Size = UDim2.new(1, 0, 0, 14)
     healthLabel.Position = UDim2.new(0, 0, 0, 28)
@@ -599,7 +594,6 @@ local function CreateSkeletonESP(player)
     healthLabel.Parent = billboard
     table.insert(espObjects, healthLabel)
     
-    -- 距离
     local distLabel = Instance.new("TextLabel")
     distLabel.Size = UDim2.new(1, 0, 0, 14)
     distLabel.Position = UDim2.new(0, 0, 0, 42)
