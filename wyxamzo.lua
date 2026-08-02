@@ -166,18 +166,6 @@ local function CreateColorfulBorder()
     end)
 end
 
--- ===== 通知函数 =====
-local function Notify(text)
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "wdfex",
-            Text = text,
-            Icon = "rbxassetid://18941716391",
-            Duration = 2,
-        })
-    end)
-end
-
 -- ===== 传送函数 =====
 local function TeleportTo(pos)
     pcall(function()
@@ -584,13 +572,11 @@ local function ToggleESP()
                 found = found + 1
             end
         end
-        Notify("透视开启，找到 " .. found .. " 个玩家")
     else
         for _, obj in ipairs(espObjects) do
             pcall(function() obj:Destroy() end)
         end
         espObjects = {}
-        Notify("透视已关闭")
     end
 end
 
@@ -633,7 +619,6 @@ local function updateRange(size)
         _G.RangeConn = nil
     end
     if size == 0 then
-        Notify("已清空范围效果")
         return
     end
     _G.HeadSize = size
@@ -655,7 +640,6 @@ local function updateRange(size)
             end
         end
     end)
-    Notify("范围已设置为 " .. size)
 end
 
 Tab_Range:Button({
