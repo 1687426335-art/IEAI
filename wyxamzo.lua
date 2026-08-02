@@ -267,11 +267,15 @@ Tab_General:Button({
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "加速",
-    ["Desc"] = "点击开启加速",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/Zuw5T7DP", true))()
+Tab_General:Textbox({
+    ["Title"] = "设置速度",
+    ["Desc"] = "输入步行速度数值",
+    ["Default"] = "",
+    ["Callback"] = function(value)
+        local speed = tonumber(value)
+        if speed and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = speed
+        end
     end
 })
 
