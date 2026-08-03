@@ -24,6 +24,13 @@ local function ShowWelcome()
         welcomeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         welcomeGui.Parent = CoreGui
         
+        local sound = Instance.new("Sound")
+        sound.Name = "WelcomeSound"
+        sound.SoundId = "rbxassetid://9120393428"
+        sound.Volume = 0.5
+        sound.Parent = welcomeGui
+        sound:Play()
+        
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(0, 320, 0, 60)
         frame.Position = UDim2.new(1, -340, 0, 10)
@@ -66,8 +73,7 @@ local function ShowWelcome()
         })
         tween:Play()
         
-        task.wait(5)
-        
+        task.wait(6)
         local outTween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Position = UDim2.new(1, 0, 0, 10)
         })
@@ -76,6 +82,51 @@ local function ShowWelcome()
         welcomeGui:Destroy()
     end)
 end
+
+-- ===== 显示红色大字（屏幕正中间） =====
+local function ShowShutdownNotice()
+    pcall(function()
+        local noticeGui = Instance.new("ScreenGui")
+        noticeGui.Name = "ShutdownNotice"
+        noticeGui.ResetOnSpawn = false
+        noticeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        noticeGui.Parent = CoreGui
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(0, 500, 0, 120)
+        textLabel.Position = UDim2.new(0.5, -250, 0.5, -60)
+        textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+        textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        textLabel.BackgroundTransparency = 0.3
+        textLabel.Text = "⚠️ 服务器已关闭\n暂时停止使用"
+        textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        textLabel.TextSize = 40
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextScaled = true
+        textLabel.TextWrapped = true
+        textLabel.BorderSizePixel = 3
+        textLabel.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        textLabel.Parent = noticeGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 15)
+        corner.Parent = textLabel
+        
+        local blink = true
+        local blinkConnection = RunService.Heartbeat:Connect(function()
+            blink = not blink
+            textLabel.TextTransparency = blink and 0 or 0.4
+        end)
+        
+        task.wait(30)
+        blinkConnection:Disconnect()
+        noticeGui:Destroy()
+    end)
+end
+
+-- 执行
+ShowWelcome()
+ShowShutdownNotice()
 
 -- 加载 UI 库
 local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
@@ -188,53 +239,6 @@ local function TeleportTo(pos)
     end)
 end
 
--- ===== 服务器关闭提示（屏幕中间红色大字） =====
-local function ShowShutdownNotice()
-    pcall(function()
-        local noticeGui = Instance.new("ScreenGui")
-        noticeGui.Name = "ShutdownNotice"
-        noticeGui.ResetOnSpawn = false
-        noticeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        noticeGui.Parent = CoreGui
-        
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(0, 500, 0, 120)
-        textLabel.Position = UDim2.new(0.5, -250, 0.5, -60)
-        textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-        textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        textLabel.BackgroundTransparency = 0.3
-        textLabel.Text = "⚠️ 服务器已关闭\n暂时停止使用"
-        textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        textLabel.TextSize = 40
-        textLabel.Font = Enum.Font.GothamBold
-        textLabel.TextScaled = true
-        textLabel.TextWrapped = true
-        textLabel.BorderSizePixel = 3
-        textLabel.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        textLabel.Parent = noticeGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 15)
-        corner.Parent = textLabel
-        
-        local blink = true
-        local blinkConnection = RunService.Heartbeat:Connect(function()
-            blink = not blink
-            textLabel.TextTransparency = blink and 0 or 0.4
-        end)
-        
-        task.wait(30)
-        blinkConnection:Disconnect()
-        noticeGui:Destroy()
-    end)
-end
-
--- 显示关闭通知
-ShowShutdownNotice()
-
--- 显示欢迎弹窗
-ShowWelcome()
-
 -- 创建彩色边框
 task.spawn(function()
     task.wait(0.8)
@@ -311,8 +315,7 @@ Tab_General:Button({
     ["Title"] = "飞天",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
-        -- 功能已失效
-        Notify("服务器已关闭，功能暂时不可用")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
     end
 })
 
@@ -320,7 +323,7 @@ Tab_General:Button({
     ["Title"] = "飞车",
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
     end
 })
 
@@ -343,7 +346,7 @@ Tab_Teleport:Button({
     ["Title"] = "枪店门口",
     ["Desc"] = "传送至枪店门口",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
     end
 })
 
@@ -351,7 +354,7 @@ Tab_Teleport:Button({
     ["Title"] = "枪械商店",
     ["Desc"] = "传送至枪械商店",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
     end
 })
 
@@ -359,7 +362,7 @@ Tab_Teleport:Button({
     ["Title"] = "黑色市场",
     ["Desc"] = "传送至黑色市场",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
     end
 })
 
@@ -367,7 +370,7 @@ Tab_Teleport:Button({
     ["Title"] = "小银行",
     ["Desc"] = "传送至小银行",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-667.74, 2.63, -67.18))
     end
 })
 
@@ -375,7 +378,7 @@ Tab_Teleport:Button({
     ["Title"] = "大银行",
     ["Desc"] = "传送至大银行",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3134.64, 6.12, -169.70))
     end
 })
 
@@ -383,7 +386,7 @@ Tab_Teleport:Button({
     ["Title"] = "农场",
     ["Desc"] = "传送至农场",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-1269.56, 2.57, 2559.51))
     end
 })
 
@@ -391,7 +394,7 @@ Tab_Teleport:Button({
     ["Title"] = "警察局",
     ["Desc"] = "传送至警察局",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3313.52, 3.02, -476.74))
     end
 })
 
@@ -399,7 +402,7 @@ Tab_Teleport:Button({
     ["Title"] = "医院",
     ["Desc"] = "传送至医院",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3892.10, 3.02, -185.78))
     end
 })
 
@@ -407,7 +410,7 @@ Tab_Teleport:Button({
     ["Title"] = "游戏厅",
     ["Desc"] = "传送至游戏厅",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(2936.71, 2.63, 1688.17))
     end
 })
 
@@ -415,7 +418,7 @@ Tab_Teleport:Button({
     ["Title"] = "超市",
     ["Desc"] = "传送至超市",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3936.62, 3.04, 1136.92))
     end
 })
 
@@ -423,7 +426,7 @@ Tab_Teleport:Button({
     ["Title"] = "平民出生点",
     ["Desc"] = "传送至平民出生点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3741.79, 3.72, -438.95))
     end
 })
 
@@ -431,7 +434,7 @@ Tab_Teleport:Button({
     ["Title"] = "约克镇出生点",
     ["Desc"] = "传送至约克镇出生点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-221.64, 3.04, -84.56))
     end
 })
 
@@ -439,7 +442,7 @@ Tab_Teleport:Button({
     ["Title"] = "躲藏点",
     ["Desc"] = "传送至躲藏点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-1505.97, 253.98, -476.43))
     end
 })
 
@@ -447,7 +450,7 @@ Tab_Teleport:Button({
     ["Title"] = "游轮码头",
     ["Desc"] = "传送至游轮码头",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
     end
 })
 
@@ -455,7 +458,7 @@ Tab_Teleport:Button({
     ["Title"] = "车辆维修",
     ["Desc"] = "传送至车辆维修",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-409.58, 3.08, 2.80))
     end
 })
 
@@ -463,7 +466,7 @@ Tab_Teleport:Button({
     ["Title"] = "监狱",
     ["Desc"] = "传送至监狱",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-1605.21, 2.63, 1223.50))
     end
 })
 
@@ -471,7 +474,7 @@ Tab_Teleport:Button({
     ["Title"] = "拆车场",
     ["Desc"] = "传送至拆车场",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
     end
 })
 
@@ -479,7 +482,7 @@ Tab_Teleport:Button({
     ["Title"] = "送货队伍",
     ["Desc"] = "传送至送货队伍",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
     end
 })
 
@@ -487,7 +490,7 @@ Tab_Teleport:Button({
     ["Title"] = "道路服务",
     ["Desc"] = "传送至道路服务",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
     end
 })
 
@@ -495,7 +498,7 @@ Tab_Teleport:Button({
     ["Title"] = "消防队伍",
     ["Desc"] = "传送至消防队伍",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
     end
 })
 
@@ -503,7 +506,7 @@ Tab_Teleport:Button({
     ["Title"] = "车店",
     ["Desc"] = "传送至车店",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(0, 0, 0))
     end
 })
 
@@ -526,7 +529,7 @@ Tab_Vending:Button({
     ["Title"] = "警察局售货机",
     ["Desc"] = "传送至警察局售货机",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3375.46, -337.46, -473.67))
     end
 })
 
@@ -534,7 +537,7 @@ Tab_Vending:Button({
     ["Title"] = "医院售货机",
     ["Desc"] = "传送至医院售货机",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3939.51, -337.12, -199.84))
     end
 })
 
@@ -542,7 +545,7 @@ Tab_Vending:Button({
     ["Title"] = "游戏厅售货机",
     ["Desc"] = "传送至游戏厅售货机",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(2904.22, -337.11, 1732.52))
     end
 })
 
@@ -550,7 +553,7 @@ Tab_Vending:Button({
     ["Title"] = "当铺售货机",
     ["Desc"] = "传送至当铺售货机",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(-207.06, -337.05, -99.43))
     end
 })
 
@@ -573,7 +576,7 @@ Tab_Delivery:Button({
     ["Title"] = "圣奥里取餐点",
     ["Desc"] = "传送至圣奥里取餐点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
     end
 })
 
@@ -581,7 +584,7 @@ Tab_Delivery:Button({
     ["Title"] = "莱斯维尔取餐点",
     ["Desc"] = "传送至莱斯维尔取餐点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
     end
 })
 
@@ -589,7 +592,7 @@ Tab_Delivery:Button({
     ["Title"] = "北方圣奥里取餐点",
     ["Desc"] = "传送至北方圣奥里取餐点",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
     end
 })
 
@@ -604,16 +607,221 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "玩家透视",
+    ["Title"] = "玩家透视（含血量/距离/名字/队伍/通缉）",
     TextXAlignment = "Left",
 })
 
+local espEnabled = false
+local espObjects = {}
+
+local function GetPlayerStatus(player)
+    local status = "平民"
+    local isWanted = false
+    
+    if player.Character then
+        for _, child in ipairs(player.Character:GetDescendants()) do
+            if child:IsA("BoolValue") or child:IsA("StringValue") then
+                local name = child.Name:lower()
+                if name:find("wanted") or name:find("通缉") or name:find("criminal") then
+                    isWanted = true
+                    break
+                end
+            end
+        end
+    end
+    
+    if player.Team then
+        local teamName = player.Team.Name or ""
+        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+            status = "警察"
+        elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then
+            status = "匪徒"
+            isWanted = true
+        elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then
+            status = "医疗"
+        elseif teamName:find("消防") or teamName:find("Fire") then
+            status = "消防"
+        elseif teamName:find("道路") or teamName:find("Road") then
+            status = "道路"
+        else
+            status = "平民"
+        end
+    end
+    
+    if isWanted then
+        status = "通缉犯"
+    end
+    
+    return status
+end
+
+local function CreateSkeletonESP(player)
+    local character = player.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local health = humanoid and math.floor(humanoid.Health) or 0
+    local distance = rootPart and math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) or 0)
+    local status = GetPlayerStatus(player)
+    
+    local statusColor = Color3.fromRGB(0, 255, 0)
+    if status == "通缉犯" then
+        statusColor = Color3.fromRGB(255, 0, 0)
+    elseif status == "警察" then
+        statusColor = Color3.fromRGB(0, 100, 255)
+    elseif status == "匪徒" then
+        statusColor = Color3.fromRGB(255, 100, 0)
+    elseif status == "医疗" then
+        statusColor = Color3.fromRGB(0, 255, 100)
+    elseif status == "消防" then
+        statusColor = Color3.fromRGB(255, 150, 0)
+    elseif status == "道路" then
+        statusColor = Color3.fromRGB(255, 255, 0)
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 160, 0, 80)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = rootPart
+    table.insert(espObjects, billboard)
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 16)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextSize = 12
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextStrokeTransparency = 0.3
+    nameLabel.Parent = billboard
+    table.insert(espObjects, nameLabel)
+    
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, 0, 0, 14)
+    statusLabel.Position = UDim2.new(0, 0, 0, 17)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = status
+    statusLabel.TextColor3 = statusColor
+    statusLabel.TextSize = 11
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.TextStrokeTransparency = 0.3
+    statusLabel.Parent = billboard
+    table.insert(espObjects, statusLabel)
+    
+    local healthBg = Instance.new("Frame")
+    healthBg.Size = UDim2.new(0.7, 0, 0, 5)
+    healthBg.Position = UDim2.new(0.15, 0, 0, 33)
+    healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    healthBg.BorderSizePixel = 0
+    healthBg.Parent = billboard
+    table.insert(espObjects, healthBg)
+    
+    local healthBar = Instance.new("Frame")
+    healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
+    healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+    healthBar.BorderSizePixel = 0
+    healthBar.Parent = healthBg
+    table.insert(espObjects, healthBar)
+    
+    local healthLabel = Instance.new("TextLabel")
+    healthLabel.Size = UDim2.new(1, 0, 0, 12)
+    healthLabel.Position = UDim2.new(0, 0, 0, 40)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.Text = health .. " HP"
+    healthLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    healthLabel.TextSize = 10
+    healthLabel.Font = Enum.Font.Gotham
+    healthLabel.Parent = billboard
+    table.insert(espObjects, healthLabel)
+    
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0, 12)
+    distLabel.Position = UDim2.new(0, 0, 0, 54)
+    distLabel.BackgroundTransparency = 1
+    distLabel.Text = distance .. "m"
+    distLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    distLabel.TextSize = 10
+    distLabel.Font = Enum.Font.Gotham
+    distLabel.Parent = billboard
+    table.insert(espObjects, distLabel)
+end
+
+local function UpdateESPHealth()
+    for _, obj in ipairs(espObjects) do
+        if obj:IsA("BillboardGui") then
+            local rootPart = obj.Parent
+            if rootPart and rootPart:IsA("BasePart") then
+                local character = rootPart.Parent
+                if character and character:IsA("Model") then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    local health = humanoid and math.floor(humanoid.Health) or 0
+                    for _, child in ipairs(obj:GetChildren()) do
+                        if child:IsA("TextLabel") and child.Text and child.Text:find("HP") then
+                            child.Text = health .. " HP"
+                        end
+                        if child:IsA("Frame") and child.Size then
+                            local healthBar = child:FindFirstChildWhichIsA("Frame")
+                            if healthBar then
+                                healthBar.Size = UDim2.new((health / 100), 0, 1, 0)
+                                healthBar.BackgroundColor3 = health > 50 and Color3.fromRGB(0, 255, 0) or health > 25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function ToggleESP()
+    espEnabled = not espEnabled
+    
+    if espEnabled then
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                CreateSkeletonESP(player)
+            end
+        end
+        
+        if espEnabled then
+            RunService.Heartbeat:Connect(function()
+                if espEnabled then
+                    UpdateESPHealth()
+                end
+            end)
+        end
+    else
+        for _, obj in ipairs(espObjects) do
+            pcall(function() obj:Destroy() end)
+        end
+        espObjects = {}
+    end
+end
+
 Tab_ESP:Toggle({
-    ["Title"] = "玩家透视",
-    ["Desc"] = "显示所有玩家的位置",
+    ["Title"] = "玩家透视（血量/距离/名字/队伍/通缉）",
+    ["Desc"] = "显示所有玩家的完整信息（含队伍和通缉状态）",
     ["Default"] = false,
     ["Callback"] = function(bool)
-        Notify("服务器已关闭，功能暂时不可用")
+        if bool then
+            if not espEnabled then
+                ToggleESP()
+            end
+        else
+            if espEnabled then
+                ToggleESP()
+            end
+        end
     end
 })
 
@@ -632,11 +840,41 @@ Tab_Range:Section({
     TextXAlignment = "Left",
 })
 
+_G.RangeConn = nil
+local function updateRange(size)
+    if _G.RangeConn then
+        _G.RangeConn:Disconnect()
+        _G.RangeConn = nil
+    end
+    if size == 0 then
+        return
+    end
+    _G.HeadSize = size
+    _G.Disabled = true
+    _G.RangeConn = RunService.RenderStepped:Connect(function()
+        if _G.Disabled then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer then
+                    pcall(function()
+                        if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+                            v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
+                            v.Character.HumanoidRootPart.Material = "Neon"
+                            v.Character.HumanoidRootPart.CanCollide = false
+                        end
+                    end)
+                end
+            end
+        end
+    end)
+end
+
 Tab_Range:Button({
     ["Title"] = "清空范围效果",
     ["Desc"] = "关闭范围修改",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(0)
     end
 })
 
@@ -644,7 +882,7 @@ Tab_Range:Button({
     ["Title"] = "范围10",
     ["Desc"] = "设置碰撞箱大小为10",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(10)
     end
 })
 
@@ -652,7 +890,7 @@ Tab_Range:Button({
     ["Title"] = "范围20",
     ["Desc"] = "设置碰撞箱大小为20",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(20)
     end
 })
 
@@ -660,7 +898,7 @@ Tab_Range:Button({
     ["Title"] = "范围30",
     ["Desc"] = "设置碰撞箱大小为30",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(30)
     end
 })
 
@@ -668,7 +906,7 @@ Tab_Range:Button({
     ["Title"] = "范围50",
     ["Desc"] = "设置碰撞箱大小为50",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(50)
     end
 })
 
@@ -676,7 +914,7 @@ Tab_Range:Button({
     ["Title"] = "范围70",
     ["Desc"] = "设置碰撞箱大小为70",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(70)
     end
 })
 
@@ -684,7 +922,7 @@ Tab_Range:Button({
     ["Title"] = "范围120",
     ["Desc"] = "设置碰撞箱大小为120",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(120)
     end
 })
 
@@ -692,7 +930,7 @@ Tab_Range:Button({
     ["Title"] = "范围300",
     ["Desc"] = "设置碰撞箱大小为300",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(300)
     end
 })
 
@@ -700,7 +938,7 @@ Tab_Range:Button({
     ["Title"] = "范围500",
     ["Desc"] = "设置碰撞箱大小为500",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(500)
     end
 })
 
@@ -708,7 +946,7 @@ Tab_Range:Button({
     ["Title"] = "范围999",
     ["Desc"] = "设置碰撞箱大小为999",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(999)
     end
 })
 
@@ -716,7 +954,7 @@ Tab_Range:Button({
     ["Title"] = "范围999999999",
     ["Desc"] = "设置碰撞箱大小为999999999",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        updateRange(999999999)
     end
 })
 
@@ -739,7 +977,7 @@ Tab_Aimbot:Button({
     ["Title"] = "开启皮脚本自瞄",
     ["Desc"] = "点击开启皮脚本自瞄",
     ["Callback"] = function()
-        Notify("服务器已关闭，功能暂时不可用")
+        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
     end
 })
 
@@ -763,6 +1001,10 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
+        if _G.RangeConn then
+            _G.RangeConn:Disconnect()
+            _G.RangeConn = nil
+        end
         pcall(function()
             local frosty = CoreGui:FindFirstChild("frosty")
             if frosty then frosty:Destroy() end
@@ -827,4 +1069,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("服务器已关闭，功能暂时不可用")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 彩色边框 + 欢迎弹窗")
