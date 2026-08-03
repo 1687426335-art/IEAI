@@ -281,7 +281,11 @@ Tab_General:Button({
 
 -- 全局变速
 local speedHackEnabled = false
-local speedHackValue = 1
+local speedHackValue = 2
+local speedHackConnection = nil
+local originalWalkSpeed = 16
+local originalJumpPower = 50
+local speedHackActive = false
 
 Tab_General:Toggle({
     ["Title"] = "全局变速",
@@ -290,10 +294,25 @@ Tab_General:Toggle({
     ["Callback"] = function(bool)
         speedHackEnabled = bool
         if bool then
+            speedHackActive = true
             Notify("全局变速已开启 (倍率: " .. speedHackValue .. "x)")
+            StartSpeedHack()
         else
+            speedHackActive = false
             Notify("全局变速已关闭")
-            game:GetService("RunService").RenderStepped:Wait()
+            if speedHackConnection then
+                speedHackConnection:Disconnect()
+                speedHackConnection = nil
+            end
+            -- 恢复速度
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.WalkSpeed = originalWalkSpeed
+                    hum.JumpPower = originalJumpPower
+                end
+            end
         end
     end
 })
@@ -305,27 +324,72 @@ Tab_General:Slider({
     ["Callback"] = function(value)
         speedHackValue = type(value) == "table" and value[1] or value
         Notify("变速倍率已设为 " .. speedHackValue .. "x")
+        if speedHackEnabled then
+            if speedHackConnection then
+                speedHackConnection:Disconnect()
+                speedHackConnection = nil
+            end
+            StartSpeedHack()
+        end
     end
 })
 
--- 全局变速核心逻辑
-local speedHackConnection = nil
 local function StartSpeedHack()
     if speedHackConnection then
         speedHackConnection:Disconnect()
         speedHackConnection = nil
     end
     
+    -- 方法1: 使用 TimeScale
+    pcall(function()
+        local rs = game:GetService("RunService")
+        if rs.TimeScale then
+            rs.TimeScale = speedHackValue
+        end
+    end)
+    
+    -- 方法2: 使用 sethiddenproperty
+    pcall(function()
+        if sethiddenproperty then
+            sethiddenproperty(game, "TimeScale", speedHackValue)
+        end
+    end)
+    
+    -- 方法3: 通过修改 Humanoid 速度来模拟变速
     speedHackConnection = RunService.Heartbeat:Connect(function()
         if not speedHackEnabled then return end
-        local delta = RunService.Heartbeat:Wait()
-        if delta and delta > 0 then
-            local newDelta = delta / speedHackValue
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                -- 保存原始速度
+                if not hum:GetAttribute("OriginalWalkSpeed") then
+                    hum:SetAttribute("OriginalWalkSpeed", hum.WalkSpeed)
+                    hum:SetAttribute("OriginalJumpPower", hum.JumpPower)
+                end
+                local baseWalk = hum:GetAttribute("OriginalWalkSpeed") or 16
+                local baseJump = hum:GetAttribute("OriginalJumpPower") or 50
+                -- 应用倍率
+                hum.WalkSpeed = baseWalk * speedHackValue
+                hum.JumpPower = baseJump * speedHackValue
+            end
         end
     end)
 end
 
-StartSpeedHack()
+-- 玩家重生时重置速度
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum:SetAttribute("OriginalWalkSpeed", 16)
+        hum:SetAttribute("OriginalJumpPower", 50)
+        if speedHackEnabled then
+            hum.WalkSpeed = 16 * speedHackValue
+            hum.JumpPower = 50 * speedHackValue
+        end
+    end
+end)
 
 -------------------------------------------------------------------------
 -- Tab: 实用传送
