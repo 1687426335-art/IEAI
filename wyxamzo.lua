@@ -15,7 +15,7 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
--- ===== 欢迎弹窗 =====
+-- ===== 欢迎弹窗（只有弹窗效果，不显示文字） =====
 local function ShowWelcome()
     pcall(function()
         local welcomeGui = Instance.new("ScreenGui")
@@ -56,17 +56,6 @@ local function ShowWelcome()
         corner2.CornerRadius = UDim.new(0, 5)
         corner2.Parent = colorBar
         
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -15, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = "🎉 欢迎使用 wdfex 脚本"
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 18
-        label.Font = Enum.Font.GothamBold
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
         frame.Position = UDim2.new(1, 0, 0, 10)
         local tween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = UDim2.new(1, -340, 0, 10)
@@ -83,7 +72,7 @@ local function ShowWelcome()
     end)
 end
 
--- ===== 显示红色大字（屏幕正中间） =====
+-- ===== 显示红色大字 + 倒计时 + 自动加载皮脚本 =====
 local function ShowShutdownNotice()
     pcall(function()
         local noticeGui = Instance.new("ScreenGui")
@@ -92,9 +81,10 @@ local function ShowShutdownNotice()
         noticeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         noticeGui.Parent = CoreGui
         
+        -- 主文字（屏幕中间偏上）
         local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(0, 500, 0, 120)
-        textLabel.Position = UDim2.new(0.5, -250, 0.5, -60)
+        textLabel.Size = UDim2.new(0, 500, 0, 100)
+        textLabel.Position = UDim2.new(0.5, -250, 0.5, -80)
         textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
         textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         textLabel.BackgroundTransparency = 0.3
@@ -112,15 +102,46 @@ local function ShowShutdownNotice()
         corner.CornerRadius = UDim.new(0, 15)
         corner.Parent = textLabel
         
+        -- 倒计时文字（屏幕右边）
+        local countdownLabel = Instance.new("TextLabel")
+        countdownLabel.Size = UDim2.new(0, 100, 0, 50)
+        countdownLabel.Position = UDim2.new(1, -120, 0.5, -25)
+        countdownLabel.AnchorPoint = Vector2.new(0, 0.5)
+        countdownLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        countdownLabel.BackgroundTransparency = 0.3
+        countdownLabel.Text = "10s"
+        countdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        countdownLabel.TextSize = 30
+        countdownLabel.Font = Enum.Font.GothamBold
+        countdownLabel.TextScaled = true
+        countdownLabel.BorderSizePixel = 2
+        countdownLabel.BorderColor3 = Color3.fromRGB(255, 255, 255)
+        countdownLabel.Parent = noticeGui
+        
+        local corner2 = Instance.new("UICorner")
+        corner2.CornerRadius = UDim.new(0, 10)
+        corner2.Parent = countdownLabel
+        
+        -- 闪烁效果
         local blink = true
         local blinkConnection = RunService.Heartbeat:Connect(function()
             blink = not blink
             textLabel.TextTransparency = blink and 0 or 0.4
         end)
         
-        task.wait(30)
+        -- 10秒倒计时
+        for i = 10, 1, -1 do
+            countdownLabel.Text = i .. "s"
+            task.wait(1)
+        end
+        
+        countdownLabel.Text = "0s"
         blinkConnection:Disconnect()
         noticeGui:Destroy()
+        
+        -- 加载皮脚本
+        getgenv().XiaoPi = "皮脚本-圣奥里"
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Script-SaintOrie.lua"))()
     end)
 end
 
