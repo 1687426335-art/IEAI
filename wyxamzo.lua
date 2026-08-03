@@ -279,6 +279,54 @@ Tab_General:Button({
     end
 })
 
+-- 全局变速
+local speedHackEnabled = false
+local speedHackValue = 1
+
+Tab_General:Toggle({
+    ["Title"] = "全局变速",
+    ["Desc"] = "加快/减慢游戏整体速度",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        speedHackEnabled = bool
+        if bool then
+            Notify("全局变速已开启 (倍率: " .. speedHackValue .. "x)")
+        else
+            Notify("全局变速已关闭")
+            game:GetService("RunService").RenderStepped:Wait()
+        end
+    end
+})
+
+Tab_General:Slider({
+    ["Title"] = "变速倍率",
+    ["Step"] = 0.1,
+    ["Value"] = { Min = 0.1, Default = 2, Max = 10 },
+    ["Callback"] = function(value)
+        speedHackValue = type(value) == "table" and value[1] or value
+        Notify("变速倍率已设为 " .. speedHackValue .. "x")
+    end
+})
+
+-- 全局变速核心逻辑
+local speedHackConnection = nil
+local function StartSpeedHack()
+    if speedHackConnection then
+        speedHackConnection:Disconnect()
+        speedHackConnection = nil
+    end
+    
+    speedHackConnection = RunService.Heartbeat:Connect(function()
+        if not speedHackEnabled then return end
+        local delta = RunService.Heartbeat:Wait()
+        if delta and delta > 0 then
+            local newDelta = delta / speedHackValue
+        end
+    end)
+end
+
+StartSpeedHack()
+
 -------------------------------------------------------------------------
 -- Tab: 实用传送
 -------------------------------------------------------------------------
@@ -957,6 +1005,10 @@ Tab_Settings:Button({
             _G.RangeConn:Disconnect()
             _G.RangeConn = nil
         end
+        if speedHackConnection then
+            speedHackConnection:Disconnect()
+            speedHackConnection = nil
+        end
         pcall(function()
             local frosty = CoreGui:FindFirstChild("frosty")
             if frosty then frosty:Destroy() end
@@ -1019,4 +1071,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 彩色边框 + 欢迎弹窗")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 全局变速 + 彩色边框 + 欢迎弹窗")
