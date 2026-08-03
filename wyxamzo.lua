@@ -24,6 +24,14 @@ local function ShowWelcome()
         welcomeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         welcomeGui.Parent = CoreGui
         
+        -- 播放叮当声音效
+        local sound = Instance.new("Sound")
+        sound.Name = "WelcomeSound"
+        sound.SoundId = "rbxassetid://9120393428"
+        sound.Volume = 0.5
+        sound.Parent = welcomeGui
+        sound:Play()
+        
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(0, 320, 0, 60)
         frame.Position = UDim2.new(1, -340, 0, 10)
@@ -304,7 +312,6 @@ Tab_General:Toggle({
                 speedHackConnection:Disconnect()
                 speedHackConnection = nil
             end
-            -- 恢复速度
             local char = LocalPlayer.Character
             if char then
                 local hum = char:FindFirstChildOfClass("Humanoid")
@@ -340,7 +347,6 @@ local function StartSpeedHack()
         speedHackConnection = nil
     end
     
-    -- 方法1: 使用 TimeScale
     pcall(function()
         local rs = game:GetService("RunService")
         if rs.TimeScale then
@@ -348,28 +354,24 @@ local function StartSpeedHack()
         end
     end)
     
-    -- 方法2: 使用 sethiddenproperty
     pcall(function()
         if sethiddenproperty then
             sethiddenproperty(game, "TimeScale", speedHackValue)
         end
     end)
     
-    -- 方法3: 通过修改 Humanoid 速度来模拟变速
     speedHackConnection = RunService.Heartbeat:Connect(function()
         if not speedHackEnabled then return end
         local char = LocalPlayer.Character
         if char then
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
-                -- 保存原始速度
                 if not hum:GetAttribute("OriginalWalkSpeed") then
                     hum:SetAttribute("OriginalWalkSpeed", hum.WalkSpeed)
                     hum:SetAttribute("OriginalJumpPower", hum.JumpPower)
                 end
                 local baseWalk = hum:GetAttribute("OriginalWalkSpeed") or 16
                 local baseJump = hum:GetAttribute("OriginalJumpPower") or 50
-                -- 应用倍率
                 hum.WalkSpeed = baseWalk * speedHackValue
                 hum.JumpPower = baseJump * speedHackValue
             end
@@ -377,7 +379,6 @@ local function StartSpeedHack()
     end)
 end
 
--- 玩家重生时重置速度
 LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(1)
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -955,8 +956,7 @@ Tab_Range:Button({
     ["Desc"] = "设置碰撞箱大小为20",
     ["Callback"] = function()
         updateRange(20)
-    end
-})
+    end})
 
 Tab_Range:Button({
     ["Title"] = "范围30",
@@ -1135,4 +1135,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 全局变速 + 彩色边框 + 欢迎弹窗")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 全局变速 + 音效 + 彩色边框 + 欢迎弹窗")
