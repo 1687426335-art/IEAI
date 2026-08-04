@@ -227,7 +227,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
+    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
     TextXAlignment = "Left",
 })
 
@@ -247,6 +247,160 @@ Tab_Notice:Section({
     TextSize = 17,
     ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
     TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "wdfex 圣奥里",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 15,
+    ["Title"] = "欢迎使用 wdfex 圣奥里脚本",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 15,
+    ["Title"] = "现作者：wdfex",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 15,
+    ["Title"] = "原作者：wdfex",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 15,
+    ["Title"] = "更新内容：",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 14,
+    ["Title"] = "1. 优化透视性能",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 14,
+    ["Title"] = "2. 新增断麦功能",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 14,
+    ["Title"] = "3. 新增彩蛋功能",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 14,
+    ["Title"] = "4. 修复传送点坐标",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Button({
+    ["Title"] = "使用wdfex圣奥里",
+    ["Desc"] = "点击显示脚本选项",
+    ["Callback"] = function()
+        local popup = Instance.new("ScreenGui")
+        popup.Name = "ScriptSelectPopup"
+        popup.Parent = CoreGui
+        popup.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 400, 0, 180)
+        frame.Position = UDim2.new(0.5, -200, 0.5, -90)
+        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        frame.BackgroundTransparency = 0.1
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        frame.Parent = popup
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = frame
+
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 45)
+        title.Position = UDim2.new(0, 0, 0, 10)
+        title.BackgroundTransparency = 1
+        title.Text = "wdfex 圣奥里"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextSize = 24
+        title.Font = Enum.Font.GothamBold
+        title.Parent = frame
+
+        local btnLeft = Instance.new("TextButton")
+        btnLeft.Size = UDim2.new(0, 160, 0, 60)
+        btnLeft.Position = UDim2.new(0, 20, 0, 70)
+        btnLeft.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+        btnLeft.TextColor3 = Color3.fromRGB(200, 200, 200)
+        btnLeft.TextSize = 18
+        btnLeft.Font = Enum.Font.GothamBold
+        btnLeft.Text = "正在开发中"
+        btnLeft.Parent = frame
+
+        local c1 = Instance.new("UICorner")
+        c1.CornerRadius = UDim.new(0, 8)
+        c1.Parent = btnLeft
+
+        btnLeft.MouseButton1Click:Connect(function()
+            StarterGui:SetCore("SendNotification", {
+                Title = "提示",
+                Text = "该功能正在开发中，敬请期待！",
+                Duration = 2,
+            })
+            popup:Destroy()
+        end)
+
+        local btnRight = Instance.new("TextButton")
+        btnRight.Size = UDim2.new(0, 160, 0, 60)
+        btnRight.Position = UDim2.new(1, -180, 0, 70)
+        btnRight.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
+        btnRight.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btnRight.TextSize = 18
+        btnRight.Font = Enum.Font.GothamBold
+        btnRight.Text = "使用wdfex圣奥里"
+        btnRight.Parent = frame
+
+        local c2 = Instance.new("UICorner")
+        c2.CornerRadius = UDim.new(0, 8)
+        c2.Parent = btnRight
+
+        btnRight.MouseButton1Click:Connect(function()
+            StarterGui:SetCore("SendNotification", {
+                Title = "提示",
+                Text = "当前已在使用wdfex圣奥里脚本",
+                Duration = 2,
+            })
+            popup:Destroy()
+        end)
+
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 32, 0, 32)
+        closeBtn.Position = UDim2.new(1, -38, 0, 6)
+        closeBtn.BackgroundTransparency = 1
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.TextSize = 20
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.Text = "✕"
+        closeBtn.Parent = frame
+
+        closeBtn.MouseButton1Click:Connect(function()
+            popup:Destroy()
+        end)
+    end
 })
 
 -------------------------------------------------------------------------
@@ -285,75 +439,6 @@ Tab_General:Button({
     ["Desc"] = "强制断开所有人语音",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Rootleak/Stalkie-2.0/refs/heads/main/vc.lua"))()
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 帧率
--------------------------------------------------------------------------
-local Tab_FPS = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "帧率",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_FPS:Section({
-    TextSize = 17,
-    ["Title"] = "帧率优化",
-    TextXAlignment = "Left",
-})
-
-local fpsLocked = false
-
-Tab_FPS:Toggle({
-    ["Title"] = "锁60帧",
-    ["Desc"] = "将帧率锁定在60帧，保持流畅",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        fpsLocked = bool
-        if bool then
-            pcall(function()
-                setfpscap(60)
-            end)
-        else
-            pcall(function()
-                setfpscap(0)
-            end)
-        end
-    end
-})
-
-Tab_FPS:Toggle({
-    ["Title"] = "性能模式",
-    ["Desc"] = "降低画质提高帧率",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        if bool then
-            pcall(function()
-                Lighting.GlobalShadows = false
-                Lighting.Technology = Enum.Technology.Compatibility
-                Workspace.FallenPartsDestroyHeight = -500
-            end)
-        else
-            pcall(function()
-                Lighting.GlobalShadows = true
-                Lighting.Technology = Enum.Technology.Future
-                Workspace.FallenPartsDestroyHeight = -100
-            end)
-        end
-    end
-})
-
-Tab_FPS:Button({
-    ["Title"] = "优化游戏流畅度",
-    ["Desc"] = "一键优化",
-    ["Callback"] = function()
-        pcall(function()
-            setfpscap(60)
-            Lighting.GlobalShadows = false
-            Lighting.Technology = Enum.Technology.Compatibility
-            Workspace.FallenPartsDestroyHeight = -500
-        end)
     end
 })
 
@@ -501,8 +586,8 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "拆车的地方",
-    ["Desc"] = "传送拆车的地方",
+    ["Title"] = "拆车场",
+    ["Desc"] = "传送至拆车场",
     ["Callback"] = function()
         TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
     end
@@ -1715,190 +1800,6 @@ Tab_Aimbot:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 远程购买（从加密脚本提取）
--------------------------------------------------------------------------
-local Tab_Shop = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "远程购买",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Shop:Section({
-    TextSize = 17,
-    ["Title"] = "黑市物品远程购买",
-    TextXAlignment = "Left",
-})
-
-local function RemoteBuy(itemName)
-    pcall(function()
-        for _, remote in ipairs(workspace:GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                local name = remote.Name:lower()
-                if name:find("buy") or name:find("shop") or name:find("purchase") or name:find("黑市") or name:find("market") then
-                    pcall(function()
-                        remote:FireServer(itemName)
-                        remote:FireServer(itemName, 1)
-                        remote:FireServer({item = itemName, count = 1})
-                    end)
-                end
-            end
-        end
-        for _, remote in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                local name = remote.Name:lower()
-                if name:find("buy") or name:find("shop") or name:find("purchase") or name:find("黑市") then
-                    pcall(function()
-                        remote:FireServer(itemName)
-                        remote:FireServer(itemName, 1)
-                    end)
-                end
-            end
-        end
-        if _G.BuyItem then _G.BuyItem(itemName) end
-        if _G.PurchaseItem then _G.PurchaseItem(itemName) end
-        if _G.ShopBuy then _G.ShopBuy(itemName) end
-    end)
-end
-
-local shopItems = {"解密电路", "撬锁装置", "入侵工具", "C4", "绿色USB", "工作人员涂鸦"}
-for _, item in ipairs(shopItems) do
-    Tab_Shop:Button({
-        ["Title"] = "购买 " .. item,
-        ["Desc"] = "远程购买" .. item,
-        ["Callback"] = function()
-            RemoteBuy(item)
-            StarterGui:SetCore("SendNotification", {
-                Title = "购买指令",
-                Text = "正在尝试购买 " .. item,
-                Duration = 2,
-            })
-        end
-    })
-end
-
--------------------------------------------------------------------------
--- Tab: 自动抢ATM机（从加密脚本提取）
--------------------------------------------------------------------------
-local Tab_ATM = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "抢ATM",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_ATM:Section({
-    TextSize = 17,
-    ["Title"] = "自动抢ATM机",
-    TextXAlignment = "Left",
-})
-
-local atmEnabled = false
-local atmConnection = nil
-local atmRadius = 50
-
--- 查找ATM机
-local function FindATM()
-    local atms = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("Part") then
-            local name = obj.Name:lower()
-            if name:find("atm") or name:find("bank") or name:find("取款机") or name:find("银行") then
-                table.insert(atms, obj)
-            end
-        end
-    end
-    return atms
-end
-
--- 抢ATM
-local function RobATM()
-    pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        local atms = FindATM()
-        local closestATM = nil
-        local closestDist = atmRadius
-        
-        for _, atm in ipairs(atms) do
-            local pos = atm:IsA("Model") and atm.PrimaryPart and atm.PrimaryPart.Position or 
-                        atm:IsA("Part") and atm.Position or nil
-            if pos then
-                local dist = (hrp.Position - pos).Magnitude
-                if dist < closestDist then
-                    closestDist = dist
-                    closestATM = atm
-                end
-            end
-        end
-        
-        if closestATM then
-            -- 尝试触发ATM交互
-            for _, remote in ipairs(workspace:GetDescendants()) do
-                if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                    local name = remote.Name:lower()
-                    if name:find("atm") or name:find("bank") or name:find("rob") or name:find("取款") then
-                        pcall(function()
-                            remote:FireServer(closestATM)
-                            remote:FireServer(closestATM, "rob")
-                            remote:FireServer({target = closestATM, action = "rob"})
-                        end)
-                    end
-                end
-            end
-            
-            -- 尝试点击ATM
-            if closestATM:IsA("Model") then
-                for _, part in ipairs(closestATM:GetDescendants()) do
-                    if part:IsA("ClickDetector") then
-                        pcall(function()
-                            part:Click()
-                        end)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-Tab_ATM:Toggle({
-    ["Title"] = "自动抢ATM",
-    ["Desc"] = "自动寻找并抢劫附近的ATM机",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        atmEnabled = bool
-        if bool then
-            if atmConnection then
-                atmConnection:Disconnect()
-                atmConnection = nil
-            end
-            atmConnection = RunService.Heartbeat:Connect(function()
-                if not atmEnabled then return end
-                RobATM()
-                task.wait(0.5)
-            end)
-        else
-            if atmConnection then
-                atmConnection:Disconnect()
-                atmConnection = nil
-            end
-        end
-    end
-})
-
-Tab_ATM:Button({
-    ["Title"] = "手动抢ATM",
-    ["Desc"] = "立即抢最近的ATM机",
-    ["Callback"] = function()
-        RobATM()
-        StarterGui:SetCore("SendNotification", {
-            Title = "抢ATM",
-            Text = "正在尝试抢劫ATM",
-            Duration = 2,
-        })
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 设置
 -------------------------------------------------------------------------
 local Tab_Settings = Window:Tab({
@@ -1922,11 +1823,6 @@ Tab_Settings:Button({
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
-        end
-        atmEnabled = false
-        if atmConnection then
-            atmConnection:Disconnect()
-            atmConnection = nil
         end
         if policeAlertGui then
             policeAlertGui:Destroy()
@@ -2063,5 +1959,5 @@ Tab_Settings:Toggle({
     end
 })
 
-print("wdfex-圣奥里已加载（提取版）")
-print("功能：传送 + 透视 + 甩飞 + 范围 + 自瞄 + 远程购买 + 自动抢ATM + 彩蛋")
+print("wdfex-圣奥里已加载")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 甩飞 + 彩色边框 + 欢迎弹窗")
