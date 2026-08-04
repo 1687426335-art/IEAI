@@ -1293,6 +1293,170 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 甩飞
+-------------------------------------------------------------------------
+local Tab_Fling = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "甩飞",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Fling:Section({
+    TextSize = 17,
+    ["Title"] = "碰飞功能",
+    TextXAlignment = "Left",
+})
+
+local flingEnabled = false
+local flingForce = 5000
+local flingConnection = nil
+
+local function StartFling()
+    if flingConnection then
+        flingConnection:Disconnect()
+        flingConnection = nil
+    end
+    
+    flingConnection = RunService.Heartbeat:Connect(function()
+        if not flingEnabled then return end
+        if not LocalPlayer.Character then return end
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        -- 检测所有碰撞物体
+        local function flingObjects(container)
+            for _, obj in ipairs(container:GetChildren()) do
+                if obj:IsA("BasePart") and obj ~= hrp then
+                    -- 检查物体是否在附近
+                    local distance = (hrp.Position - obj.Position).Magnitude
+                    if distance < 8 then
+                        -- 检查是否在视野方向
+                        local dirToObj = (obj.Position - hrp.Position).Unit
+                        local lookDir = hrp.CFrame.LookVector
+                        local dot = lookDir:Dot(dirToObj)
+                        if dot > 0.1 then
+                            -- 施加力量
+                            local velocity = Instance.new("BodyVelocity")
+                            velocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                            velocity.Velocity = hrp.CFrame.LookVector * flingForce + Vector3.new(0, flingForce * 0.3, 0)
+                            velocity.Parent = obj
+                            
+                            -- 旋转效果
+                            local angular = Instance.new("BodyAngularVelocity")
+                            angular.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                            angular.AngularVelocity = Vector3.new(
+                                math.random(-50, 50),
+                                math.random(-50, 50),
+                                math.random(-50, 50)
+                            )
+                            angular.Parent = obj
+                            
+                            -- 自动清理
+                            task.delay(0.5, function()
+                                pcall(function()
+                                    velocity:Destroy()
+                                    angular:Destroy()
+                                end)
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- 检测Workspace中的所有物体（包括车、人、物品）
+        flingObjects(Workspace)
+        
+        -- 检测所有玩家角色
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                flingObjects(player.Character)
+            end
+        end
+    end)
+end
+
+Tab_Fling:Toggle({
+    ["Title"] = "碰飞开关",
+    ["Desc"] = "开启后碰到任何物体都会飞出去",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        flingEnabled = bool
+        if bool then
+            StartFling()
+            Notify("碰飞已开启")
+        else
+            flingEnabled = false
+            if flingConnection then
+                flingConnection:Disconnect()
+                flingConnection = nil
+            end
+            Notify("碰飞已关闭")
+        end
+    end
+})
+
+Tab_Fling:Slider({
+    ["Title"] = "碰飞力度",
+    ["Step"] = 100,
+    ["Value"] = { Min = 500, Default = 5000, Max = 20000 },
+    ["Callback"] = function(value)
+        flingForce = type(value) == "table" and value[1] or value
+        Notify("碰飞力度已设为 " .. flingForce)
+        if flingEnabled then
+            if flingConnection then
+                flingConnection:Disconnect()
+                flingConnection = nil
+            end
+            StartFling()
+        end
+    end
+})
+
+Tab_Fling:Button({
+    ["Title"] = "一键甩飞周围所有人",
+    ["Desc"] = "瞬间甩飞附近所有玩家",
+    ["Callback"] = function()
+        if not LocalPlayer.Character then return end
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            if not player.Character then continue end
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if not targetHrp then continue end
+            
+            local distance = (hrp.Position - targetHrp.Position).Magnitude
+            if distance < 50 then
+                local velocity = Instance.new("BodyVelocity")
+                velocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                local dir = (targetHrp.Position - hrp.Position).Unit
+                velocity.Velocity = dir * flingForce * 2 + Vector3.new(0, flingForce * 0.5, 0)
+                velocity.Parent = targetHrp
+                
+                local angular = Instance.new("BodyAngularVelocity")
+                angular.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                angular.AngularVelocity = Vector3.new(
+                    math.random(-100, 100),
+                    math.random(-100, 100),
+                    math.random(-100, 100)
+                )
+                angular.Parent = targetHrp
+                
+                task.delay(0.5, function()
+                    pcall(function()
+                        velocity:Destroy()
+                        angular:Destroy()
+                    end)
+                end)
+            end
+        end
+        Notify("已甩飞周围所有人")
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 范围
 -------------------------------------------------------------------------
 local Tab_Range = Window:Tab({
@@ -1468,6 +1632,11 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
+        flingEnabled = false
+        if flingConnection then
+            flingConnection:Disconnect()
+            flingConnection = nil
+        end
         if policeAlertGui then
             policeAlertGui:Destroy()
             policeAlertGui = nil
@@ -1547,4 +1716,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 彩色边框 + 欢迎弹窗")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 甩飞 + 彩色边框 + 欢迎弹窗")
