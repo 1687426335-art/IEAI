@@ -1,4 +1,4 @@
--- ===== wdfex 圣奥里传送 (完整优化版) =====
+-- ===== wdfex 圣奥里传送 =====
 
 -- 基础服务定义
 local Players = game:GetService("Players")
@@ -16,125 +16,6 @@ local Debris = game:GetService("Debris")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
-
--- ===== 卡密验证（三次机会，错三次自动退出） =====
-local function PasswordVerify()
-    local attempts = 0
-    local maxAttempts = 3
-    local verified = false
-    
-    while attempts < maxAttempts and not verified do
-        local dialog = Instance.new("ScreenGui")
-        dialog.Name = "PasswordDialog"
-        dialog.Parent = CoreGui
-        dialog.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 320, 0, 160)
-        frame.Position = UDim2.new(0.5, -160, 0.5, -80)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.1
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        frame.Parent = dialog
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = frame
-        
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 40)
-        title.Position = UDim2.new(0, 0, 0, 10)
-        title.BackgroundTransparency = 1
-        title.Text = "请输入开发者密码"
-        title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        title.TextSize = 20
-        title.Font = Enum.Font.GothamBold
-        title.Parent = frame
-        
-        local textBox = Instance.new("TextBox")
-        textBox.Size = UDim2.new(0.8, 0, 0, 38)
-        textBox.Position = UDim2.new(0.1, 0, 0, 55)
-        textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-        textBox.TextSize = 16
-        textBox.Font = Enum.Font.Gotham
-        textBox.PlaceholderText = "输入密码"
-        textBox.ClearTextOnFocus = false
-        textBox.Parent = frame
-        
-        local corner2 = Instance.new("UICorner")
-        corner2.CornerRadius = UDim.new(0, 6)
-        corner2.Parent = textBox
-        
-        local confirmBtn = Instance.new("TextButton")
-        confirmBtn.Size = UDim2.new(0.4, 0, 0, 38)
-        confirmBtn.Position = UDim2.new(0.3, 0, 0, 105)
-        confirmBtn.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
-        confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        confirmBtn.TextSize = 16
-        confirmBtn.Font = Enum.Font.GothamBold
-        confirmBtn.Text = "确认"
-        confirmBtn.Parent = frame
-        
-        local corner3 = Instance.new("UICorner")
-        corner3.CornerRadius = UDim.new(0, 6)
-        corner3.Parent = confirmBtn
-        
-        local result = false
-        local dialogClosed = false
-        
-        confirmBtn.MouseButton1Click:Connect(function()
-            if textBox.Text == "3948" then
-                result = true
-                verified = true
-                dialog:Destroy()
-                dialogClosed = true
-            else
-                attempts = attempts + 1
-                local remain = maxAttempts - attempts
-                if remain > 0 then
-                    StarterGui:SetCore("SendNotification", {
-                        Title = "密码错误",
-                        Text = "还剩 " .. remain .. " 次机会",
-                        Duration = 2,
-                    })
-                    textBox.Text = ""
-                else
-                    StarterGui:SetCore("SendNotification", {
-                        Title = "验证失败",
-                        Text = "密码错误次数过多，脚本将退出",
-                        Duration = 3,
-                    })
-                    dialog:Destroy()
-                    dialogClosed = true
-                    return
-                end
-            end
-        end)
-        
-        textBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed then
-                confirmBtn.MouseButton1Click:Fire()
-            end
-        end)
-        
-        repeat
-            task.wait(0.1)
-        until result or attempts >= maxAttempts or dialogClosed
-        
-        if not verified and attempts >= maxAttempts then
-            return false
-        end
-    end
-    
-    return verified
-end
-
-local verified = PasswordVerify()
-if not verified then
-    return
-end
 
 -- ===== 欢迎弹窗 =====
 local function ShowWelcome()
@@ -491,39 +372,173 @@ Tab_Teleport:Section({
     TextXAlignment = "Left",
 })
 
-local teleportPoints = {
-    {"枪店门口", Vector3.new(-330.09, 2.63, 24.57)},
-    {"枪械商店", Vector3.new(-336.86, -205.07, 61.75)},
-    {"黑色市场", Vector3.new(1040.91, -22.73, 899.80)},
-    {"小银行", Vector3.new(-667.74, 2.63, -67.18)},
-    {"大银行", Vector3.new(3134.64, 6.12, -169.70)},
-    {"农场", Vector3.new(-1269.56, 2.57, 2559.51)},
-    {"警察局", Vector3.new(3313.52, 3.02, -476.74)},
-    {"医院", Vector3.new(3892.10, 3.02, -185.78)},
-    {"游戏厅", Vector3.new(2936.71, 2.63, 1688.17)},
-    {"超市", Vector3.new(3936.62, 3.04, 1136.92)},
-    {"平民出生点", Vector3.new(3741.79, 3.72, -438.95)},
-    {"约克镇出生点", Vector3.new(-221.64, 3.04, -84.56)},
-    {"躲藏点", Vector3.new(-1505.97, 253.98, -476.43)},
-    {"游轮码头", Vector3.new(985.45, -22.53, 1274.22)},
-    {"车辆维修", Vector3.new(-409.58, 3.08, 2.80)},
-    {"监狱", Vector3.new(-1605.21, 2.63, 1223.50)},
-    {"拆车场", Vector3.new(3434.49, 42.93, 2686.46)},
-    {"送货队伍", Vector3.new(4402.39, 3.04, 1607.56)},
-    {"道路服务", Vector3.new(4275.96, 2.63, 1200.88)},
-    {"消防队伍", Vector3.new(3578.02, 8.15, 577.34)},
-    {"车店", Vector3.new(0, 0, 0)},
-}
+Tab_Teleport:Button({
+    ["Title"] = "枪店门口",
+    ["Desc"] = "传送至枪店门口",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-330.09, 2.63, 24.57))
+    end
+})
 
-for _, point in ipairs(teleportPoints) do
-    Tab_Teleport:Button({
-        ["Title"] = point[1],
-        ["Desc"] = "传送至" .. point[1],
-        ["Callback"] = function()
-            TeleportTo(point[2])
-        end
-    })
-end
+Tab_Teleport:Button({
+    ["Title"] = "枪械商店",
+    ["Desc"] = "传送至枪械商店",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-336.86, -205.07, 61.75))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "黑色市场",
+    ["Desc"] = "传送至黑色市场",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(1040.91, -22.73, 899.80))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "小银行",
+    ["Desc"] = "传送至小银行",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-667.74, 2.63, -67.18))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "大银行",
+    ["Desc"] = "传送至大银行",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3134.64, 6.12, -169.70))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "农场",
+    ["Desc"] = "传送至农场",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-1269.56, 2.57, 2559.51))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "警察局",
+    ["Desc"] = "传送至警察局",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3313.52, 3.02, -476.74))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "医院",
+    ["Desc"] = "传送至医院",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3892.10, 3.02, -185.78))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "游戏厅",
+    ["Desc"] = "传送至游戏厅",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(2936.71, 2.63, 1688.17))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "超市",
+    ["Desc"] = "传送至超市",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3936.62, 3.04, 1136.92))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "平民出生点",
+    ["Desc"] = "传送至平民出生点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3741.79, 3.72, -438.95))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "约克镇出生点",
+    ["Desc"] = "传送至约克镇出生点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-221.64, 3.04, -84.56))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "躲藏点",
+    ["Desc"] = "传送至躲藏点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-1505.97, 253.98, -476.43))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "游轮码头",
+    ["Desc"] = "传送至游轮码头",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(985.45, -22.53, 1274.22))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "车辆维修",
+    ["Desc"] = "传送至车辆维修",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-409.58, 3.08, 2.80))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "监狱",
+    ["Desc"] = "传送至监狱",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-1605.21, 2.63, 1223.50))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "拆车场",
+    ["Desc"] = "传送至拆车场",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "送货队伍",
+    ["Desc"] = "传送至送货队伍",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "道路服务",
+    ["Desc"] = "传送至道路服务",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4275.96, 2.63, 1200.88))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "消防队伍",
+    ["Desc"] = "传送至消防队伍",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3578.02, 8.15, 577.34))
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "车店",
+    ["Desc"] = "传送至车店",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(0, 0, 0))
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 售货机传送区
@@ -540,22 +555,37 @@ Tab_Vending:Section({
     TextXAlignment = "Left",
 })
 
-local vendingPoints = {
-    {"警察局售货机", Vector3.new(3375.46, -337.46, -473.67)},
-    {"医院售货机", Vector3.new(3939.51, -337.12, -199.84)},
-    {"游戏厅售货机", Vector3.new(2904.22, -337.11, 1732.52)},
-    {"当铺售货机", Vector3.new(-207.06, -337.05, -99.43)},
-}
+Tab_Vending:Button({
+    ["Title"] = "警察局售货机",
+    ["Desc"] = "传送至警察局售货机",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3375.46, -337.46, -473.67))
+    end
+})
 
-for _, point in ipairs(vendingPoints) do
-    Tab_Vending:Button({
-        ["Title"] = point[1],
-        ["Desc"] = "传送至" .. point[1],
-        ["Callback"] = function()
-            TeleportTo(point[2])
-        end
-    })
-end
+Tab_Vending:Button({
+    ["Title"] = "医院售货机",
+    ["Desc"] = "传送至医院售货机",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3939.51, -337.12, -199.84))
+    end
+})
+
+Tab_Vending:Button({
+    ["Title"] = "游戏厅售货机",
+    ["Desc"] = "传送至游戏厅售货机",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(2904.22, -337.11, 1732.52))
+    end
+})
+
+Tab_Vending:Button({
+    ["Title"] = "当铺售货机",
+    ["Desc"] = "传送至当铺售货机",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(-207.06, -337.05, -99.43))
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 外卖员
@@ -572,24 +602,32 @@ Tab_Delivery:Section({
     TextXAlignment = "Left",
 })
 
-local deliveryPoints = {
-    {"圣奥里取餐点", Vector3.new(3070.80, 3.02, 451.35)},
-    {"莱斯维尔取餐点", Vector3.new(756.54, 3.04, 1006.94)},
-    {"北方圣奥里取餐点", Vector3.new(4535.62, 2.60, 915.71)},
-}
+Tab_Delivery:Button({
+    ["Title"] = "圣奥里取餐点",
+    ["Desc"] = "传送至圣奥里取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(3070.80, 3.02, 451.35))
+    end
+})
 
-for _, point in ipairs(deliveryPoints) do
-    Tab_Delivery:Button({
-        ["Title"] = point[1],
-        ["Desc"] = "传送至" .. point[1],
-        ["Callback"] = function()
-            TeleportTo(point[2])
-        end
-    })
-end
+Tab_Delivery:Button({
+    ["Title"] = "莱斯维尔取餐点",
+    ["Desc"] = "传送至莱斯维尔取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(756.54, 3.04, 1006.94))
+    end
+})
+
+Tab_Delivery:Button({
+    ["Title"] = "北方圣奥里取餐点",
+    ["Desc"] = "传送至北方圣奥里取餐点",
+    ["Callback"] = function()
+        TeleportTo(Vector3.new(4535.62, 2.60, 915.71))
+    end
+})
 
 -------------------------------------------------------------------------
--- Tab: 透视 (优化版)
+-- Tab: 透视
 -------------------------------------------------------------------------
 local Tab_ESP = Window:Tab({
     ["Locked"] = false,
@@ -606,8 +644,6 @@ Tab_ESP:Section({
 local espMasterEnabled = false
 local espObjects = {}
 local espRenderConnection = nil
-local espUpdateTimer = 0
-local espUpdateInterval = 0.15
 
 local espShowName = false
 local espShowHealth = false
@@ -619,372 +655,12 @@ local espShowSelf = true
 local espShowTeam = false
 local espShowWeapon = false
 
-local function ClearESP()
-    for _, obj in ipairs(espObjects) do
-        pcall(function() obj:Destroy() end)
-    end
-    espObjects = {}
-    if espRenderConnection then
-        espRenderConnection:Disconnect()
-        espRenderConnection = nil
-    end
-end
-
-local function GetPlayerWeapon(player)
-    local character = player.Character
-    if not character then return "赤手空拳" end
-    for _, child in ipairs(character:GetChildren()) do
-        if child:IsA("Tool") and child:FindFirstChild("Handle") then
-            return child.Name
-        end
-    end
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        for _, child in ipairs(backpack:GetChildren()) do
-            if child:IsA("Tool") then return child.Name end
-        end
-    end
-    return "赤手空拳"
-end
-
-local function GetPlayerTeam(player)
-    if not player.Team then return "平民" end
-    local teamName = player.Team.Name or ""
-    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then return "警察"
-    elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then return "匪徒"
-    elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then return "医疗"
-    elseif teamName:find("消防") or teamName:find("Fire") then return "火焰"
-    elseif teamName:find("道路") or teamName:find("Road") then return "道路"
-    elseif teamName:find("送货") or teamName:find("Delivery") then return "送货"
-    elseif teamName:find("农民") or teamName:find("Farm") then return "农民"
-    else return "平民" end
-end
-
-local function CheckPlayerScript(player)
-    for _, child in ipairs(player:GetChildren()) do
-        if child:IsA("BoolValue") or child:IsA("StringValue") then
-            local name = child.Name:lower()
-            if name:find("perscript") or name:find("xiaopi") or name:find("皮脚本") then return "皮脚本" end
-            if name:find("wdfex") or name:find("wdfexscript") then return "wdfex" end
-        end
-    end
-    if player == LocalPlayer then
-        if LocalPlayer:FindFirstChild("PiScriptTag") or LocalPlayer:FindFirstChild("XiaoPi") then return "皮脚本" end
-        return "wdfex"
-    end
-    return nil
-end
-
-local function CreateESPForPlayer(player)
-    local character = player.Character
-    if not character then return end
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    local health = humanoid and math.floor(humanoid.Health) or 0
-    local maxHealth = humanoid and math.floor(humanoid.MaxHealth) or 100
-    
-    local localHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local distance = localHrp and math.floor((localHrp.Position - rootPart.Position).Magnitude) or 0
-    
-    local showDetail = distance < 200
-    local charSize = rootPart.Size
-    local weapon = showDetail and GetPlayerWeapon(player) or ""
-    local team = showDetail and GetPlayerTeam(player) or ""
-    local scriptTag = showDetail and CheckPlayerScript(player) or nil
-    
-    local teamColor = Color3.fromRGB(200, 200, 200)
-    if team == "警察" then teamColor = Color3.fromRGB(0, 150, 255)
-    elseif team == "匪徒" then teamColor = Color3.fromRGB(255, 50, 50)
-    elseif team == "医疗" then teamColor = Color3.fromRGB(0, 255, 100)
-    elseif team == "火焰" then teamColor = Color3.fromRGB(255, 150, 0)
-    elseif team == "道路" then teamColor = Color3.fromRGB(255, 255, 0)
-    elseif team == "送货" then teamColor = Color3.fromRGB(255, 150, 255)
-    elseif team == "农民" then teamColor = Color3.fromRGB(50, 255, 50)
-    end
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 100)
-    billboard.StudsOffset = Vector3.new(0, charSize.Y / 2 + 1.8, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = rootPart
-    table.insert(espObjects, billboard)
-    
-    local yOffset = 0
-    
-    if espShowName then
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0, 18)
-        nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = player == LocalPlayer and (player.Name .. " (你)") or player.Name
-        nameLabel.TextColor3 = player == LocalPlayer and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255)
-        nameLabel.TextSize = 13
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 0.3
-        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nameLabel.Parent = billboard
-        table.insert(espObjects, nameLabel)
-        yOffset = yOffset + 20
-    end
-    
-    if espShowTeam and showDetail then
-        local teamLabel = Instance.new("TextLabel")
-        teamLabel.Size = UDim2.new(1, 0, 0, 14)
-        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        teamLabel.BackgroundTransparency = 1
-        teamLabel.Text = team
-        teamLabel.TextColor3 = teamColor
-        teamLabel.TextSize = 11
-        teamLabel.Font = Enum.Font.GothamBold
-        teamLabel.TextStrokeTransparency = 0.3
-        teamLabel.Parent = billboard
-        table.insert(espObjects, teamLabel)
-        yOffset = yOffset + 16
-    end
-    
-    if espShowScriptTag and scriptTag and showDetail then
-        local tagColor = scriptTag == "皮脚本" and Color3.fromRGB(255, 100, 100) or 
-                         scriptTag == "wdfex" and Color3.fromRGB(100, 180, 255) or 
-                         Color3.fromRGB(200, 100, 255)
-        local tagLabel = Instance.new("TextLabel")
-        tagLabel.Size = UDim2.new(1, 0, 0, 14)
-        tagLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        tagLabel.BackgroundTransparency = 1
-        tagLabel.Text = scriptTag
-        tagLabel.TextColor3 = tagColor
-        tagLabel.TextSize = 11
-        tagLabel.Font = Enum.Font.GothamBold
-        tagLabel.TextStrokeTransparency = 0.3
-        tagLabel.Parent = billboard
-        table.insert(espObjects, tagLabel)
-        yOffset = yOffset + 16
-    end
-    
-    if espShowWeapon and showDetail then
-        local weaponLabel = Instance.new("TextLabel")
-        weaponLabel.Size = UDim2.new(1, 0, 0, 14)
-        weaponLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        weaponLabel.BackgroundTransparency = 1
-        weaponLabel.Text = weapon
-        weaponLabel.TextColor3 = weapon == "赤手空拳" and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(255, 200, 100)
-        weaponLabel.TextSize = 11
-        weaponLabel.Font = Enum.Font.Gotham
-        weaponLabel.TextStrokeTransparency = 0.3
-        weaponLabel.Parent = billboard
-        table.insert(espObjects, weaponLabel)
-        yOffset = yOffset + 16
-    end
-    
-    if espShowHealth then
-        local healthBg = Instance.new("Frame")
-        healthBg.Size = UDim2.new(0.7, 0, 0, 6)
-        healthBg.Position = UDim2.new(0.15, 0, 0, yOffset)
-        healthBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        healthBg.BorderSizePixel = 1
-        healthBg.BorderColor3 = Color3.fromRGB(60, 60, 60)
-        healthBg.Parent = billboard
-        table.insert(espObjects, healthBg)
-        
-        local healthPercent = math.clamp(health / maxHealth, 0, 1)
-        local healthBar = Instance.new("Frame")
-        healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
-        healthBar.BackgroundColor3 = healthPercent > 0.5 and Color3.fromRGB(0, 255, 100) or 
-                                     healthPercent > 0.25 and Color3.fromRGB(255, 200, 0) or 
-                                     Color3.fromRGB(255, 50, 50)
-        healthBar.BorderSizePixel = 0
-        healthBar.Parent = healthBg
-        table.insert(espObjects, healthBar)
-        
-        local healthLabel = Instance.new("TextLabel")
-        healthLabel.Size = UDim2.new(1, 0, 0, 14)
-        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 8)
-        healthLabel.BackgroundTransparency = 1
-        healthLabel.Text = health .. "/" .. maxHealth
-        healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        healthLabel.TextSize = 10
-        healthLabel.Font = Enum.Font.Gotham
-        healthLabel.TextStrokeTransparency = 0.3
-        healthLabel.Parent = billboard
-        table.insert(espObjects, healthLabel)
-        yOffset = yOffset + 26
-    end
-    
-    if espShowDist and player ~= LocalPlayer and showDetail then
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, 0, 0, 12)
-        distLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        distLabel.BackgroundTransparency = 1
-        distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-        distLabel.TextSize = 10
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.Parent = billboard
-        table.insert(espObjects, distLabel)
-    end
-    
-    if espShowBox then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Size = Vector3.new(3.5, 5.5, 1.8)
-        box.Adornee = rootPart
-        box.Color3 = Color3.fromRGB(0, 200, 255)
-        box.Transparency = 0.4
-        box.ZIndex = 0
-        box.AlwaysOnTop = true
-        box.Parent = rootPart
-        table.insert(espObjects, box)
-    end
-    
-    if espShowBone and showDetail then
-        local boneParts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm"}
-        for _, boneName in ipairs(boneParts) do
-            local part = character:FindFirstChild(boneName)
-            if part and part:IsA("BasePart") then
-                local sphere = Instance.new("SelectionBox")
-                sphere.Adornee = part
-                sphere.Color3 = Color3.fromRGB(0, 200, 255)
-                sphere.LineThickness = 0.06
-                sphere.Transparency = 0.2
-                sphere.Parent = part
-                table.insert(espObjects, sphere)
-            end
-        end
-    end
-end
-
-local function UpdateESP()
-    ClearESP()
-    if not espMasterEnabled then return end
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer and espShowSelf then
-        else
-            CreateESPForPlayer(player)
-        end
-    end
-end
-
-Tab_ESP:Toggle({
-    ["Title"] = "透视总开关",
-    ["Desc"] = "开启/关闭所有透视功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espMasterEnabled = bool
-        if bool then
-            UpdateESP()
-            if not espRenderConnection then
-                espRenderConnection = RunService.Heartbeat:Connect(function()
-                    espUpdateTimer = espUpdateTimer + RunService.Heartbeat:Wait()
-                    if espUpdateTimer >= espUpdateInterval then
-                        espUpdateTimer = 0
-                        if espMasterEnabled then UpdateESP() end
-                    end
-                end)
-            end
-        else
-            ClearESP()
-        end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制名字",
-    ["Desc"] = "显示玩家名字",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowName = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制血量",
-    ["Desc"] = "显示玩家血量条和数值",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowHealth = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制方框",
-    ["Desc"] = "显示玩家方框",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowBox = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制骨骼",
-    ["Desc"] = "显示玩家骨骼点（简化版）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowBone = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制距离",
-    ["Desc"] = "显示与玩家的距离",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowDist = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "同行显示",
-    ["Desc"] = "检测并显示玩家使用的脚本",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowScriptTag = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "屏蔽自己",
-    ["Desc"] = "开启后自己不显示透视",
-    ["Default"] = true,
-    ["Callback"] = function(bool)
-        espShowSelf = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "显示队伍",
-    ["Desc"] = "显示玩家所属队伍",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowTeam = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
-Tab_ESP:Toggle({
-    ["Title"] = "绘制手持武器",
-    ["Desc"] = "显示玩家手持的武器名称",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowWeapon = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 警察预警
+-- ===== 背后预警系统 =====
 local policeAlertEnabled = false
 local policeAlertGui = nil
 local policeAlertLabel = nil
 local policeDistLabel = nil
 local policeAlertConnection = nil
-local policeCheckTimer = 0
 
 local function CreatePoliceAlert()
     if policeAlertGui then
@@ -1036,63 +712,568 @@ local function CreatePoliceAlert()
     policeDistLabel = distText
 end
 
+local function UpdatePoliceAlert()
+    if not policeAlertEnabled then
+        if policeAlertGui then
+            policeAlertGui:Destroy()
+            policeAlertGui = nil
+        end
+        if policeAlertConnection then
+            policeAlertConnection:Disconnect()
+            policeAlertConnection = nil
+        end
+        return
+    end
+    
+    if not policeAlertGui then
+        CreatePoliceAlert()
+    end
+    
+    if policeAlertConnection then
+        policeAlertConnection:Disconnect()
+        policeAlertConnection = nil
+    end
+    
+    policeAlertConnection = RunService.Heartbeat:Connect(function()
+        if not policeAlertEnabled then return end
+        if not LocalPlayer.Character then return end
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local closestPolice = nil
+        local closestDist = 1000
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            if not player.Character then continue end
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if not targetHrp then continue end
+            
+            local isPolice = false
+            if player.Team then
+                local teamName = player.Team.Name or ""
+                if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                    isPolice = true
+                end
+            end
+            
+            if not isPolice then
+                for _, child in ipairs(player.Character:GetDescendants()) do
+                    if child:IsA("StringValue") or child:IsA("BoolValue") then
+                        local name = child.Name:lower()
+                        if name:find("police") or name:find("cop") or name:find("警察") then
+                            isPolice = true
+                            break
+                        end
+                    end
+                end
+            end
+            
+            if isPolice then
+                local dist = (hrp.Position - targetHrp.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestPolice = player
+                end
+            end
+        end
+        
+        if closestPolice and closestDist < 50 then
+            policeAlertLabel.Visible = true
+            
+            local warnColor = Color3.fromRGB(255, 0, 0)
+            if closestDist > 30 then
+                warnColor = Color3.fromRGB(255, 200, 0)
+            elseif closestDist > 20 then
+                warnColor = Color3.fromRGB(255, 150, 0)
+            else
+                warnColor = Color3.fromRGB(255, 0, 0)
+            end
+            
+            policeAlertLabel.BackgroundColor3 = warnColor
+            policeAlertLabel.BackgroundTransparency = 0.25
+            policeAlertLabel.BorderColor3 = warnColor
+            
+            if policeDistLabel then
+                policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
+            end
+            
+            if closestDist < 20 then
+                local policeHrp = closestPolice.Character:FindFirstChild("HumanoidRootPart")
+                if policeHrp then
+                    local lookDirection = policeHrp.CFrame.LookVector
+                    local toPlayer = (hrp.Position - policeHrp.Position).Unit
+                    local dot = lookDirection:Dot(toPlayer)
+                    if dot > 0.3 then
+                        if policeDistLabel then
+                            policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 正在靠近! " .. math.floor(closestDist) .. "m"
+                        end
+                        policeAlertLabel.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+                        policeAlertLabel.BackgroundTransparency = 0.15
+                    end
+                end
+            end
+        else
+            if policeAlertLabel then
+                policeAlertLabel.Visible = false
+            end
+        end
+    end)
+end
+
+local function CheckPlayerScript(player)
+    local hasPiScript = false
+    local hasWdfexScript = false
+    
+    for _, child in ipairs(player:GetChildren()) do
+        if child:IsA("BoolValue") or child:IsA("StringValue") then
+            local name = child.Name:lower()
+            if name:find("perscript") or name:find("xiaopi") or name:find("皮脚本") then
+                hasPiScript = true
+            end
+            if name:find("wdfex") or name:find("wdfexscript") then
+                hasWdfexScript = true
+            end
+        end
+    end
+    
+    if player.Character then
+        for _, child in ipairs(player.Character:GetDescendants()) do
+            if child:IsA("BoolValue") or child:IsA("StringValue") then
+                local name = child.Name:lower()
+                if name:find("perscript") or name:find("xiaopi") or name:find("皮脚本") then
+                    hasPiScript = true
+                end
+                if name:find("wdfex") or name:find("wdfexscript") then
+                    hasWdfexScript = true
+                end
+            end
+        end
+    end
+    
+    if player == LocalPlayer then
+        hasWdfexScript = true
+        if LocalPlayer:FindFirstChild("PiScriptTag") or LocalPlayer:FindFirstChild("XiaoPi") then
+            hasPiScript = true
+        end
+    end
+    
+    if hasPiScript and hasWdfexScript then
+        return "皮脚本 + wdfex"
+    elseif hasPiScript then
+        return "皮脚本"
+    elseif hasWdfexScript then
+        return "wdfex"
+    else
+        return nil
+    end
+end
+
+local function GetPlayerTeam(player)
+    if not player.Team then return "平民" end
+    local teamName = player.Team.Name or ""
+    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+        return "警察"
+    elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then
+        return "匪徒"
+    elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then
+        return "医疗"
+    elseif teamName:find("消防") or teamName:find("Fire") then
+        return "火焰"
+    elseif teamName:find("道路") or teamName:find("Road") then
+        return "道路"
+    elseif teamName:find("送货") or teamName:find("Delivery") then
+        return "送货"
+    elseif teamName:find("农民") or teamName:find("Farm") then
+        return "农民"
+    else
+        return "平民"
+    end
+end
+
+local function GetPlayerWeapon(player)
+    local character = player.Character
+    if not character then return "赤手空拳" end
+    
+    for _, child in ipairs(character:GetChildren()) do
+        if child:IsA("Tool") and child:FindFirstChild("Handle") then
+            if child.Parent == character then
+                return child.Name
+            end
+        end
+    end
+    
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, child in ipairs(backpack:GetChildren()) do
+            if child:IsA("Tool") then
+                return child.Name
+            end
+        end
+    end
+    
+    return "赤手空拳"
+end
+
+local function ClearESP()
+    for _, obj in ipairs(espObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    espObjects = {}
+    if espRenderConnection then
+        espRenderConnection:Disconnect()
+        espRenderConnection = nil
+    end
+end
+
+local function GetCharacterSize(character)
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        return hrp.Size
+    end
+    return Vector3.new(3, 5, 1.5)
+end
+
+local function CreateESPForPlayer(player)
+    local character = player.Character
+    if not character then return end
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local health = humanoid and math.floor(humanoid.Health) or 0
+    local maxHealth = humanoid and math.floor(humanoid.MaxHealth) or 100
+    local distance = 0
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude)
+    end
+    
+    local charSize = GetCharacterSize(character)
+    local weapon = GetPlayerWeapon(player)
+    local team = GetPlayerTeam(player)
+    local scriptTag = CheckPlayerScript(player)
+    
+    local teamColor = Color3.fromRGB(200, 200, 200)
+    if team == "警察" then teamColor = Color3.fromRGB(0, 150, 255)
+    elseif team == "匪徒" then teamColor = Color3.fromRGB(255, 50, 50)
+    elseif team == "医疗" then teamColor = Color3.fromRGB(0, 255, 100)
+    elseif team == "火焰" then teamColor = Color3.fromRGB(255, 150, 0)
+    elseif team == "道路" then teamColor = Color3.fromRGB(255, 255, 0)
+    elseif team == "送货" then teamColor = Color3.fromRGB(255, 150, 255)
+    elseif team == "农民" then teamColor = Color3.fromRGB(50, 255, 50)
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 200, 0, 100)
+    billboard.StudsOffset = Vector3.new(0, charSize.Y / 2 + 1.8, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = rootPart
+    table.insert(espObjects, billboard)
+    
+    local yOffset = 0
+    
+    if espShowName then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0, 18)
+        nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        nameLabel.BackgroundTransparency = 1
+        if player == LocalPlayer then
+            nameLabel.Text = player.Name .. " (你)"
+            nameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+        else
+            nameLabel.Text = player.Name
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+        nameLabel.TextSize = 13
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.3
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.Parent = billboard
+        table.insert(espObjects, nameLabel)
+        yOffset = yOffset + 20
+    end
+    
+    if espShowTeam then
+        local teamLabel = Instance.new("TextLabel")
+        teamLabel.Size = UDim2.new(1, 0, 0, 14)
+        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        teamLabel.BackgroundTransparency = 1
+        teamLabel.Text = team
+        teamLabel.TextColor3 = teamColor
+        teamLabel.TextSize = 11
+        teamLabel.Font = Enum.Font.GothamBold
+        teamLabel.TextStrokeTransparency = 0.3
+        teamLabel.Parent = billboard
+        table.insert(espObjects, teamLabel)
+        yOffset = yOffset + 16
+    end
+    
+    if espShowScriptTag and scriptTag then
+        local tagColor = Color3.fromRGB(255, 255, 255)
+        if scriptTag == "皮脚本" then
+            tagColor = Color3.fromRGB(255, 100, 100)
+        elseif scriptTag == "wdfex" then
+            tagColor = Color3.fromRGB(100, 180, 255)
+        elseif scriptTag == "皮脚本 + wdfex" then
+            tagColor = Color3.fromRGB(200, 100, 255)
+        end
+        
+        local tagLabel = Instance.new("TextLabel")
+        tagLabel.Size = UDim2.new(1, 0, 0, 14)
+        tagLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        tagLabel.BackgroundTransparency = 1
+        tagLabel.Text = scriptTag
+        tagLabel.TextColor3 = tagColor
+        tagLabel.TextSize = 11
+        tagLabel.Font = Enum.Font.GothamBold
+        tagLabel.TextStrokeTransparency = 0.3
+        tagLabel.Parent = billboard
+        table.insert(espObjects, tagLabel)
+        yOffset = yOffset + 16
+    end
+    
+    if espShowWeapon then
+        local weaponLabel = Instance.new("TextLabel")
+        weaponLabel.Size = UDim2.new(1, 0, 0, 14)
+        weaponLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        weaponLabel.BackgroundTransparency = 1
+        if weapon == "赤手空拳" then
+            weaponLabel.Text = "赤手空拳"
+            weaponLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        else
+            weaponLabel.Text = weapon
+            weaponLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+        weaponLabel.TextSize = 11
+        weaponLabel.Font = Enum.Font.Gotham
+        weaponLabel.TextStrokeTransparency = 0.3
+        weaponLabel.Parent = billboard
+        table.insert(espObjects, weaponLabel)
+        yOffset = yOffset + 16
+    end
+    
+    if espShowHealth then
+        local healthBg = Instance.new("Frame")
+        healthBg.Size = UDim2.new(0.7, 0, 0, 6)
+        healthBg.Position = UDim2.new(0.15, 0, 0, yOffset)
+        healthBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        healthBg.BorderSizePixel = 1
+        healthBg.BorderColor3 = Color3.fromRGB(60, 60, 60)
+        healthBg.Parent = billboard
+        table.insert(espObjects, healthBg)
+        
+        local healthPercent = math.clamp(health / maxHealth, 0, 1)
+        local healthBar = Instance.new("Frame")
+        healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
+        if healthPercent > 0.5 then
+            healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        elseif healthPercent > 0.25 then
+            healthBar.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
+        else
+            healthBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        end
+        healthBar.BorderSizePixel = 0
+        healthBar.Parent = healthBg
+        table.insert(espObjects, healthBar)
+        
+        local healthLabel = Instance.new("TextLabel")
+        healthLabel.Size = UDim2.new(1, 0, 0, 14)
+        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 8)
+        healthLabel.BackgroundTransparency = 1
+        healthLabel.Text = health .. "/" .. maxHealth
+        healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        healthLabel.TextSize = 10
+        healthLabel.Font = Enum.Font.Gotham
+        healthLabel.TextStrokeTransparency = 0.3
+        healthLabel.Parent = billboard
+        table.insert(espObjects, healthLabel)
+        yOffset = yOffset + 26
+    end
+    
+    if espShowDist and player ~= LocalPlayer then
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, 0, 0, 12)
+        distLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        distLabel.BackgroundTransparency = 1
+        distLabel.Text = distance .. "m"
+        distLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        distLabel.TextSize = 10
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.Parent = billboard
+        table.insert(espObjects, distLabel)
+        yOffset = yOffset + 14
+    end
+    
+    if espShowBox then
+        local box = Instance.new("BoxHandleAdornment")
+        box.Size = Vector3.new(3.5, 5.5, 1.8)
+        box.Adornee = rootPart
+        box.Color3 = Color3.fromRGB(0, 200, 255)
+        box.Transparency = 0.4
+        box.ZIndex = 0
+        box.AlwaysOnTop = true
+        box.Parent = rootPart
+        table.insert(espObjects, box)
+    end
+    
+    if espShowBone then
+        local boneParts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"}
+        for _, boneName in ipairs(boneParts) do
+            local part = character:FindFirstChild(boneName)
+            if part and part:IsA("BasePart") then
+                local sphere = Instance.new("SelectionBox")
+                sphere.Adornee = part
+                sphere.Color3 = Color3.fromRGB(0, 200, 255)
+                sphere.LineThickness = 0.06
+                sphere.Transparency = 0.2
+                sphere.Parent = part
+                table.insert(espObjects, sphere)
+            end
+        end
+    end
+end
+
+local function UpdateESP()
+    ClearESP()
+    if not espMasterEnabled then return end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer and espShowSelf then
+        else
+            CreateESPForPlayer(player)
+        end
+    end
+end
+
+Tab_ESP:Toggle({
+    ["Title"] = "透视总开关",
+    ["Desc"] = "开启/关闭所有透视功能",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espMasterEnabled = bool
+        if bool then
+            UpdateESP()
+            if not espRenderConnection then
+                espRenderConnection = RunService.Heartbeat:Connect(function()
+                    if espMasterEnabled then UpdateESP() end
+                end)
+            end
+            Players.PlayerAdded:Connect(function()
+                if espMasterEnabled then UpdateESP() end
+            end)
+            Players.PlayerRemoving:Connect(function()
+                if espMasterEnabled then UpdateESP() end
+            end)
+            for _, player in ipairs(Players:GetPlayers()) do
+                player.CharacterAdded:Connect(function()
+                    if espMasterEnabled then UpdateESP() end
+                end)
+            end
+        else
+            ClearESP()
+        end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制名字",
+    ["Desc"] = "显示玩家名字",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowName = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制血量",
+    ["Desc"] = "显示玩家血量条和数值",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowHealth = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制方框",
+    ["Desc"] = "显示玩家方框",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowBox = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制骨骼",
+    ["Desc"] = "显示玩家骨骼点",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowBone = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制距离",
+    ["Desc"] = "显示与玩家的距离",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowDist = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "同行显示",
+    ["Desc"] = "检测并显示玩家使用的脚本（皮脚本/wdfex）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowScriptTag = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "屏蔽自己",
+    ["Desc"] = "开启后自己不显示透视，关闭后自己显示透视",
+    ["Default"] = true,
+    ["Callback"] = function(bool)
+        espShowSelf = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "显示队伍",
+    ["Desc"] = "显示玩家所属队伍",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowTeam = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制手持武器",
+    ["Desc"] = "显示玩家手持的武器名称",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowWeapon = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
 Tab_ESP:Toggle({
     ["Title"] = "警察靠近预警",
-    ["Desc"] = "警察靠近时在屏幕上方显示警告",
+    ["Desc"] = "警察靠近时在屏幕上方显示警告和距离",
     ["Default"] = false,
     ["Callback"] = function(bool)
         policeAlertEnabled = bool
         if bool then
             CreatePoliceAlert()
-            if not policeAlertConnection then
-                policeAlertConnection = RunService.Heartbeat:Connect(function()
-                    policeCheckTimer = policeCheckTimer + RunService.Heartbeat:Wait()
-                    if policeCheckTimer < 0.3 then return end
-                    policeCheckTimer = 0
-                    
-                    if not policeAlertEnabled then return end
-                    if not LocalPlayer.Character then return end
-                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-                    
-                    local closestPolice = nil
-                    local closestDist = 1000
-                    
-                    for _, player in ipairs(Players:GetPlayers()) do
-                        if player == LocalPlayer then continue end
-                        if not player.Character then continue end
-                        local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
-                        if not targetHrp then continue end
-                        
-                        local isPolice = false
-                        if player.Team then
-                            local teamName = player.Team.Name or ""
-                            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
-                                isPolice = true
-                            end
-                        end
-                        
-                        if isPolice then
-                            local dist = (hrp.Position - targetHrp.Position).Magnitude
-                            if dist < closestDist then
-                                closestDist = dist
-                                closestPolice = player
-                            end
-                        end
-                    end
-                    
-                    if closestPolice and closestDist < 50 then
-                        policeAlertLabel.Visible = true
-                        if policeDistLabel then
-                            policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
-                        end
-                    else
-                        if policeAlertLabel then
-                            policeAlertLabel.Visible = false
-                        end
-                    end
-                end)
-            end
+            UpdatePoliceAlert()
         else
             if policeAlertGui then
                 policeAlertGui:Destroy()
@@ -1107,7 +1288,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 甩飞 (附近一次 + 循环)
+-- Tab: 甩飞
 -------------------------------------------------------------------------
 local Tab_Fling = Window:Tab({
     ["Locked"] = false,
@@ -1121,77 +1302,11 @@ Tab_Fling:Section({
     TextXAlignment = "Left",
 })
 
--- 甩飞附近的人（一次）
 Tab_Fling:Button({
-    ["Title"] = "甩飞附近的人",
-    ["Desc"] = "甩飞距离你50米内的所有玩家（一次）",
+    ["Title"] = "碰飞",
+    ["Desc"] = "点击执行碰飞脚本",
     ["Callback"] = function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player == LocalPlayer then continue end
-            local targetHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if not targetHrp then continue end
-            
-            local dist = (hrp.Position - targetHrp.Position).Magnitude
-            if dist <= 50 then
-                local rootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if rootPart then
-                    rootPart.CFrame = CFrame.new(targetHrp.Position + Vector3.new(0, 1.5, 0))
-                    rootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                    rootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                    task.wait(0.05)
-                end
-            end
-        end
-    end
-})
-
--- 循环甩飞
-local loopFlingEnabled = false
-local loopFlingConnection = nil
-local loopFlingRadius = 50
-
-Tab_Fling:Toggle({
-    ["Title"] = "循环甩飞",
-    ["Desc"] = "持续甩飞距离你50米内的所有玩家",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        loopFlingEnabled = bool
-        if bool then
-            if loopFlingConnection then
-                loopFlingConnection:Disconnect()
-                loopFlingConnection = nil
-            end
-            loopFlingConnection = RunService.Heartbeat:Connect(function()
-                if not loopFlingEnabled then return end
-                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player == LocalPlayer then continue end
-                    local targetHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                    if not targetHrp then continue end
-                    
-                    local dist = (hrp.Position - targetHrp.Position).Magnitude
-                    if dist <= loopFlingRadius then
-                        local rootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if rootPart then
-                            rootPart.CFrame = CFrame.new(targetHrp.Position + Vector3.new(0, 1.5, 0))
-                            rootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                            rootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                        end
-                    end
-                end
-                task.wait(0.1)
-            end)
-        else
-            if loopFlingConnection then
-                loopFlingConnection:Disconnect()
-                loopFlingConnection = nil
-            end
-        end
+        loadstring(game:HttpGet(('https://gist.githubusercontent.com/axelinharlem182/1ee425c9d850af697f8c3cb108a9d816/raw/c4660b01faf4db266e8031e310121a65836f98a7/The%2520Villain'),true))()
     end
 })
 
@@ -1226,6 +1341,14 @@ Tab_Fling:Toggle({
                         child:Destroy()
                     end
                 end
+                
+                for _, child in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if child:IsA("BodyVelocity") or child:IsA("BodyAngularVelocity") or child:IsA("BodyForce") then
+                        if child.Parent ~= hrp then
+                            child:Destroy()
+                        end
+                    end
+                end
             end)
         else
             if antiFlingConnection then
@@ -1236,8 +1359,207 @@ Tab_Fling:Toggle({
     end
 })
 
+-- 甩飞所有人
+local function GetPlayerByName(Name)
+    Name = Name:lower()
+    if Name == "all" or Name == "others" then
+        return true, nil
+    elseif Name == "random" then
+        local GetPlayers = Players:GetPlayers()
+        if table.find(GetPlayers, LocalPlayer) then table.remove(GetPlayers, table.find(GetPlayers, LocalPlayer)) end
+        return false, GetPlayers[math.random(#GetPlayers)]
+    else
+        for _, x in next, Players:GetPlayers() do
+            if x ~= LocalPlayer then
+                if x.Name:lower():match("^" .. Name) then
+                    return false, x
+                elseif x.DisplayName:lower():match("^" .. Name) then
+                    return false, x
+                end
+            end
+        end
+    end
+    return false, nil
+end
+
+local function SkidFling(TargetPlayer)
+    local Character = LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Humanoid and Humanoid.RootPart
+    
+    local TCharacter = TargetPlayer.Character
+    local THumanoid
+    local TRootPart
+    local THead
+    local Accessory
+    local Handle
+    
+    if TCharacter:FindFirstChildOfClass("Humanoid") then
+        THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
+    end
+    if THumanoid and THumanoid.RootPart then
+        TRootPart = THumanoid.RootPart
+    end
+    if TCharacter:FindFirstChild("Head") then
+        THead = TCharacter.Head
+    end
+    if TCharacter:FindFirstChildOfClass("Accessory") then
+        Accessory = TCharacter:FindFirstChildOfClass("Accessory")
+    end
+    if Accessory and Accessory:FindFirstChild("Handle") then
+        Handle = Accessory.Handle
+    end
+    
+    if Character and Humanoid and RootPart then
+        if RootPart.Velocity.Magnitude < 50 then
+            getgenv().OldPos = RootPart.CFrame
+        end
+        if THumanoid and THumanoid.Sit then
+            return
+        end
+        if THead then
+            workspace.CurrentCamera.CameraSubject = THead
+        elseif not THead and Handle then
+            workspace.CurrentCamera.CameraSubject = Handle
+        elseif THumanoid and TRootPart then
+            workspace.CurrentCamera.CameraSubject = THumanoid
+        end
+        if not TCharacter:FindFirstChildWhichIsA("BasePart") then
+            return
+        end
+        
+        local FPos = function(BasePart, Pos, Ang)
+            RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
+            Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
+            RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+            RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+        end
+        
+        local SFBasePart = function(BasePart)
+            local TimeToWait = 2
+            local Time = tick()
+            local Angle = 0
+            
+            repeat
+                if RootPart and THumanoid then
+                    if BasePart.Velocity.Magnitude < 50 then
+                        Angle = Angle + 100
+                        
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(2.25, 1.5, -2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(-2.25, -1.5, 2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                    else
+                        FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, -TRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(-90), 0, 0))
+                        task.wait()
+                        
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                    end
+                else
+                    break
+                end
+            until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or TargetPlayer.Parent ~= Players or not TargetPlayer.Character == TCharacter or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
+        end
+        
+        workspace.FallenPartsDestroyHeight = 0/0
+        
+        local BV = Instance.new("BodyVelocity")
+        BV.Name = "EpixVel"
+        BV.Parent = RootPart
+        BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
+        BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
+        
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+        
+        if TRootPart and THead then
+            if (TRootPart.CFrame.p - THead.CFrame.p).Magnitude > 5 then
+                SFBasePart(THead)
+            else
+                SFBasePart(TRootPart)
+            end
+        elseif TRootPart and not THead then
+            SFBasePart(TRootPart)
+        elseif not TRootPart and THead then
+            SFBasePart(THead)
+        elseif not TRootPart and not THead and Accessory and Handle then
+            SFBasePart(Handle)
+        else
+            return
+        end
+        
+        BV:Destroy()
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        workspace.CurrentCamera.CameraSubject = Humanoid
+        
+        repeat
+            RootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
+            Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
+            Humanoid:ChangeState("GettingUp")
+            table.foreach(Character:GetChildren(), function(_, x)
+                if x:IsA("BasePart") then
+                    x.Velocity, x.RotVelocity = Vector3.new(), Vector3.new()
+                end
+            end)
+            task.wait()
+        until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
+        workspace.FallenPartsDestroyHeight = getgenv().FPDH
+    else
+        return
+    end
+end
+
+Tab_Fling:Button({
+    ["Title"] = "甩飞所有人",
+    ["Desc"] = "甩飞服务器内所有玩家",
+    ["Callback"] = function()
+        for _, x in next, Players:GetPlayers() do
+            if x ~= LocalPlayer then
+                SkidFling(x)
+            end
+        end
+    end
+})
+
 -------------------------------------------------------------------------
--- Tab: 范围 (优化版)
+-- Tab: 范围
 -------------------------------------------------------------------------
 local Tab_Range = Window:Tab({
     ["Locked"] = false,
@@ -1252,24 +1574,17 @@ Tab_Range:Section({
 })
 
 _G.RangeConn = nil
-_G.RangeTimer = 0
-
 local function updateRange(size)
     if _G.RangeConn then
         _G.RangeConn:Disconnect()
         _G.RangeConn = nil
     end
     if size == 0 then
-        _G.Disabled = false
         return
     end
     _G.HeadSize = size
     _G.Disabled = true
-    _G.RangeTimer = 0
-    _G.RangeConn = RunService.Heartbeat:Connect(function()
-        _G.RangeTimer = _G.RangeTimer + RunService.Heartbeat:Wait()
-        if _G.RangeTimer < 0.1 then return end
-        _G.RangeTimer = 0
+    _G.RangeConn = RunService.RenderStepped:Connect(function()
         if _G.Disabled then
             for _, v in pairs(Players:GetPlayers()) do
                 if v ~= LocalPlayer then
@@ -1277,6 +1592,7 @@ local function updateRange(size)
                         if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                             v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
                             v.Character.HumanoidRootPart.Transparency = 0.7
+                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
                             v.Character.HumanoidRootPart.Material = "Neon"
                             v.Character.HumanoidRootPart.CanCollide = false
                         end
@@ -1295,16 +1611,85 @@ Tab_Range:Button({
     end
 })
 
-local rangeSizes = {10, 20, 30, 50, 70, 120, 300, 500, 999, 999999999}
-for _, size in ipairs(rangeSizes) do
-    Tab_Range:Button({
-        ["Title"] = "范围" .. size,
-        ["Desc"] = "设置碰撞箱大小为" .. size,
-        ["Callback"] = function()
-            updateRange(size)
-        end
-    })
-end
+Tab_Range:Button({
+    ["Title"] = "范围10",
+    ["Desc"] = "设置碰撞箱大小为10",
+    ["Callback"] = function()
+        updateRange(10)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围20",
+    ["Desc"] = "设置碰撞箱大小为20",
+    ["Callback"] = function()
+        updateRange(20)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围30",
+    ["Desc"] = "设置碰撞箱大小为30",
+    ["Callback"] = function()
+        updateRange(30)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围50",
+    ["Desc"] = "设置碰撞箱大小为50",
+    ["Callback"] = function()
+        updateRange(50)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围70",
+    ["Desc"] = "设置碰撞箱大小为70",
+    ["Callback"] = function()
+        updateRange(70)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围120",
+    ["Desc"] = "设置碰撞箱大小为120",
+    ["Callback"] = function()
+        updateRange(120)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围300",
+    ["Desc"] = "设置碰撞箱大小为300",
+    ["Callback"] = function()
+        updateRange(300)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围500",
+    ["Desc"] = "设置碰撞箱大小为500",
+    ["Callback"] = function()
+        updateRange(500)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围999",
+    ["Desc"] = "设置碰撞箱大小为999",
+    ["Callback"] = function()
+        updateRange(999)
+    end
+})
+
+Tab_Range:Button({
+    ["Title"] = "范围999999999",
+    ["Desc"] = "设置碰撞箱大小为999999999",
+    ["Callback"] = function()
+        updateRange(999999999)
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 自瞄
@@ -1326,6 +1711,109 @@ Tab_Aimbot:Button({
     ["Desc"] = "点击开启皮脚本自瞄",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 远程购买
+-------------------------------------------------------------------------
+local Tab_Shop = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "远程购买",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Shop:Section({
+    TextSize = 17,
+    ["Title"] = "黑市物品远程购买",
+    TextXAlignment = "Left",
+})
+
+-- 购买函数
+local function RemoteBuy(itemName)
+    pcall(function()
+        for _, remote in ipairs(workspace:GetDescendants()) do
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                local name = remote.Name:lower()
+                if name:find("buy") or name:find("shop") or name:find("purchase") or name:find("黑市") or name:find("market") then
+                    pcall(function()
+                        remote:FireServer(itemName)
+                        remote:FireServer(itemName, 1)
+                        remote:FireServer({item = itemName, count = 1})
+                    end)
+                end
+            end
+        end
+        
+        for _, remote in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                local name = remote.Name:lower()
+                if name:find("buy") or name:find("shop") or name:find("purchase") or name:find("黑市") then
+                    pcall(function()
+                        remote:FireServer(itemName)
+                        remote:FireServer(itemName, 1)
+                    end)
+                end
+            end
+        end
+        
+        if _G.BuyItem then _G.BuyItem(itemName) end
+        if _G.PurchaseItem then _G.PurchaseItem(itemName) end
+        if _G.ShopBuy then _G.ShopBuy(itemName) end
+        
+        StarterGui:SetCore("SendNotification", {
+            Title = "购买指令",
+            Text = "正在尝试购买 " .. itemName,
+            Duration = 2,
+        })
+    end)
+end
+
+Tab_Shop:Button({
+    ["Title"] = "购买 解密电路",
+    ["Desc"] = "远程购买解密电路 ($150)",
+    ["Callback"] = function()
+        RemoteBuy("解密电路")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "购买 撬锁装置",
+    ["Desc"] = "远程购买撬锁装置 ($400)",
+    ["Callback"] = function()
+        RemoteBuy("撬锁装置")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "购买 入侵工具",
+    ["Desc"] = "远程购买入侵工具 ($600)",
+    ["Callback"] = function()
+        RemoteBuy("入侵工具")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "购买 C4",
+    ["Desc"] = "远程购买C4 ($800)",
+    ["Callback"] = function()
+        RemoteBuy("C4")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "购买 绿色USB",
+    ["Desc"] = "远程购买绿色USB ($750)",
+    ["Callback"] = function()
+        RemoteBuy("绿色USB")
+    end
+})
+
+Tab_Shop:Button({
+    ["Title"] = "购买 工作人员涂鸦",
+    ["Desc"] = "远程购买工作人员涂鸦 ($250)",
+    ["Callback"] = function()
+        RemoteBuy("工作人员涂鸦")
     end
 })
 
@@ -1353,11 +1841,6 @@ Tab_Settings:Button({
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
-        end
-        loopFlingEnabled = false
-        if loopFlingConnection then
-            loopFlingConnection:Disconnect()
-            loopFlingConnection = nil
         end
         if policeAlertGui then
             policeAlertGui:Destroy()
@@ -1392,7 +1875,12 @@ Tab_Settings:Button({
     end
 })
 
+-- 彩蛋开关
 local easterEggEnabled = false
+local eggSound = nil
+local eggVolumeConnection = nil
+local eggPlaying = false
+
 Tab_Settings:Toggle({
     ["Title"] = "彩蛋开关",
     ["Desc"] = "开启彩蛋功能",
@@ -1403,6 +1891,43 @@ Tab_Settings:Toggle({
         
         if bool then
             TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            
+            pcall(function()
+                local soundService = game:GetService("SoundService")
+                soundService.Volume = 1
+                soundService.RespectFilteringEnabled = false
+            end)
+            
+            if eggVolumeConnection then
+                eggVolumeConnection:Disconnect()
+                eggVolumeConnection = nil
+            end
+            eggVolumeConnection = RunService.Heartbeat:Connect(function()
+                if not easterEggEnabled then return end
+                pcall(function()
+                    game:GetService("SoundService").Volume = 1
+                end)
+            end)
+            
+            pcall(function()
+                if eggSound then
+                    eggSound:Destroy()
+                    eggSound = nil
+                end
+                eggSound = Instance.new("Sound")
+                eggSound.SoundId = "rbxassetid://1838556600"
+                eggSound.Volume = 10
+                eggSound.Looped = false
+                eggSound.PlayOnRemove = false
+                eggSound.Parent = CoreGui
+                eggSound:Play()
+                eggPlaying = true
+                
+                eggSound.Ended:Connect(function()
+                    eggPlaying = false
+                end)
+            end)
+            
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
                 eggGui.Name = "EasterEggGui"
@@ -1426,7 +1951,24 @@ Tab_Settings:Toggle({
                 corner.CornerRadius = UDim.new(0, 8)
                 corner.Parent = textLabel
             end)
+            
         else
+            pcall(function()
+                if eggSound and eggPlaying then
+                else
+                    if eggSound then
+                        eggSound:Destroy()
+                        eggSound = nil
+                    end
+                end
+                if eggVolumeConnection then
+                    eggVolumeConnection:Disconnect()
+                    eggVolumeConnection = nil
+                end
+                local soundService = game:GetService("SoundService")
+                soundService.Volume = 0.5
+            end)
+            
             pcall(function()
                 local eggGui = CoreGui:FindFirstChild("EasterEggGui")
                 if eggGui then eggGui:Destroy() end
@@ -1435,5 +1977,5 @@ Tab_Settings:Toggle({
     end
 })
 
-print("wdfex-圣奥里已加载 (完整优化版)")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 甩飞(附近/循环) + 彩色边框 + 欢迎弹窗 + 卡密验证")
+print("wdfex-圣奥里已加载")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 甩飞 + 彩色边框 + 欢迎弹窗")
