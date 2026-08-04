@@ -320,12 +320,10 @@ Tab_FPS:Toggle({
             pcall(function()
                 setfpscap(60)
             end)
-            Notify("已锁定60帧")
         else
             pcall(function()
                 setfpscap(0)
             end)
-            Notify("已解锁帧率")
         end
     end
 })
@@ -341,14 +339,12 @@ Tab_FPS:Toggle({
                 Lighting.Technology = Enum.Technology.Compatibility
                 Workspace.FallenPartsDestroyHeight = -500
             end)
-            Notify("性能模式已开启")
         else
             pcall(function()
                 Lighting.GlobalShadows = true
                 Lighting.Technology = Enum.Technology.Future
                 Workspace.FallenPartsDestroyHeight = -100
             end)
-            Notify("性能模式已关闭")
         end
     end
 })
@@ -362,7 +358,6 @@ Tab_FPS:Button({
             Lighting.GlobalShadows = false
             Lighting.Technology = Enum.Technology.Compatibility
             Workspace.FallenPartsDestroyHeight = -500
-            Notify("优化已完成")
         end)
     end
 })
@@ -684,7 +679,6 @@ local function CreatePoliceAlert()
     policeAlertGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     policeAlertGui.Parent = CoreGui
     
-    -- 背景
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(0, 350, 0, 80)
     bg.Position = UDim2.new(0.5, -175, 0, 20)
@@ -700,7 +694,6 @@ local function CreatePoliceAlert()
     corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = bg
     
-    -- 文字警告
     local warnText = Instance.new("TextLabel")
     warnText.Size = UDim2.new(1, 0, 0, 30)
     warnText.Position = UDim2.new(0, 0, 0, 5)
@@ -712,7 +705,6 @@ local function CreatePoliceAlert()
     warnText.TextScaled = true
     warnText.Parent = bg
     
-    -- 距离显示
     local distText = Instance.new("TextLabel")
     distText.Size = UDim2.new(1, 0, 0, 25)
     distText.Position = UDim2.new(0, 0, 0, 40)
@@ -762,7 +754,6 @@ local function UpdatePoliceAlert()
             local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
             if not targetHrp then continue end
             
-            -- 检测是否为警察队伍
             local isPolice = false
             if player.Team then
                 local teamName = player.Team.Name or ""
@@ -772,7 +763,6 @@ local function UpdatePoliceAlert()
             end
             
             if not isPolice then
-                -- 检查玩家身上是否有警察标识
                 for _, child in ipairs(player.Character:GetDescendants()) do
                     if child:IsA("StringValue") or child:IsA("BoolValue") then
                         local name = child.Name:lower()
@@ -796,30 +786,23 @@ local function UpdatePoliceAlert()
         if closestPolice and closestDist < 50 then
             policeAlertLabel.Visible = true
             
-            -- 根据距离改变颜色
             local warnColor = Color3.fromRGB(255, 0, 0)
-            local textColor = Color3.fromRGB(255, 255, 255)
             if closestDist > 30 then
                 warnColor = Color3.fromRGB(255, 200, 0)
-                textColor = Color3.fromRGB(255, 255, 200)
             elseif closestDist > 20 then
                 warnColor = Color3.fromRGB(255, 150, 0)
-                textColor = Color3.fromRGB(255, 255, 150)
             else
                 warnColor = Color3.fromRGB(255, 0, 0)
-                textColor = Color3.fromRGB(255, 100, 100)
             end
             
             policeAlertLabel.BackgroundColor3 = warnColor
             policeAlertLabel.BackgroundTransparency = 0.25
             policeAlertLabel.BorderColor3 = warnColor
             
-            -- 更新距离
             if policeDistLabel then
                 policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
             end
             
-            -- 检查警察是否看向玩家（简化版：检查警察朝向）
             if closestDist < 20 then
                 local policeHrp = closestPolice.Character:FindFirstChild("HumanoidRootPart")
                 if policeHrp then
@@ -827,7 +810,6 @@ local function UpdatePoliceAlert()
                     local toPlayer = (hrp.Position - policeHrp.Position).Unit
                     local dot = lookDirection:Dot(toPlayer)
                     if dot > 0.3 then
-                        -- 警察正在看向玩家
                         if policeDistLabel then
                             policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 正在靠近! " .. math.floor(closestDist) .. "m"
                         end
@@ -844,7 +826,6 @@ local function UpdatePoliceAlert()
     end)
 end
 
--- 检测玩家使用的脚本
 local function CheckPlayerScript(player)
     local hasPiScript = false
     local hasWdfexScript = false
@@ -1169,7 +1150,6 @@ local function UpdateESP()
     end
 end
 
--- 透视总开关
 Tab_ESP:Toggle({
     ["Title"] = "透视总开关",
     ["Desc"] = "开启/关闭所有透视功能",
@@ -1299,7 +1279,6 @@ Tab_ESP:Toggle({
         if bool then
             CreatePoliceAlert()
             UpdatePoliceAlert()
-            Notify("警察预警已开启")
         else
             if policeAlertGui then
                 policeAlertGui:Destroy()
@@ -1309,7 +1288,6 @@ Tab_ESP:Toggle({
                 policeAlertConnection:Disconnect()
                 policeAlertConnection = nil
             end
-            Notify("警察预警已关闭")
         end
     end
 })
