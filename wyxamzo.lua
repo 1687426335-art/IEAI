@@ -17,7 +17,7 @@ local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
--- ===== 欢迎弹窗（保留） =====
+-- ===== 欢迎弹窗 =====
 local function ShowWelcome()
     pcall(function()
         local welcomeGui = Instance.new("ScreenGui")
@@ -62,7 +62,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "🎉 欢迎使用 wdfex 脚本"
+        label.Text = "欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -85,7 +85,6 @@ local function ShowWelcome()
     end)
 end
 
--- 执行
 ShowWelcome()
 
 -- 加载 UI 库
@@ -178,9 +177,9 @@ local function CreateColorfulBorder()
     end)
 end
 
--- ===== 通知函数（已屏蔽所有右下角弹窗） =====
+-- ===== 通知函数 =====
 local function Notify(text)
-    -- 已屏蔽，不显示任何通知
+    -- 已屏蔽
 end
 
 -- ===== 传送函数 =====
@@ -283,6 +282,14 @@ Tab_General:Button({
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "断麦",
+    ["Desc"] = "强制断开所有人语音",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Rootleak/Stalkie-2.0/refs/heads/main/vc.lua"))()
     end
 })
 
@@ -691,7 +698,7 @@ local function CreatePoliceAlert()
     warnText.Size = UDim2.new(1, 0, 0, 30)
     warnText.Position = UDim2.new(0, 0, 0, 5)
     warnText.BackgroundTransparency = 1
-    warnText.Text = "⚠️ 警察来了！快跑！"
+    warnText.Text = "警察来了！快跑！"
     warnText.TextColor3 = Color3.fromRGB(255, 255, 255)
     warnText.TextSize = 22
     warnText.Font = Enum.Font.GothamBold
@@ -1357,7 +1364,7 @@ Tab_Fling:Toggle({
     end
 })
 
--- 甩飞所有人（照抄源码）
+-- 甩飞所有人
 local function GetPlayerByName(Name)
     Name = Name:lower()
     if Name == "all" or Name == "others" then
