@@ -227,7 +227,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
+    ["Title"] = "本脚本已同步连接皮脚本的服务器可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
     TextXAlignment = "Left",
 })
 
@@ -501,8 +501,8 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "拆车场",
-    ["Desc"] = "传送至拆车场",
+    ["Title"] = "拆车的地方",
+    ["Desc"] = "传送拆车的地方",
     ["Callback"] = function()
         TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
     end
