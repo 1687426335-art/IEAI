@@ -11,6 +11,8 @@ local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Debris = game:GetService("Debris")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
@@ -60,7 +62,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "欢迎使用 wdfex 脚本"
+        label.Text = "🎉 欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -288,6 +290,80 @@ Tab_General:Button({
     ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 帧率
+-------------------------------------------------------------------------
+local Tab_FPS = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "帧率",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_FPS:Section({
+    TextSize = 17,
+    ["Title"] = "帧率优化",
+    TextXAlignment = "Left",
+})
+
+local fpsLocked = false
+
+Tab_FPS:Toggle({
+    ["Title"] = "锁60帧",
+    ["Desc"] = "将帧率锁定在60帧，保持流畅",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        fpsLocked = bool
+        if bool then
+            pcall(function()
+                setfpscap(60)
+            end)
+            Notify("已锁定60帧")
+        else
+            pcall(function()
+                setfpscap(0)
+            end)
+            Notify("已解锁帧率")
+        end
+    end
+})
+
+Tab_FPS:Toggle({
+    ["Title"] = "性能模式",
+    ["Desc"] = "降低画质提高帧率",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            pcall(function()
+                Lighting.GlobalShadows = false
+                Lighting.Technology = Enum.Technology.Compatibility
+                Workspace.FallenPartsDestroyHeight = -500
+            end)
+            Notify("性能模式已开启")
+        else
+            pcall(function()
+                Lighting.GlobalShadows = true
+                Lighting.Technology = Enum.Technology.Future
+                Workspace.FallenPartsDestroyHeight = -100
+            end)
+            Notify("性能模式已关闭")
+        end
+    end
+})
+
+Tab_FPS:Button({
+    ["Title"] = "优化游戏流畅度",
+    ["Desc"] = "一键优化",
+    ["Callback"] = function()
+        pcall(function()
+            setfpscap(60)
+            Lighting.GlobalShadows = false
+            Lighting.Technology = Enum.Technology.Compatibility
+            Workspace.FallenPartsDestroyHeight = -500
+            Notify("优化已完成")
+        end)
     end
 })
 
@@ -589,6 +665,186 @@ local espShowSelf = true
 local espShowTeam = false
 local espShowWeapon = false
 
+-- ===== 背后预警系统 =====
+local policeAlertEnabled = false
+local policeAlertGui = nil
+local policeAlertLabel = nil
+local policeDistLabel = nil
+local policeAlertConnection = nil
+
+local function CreatePoliceAlert()
+    if policeAlertGui then
+        policeAlertGui:Destroy()
+        policeAlertGui = nil
+    end
+    
+    policeAlertGui = Instance.new("ScreenGui")
+    policeAlertGui.Name = "PoliceAlert"
+    policeAlertGui.ResetOnSpawn = false
+    policeAlertGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    policeAlertGui.Parent = CoreGui
+    
+    -- 背景
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(0, 350, 0, 80)
+    bg.Position = UDim2.new(0.5, -175, 0, 20)
+    bg.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    bg.BackgroundTransparency = 0.2
+    bg.BorderSizePixel = 2
+    bg.BorderColor3 = Color3.fromRGB(255, 0, 0)
+    bg.Visible = false
+    bg.Parent = policeAlertGui
+    policeAlertLabel = bg
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = bg
+    
+    -- 文字警告
+    local warnText = Instance.new("TextLabel")
+    warnText.Size = UDim2.new(1, 0, 0, 30)
+    warnText.Position = UDim2.new(0, 0, 0, 5)
+    warnText.BackgroundTransparency = 1
+    warnText.Text = "⚠️ 警察来了！快跑！"
+    warnText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    warnText.TextSize = 22
+    warnText.Font = Enum.Font.GothamBold
+    warnText.TextScaled = true
+    warnText.Parent = bg
+    
+    -- 距离显示
+    local distText = Instance.new("TextLabel")
+    distText.Size = UDim2.new(1, 0, 0, 25)
+    distText.Position = UDim2.new(0, 0, 0, 40)
+    distText.BackgroundTransparency = 1
+    distText.Text = "距离: 0m"
+    distText.TextColor3 = Color3.fromRGB(255, 255, 200)
+    distText.TextSize = 16
+    distText.Font = Enum.Font.GothamBold
+    distText.Parent = bg
+    policeDistLabel = distText
+end
+
+local function UpdatePoliceAlert()
+    if not policeAlertEnabled then
+        if policeAlertGui then
+            policeAlertGui:Destroy()
+            policeAlertGui = nil
+        end
+        if policeAlertConnection then
+            policeAlertConnection:Disconnect()
+            policeAlertConnection = nil
+        end
+        return
+    end
+    
+    if not policeAlertGui then
+        CreatePoliceAlert()
+    end
+    
+    if policeAlertConnection then
+        policeAlertConnection:Disconnect()
+        policeAlertConnection = nil
+    end
+    
+    policeAlertConnection = RunService.Heartbeat:Connect(function()
+        if not policeAlertEnabled then return end
+        if not LocalPlayer.Character then return end
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local closestPolice = nil
+        local closestDist = 1000
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            if not player.Character then continue end
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if not targetHrp then continue end
+            
+            -- 检测是否为警察队伍
+            local isPolice = false
+            if player.Team then
+                local teamName = player.Team.Name or ""
+                if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                    isPolice = true
+                end
+            end
+            
+            if not isPolice then
+                -- 检查玩家身上是否有警察标识
+                for _, child in ipairs(player.Character:GetDescendants()) do
+                    if child:IsA("StringValue") or child:IsA("BoolValue") then
+                        local name = child.Name:lower()
+                        if name:find("police") or name:find("cop") or name:find("警察") then
+                            isPolice = true
+                            break
+                        end
+                    end
+                end
+            end
+            
+            if isPolice then
+                local dist = (hrp.Position - targetHrp.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestPolice = player
+                end
+            end
+        end
+        
+        if closestPolice and closestDist < 50 then
+            policeAlertLabel.Visible = true
+            
+            -- 根据距离改变颜色
+            local warnColor = Color3.fromRGB(255, 0, 0)
+            local textColor = Color3.fromRGB(255, 255, 255)
+            if closestDist > 30 then
+                warnColor = Color3.fromRGB(255, 200, 0)
+                textColor = Color3.fromRGB(255, 255, 200)
+            elseif closestDist > 20 then
+                warnColor = Color3.fromRGB(255, 150, 0)
+                textColor = Color3.fromRGB(255, 255, 150)
+            else
+                warnColor = Color3.fromRGB(255, 0, 0)
+                textColor = Color3.fromRGB(255, 100, 100)
+            end
+            
+            policeAlertLabel.BackgroundColor3 = warnColor
+            policeAlertLabel.BackgroundTransparency = 0.25
+            policeAlertLabel.BorderColor3 = warnColor
+            
+            -- 更新距离
+            if policeDistLabel then
+                policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
+            end
+            
+            -- 检查警察是否看向玩家（简化版：检查警察朝向）
+            if closestDist < 20 then
+                local policeHrp = closestPolice.Character:FindFirstChild("HumanoidRootPart")
+                if policeHrp then
+                    local lookDirection = policeHrp.CFrame.LookVector
+                    local toPlayer = (hrp.Position - policeHrp.Position).Unit
+                    local dot = lookDirection:Dot(toPlayer)
+                    if dot > 0.3 then
+                        -- 警察正在看向玩家
+                        if policeDistLabel then
+                            policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 正在靠近! " .. math.floor(closestDist) .. "m"
+                        end
+                        policeAlertLabel.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+                        policeAlertLabel.BackgroundTransparency = 0.15
+                    end
+                end
+            end
+        else
+            if policeAlertLabel then
+                policeAlertLabel.Visible = false
+            end
+        end
+    end)
+end
+
+-- 检测玩家使用的脚本
 local function CheckPlayerScript(player)
     local hasPiScript = false
     local hasWdfexScript = false
@@ -913,6 +1169,7 @@ local function UpdateESP()
     end
 end
 
+-- 透视总开关
 Tab_ESP:Toggle({
     ["Title"] = "透视总开关",
     ["Desc"] = "开启/关闭所有透视功能",
@@ -1030,6 +1287,30 @@ Tab_ESP:Toggle({
     ["Callback"] = function(bool)
         espShowWeapon = bool
         if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "警察靠近预警",
+    ["Desc"] = "警察靠近时在屏幕上方显示警告和距离",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        policeAlertEnabled = bool
+        if bool then
+            CreatePoliceAlert()
+            UpdatePoliceAlert()
+            Notify("警察预警已开启")
+        else
+            if policeAlertGui then
+                policeAlertGui:Destroy()
+                policeAlertGui = nil
+            end
+            if policeAlertConnection then
+                policeAlertConnection:Disconnect()
+                policeAlertConnection = nil
+            end
+            Notify("警察预警已关闭")
+        end
     end
 })
 
@@ -1209,6 +1490,14 @@ Tab_Settings:Button({
     ["Desc"] = "关闭脚本并清理UI",
     ["Callback"] = function()
         getgenv().EasterEgg = false
+        if policeAlertGui then
+            policeAlertGui:Destroy()
+            policeAlertGui = nil
+        end
+        if policeAlertConnection then
+            policeAlertConnection:Disconnect()
+            policeAlertConnection = nil
+        end
         if _G.RangeConn then
             _G.RangeConn:Disconnect()
             _G.RangeConn = nil
@@ -1280,4 +1569,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 彩色边框 + 欢迎弹窗")
+print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 帧率优化 + 警察预警 + 彩色边框 + 欢迎弹窗")
