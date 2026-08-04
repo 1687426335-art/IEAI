@@ -60,7 +60,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "🎉 欢迎使用 wdfex 脚本"
+        label.Text = "欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -86,17 +86,15 @@ end
 -- 执行
 ShowWelcome()
 
--- 加载 UI 库（换了稳定源）
+-- 加载 UI 库
 local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
 local Library = loadstring(game:HttpGet(UI_Library_URL))()
 
--- 如果UI库加载失败，用备用方案
 if not Library then
     UI_Library_URL = "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/UI.Lua"
     Library = loadstring(game:HttpGet(UI_Library_URL))()
 end
 
--- 创建窗口
 local Window = Library:CreateWindow({
     ["Folder"] = "wdfexHub",
     ["Title"] = "wdfex-圣奥里",
@@ -109,7 +107,6 @@ local Window = Library:CreateWindow({
 local function CreateColorfulBorder()
     pcall(function()
         task.wait(0.5)
-        
         local mainGui = CoreGui:FindFirstChild("wdfexHub")
         if not mainGui then
             for _, child in ipairs(CoreGui:GetChildren()) do
@@ -119,7 +116,6 @@ local function CreateColorfulBorder()
                 end
             end
         end
-        
         if not mainGui then return end
         
         local oldBorder = mainGui:FindFirstChild("wdfexBorder")
@@ -143,7 +139,6 @@ local function CreateColorfulBorder()
         }
         
         local borderSize = 3
-        
         local sides = {
             {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 0, 0)},
             {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 1, -borderSize)},
@@ -203,7 +198,6 @@ local function TeleportTo(pos)
     end)
 end
 
--- 创建彩色边框
 task.spawn(function()
     task.wait(0.8)
     CreateColorfulBorder()
@@ -581,12 +575,10 @@ Tab_ESP:Section({
     TextXAlignment = "Left",
 })
 
--- 总开关
 local espMasterEnabled = false
 local espObjects = {}
 local espRenderConnection = nil
 
--- 各功能开关状态
 local espShowName = false
 local espShowHealth = false
 local espShowBox = false
@@ -595,22 +587,42 @@ local espShowDist = false
 local espShowScriptTag = false
 local espShowSelf = true
 local espShowTeam = false
+local espShowWeapon = false
 
--- 检测玩家使用的脚本（包括自己）
 local function CheckPlayerScript(player)
     local hasPiScript = false
     local hasWdfexScript = false
     
-    if player:FindFirstChild("PiScriptTag") or player:FindFirstChild("XiaoPi") then
-        hasPiScript = true
+    for _, child in ipairs(player:GetChildren()) do
+        if child:IsA("BoolValue") or child:IsA("StringValue") then
+            local name = child.Name:lower()
+            if name:find("perscript") or name:find("xiaopi") or name:find("皮脚本") then
+                hasPiScript = true
+            end
+            if name:find("wdfex") or name:find("wdfexscript") then
+                hasWdfexScript = true
+            end
+        end
     end
-    if player:FindFirstChild("WdfexTag") or player:FindFirstChild("wdfex") then
-        hasWdfexScript = true
+    
+    if player.Character then
+        for _, child in ipairs(player.Character:GetDescendants()) do
+            if child:IsA("BoolValue") or child:IsA("StringValue") then
+                local name = child.Name:lower()
+                if name:find("perscript") or name:find("xiaopi") or name:find("皮脚本") then
+                    hasPiScript = true
+                end
+                if name:find("wdfex") or name:find("wdfexscript") then
+                    hasWdfexScript = true
+                end
+            end
+        end
     end
     
     if player == LocalPlayer then
-        if not hasPiScript and not hasWdfexScript then
-            hasWdfexScript = true
+        hasWdfexScript = true
+        if LocalPlayer:FindFirstChild("PiScriptTag") or LocalPlayer:FindFirstChild("XiaoPi") then
+            hasPiScript = true
         end
     end
     
@@ -625,9 +637,8 @@ local function CheckPlayerScript(player)
     end
 end
 
--- 获取玩家队伍
 local function GetPlayerTeam(player)
-    if not player.Team then return "无队伍" end
+    if not player.Team then return "平民" end
     local teamName = player.Team.Name or ""
     if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
         return "警察"
@@ -648,6 +659,30 @@ local function GetPlayerTeam(player)
     end
 end
 
+local function GetPlayerWeapon(player)
+    local character = player.Character
+    if not character then return "赤手空拳" end
+    
+    for _, child in ipairs(character:GetChildren()) do
+        if child:IsA("Tool") and child:FindFirstChild("Handle") then
+            if child.Parent == character then
+                return child.Name
+            end
+        end
+    end
+    
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, child in ipairs(backpack:GetChildren()) do
+            if child:IsA("Tool") then
+                return child.Name
+            end
+        end
+    end
+    
+    return "赤手空拳"
+end
+
 local function ClearESP()
     for _, obj in ipairs(espObjects) do
         pcall(function() obj:Destroy() end)
@@ -659,7 +694,14 @@ local function ClearESP()
     end
 end
 
--- 为单个玩家创建ESP
+local function GetCharacterSize(character)
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        return hrp.Size
+    end
+    return Vector3.new(3, 5, 1.5)
+end
+
 local function CreateESPForPlayer(player)
     local character = player.Character
     if not character then return end
@@ -674,71 +716,33 @@ local function CreateESPForPlayer(player)
         distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude)
     end
     
+    local charSize = GetCharacterSize(character)
+    local weapon = GetPlayerWeapon(player)
+    local team = GetPlayerTeam(player)
+    local scriptTag = CheckPlayerScript(player)
+    
+    local teamColor = Color3.fromRGB(200, 200, 200)
+    if team == "警察" then teamColor = Color3.fromRGB(0, 150, 255)
+    elseif team == "匪徒" then teamColor = Color3.fromRGB(255, 50, 50)
+    elseif team == "医疗" then teamColor = Color3.fromRGB(0, 255, 100)
+    elseif team == "火焰" then teamColor = Color3.fromRGB(255, 150, 0)
+    elseif team == "道路" then teamColor = Color3.fromRGB(255, 255, 0)
+    elseif team == "送货" then teamColor = Color3.fromRGB(255, 150, 255)
+    elseif team == "农民" then teamColor = Color3.fromRGB(50, 255, 50)
+    end
+    
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 130)
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.Size = UDim2.new(0, 200, 0, 100)
+    billboard.StudsOffset = Vector3.new(0, charSize.Y / 2 + 1.8, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = rootPart
     table.insert(espObjects, billboard)
     
     local yOffset = 0
     
-    -- 队伍显示
-    if espShowTeam then
-        local team = GetPlayerTeam(player)
-        local teamColor = Color3.fromRGB(200, 200, 200)
-        if team == "警察" then teamColor = Color3.fromRGB(0, 100, 255)
-        elseif team == "匪徒" then teamColor = Color3.fromRGB(255, 50, 50)
-        elseif team == "医疗" then teamColor = Color3.fromRGB(0, 255, 100)
-        elseif team == "火焰" then teamColor = Color3.fromRGB(255, 150, 0)
-        elseif team == "道路" then teamColor = Color3.fromRGB(255, 255, 0)
-        elseif team == "送货" then teamColor = Color3.fromRGB(255, 150, 255)
-        elseif team == "农民" then teamColor = Color3.fromRGB(50, 255, 50)
-        else teamColor = Color3.fromRGB(200, 200, 200) end
-        
-        local teamLabel = Instance.new("TextLabel")
-        teamLabel.Size = UDim2.new(1, 0, 0, 18)
-        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        teamLabel.BackgroundTransparency = 1
-        teamLabel.Text = team
-        teamLabel.TextColor3 = teamColor
-        teamLabel.TextSize = 13
-        teamLabel.Font = Enum.Font.GothamBold
-        teamLabel.TextStrokeTransparency = 0.3
-        teamLabel.Parent = billboard
-        table.insert(espObjects, teamLabel)
-        yOffset = yOffset + 20
-    end
-    
-    -- 脚本标签
-    if espShowScriptTag then
-        local scriptTag = CheckPlayerScript(player)
-        if scriptTag then
-            local tagLabel = Instance.new("TextLabel")
-            tagLabel.Size = UDim2.new(1, 0, 0, 18)
-            tagLabel.Position = UDim2.new(0, 0, 0, yOffset)
-            tagLabel.BackgroundTransparency = 1
-            tagLabel.Text = scriptTag
-            if scriptTag == "皮脚本" then
-                tagLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-            elseif scriptTag == "wdfex" then
-                tagLabel.TextColor3 = Color3.fromRGB(100, 100, 255)
-            elseif scriptTag == "皮脚本 + wdfex" then
-                tagLabel.TextColor3 = Color3.fromRGB(200, 100, 255)
-            end
-            tagLabel.TextSize = 13
-            tagLabel.Font = Enum.Font.GothamBold
-            tagLabel.TextStrokeTransparency = 0.3
-            tagLabel.Parent = billboard
-            table.insert(espObjects, tagLabel)
-            yOffset = yOffset + 20
-        end
-    end
-    
-    -- 名字
     if espShowName then
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
+        nameLabel.Size = UDim2.new(1, 0, 0, 18)
         nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
         nameLabel.BackgroundTransparency = 1
         if player == LocalPlayer then
@@ -748,73 +752,138 @@ local function CreateESPForPlayer(player)
             nameLabel.Text = player.Name
             nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         end
-        nameLabel.TextSize = 14
+        nameLabel.TextSize = 13
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextStrokeTransparency = 0.3
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         nameLabel.Parent = billboard
         table.insert(espObjects, nameLabel)
-        yOffset = yOffset + 22
+        yOffset = yOffset + 20
     end
     
-    -- 血量
+    if espShowTeam then
+        local teamLabel = Instance.new("TextLabel")
+        teamLabel.Size = UDim2.new(1, 0, 0, 14)
+        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        teamLabel.BackgroundTransparency = 1
+        teamLabel.Text = team
+        teamLabel.TextColor3 = teamColor
+        teamLabel.TextSize = 11
+        teamLabel.Font = Enum.Font.GothamBold
+        teamLabel.TextStrokeTransparency = 0.3
+        teamLabel.Parent = billboard
+        table.insert(espObjects, teamLabel)
+        yOffset = yOffset + 16
+    end
+    
+    if espShowScriptTag and scriptTag then
+        local tagColor = Color3.fromRGB(255, 255, 255)
+        if scriptTag == "皮脚本" then
+            tagColor = Color3.fromRGB(255, 100, 100)
+        elseif scriptTag == "wdfex" then
+            tagColor = Color3.fromRGB(100, 180, 255)
+        elseif scriptTag == "皮脚本 + wdfex" then
+            tagColor = Color3.fromRGB(200, 100, 255)
+        end
+        
+        local tagLabel = Instance.new("TextLabel")
+        tagLabel.Size = UDim2.new(1, 0, 0, 14)
+        tagLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        tagLabel.BackgroundTransparency = 1
+        tagLabel.Text = scriptTag
+        tagLabel.TextColor3 = tagColor
+        tagLabel.TextSize = 11
+        tagLabel.Font = Enum.Font.GothamBold
+        tagLabel.TextStrokeTransparency = 0.3
+        tagLabel.Parent = billboard
+        table.insert(espObjects, tagLabel)
+        yOffset = yOffset + 16
+    end
+    
+    if espShowWeapon then
+        local weaponLabel = Instance.new("TextLabel")
+        weaponLabel.Size = UDim2.new(1, 0, 0, 14)
+        weaponLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        weaponLabel.BackgroundTransparency = 1
+        if weapon == "赤手空拳" then
+            weaponLabel.Text = "赤手空拳"
+            weaponLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        else
+            weaponLabel.Text = weapon
+            weaponLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+        weaponLabel.TextSize = 11
+        weaponLabel.Font = Enum.Font.Gotham
+        weaponLabel.TextStrokeTransparency = 0.3
+        weaponLabel.Parent = billboard
+        table.insert(espObjects, weaponLabel)
+        yOffset = yOffset + 16
+    end
+    
     if espShowHealth then
         local healthBg = Instance.new("Frame")
-        healthBg.Size = UDim2.new(0.8, 0, 0, 8)
-        healthBg.Position = UDim2.new(0.1, 0, 0, yOffset)
-        healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        healthBg.BorderSizePixel = 0
+        healthBg.Size = UDim2.new(0.7, 0, 0, 6)
+        healthBg.Position = UDim2.new(0.15, 0, 0, yOffset)
+        healthBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        healthBg.BorderSizePixel = 1
+        healthBg.BorderColor3 = Color3.fromRGB(60, 60, 60)
         healthBg.Parent = billboard
         table.insert(espObjects, healthBg)
         
         local healthPercent = math.clamp(health / maxHealth, 0, 1)
         local healthBar = Instance.new("Frame")
         healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
-        healthBar.BackgroundColor3 = healthPercent > 0.5 and Color3.fromRGB(0, 255, 0) or healthPercent > 0.25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+        if healthPercent > 0.5 then
+            healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        elseif healthPercent > 0.25 then
+            healthBar.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
+        else
+            healthBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        end
         healthBar.BorderSizePixel = 0
         healthBar.Parent = healthBg
         table.insert(espObjects, healthBar)
         
         local healthLabel = Instance.new("TextLabel")
-        healthLabel.Size = UDim2.new(1, 0, 0, 16)
-        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 10)
+        healthLabel.Size = UDim2.new(1, 0, 0, 14)
+        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 8)
         healthLabel.BackgroundTransparency = 1
-        healthLabel.Text = health .. "/" .. maxHealth .. " HP"
+        healthLabel.Text = health .. "/" .. maxHealth
         healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        healthLabel.TextSize = 11
+        healthLabel.TextSize = 10
         healthLabel.Font = Enum.Font.Gotham
+        healthLabel.TextStrokeTransparency = 0.3
         healthLabel.Parent = billboard
         table.insert(espObjects, healthLabel)
-        yOffset = yOffset + 28
+        yOffset = yOffset + 26
     end
     
-    -- 距离
     if espShowDist and player ~= LocalPlayer then
         local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, 0, 0, 16)
+        distLabel.Size = UDim2.new(1, 0, 0, 12)
         distLabel.Position = UDim2.new(0, 0, 0, yOffset)
         distLabel.BackgroundTransparency = 1
         distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        distLabel.TextSize = 11
+        distLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        distLabel.TextSize = 10
         distLabel.Font = Enum.Font.Gotham
         distLabel.Parent = billboard
         table.insert(espObjects, distLabel)
-        yOffset = yOffset + 18
+        yOffset = yOffset + 14
     end
     
-    -- 方框
     if espShowBox then
         local box = Instance.new("BoxHandleAdornment")
-        box.Size = Vector3.new(3, 5, 1.5)
+        box.Size = Vector3.new(3.5, 5.5, 1.8)
         box.Adornee = rootPart
-        box.Color3 = Color3.fromRGB(0, 255, 255)
-        box.Transparency = 0.5
+        box.Color3 = Color3.fromRGB(0, 200, 255)
+        box.Transparency = 0.4
         box.ZIndex = 0
+        box.AlwaysOnTop = true
         box.Parent = rootPart
         table.insert(espObjects, box)
     end
     
-    -- 骨骼
     if espShowBone then
         local boneParts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"}
         for _, boneName in ipairs(boneParts) do
@@ -822,9 +891,9 @@ local function CreateESPForPlayer(player)
             if part and part:IsA("BasePart") then
                 local sphere = Instance.new("SelectionBox")
                 sphere.Adornee = part
-                sphere.Color3 = Color3.fromRGB(0, 255, 255)
-                sphere.LineThickness = 0.08
-                sphere.Transparency = 0.3
+                sphere.Color3 = Color3.fromRGB(0, 200, 255)
+                sphere.LineThickness = 0.06
+                sphere.Transparency = 0.2
                 sphere.Parent = part
                 table.insert(espObjects, sphere)
             end
@@ -838,14 +907,12 @@ local function UpdateESP()
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer and espShowSelf then
-            -- 屏蔽自己
         else
             CreateESPForPlayer(player)
         end
     end
 end
 
--- 总开关
 Tab_ESP:Toggle({
     ["Title"] = "透视总开关",
     ["Desc"] = "开启/关闭所有透视功能",
@@ -876,7 +943,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 绘制名字
 Tab_ESP:Toggle({
     ["Title"] = "绘制名字",
     ["Desc"] = "显示玩家名字",
@@ -887,7 +953,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 绘制血量
 Tab_ESP:Toggle({
     ["Title"] = "绘制血量",
     ["Desc"] = "显示玩家血量条和数值",
@@ -898,7 +963,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 绘制方框
 Tab_ESP:Toggle({
     ["Title"] = "绘制方框",
     ["Desc"] = "显示玩家方框",
@@ -909,7 +973,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 绘制骨骼
 Tab_ESP:Toggle({
     ["Title"] = "绘制骨骼",
     ["Desc"] = "显示玩家骨骼点",
@@ -920,7 +983,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 绘制距离
 Tab_ESP:Toggle({
     ["Title"] = "绘制距离",
     ["Desc"] = "显示与玩家的距离",
@@ -931,7 +993,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 同行显示
 Tab_ESP:Toggle({
     ["Title"] = "同行显示",
     ["Desc"] = "检测并显示玩家使用的脚本（皮脚本/wdfex）",
@@ -942,7 +1003,6 @@ Tab_ESP:Toggle({
     end
 })
 
--- 屏蔽自己
 Tab_ESP:Toggle({
     ["Title"] = "屏蔽自己",
     ["Desc"] = "开启后自己不显示透视，关闭后自己显示透视",
@@ -953,13 +1013,22 @@ Tab_ESP:Toggle({
     end
 })
 
--- 显示队伍
 Tab_ESP:Toggle({
     ["Title"] = "显示队伍",
     ["Desc"] = "显示玩家所属队伍",
     ["Default"] = false,
     ["Callback"] = function(bool)
         espShowTeam = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+Tab_ESP:Toggle({
+    ["Title"] = "绘制手持武器",
+    ["Desc"] = "显示玩家手持的武器名称",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowWeapon = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
