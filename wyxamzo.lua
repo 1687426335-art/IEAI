@@ -506,8 +506,8 @@ Tab_Teleport:Button({
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "拆车场",
-    ["Desc"] = "传送至拆车场",
+    ["Title"] = "拆车的地方",
+    ["Desc"] = "传送至拆的地方",
     ["Callback"] = function()
         TeleportTo(Vector3.new(3434.49, 42.93, 2686.46))
     end
@@ -698,7 +698,7 @@ local function CreatePoliceAlert()
     warnText.Size = UDim2.new(1, 0, 0, 30)
     warnText.Position = UDim2.new(0, 0, 0, 5)
     warnText.BackgroundTransparency = 1
-    warnText.Text = "警察来了！快跑！"
+    warnText.Text = "来了快跑（你如果有通缉的话你不跑要出事了），"
     warnText.TextColor3 = Color3.fromRGB(255, 255, 255)
     warnText.TextSize = 22
     warnText.Font = Enum.Font.GothamBold
@@ -757,7 +757,7 @@ local function UpdatePoliceAlert()
             local isPolice = false
             if player.Team then
                 local teamName = player.Team.Name or ""
-                if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                if teamName:find("废物") or teamName:find("Police") or teamName:find("Cop") then
                     isPolice = true
                 end
             end
@@ -800,7 +800,7 @@ local function UpdatePoliceAlert()
             policeAlertLabel.BorderColor3 = warnColor
             
             if policeDistLabel then
-                policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
+                policeDistLabel.Text = "废物 " .. closestPolice.Name .. " 距离: " .. math.floor(closestDist) .. "m"
             end
             
             if closestDist < 20 then
@@ -811,7 +811,7 @@ local function UpdatePoliceAlert()
                     local dot = lookDirection:Dot(toPlayer)
                     if dot > 0.3 then
                         if policeDistLabel then
-                            policeDistLabel.Text = "警察 " .. closestPolice.Name .. " 正在靠近! " .. math.floor(closestDist) .. "m"
+                            policeDistLabel.Text = "废物 " .. closestPolice.Name .. " 正在靠近! " .. math.floor(closestDist) .. "m"
                         end
                         policeAlertLabel.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
                         policeAlertLabel.BackgroundTransparency = 0.15
@@ -875,10 +875,10 @@ local function CheckPlayerScript(player)
 end
 
 local function GetPlayerTeam(player)
-    if not player.Team then return "平民" end
+    if not player.Team then return "骚福瑞" end
     local teamName = player.Team.Name or ""
-    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
-        return "警察"
+    if teamName:find("废物") or teamName:find("Police") or teamName:find("Cop") then
+        return "废物"
     elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then
         return "匪徒"
     elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then
@@ -892,7 +892,7 @@ local function GetPlayerTeam(player)
     elseif teamName:find("农民") or teamName:find("Farm") then
         return "农民"
     else
-        return "平民"
+        return "骚福瑞"
     end
 end
 
