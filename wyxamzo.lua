@@ -587,21 +587,41 @@ local espShowBox = false
 local espShowBone = false
 local espShowDist = false
 local espShowScriptTag = false
-local espShowSelf = false
+local espShowSelf = true  -- 默认为true，即屏蔽自己（不显示自己）
 local espShowTeam = false
 
-local function ClearESP()
-    for _, obj in ipairs(espObjects) do
-        pcall(function() obj:Destroy() end)
+-- 检测当前玩家自己的脚本
+local function GetMyScriptTag()
+    -- 检测自己是否使用了皮脚本
+    local hasPi = false
+    local hasWdfex = false
+    
+    -- 检测皮脚本特征
+    if LocalPlayer:FindFirstChild("PiScriptTag") or LocalPlayer:FindFirstChild("XiaoPi") then
+        hasPi = true
     end
-    espObjects = {}
-    if espRenderConnection then
-        espRenderConnection:Disconnect()
-        espRenderConnection = nil
+    -- 检测wdfex脚本特征（自己肯定有）
+    if LocalPlayer:FindFirstChild("WdfexTag") or LocalPlayer:FindFirstChild("wdfex") then
+        hasWdfex = true
+    end
+    
+    -- 如果都没检测到，但有脚本标记，默认自己就是wdfex
+    if not hasPi and not hasWdfex then
+        hasWdfex = true  -- 默认自己使用wdfex
+    end
+    
+    if hasPi and hasWdfex then
+        return "皮脚本 + wdfex"
+    elseif hasPi then
+        return "皮脚本"
+    elseif hasWdfex then
+        return "wdfex"
+    else
+        return nil
     end
 end
 
--- 检测玩家使用的脚本
+-- 检测玩家使用的脚本（包括自己）
 local function CheckPlayerScript(player)
     local hasPiScript = false
     local hasWdfexScript = false
@@ -611,6 +631,15 @@ local function CheckPlayerScript(player)
     end
     if player:FindFirstChild("WdfexTag") or player:FindFirstChild("wdfex") then
         hasWdfexScript = true
+    end
+    
+    -- 如果是自己，强制检测
+    if player == LocalPlayer then
+        local myTag = GetMyScriptTag()
+        if myTag then
+            return myTag
+        end
+        return "wdfex"
     end
     
     if hasPiScript and hasWdfexScript then
@@ -644,6 +673,17 @@ local function GetPlayerTeam(player)
         return "农民"
     else
         return "平民"
+    end
+end
+
+local function ClearESP()
+    for _, obj in ipairs(espObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    espObjects = {}
+    if espRenderConnection then
+        espRenderConnection:Disconnect()
+        espRenderConnection = nil
     end
 end
 
@@ -711,506 +751,4 @@ local function CreateESPForPlayer(player)
     if espShowScriptTag then
         local scriptTag = CheckPlayerScript(player)
         if scriptTag then
-            local tagLabel = Instance.new("TextLabel")
-            tagLabel.Size = UDim2.new(1, 0, 0, 18)
-            tagLabel.Position = UDim2.new(0, 0, 0, yOffset)
-            tagLabel.BackgroundTransparency = 1
-            tagLabel.Text = scriptTag
-            if scriptTag == "皮脚本" then
-                tagLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-            elseif scriptTag == "wdfex" then
-                tagLabel.TextColor3 = Color3.fromRGB(100, 100, 255)
-            elseif scriptTag == "皮脚本 + wdfex" then
-                tagLabel.TextColor3 = Color3.fromRGB(200, 100, 255)
-            end
-            tagLabel.TextSize = 13
-            tagLabel.Font = Enum.Font.GothamBold
-            tagLabel.TextStrokeTransparency = 0.3
-            tagLabel.Parent = billboard
-            table.insert(espObjects, tagLabel)
-            yOffset = yOffset + 20
-        end
-    end
-    
-    -- 名字
-    if espShowName then
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
-        nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        nameLabel.BackgroundTransparency = 1
-        if player == LocalPlayer then
-            nameLabel.Text = player.Name .. " (你)"
-            nameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-        else
-            nameLabel.Text = player.Name
-            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        end
-        nameLabel.TextSize = 14
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 0.3
-        nameLabel.Parent = billboard
-        table.insert(espObjects, nameLabel)
-        yOffset = yOffset + 22
-    end
-    
-    -- 血量
-    if espShowHealth then
-        local healthBg = Instance.new("Frame")
-        healthBg.Size = UDim2.new(0.8, 0, 0, 8)
-        healthBg.Position = UDim2.new(0.1, 0, 0, yOffset)
-        healthBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        healthBg.BorderSizePixel = 0
-        healthBg.Parent = billboard
-        table.insert(espObjects, healthBg)
-        
-        local healthPercent = math.clamp(health / maxHealth, 0, 1)
-        local healthBar = Instance.new("Frame")
-        healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
-        healthBar.BackgroundColor3 = healthPercent > 0.5 and Color3.fromRGB(0, 255, 0) or healthPercent > 0.25 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
-        healthBar.BorderSizePixel = 0
-        healthBar.Parent = healthBg
-        table.insert(espObjects, healthBar)
-        
-        local healthLabel = Instance.new("TextLabel")
-        healthLabel.Size = UDim2.new(1, 0, 0, 16)
-        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 10)
-        healthLabel.BackgroundTransparency = 1
-        healthLabel.Text = health .. "/" .. maxHealth .. " HP"
-        healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        healthLabel.TextSize = 11
-        healthLabel.Font = Enum.Font.Gotham
-        healthLabel.Parent = billboard
-        table.insert(espObjects, healthLabel)
-        yOffset = yOffset + 28
-    end
-    
-    -- 距离
-    if espShowDist and player ~= LocalPlayer then
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, 0, 0, 16)
-        distLabel.Position = UDim2.new(0, 0, 0, yOffset)
-        distLabel.BackgroundTransparency = 1
-        distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        distLabel.TextSize = 11
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.Parent = billboard
-        table.insert(espObjects, distLabel)
-        yOffset = yOffset + 18
-    end
-    
-    -- 方框
-    if espShowBox then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Size = Vector3.new(3, 5, 1.5)
-        box.Adornee = rootPart
-        box.Color3 = Color3.fromRGB(0, 255, 255)
-        box.Transparency = 0.5
-        box.ZIndex = 0
-        box.Parent = rootPart
-        table.insert(espObjects, box)
-    end
-    
-    -- 骨骼
-    if espShowBone then
-        local boneParts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"}
-        for _, boneName in ipairs(boneParts) do
-            local part = character:FindFirstChild(boneName)
-            if part and part:IsA("BasePart") then
-                local sphere = Instance.new("SelectionBox")
-                sphere.Adornee = part
-                sphere.Color3 = Color3.fromRGB(0, 255, 255)
-                sphere.LineThickness = 0.08
-                sphere.Transparency = 0.3
-                sphere.Parent = part
-                table.insert(espObjects, sphere)
-            end
-        end
-    end
-end
-
-local function UpdateESP()
-    ClearESP()
-    
-    if not espMasterEnabled then return end
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer and not espShowSelf then
-            -- 不显示自己
-        else
-            CreateESPForPlayer(player)
-        end
-    end
-end
-
--- 总开关
-Tab_ESP:Toggle({
-    ["Title"] = "透视总开关",
-    ["Desc"] = "开启/关闭所有透视功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espMasterEnabled = bool
-        if bool then
-            UpdateESP()
-            if not espRenderConnection then
-                espRenderConnection = RunService.Heartbeat:Connect(function()
-                    if espMasterEnabled then
-                        UpdateESP()
-                    end
-                end)
-            end
-            -- 玩家进出时自动更新
-            Players.PlayerAdded:Connect(function()
-                if espMasterEnabled then UpdateESP() end
-            end)
-            Players.PlayerRemoving:Connect(function()
-                if espMasterEnabled then UpdateESP() end
-            end)
-            -- 角色变化时更新
-            for _, player in ipairs(Players:GetPlayers()) do
-                player.CharacterAdded:Connect(function()
-                    if espMasterEnabled then UpdateESP() end
-                end)
-            end
-        else
-            ClearESP()
-        end
-    end
-})
-
--- 绘制名字
-Tab_ESP:Toggle({
-    ["Title"] = "绘制名字",
-    ["Desc"] = "显示玩家名字",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowName = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 绘制血量
-Tab_ESP:Toggle({
-    ["Title"] = "绘制血量",
-    ["Desc"] = "显示玩家血量条和数值",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowHealth = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 绘制方框
-Tab_ESP:Toggle({
-    ["Title"] = "绘制方框",
-    ["Desc"] = "显示玩家方框",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowBox = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 绘制骨骼
-Tab_ESP:Toggle({
-    ["Title"] = "绘制骨骼",
-    ["Desc"] = "显示玩家骨骼点",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowBone = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 绘制距离
-Tab_ESP:Toggle({
-    ["Title"] = "绘制距离",
-    ["Desc"] = "显示与玩家的距离",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowDist = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 同行显示
-Tab_ESP:Toggle({
-    ["Title"] = "同行显示",
-    ["Desc"] = "检测并显示玩家使用的脚本（皮脚本/wdfex）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowScriptTag = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 屏蔽自己（开=不透视自己，关=透视自己）
-Tab_ESP:Toggle({
-    ["Title"] = "屏蔽自己",
-    ["Desc"] = "开启后自己不显示透视，关闭后自己显示透视",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowSelf = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--- 显示队伍
-Tab_ESP:Toggle({
-    ["Title"] = "显示队伍",
-    ["Desc"] = "显示玩家所属队伍（警察/匪徒/医疗/火焰/道路/送货/农民/平民）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        espShowTeam = bool
-        if espMasterEnabled then UpdateESP() end
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 范围
--------------------------------------------------------------------------
-local Tab_Range = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "范围",
-    ["Icon"] = "rbxassetid://87107069659024",
-})
-
-Tab_Range:Section({
-    TextSize = 17,
-    ["Title"] = "范围功能",
-    TextXAlignment = "Left",
-})
-
-_G.RangeConn = nil
-local function updateRange(size)
-    if _G.RangeConn then
-        _G.RangeConn:Disconnect()
-        _G.RangeConn = nil
-    end
-    if size == 0 then
-        return
-    end
-    _G.HeadSize = size
-    _G.Disabled = true
-    _G.RangeConn = RunService.RenderStepped:Connect(function()
-        if _G.Disabled then
-            for _, v in pairs(Players:GetPlayers()) do
-                if v ~= LocalPlayer then
-                    pcall(function()
-                        if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                            v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-                            v.Character.HumanoidRootPart.Transparency = 0.7
-                            v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
-                            v.Character.HumanoidRootPart.Material = "Neon"
-                            v.Character.HumanoidRootPart.CanCollide = false
-                        end
-                    end)
-                end
-            end
-        end
-    end)
-end
-
-Tab_Range:Button({
-    ["Title"] = "清空范围效果",
-    ["Desc"] = "关闭范围修改",
-    ["Callback"] = function()
-        updateRange(0)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围10",
-    ["Desc"] = "设置碰撞箱大小为10",
-    ["Callback"] = function()
-        updateRange(10)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围20",
-    ["Desc"] = "设置碰撞箱大小为20",
-    ["Callback"] = function()
-        updateRange(20)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围30",
-    ["Desc"] = "设置碰撞箱大小为30",
-    ["Callback"] = function()
-        updateRange(30)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围50",
-    ["Desc"] = "设置碰撞箱大小为50",
-    ["Callback"] = function()
-        updateRange(50)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围70",
-    ["Desc"] = "设置碰撞箱大小为70",
-    ["Callback"] = function()
-        updateRange(70)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围120",
-    ["Desc"] = "设置碰撞箱大小为120",
-    ["Callback"] = function()
-        updateRange(120)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围300",
-    ["Desc"] = "设置碰撞箱大小为300",
-    ["Callback"] = function()
-        updateRange(300)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围500",
-    ["Desc"] = "设置碰撞箱大小为500",
-    ["Callback"] = function()
-        updateRange(500)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围999",
-    ["Desc"] = "设置碰撞箱大小为999",
-    ["Callback"] = function()
-        updateRange(999)
-    end
-})
-
-Tab_Range:Button({
-    ["Title"] = "范围999999999",
-    ["Desc"] = "设置碰撞箱大小为999999999",
-    ["Callback"] = function()
-        updateRange(999999999)
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 自瞄
--------------------------------------------------------------------------
-local Tab_Aimbot = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "自瞄",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Aimbot:Section({
-    TextSize = 17,
-    ["Title"] = "皮脚本自瞄",
-    TextXAlignment = "Left",
-})
-
-Tab_Aimbot:Button({
-    ["Title"] = "开启皮脚本自瞄",
-    ["Desc"] = "点击开启皮脚本自瞄",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 设置
--------------------------------------------------------------------------
-local Tab_Settings = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "设置",
-    ["Icon"] = "rbxassetid://14895392107",
-})
-
-Tab_Settings:Section({
-    TextSize = 17,
-    ["Title"] = "控制",
-    TextXAlignment = "Left",
-})
-
-Tab_Settings:Button({
-    ["Title"] = "关闭脚本",
-    ["Desc"] = "关闭脚本并清理UI",
-    ["Callback"] = function()
-        getgenv().EasterEgg = false
-        if _G.RangeConn then
-            _G.RangeConn:Disconnect()
-            _G.RangeConn = nil
-        end
-        if espRenderConnection then
-            espRenderConnection:Disconnect()
-            espRenderConnection = nil
-        end
-        ClearESP()
-        pcall(function()
-            local frosty = CoreGui:FindFirstChild("frosty")
-            if frosty then frosty:Destroy() end
-            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-            if eggGui then eggGui:Destroy() end
-            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
-            if welcomeGui then welcomeGui:Destroy() end
-            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
-            if borderGui then borderGui:Destroy() end
-            local hubGui = CoreGui:FindFirstChild("wdfexHub")
-            if hubGui then hubGui:Destroy() end
-        end)
-        Window:Close()
-    end
-})
-
--- 彩蛋开关
-local easterEggEnabled = false
-Tab_Settings:Toggle({
-    ["Title"] = "彩蛋开关",
-    ["Desc"] = "开启彩蛋功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        easterEggEnabled = bool
-        getgenv().EasterEgg = bool
-        
-        if bool then
-            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
-            
-            pcall(function()
-                local eggGui = Instance.new("ScreenGui")
-                eggGui.Name = "EasterEggGui"
-                eggGui.Parent = CoreGui
-                eggGui.ResetOnSpawn = false
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Name = "EggLabel"
-                textLabel.Parent = eggGui
-                textLabel.Size = UDim2.new(0, 220, 0, 30)
-                textLabel.Position = UDim2.new(1, -230, 1, -40)
-                textLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                textLabel.BackgroundTransparency = 0.4
-                textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                textLabel.TextSize = 16
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.Text = "你还想要彩蛋?赶紧去送货吧!"
-                textLabel.TextScaled = true
-                
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 8)
-                corner.Parent = textLabel
-            end)
-        else
-            pcall(function()
-                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-                if eggGui then eggGui:Destroy() end
-            end)
-        end
-    end
-})
-
-print("wdfex-圣奥里已加载")
-print("共26个传送点 + 透视 + 范围 + 自瞄 + 通用 + 售货机 + 彩色边框 + 欢迎弹窗")
+            local tagLabel = Instance.new("Text
