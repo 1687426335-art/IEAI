@@ -588,6 +588,7 @@ local espShowBone = false
 local espShowDist = false
 local espShowScriptTag = false
 local espShowSelf = false
+local espShowTeam = false
 
 local function ClearESP()
     for _, obj in ipairs(espObjects) do
@@ -602,7 +603,6 @@ end
 
 -- 检测玩家使用的脚本
 local function CheckPlayerScript(player)
-    if player == LocalPlayer then return nil end
     local hasPiScript = false
     local hasWdfexScript = false
     
@@ -624,6 +624,29 @@ local function CheckPlayerScript(player)
     end
 end
 
+-- 获取玩家队伍
+local function GetPlayerTeam(player)
+    if not player.Team then return "无队伍" end
+    local teamName = player.Team.Name or ""
+    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+        return "警察"
+    elseif teamName:find("匪徒") or teamName:find("Criminal") or teamName:find("Gang") then
+        return "匪徒"
+    elseif teamName:find("医疗") or teamName:find("Medic") or teamName:find("医生") then
+        return "医疗"
+    elseif teamName:find("消防") or teamName:find("Fire") then
+        return "火焰"
+    elseif teamName:find("道路") or teamName:find("Road") then
+        return "道路"
+    elseif teamName:find("送货") or teamName:find("Delivery") then
+        return "送货"
+    elseif teamName:find("农民") or teamName:find("Farm") then
+        return "农民"
+    else
+        return "平民"
+    end
+end
+
 -- 为单个玩家创建ESP
 local function CreateESPForPlayer(player)
     local character = player.Character
@@ -640,13 +663,49 @@ local function CreateESPForPlayer(player)
     end
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 100)
+    billboard.Size = UDim2.new(0, 200, 0, 130)
     billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = rootPart
     table.insert(espObjects, billboard)
     
     local yOffset = 0
+    
+    -- 队伍显示
+    if espShowTeam then
+        local team = GetPlayerTeam(player)
+        local teamColor = Color3.fromRGB(200, 200, 200)
+        if team == "警察" then
+            teamColor = Color3.fromRGB(0, 100, 255)
+        elseif team == "匪徒" then
+            teamColor = Color3.fromRGB(255, 50, 50)
+        elseif team == "医疗" then
+            teamColor = Color3.fromRGB(0, 255, 100)
+        elseif team == "火焰" then
+            teamColor = Color3.fromRGB(255, 150, 0)
+        elseif team == "道路" then
+            teamColor = Color3.fromRGB(255, 255, 0)
+        elseif team == "送货" then
+            teamColor = Color3.fromRGB(255, 150, 255)
+        elseif team == "农民" then
+            teamColor = Color3.fromRGB(50, 255, 50)
+        else
+            teamColor = Color3.fromRGB(200, 200, 200)
+        end
+        
+        local teamLabel = Instance.new("TextLabel")
+        teamLabel.Size = UDim2.new(1, 0, 0, 18)
+        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        teamLabel.BackgroundTransparency = 1
+        teamLabel.Text = team
+        teamLabel.TextColor3 = teamColor
+        teamLabel.TextSize = 13
+        teamLabel.Font = Enum.Font.GothamBold
+        teamLabel.TextStrokeTransparency = 0.3
+        teamLabel.Parent = billboard
+        table.insert(espObjects, teamLabel)
+        yOffset = yOffset + 20
+    end
     
     -- 脚本标签（同行显示）
     if espShowScriptTag then
@@ -885,13 +944,24 @@ Tab_ESP:Toggle({
     end
 })
 
--- 屏蔽自己
+-- 屏蔽自己（开=不透视自己，关=透视自己）
 Tab_ESP:Toggle({
     ["Title"] = "屏蔽自己",
     ["Desc"] = "开启后自己不显示透视，关闭后自己显示透视",
     ["Default"] = false,
     ["Callback"] = function(bool)
         espShowSelf = bool
+        if espMasterEnabled then UpdateESP() end
+    end
+})
+
+-- 显示队伍
+Tab_ESP:Toggle({
+    ["Title"] = "显示队伍",
+    ["Desc"] = "显示玩家所属队伍（警察/匪徒/医疗/火焰/道路/送货/农民/平民）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        espShowTeam = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
