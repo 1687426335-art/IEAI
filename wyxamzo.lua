@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 车辆透视（实时刷新）
+-- Tab: 车辆透视（新样式）
 -------------------------------------------------------------------------
 local Tab_VehicleESP = Window:Tab({
     ["Locked"] = false,
@@ -865,6 +865,39 @@ local function ClearVehicleESP()
     end
 end
 
+local vehicleNameList = {
+    "Linkeen LS", "纳森之路", "Chevelle Impole", "福莱特胜利", "For子S350", "远景M50",
+    "VISTAM50", "Chevelle游记", "切维尔·奥卡皮", "雪弗莱C10", "宜必思杯", "Che甲R3000",
+    "Forlet出口", "福尔莱特智利人", "Aprimo ST50", "Wordhog跑者", "智利泰托纳",
+    "伯特曼侦察兵", "切维尔·维拉", "卡德拉特CST跑车", "BMJ N 2", "爪子迷彩",
+    "罗夫·格兰德", "Forlet马蹄'68", "雅米尼MD07", "小马Stall马", "词语兔子充电",
+    "Wordhog竞争对手", "赛车手Aron", "埃斯特拉E型", "ForletS150雷克斯", "纳森GTR",
+    "Wordhog充电'70", "Cadlate逃生", "赛车者快线", "BMJ R1800", "商品集G64",
+    "pershette717", "艾努R8", "湾流海岸", "阿斯特拉·卢卡斯DL11", "Chevelle护卫舰",
+    "Berely通用GT", "费罗内·拉费罗内"
+}
+
+local function IsRealVehicle(obj)
+    if not obj:IsA("Model") then return false end
+    local name = obj.Name
+    for _, vName in ipairs(vehicleNameList) do
+        if name:find(vName) or vName:find(name) then
+            return true
+        end
+    end
+    local lowerName = name:lower()
+    local keywords = {"car", "vehicle", "chevelle", "forlet", "wordhog", "vista", "纳森", "切维尔", "雪弗莱", "福莱特"}
+    for _, kw in ipairs(keywords) do
+        if lowerName:find(kw) then
+            return true
+        end
+    end
+    if obj:FindFirstChild("HumanoidRootPart") then
+        return true
+    end
+    return false
+end
+
 local function GetVehicleLockLevel(vehicle)
     for _, child in ipairs(vehicle:GetDescendants()) do
         if child:IsA("IntValue") or child:IsA("NumberValue") then
@@ -895,30 +928,6 @@ local function GetVehicleLockLevel(vehicle)
         if val >= 1 and val <= 3 then return val end
     end
     return nil
-end
-
-local function IsVehicle(obj)
-    if not obj:IsA("Model") then return false end
-    local name = obj.Name:lower()
-    local keywords = {"car", "vehicle", "车", "auto", "truck", "van", "taxi", "police", "suv", "sedan", "coupe", "motor", "bike", "chevelle", "forlet", "wordhog", "vista", "纳森", "切维尔", "雪弗莱", "福莱特"}
-    for _, kw in ipairs(keywords) do
-        if name:find(kw) then
-            return true
-        end
-    end
-    if obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart") then
-        local hasWheels = false
-        for _, part in ipairs(obj:GetChildren()) do
-            if part:IsA("BasePart") and (part.Name:lower():find("wheel") or part.Name:lower():find("tire")) then
-                hasWheels = true
-                break
-            end
-        end
-        if hasWheels then
-            return true
-        end
-    end
-    return false
 end
 
 local function GetRootPart(vehicle)
@@ -972,37 +981,51 @@ local function CreateVehicleESP(vehicle)
     end
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 80)
-    billboard.StudsOffset = Vector3.new(0, 4, 0)
+    billboard.Size = UDim2.new(0, 220, 0, 70)
+    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = rootPart
     table.insert(vehicleESPObjects, billboard)
     
+    -- 渐变背景
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    bg.BackgroundTransparency = 0.5
-    bg.BorderSizePixel = 1
+    bg.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+    bg.BackgroundTransparency = 0.4
+    bg.BorderSizePixel = 2
     bg.BorderColor3 = lockColor
     bg.Parent = billboard
     table.insert(vehicleESPObjects, bg)
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = bg
+    
+    -- 左边彩色竖条
+    local colorBar = Instance.new("Frame")
+    colorBar.Size = UDim2.new(0, 4, 1, 0)
+    colorBar.BackgroundColor3 = lockColor
+    colorBar.BorderSizePixel = 0
+    colorBar.Parent = bg
+    table.insert(vehicleESPObjects, colorBar)
+    
+    local cornerBar = Instance.new("UICorner")
+    cornerBar.CornerRadius = UDim.new(0, 4)
+    cornerBar.Parent = colorBar
     
     local yOffset = 5
     
     if vehicleShowName then
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -10, 0, 18)
-        nameLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        nameLabel.Size = UDim2.new(1, -15, 0, 18)
+        nameLabel.Position = UDim2.new(0, 10, 0, yOffset)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = vehicleName
         nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextSize = 13
+        nameLabel.TextSize = 14
         nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 0.2
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.TextStrokeTransparency = 0.3
         nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         nameLabel.Parent = billboard
         table.insert(vehicleESPObjects, nameLabel)
@@ -1011,30 +1034,32 @@ local function CreateVehicleESP(vehicle)
     
     if vehicleShowLock then
         local lockLabel = Instance.new("TextLabel")
-        lockLabel.Size = UDim2.new(1, -10, 0, 18)
-        lockLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        lockLabel.Size = UDim2.new(1, -15, 0, 16)
+        lockLabel.Position = UDim2.new(0, 10, 0, yOffset)
         lockLabel.BackgroundTransparency = 1
         lockLabel.Text = "安全等级: " .. lockText
         lockLabel.TextColor3 = lockColor
-        lockLabel.TextSize = 13
+        lockLabel.TextSize = 12
         lockLabel.Font = Enum.Font.GothamBold
-        lockLabel.TextStrokeTransparency = 0.2
+        lockLabel.TextXAlignment = Enum.TextXAlignment.Left
+        lockLabel.TextStrokeTransparency = 0.3
         lockLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         lockLabel.Parent = billboard
         table.insert(vehicleESPObjects, lockLabel)
-        yOffset = yOffset + 20
+        yOffset = yOffset + 18
     end
     
     if vehicleShowDist then
         local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, -10, 0, 16)
-        distLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        distLabel.Size = UDim2.new(1, -15, 0, 14)
+        distLabel.Position = UDim2.new(0, 10, 0, yOffset)
         distLabel.BackgroundTransparency = 1
         distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(180, 180, 255)
+        distLabel.TextColor3 = Color3.fromRGB(150, 150, 255)
         distLabel.TextSize = 11
         distLabel.Font = Enum.Font.Gotham
-        distLabel.TextStrokeTransparency = 0.2
+        distLabel.TextXAlignment = Enum.TextXAlignment.Left
+        distLabel.TextStrokeTransparency = 0.3
         distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         distLabel.Parent = billboard
         table.insert(vehicleESPObjects, distLabel)
@@ -1047,7 +1072,7 @@ local function UpdateVehicleESP()
     
     local processed = {}
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if IsVehicle(obj) and not processed[obj] then
+        if IsRealVehicle(obj) and not processed[obj] then
             processed[obj] = true
             CreateVehicleESP(obj)
         end
@@ -1074,7 +1099,7 @@ Tab_VehicleESP:Toggle({
                 end)
             end
             Workspace.DescendantAdded:Connect(function(obj)
-                if vehicleESPEnabled and IsVehicle(obj) then
+                if vehicleESPEnabled and IsRealVehicle(obj) then
                     CreateVehicleESP(obj)
                 end
             end)
@@ -1319,6 +1344,10 @@ Tab_Settings:Button({
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
         end
+        if vehicleESPConnection then
+            vehicleESPConnection:Disconnect()
+            vehicleESPConnection = nil
+        end
         if espRenderConnection then
             espRenderConnection:Disconnect()
             espRenderConnection = nil
@@ -1443,4 +1472,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("车辆透视已添加（实时刷新）")
+print("车辆透视已添加（新样式）")
