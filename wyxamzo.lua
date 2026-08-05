@@ -21,7 +21,7 @@ local CurrentCamera = Workspace.CurrentCamera
 local function ServerClosedNotify()
     StarterGui:SetCore("SendNotification", {
         Title = "服务器已关闭",
-        Text = "所有功能暂时停止使用，有问题联系作者",
+        Text = "脚本暂时停止使用有问题联系作者",
         Duration = 3,
     })
 end
