@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 出租车
+-- Tab: 出租车（自动检测黄色标记传送）
 -------------------------------------------------------------------------
 local Tab_Taxi = Window:Tab({
     ["Locked"] = false,
@@ -849,76 +849,34 @@ Tab_Taxi:Section({
 local taxiEnabled = false
 local taxiConnection = nil
 
-local function GetTaxiTarget()
+local function GetYellowTarget()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
     
-    local closestTarget = nil
+    local closest = nil
     local closestDist = math.huge
     
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Position then
-            local name = obj.Name:lower()
-            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("标记") or name:find("point") or name:find("destination") or name:find("goal") or name:find("order") then
-                local dist = (hrp.Position - obj.Position).Magnitude
-                if dist < closestDist then
-                    closestDist = dist
-                    closestTarget = obj.Position
-                end
-            end
             if obj.Color then
-                local color = obj.Color
-                if color.r > 0.7 and color.g > 0.7 and color.b < 0.3 then
+                local c = obj.Color
+                if c.r > 0.7 and c.g > 0.7 and c.b < 0.3 then
                     local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < closestDist then
+                    if dist < closestDist and dist > 2 then
                         closestDist = dist
-                        closestTarget = obj.Position
-                    end
-                end
-            end
-        end
-        if obj:IsA("Model") then
-            local name = obj.Name:lower()
-            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("标记") or name:find("point") or name:find("destination") or name:find("goal") or name:find("order") then
-                local primaryPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
-                if primaryPart and primaryPart:IsA("BasePart") and primaryPart.Position then
-                    local dist = (hrp.Position - primaryPart.Position).Magnitude
-                    if dist < closestDist then
-                        closestDist = dist
-                        closestTarget = primaryPart.Position
-                    end
-                end
-                for _, part in ipairs(obj:GetChildren()) do
-                    if part:IsA("BasePart") and part.Position then
-                        local dist = (hrp.Position - part.Position).Magnitude
-                        if dist < closestDist then
-                            closestDist = dist
-                            closestTarget = part.Position
-                        end
-                    end
-                end
-            end
-        end
-        if obj:IsA("Attachment") then
-            local name = obj.Name:lower()
-            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("point") then
-                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Position then
-                    local dist = (hrp.Position - obj.Parent.Position).Magnitude
-                    if dist < closestDist then
-                        closestDist = dist
-                        closestTarget = obj.Parent.Position
+                        closest = obj.Position
                     end
                 end
             end
         end
     end
     
-    return closestTarget
+    return closest
 end
 
 local function DoTaxi()
     if not taxiEnabled then return end
-    local target = GetTaxiTarget()
+    local target = GetYellowTarget()
     if target then
         TeleportTo(target)
     end
@@ -926,7 +884,7 @@ end
 
 Tab_Taxi:Toggle({
     ["Title"] = "自动传送订单目标",
-    ["Desc"] = "自动检测黄色标记点并传送",
+    ["Desc"] = "检测黄色标记点并传送",
     ["Default"] = false,
     ["Callback"] = function(bool)
         taxiEnabled = bool
