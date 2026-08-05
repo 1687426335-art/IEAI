@@ -832,310 +832,160 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 车辆透视（新样式）
+-- Tab: 子弹追踪
 -------------------------------------------------------------------------
-local Tab_VehicleESP = Window:Tab({
+local Tab_BulletTrack = Window:Tab({
     ["Locked"] = false,
-    ["Title"] = "车辆透视",
+    ["Title"] = "子弹追踪",
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_VehicleESP:Section({
+Tab_BulletTrack:Section({
     TextSize = 17,
-    ["Title"] = "车辆透视",
+    ["Title"] = "子弹追踪设置",
     TextXAlignment = "Left",
 })
 
-local vehicleESPEnabled = false
-local vehicleShowName = true
-local vehicleShowDist = true
-local vehicleShowLock = true
-local vehicleESPObjects = {}
-local vehicleESPConnection = nil
-local vehicleUpdateTimer = 0
+local bulletTrackEnabled = false
+local trackConnection = nil
+local trackRadius = 50
+local trackDistance = 150
+local trackProbability = 100
+local trackTarget = "警车" -- 选项：警车、平民车辆
 
-local function ClearVehicleESP()
-    for _, obj in ipairs(vehicleESPObjects) do
-        pcall(function() obj:Destroy() end)
-    end
-    vehicleESPObjects = {}
-    if vehicleESPConnection then
-        vehicleESPConnection:Disconnect()
-        vehicleESPConnection = nil
-    end
-end
-
-local vehicleNameList = {
-    "Linkeen LS", "纳森之路", "Chevelle Impole", "福莱特胜利", "For子S350", "远景M50",
-    "VISTAM50", "Chevelle游记", "切维尔·奥卡皮", "雪弗莱C10", "宜必思杯", "Che甲R3000",
-    "Forlet出口", "福尔莱特智利人", "Aprimo ST50", "Wordhog跑者", "智利泰托纳",
-    "伯特曼侦察兵", "切维尔·维拉", "卡德拉特CST跑车", "BMJ N 2", "爪子迷彩",
-    "罗夫·格兰德", "Forlet马蹄'68", "雅米尼MD07", "小马Stall马", "词语兔子充电",
-    "Wordhog竞争对手", "赛车手Aron", "埃斯特拉E型", "ForletS150雷克斯", "纳森GTR",
-    "Wordhog充电'70", "Cadlate逃生", "赛车者快线", "BMJ R1800", "商品集G64",
-    "pershette717", "艾努R8", "湾流海岸", "阿斯特拉·卢卡斯DL11", "Chevelle护卫舰",
-    "Berely通用GT", "费罗内·拉费罗内"
-}
-
-local function IsRealVehicle(obj)
-    if not obj:IsA("Model") then return false end
-    local name = obj.Name
-    for _, vName in ipairs(vehicleNameList) do
-        if name:find(vName) or vName:find(name) then
-            return true
-        end
-    end
-    local lowerName = name:lower()
-    local keywords = {"car", "vehicle", "chevelle", "forlet", "wordhog", "vista", "纳森", "切维尔", "雪弗莱", "福莱特"}
-    for _, kw in ipairs(keywords) do
-        if lowerName:find(kw) then
-            return true
-        end
-    end
-    if obj:FindFirstChild("HumanoidRootPart") then
-        return true
-    end
-    return false
-end
-
-local function GetVehicleLockLevel(vehicle)
-    for _, child in ipairs(vehicle:GetDescendants()) do
-        if child:IsA("IntValue") or child:IsA("NumberValue") then
-            local name = child.Name:lower()
-            if name:find("lock") or name:find("level") or name:find("security") or name:find("等级") or name:find("安全") then
-                local val = tonumber(child.Value)
-                if val and val >= 1 and val <= 3 then
-                    return val
+local function GetTargetVehicleTire()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local closestTire = nil
+    local closestDist = trackRadius
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            local name = obj.Name:lower()
+            local isTarget = false
+            
+            if trackTarget == "警车" then
+                if name:find("police") or name:find("cop") or name:find("警车") or name:find("sheriff") or name:find("pol") then
+                    isTarget = true
+                end
+            elseif trackTarget == "平民车辆" then
+                if not (name:find("police") or name:find("cop") or name:find("警车") or name:find("sheriff") or name:find("pol")) then
+                    isTarget = true
+                end
+            end
+            
+            if isTarget then
+                for _, part in ipairs(obj:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        local pName = part.Name:lower()
+                        if pName:find("tire") or pName:find("wheel") or pName:find("轮胎") or pName:find("轮子") then
+                            local dist = (hrp.Position - part.Position).Magnitude
+                            if dist < closestDist and dist <= trackDistance then
+                                closestDist = dist
+                                closestTire = part
+                            end
+                        end
+                    end
                 end
             end
         end
-        if child:IsA("StringValue") then
-            local name = child.Name:lower()
-            if name:find("lock") or name:find("level") or name:find("security") or name:find("等级") then
-                local val = child.Value
-                if val:find("1") or val:find("一级") or val:find("Lv1") then return 1 end
-                if val:find("2") or val:find("二级") or val:find("Lv2") then return 2 end
-                if val:find("3") or val:find("三级") or val:find("Lv3") then return 3 end
+    end
+    
+    return closestTire
+end
+
+local function TrackBullet()
+    if not bulletTrackEnabled then return end
+    
+    if math.random(1, 100) > trackProbability then
+        return
+    end
+    
+    local tire = GetTargetVehicleTire()
+    if not tire then return end
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            if name:find("bullet") or name:find("projectile") or name:find("弹") or name:find("射弹") or name:find("round") then
+                local bv = obj:FindFirstChild("BodyVelocity")
+                if bv and bv:IsA("BodyVelocity") then
+                    local dir = (tire.Position - obj.Position).Unit * bv.Velocity.Magnitude
+                    bv.Velocity = dir
+                end
+                local bm = obj:FindFirstChildWhichIsA("BodyVelocity")
+                if bm then
+                    local dir = (tire.Position - obj.Position).Unit * bm.Velocity.Magnitude
+                    bm.Velocity = dir
+                end
             end
         end
     end
-    if vehicle:FindFirstChild("LockLevel") and vehicle.LockLevel:IsA("IntValue") then
-        local val = vehicle.LockLevel.Value
-        if val >= 1 and val <= 3 then return val end
-    end
-    if vehicle:FindFirstChild("SecurityLevel") and vehicle.SecurityLevel:IsA("IntValue") then
-        local val = vehicle.SecurityLevel.Value
-        if val >= 1 and val <= 3 then return val end
-    end
-    return nil
 end
 
-local function GetRootPart(vehicle)
-    local root = vehicle:FindFirstChild("HumanoidRootPart")
-    if root and root:IsA("BasePart") then
-        return root
-    end
-    root = vehicle:FindFirstChild("PrimaryPart")
-    if root and root:IsA("BasePart") then
-        return root
-    end
-    for _, part in ipairs(vehicle:GetChildren()) do
-        if part:IsA("BasePart") then
-            return part
-        end
-    end
-    return nil
-end
-
-local function GetDisplayName(vehicle)
-    if vehicle:FindFirstChild("DisplayName") and vehicle.DisplayName:IsA("StringValue") then
-        return vehicle.DisplayName.Value
-    end
-    if vehicle:FindFirstChild("VehicleName") and vehicle.VehicleName:IsA("StringValue") then
-        return vehicle.VehicleName.Value
-    end
-    return vehicle.Name
-end
-
-local function CreateVehicleESP(vehicle)
-    local rootPart = GetRootPart(vehicle)
-    if not rootPart then return end
-    
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local distance = hrp and math.floor((hrp.Position - rootPart.Position).Magnitude) or 0
-    
-    local lockLevel = GetVehicleLockLevel(vehicle)
-    local vehicleName = GetDisplayName(vehicle)
-    
-    local lockText = "无锁"
-    local lockColor = Color3.fromRGB(200, 200, 200)
-    if lockLevel == 1 then
-        lockText = "一级锁"
-        lockColor = Color3.fromRGB(100, 255, 100)
-    elseif lockLevel == 2 then
-        lockText = "二级锁"
-        lockColor = Color3.fromRGB(255, 200, 50)
-    elseif lockLevel == 3 then
-        lockText = "三级锁"
-        lockColor = Color3.fromRGB(255, 50, 50)
-    end
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 220, 0, 70)
-    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = rootPart
-    table.insert(vehicleESPObjects, billboard)
-    
-    -- 渐变背景
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-    bg.BackgroundTransparency = 0.4
-    bg.BorderSizePixel = 2
-    bg.BorderColor3 = lockColor
-    bg.Parent = billboard
-    table.insert(vehicleESPObjects, bg)
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = bg
-    
-    -- 左边彩色竖条
-    local colorBar = Instance.new("Frame")
-    colorBar.Size = UDim2.new(0, 4, 1, 0)
-    colorBar.BackgroundColor3 = lockColor
-    colorBar.BorderSizePixel = 0
-    colorBar.Parent = bg
-    table.insert(vehicleESPObjects, colorBar)
-    
-    local cornerBar = Instance.new("UICorner")
-    cornerBar.CornerRadius = UDim.new(0, 4)
-    cornerBar.Parent = colorBar
-    
-    local yOffset = 5
-    
-    if vehicleShowName then
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -15, 0, 18)
-        nameLabel.Position = UDim2.new(0, 10, 0, yOffset)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = vehicleName
-        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextSize = 14
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        nameLabel.TextStrokeTransparency = 0.3
-        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nameLabel.Parent = billboard
-        table.insert(vehicleESPObjects, nameLabel)
-        yOffset = yOffset + 20
-    end
-    
-    if vehicleShowLock then
-        local lockLabel = Instance.new("TextLabel")
-        lockLabel.Size = UDim2.new(1, -15, 0, 16)
-        lockLabel.Position = UDim2.new(0, 10, 0, yOffset)
-        lockLabel.BackgroundTransparency = 1
-        lockLabel.Text = "安全等级: " .. lockText
-        lockLabel.TextColor3 = lockColor
-        lockLabel.TextSize = 12
-        lockLabel.Font = Enum.Font.GothamBold
-        lockLabel.TextXAlignment = Enum.TextXAlignment.Left
-        lockLabel.TextStrokeTransparency = 0.3
-        lockLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        lockLabel.Parent = billboard
-        table.insert(vehicleESPObjects, lockLabel)
-        yOffset = yOffset + 18
-    end
-    
-    if vehicleShowDist then
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, -15, 0, 14)
-        distLabel.Position = UDim2.new(0, 10, 0, yOffset)
-        distLabel.BackgroundTransparency = 1
-        distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(150, 150, 255)
-        distLabel.TextSize = 11
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.TextXAlignment = Enum.TextXAlignment.Left
-        distLabel.TextStrokeTransparency = 0.3
-        distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        distLabel.Parent = billboard
-        table.insert(vehicleESPObjects, distLabel)
-    end
-end
-
-local function UpdateVehicleESP()
-    ClearVehicleESP()
-    if not vehicleESPEnabled then return end
-    
-    local processed = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if IsRealVehicle(obj) and not processed[obj] then
-            processed[obj] = true
-            CreateVehicleESP(obj)
-        end
-    end
-end
-
-Tab_VehicleESP:Toggle({
-    ["Title"] = "车辆透视总开关",
-    ["Desc"] = "开启/关闭车辆透视",
+Tab_BulletTrack:Toggle({
+    ["Title"] = "子弹追踪",
+    ["Desc"] = "开启/关闭子弹追踪",
     ["Default"] = false,
     ["Callback"] = function(bool)
-        vehicleESPEnabled = bool
+        bulletTrackEnabled = bool
         if bool then
-            UpdateVehicleESP()
-            if not vehicleESPConnection then
-                vehicleESPConnection = RunService.Heartbeat:Connect(function()
-                    vehicleUpdateTimer = vehicleUpdateTimer + 1
-                    if vehicleUpdateTimer >= 10 then
-                        vehicleUpdateTimer = 0
-                        if vehicleESPEnabled then
-                            UpdateVehicleESP()
-                        end
-                    end
-                end)
-            end
-            Workspace.DescendantAdded:Connect(function(obj)
-                if vehicleESPEnabled and IsRealVehicle(obj) then
-                    CreateVehicleESP(obj)
+            if trackConnection then trackConnection:Disconnect() end
+            trackConnection = RunService.Heartbeat:Connect(function()
+                if bulletTrackEnabled then
+                    TrackBullet()
                 end
             end)
         else
-            ClearVehicleESP()
+            if trackConnection then
+                trackConnection:Disconnect()
+                trackConnection = nil
+            end
         end
     end
 })
 
-Tab_VehicleESP:Toggle({
-    ["Title"] = "显示车辆名字",
-    ["Desc"] = "显示车辆名称",
-    ["Default"] = true,
-    ["Callback"] = function(bool)
-        vehicleShowName = bool
-        if vehicleESPEnabled then UpdateVehicleESP() end
+Tab_BulletTrack:Dropdown({
+    ["Title"] = "追踪目标",
+    ["Desc"] = "选择要追踪的车辆类型",
+    ["Options"] = {"警车", "平民车辆"},
+    ["Default"] = "警车",
+    ["Callback"] = function(option)
+        trackTarget = option
     end
 })
 
-Tab_VehicleESP:Toggle({
-    ["Title"] = "显示车辆距离",
-    ["Desc"] = "显示与车辆的距离",
-    ["Default"] = true,
-    ["Callback"] = function(bool)
-        vehicleShowDist = bool
-        if vehicleESPEnabled then UpdateVehicleESP() end
+Tab_BulletTrack:Slider({
+    ["Title"] = "追踪圈大小",
+    ["Desc"] = "检测车辆轮胎的范围（米）",
+    ["Default"] = 50,
+    ["Min"] = 10,
+    ["Max"] = 200,
+    ["Callback"] = function(value)
+        trackRadius = value
     end
 })
 
-Tab_VehicleESP:Toggle({
-    ["Title"] = "显示车辆安全等级",
-    ["Desc"] = "显示车辆安全等级（一级锁/二级锁/三级锁）",
-    ["Default"] = true,
-    ["Callback"] = function(bool)
-        vehicleShowLock = bool
-        if vehicleESPEnabled then UpdateVehicleESP() end
+Tab_BulletTrack:Slider({
+    ["Title"] = "追踪距离",
+    ["Desc"] = "子弹追踪的最大距离（米）",
+    ["Default"] = 150,
+    ["Min"] = 1,
+    ["Max"] = 300,
+    ["Callback"] = function(value)
+        trackDistance = value
+    end
+})
+
+Tab_BulletTrack:Slider({
+    ["Title"] = "追踪概率",
+    ["Desc"] = "子弹追踪触发的概率（1-100）",
+    ["Default"] = 100,
+    ["Min"] = 1,
+    ["Max"] = 100,
+    ["Callback"] = function(value)
+        trackProbability = value
     end
 })
 
@@ -1339,21 +1189,20 @@ Tab_Settings:Button({
     ["Callback"] = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
-        vehicleESPEnabled = false
+        bulletTrackEnabled = false
+        if trackConnection then
+            trackConnection:Disconnect()
+            trackConnection = nil
+        end
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
-        end
-        if vehicleESPConnection then
-            vehicleESPConnection:Disconnect()
-            vehicleESPConnection = nil
         end
         if espRenderConnection then
             espRenderConnection:Disconnect()
             espRenderConnection = nil
         end
         ClearESP()
-        ClearVehicleESP()
         pcall(function()
             local frosty = CoreGui:FindFirstChild("frosty")
             if frosty then frosty:Destroy() end
@@ -1472,4 +1321,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("车辆透视已添加（新样式）")
+print("子弹追踪已添加（警车/平民车辆切换 + 追踪圈大小 + 追踪距离 + 追踪概率）")
