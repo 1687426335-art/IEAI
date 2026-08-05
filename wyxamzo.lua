@@ -253,7 +253,7 @@ local whiteoutEnabled = false
 
 Tab_Notice:Toggle({
     ["Title"] = "打开此开关有大惊喜",
-    ["Desc"] = "开启后游戏亮度拉满变成全白",
+    ["Desc"] = "晚上没开灯的时候不建议打开",
     ["Default"] = false,
     ["Callback"] = function(bool)
         whiteoutEnabled = bool
@@ -832,92 +832,6 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 出租车（修复版，2秒传送一次）
--------------------------------------------------------------------------
-local Tab_Taxi = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "出租车",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Taxi:Section({
-    TextSize = 17,
-    ["Title"] = "出租车自动刷钱",
-    TextXAlignment = "Left",
-})
-
-local taxiEnabled = false
-local taxiConnection = nil
-local lastTeleportTime = 0
-
-local function FindAnyTarget()
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    
-    local closest = nil
-    local closestDist = 99999
-    
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Position then
-            local name = obj.Name:lower()
-            local isYellow = false
-            if obj.Color then
-                local c = obj.Color
-                if c.r > 0.6 and c.g > 0.6 and c.b < 0.4 then
-                    isYellow = true
-                end
-            end
-            local keywords = {"target", "interaction", "vehicle", "marker", "customer", "npc", "point", "waypoint", "destination", "goal", "order"}
-            local match = false
-            for _, kw in ipairs(keywords) do
-                if name:find(kw) then
-                    match = true
-                    break
-                end
-            end
-            if match or isYellow then
-                local dist = (hrp.Position - obj.Position).Magnitude
-                if dist > 3 and dist < closestDist then
-                    closestDist = dist
-                    closest = obj.Position
-                end
-            end
-        end
-    end
-    
-    return closest
-end
-
-Tab_Taxi:Toggle({
-    ["Title"] = "自动刷钱",
-    ["Desc"] = "自动检测目标并传送（2秒一次）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        taxiEnabled = bool
-        if bool then
-            if taxiConnection then taxiConnection:Disconnect() end
-            lastTeleportTime = 0
-            taxiConnection = RunService.Heartbeat:Connect(function()
-                if taxiEnabled then
-                    local now = tick()
-                    if now - lastTeleportTime < 2 then return end
-                    local target = FindAnyTarget()
-                    if target then
-                        TeleportTo(target)
-                        lastTeleportTime = now
-                    end
-                end
-            end)
-        else
-            if taxiConnection then
-                taxiConnection:Disconnect()
-                taxiConnection = nil
-            end
-        end
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 甩飞
 -------------------------------------------------------------------------
 local Tab_Fling = Window:Tab({
@@ -1053,11 +967,6 @@ Tab_Settings:Button({
     ["Callback"] = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
-        taxiEnabled = false
-        if taxiConnection then
-            taxiConnection:Disconnect()
-            taxiConnection = nil
-        end
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
@@ -1185,3 +1094,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
+print("已删除出租车Tab")
