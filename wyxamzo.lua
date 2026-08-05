@@ -253,7 +253,7 @@ local whiteoutEnabled = false
 
 Tab_Notice:Toggle({
     ["Title"] = "打开此开关有大惊喜",
-    ["Desc"] = "开启后游戏亮度拉满变成全白",
+    ["Desc"] = "晚上没开灯的时候不建议打开",
     ["Default"] = false,
     ["Callback"] = function(bool)
         whiteoutEnabled = bool
