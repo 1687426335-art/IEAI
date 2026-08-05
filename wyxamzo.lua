@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 出租车（最终版）
+-- Tab: 出租车（修复版，2秒传送一次）
 -------------------------------------------------------------------------
 local Tab_Taxi = Window:Tab({
     ["Locked"] = false,
@@ -848,6 +848,7 @@ Tab_Taxi:Section({
 
 local taxiEnabled = false
 local taxiConnection = nil
+local lastTeleportTime = 0
 
 local function FindAnyTarget()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -889,17 +890,21 @@ end
 
 Tab_Taxi:Toggle({
     ["Title"] = "自动刷钱",
-    ["Desc"] = "自动检测目标并传送",
+    ["Desc"] = "自动检测目标并传送（2秒一次）",
     ["Default"] = false,
     ["Callback"] = function(bool)
         taxiEnabled = bool
         if bool then
             if taxiConnection then taxiConnection:Disconnect() end
+            lastTeleportTime = 0
             taxiConnection = RunService.Heartbeat:Connect(function()
                 if taxiEnabled then
+                    local now = tick()
+                    if now - lastTeleportTime < 2 then return end
                     local target = FindAnyTarget()
                     if target then
                         TeleportTo(target)
+                        lastTeleportTime = now
                     end
                 end
             end)
