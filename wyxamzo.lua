@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 出租车（自动检测黄色标记传送）
+-- Tab: 出租车（自动刷钱）
 -------------------------------------------------------------------------
 local Tab_Taxi = Window:Tab({
     ["Locked"] = false,
@@ -842,7 +842,7 @@ local Tab_Taxi = Window:Tab({
 
 Tab_Taxi:Section({
     TextSize = 17,
-    ["Title"] = "出租车自动传送",
+    ["Title"] = "出租车自动刷钱",
     TextXAlignment = "Left",
 })
 
@@ -868,6 +868,14 @@ local function GetYellowTarget()
                     end
                 end
             end
+            local name = obj.Name:lower()
+            if name:find("target") or name:find("marker") or name:find("point") or name:find("waypoint") then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist < closestDist and dist > 2 then
+                    closestDist = dist
+                    closest = obj.Position
+                end
+            end
         end
     end
     
@@ -876,6 +884,32 @@ end
 
 local function DoTaxi()
     if not taxiEnabled then return end
+    
+    -- 检测是否接到订单
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local hasOrder = false
+    
+    if playerGui then
+        local function searchUI(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") then
+                    local text = child.Text or ""
+                    if text:find("出租车订单") or text:find("运行中") or text:find("前往客户位置") or text:find("驾驶客户前往目的地") then
+                        hasOrder = true
+                    end
+                end
+                if child:IsA("ScreenGui") or child:IsA("Frame") or child:IsA("ScrollingFrame") then
+                    searchUI(child)
+                end
+            end
+        end
+        searchUI(playerGui)
+    end
+    
+    if not hasOrder then
+        return
+    end
+    
     local target = GetYellowTarget()
     if target then
         TeleportTo(target)
@@ -883,8 +917,8 @@ local function DoTaxi()
 end
 
 Tab_Taxi:Toggle({
-    ["Title"] = "自动传送订单目标",
-    ["Desc"] = "检测黄色标记点并传送",
+    ["Title"] = "自动出租车刷钱",
+    ["Desc"] = "自动检测订单目标并传送",
     ["Default"] = false,
     ["Callback"] = function(bool)
         taxiEnabled = bool
@@ -903,6 +937,28 @@ Tab_Taxi:Toggle({
                 taxiConnection:Disconnect()
                 taxiConnection = nil
             end
+        end
+    end
+})
+
+Tab_Taxi:Button({
+    ["Title"] = "手动传送订单目标",
+    ["Desc"] = "立即传送到当前订单目标",
+    ["Callback"] = function()
+        local target = GetYellowTarget()
+        if target then
+            TeleportTo(target)
+            StarterGui:SetCore("SendNotification", {
+                Title = "出租车",
+                Text = "已传送到目标",
+                Duration = 2,
+            })
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "出租车",
+                Text = "未找到目标，请先接单",
+                Duration = 2,
+            })
         end
     end
 })
@@ -1175,4 +1231,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加出租车自动传送 + 更新透视样式")
+print("已添加出租车自动刷钱 + 更新透视样式")
