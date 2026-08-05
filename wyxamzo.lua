@@ -832,6 +832,144 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 出租车
+-------------------------------------------------------------------------
+local Tab_Taxi = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "出租车",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Taxi:Section({
+    TextSize = 17,
+    ["Title"] = "出租车自动订单",
+    TextXAlignment = "Left",
+})
+
+local taxiEnabled = false
+local taxiConnection = nil
+
+local function GetTaxiTarget()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+    
+    -- 搜索所有GUI查找订单目标
+    local function searchGUI(parent)
+        for _, child in ipairs(parent:GetChildren()) do
+            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("Frame") then
+                local text = child.Text or ""
+                -- 检测订单相关关键词
+                if text:find("前往客户位置") or text:find("距离") or text:find("英里") or text:find("客户") or text:find("目标") then
+                    -- 尝试从附近组件获取坐标
+                    local pos = nil
+                    local checkParent = child.Parent
+                    while checkParent do
+                        if checkParent:IsA("Frame") or checkParent:IsA("TextLabel") then
+                            local checkText = checkParent.Text or ""
+                            local x, y, z = checkText:match("(%-?%d+%.?%d*)%s*(%-?%d+%.?%d*)%s*(%-?%d+%.?%d*)")
+                            if x and y and z then
+                                pos = Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+                                break
+                            end
+                        end
+                        checkParent = checkParent.Parent
+                    end
+                    if pos then
+                        return pos
+                    end
+                end
+            end
+            if child:IsA("ScreenGui") or child:IsA("Frame") or child:IsA("ScrollingFrame") then
+                local result = searchGUI(child)
+                if result then
+                    return result
+                end
+            end
+        end
+        return nil
+    end
+    
+    -- 从Workspace查找订单标记
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("taxi") or name:find("order") or name:find("target") or name:find("customer") or name:find("标记") or name:find("waypoint") then
+                if obj:IsA("BasePart") and obj.Position then
+                    return obj.Position
+                end
+                local primaryPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
+                if primaryPart and primaryPart:IsA("BasePart") then
+                    return primaryPart.Position
+                end
+            end
+        end
+    end
+    
+    -- 从PlayerGui获取
+    local result = searchGUI(playerGui)
+    if result then
+        return result
+    end
+    
+    return nil
+end
+
+local function DoTaxi()
+    if not taxiEnabled then return end
+    local target = GetTaxiTarget()
+    if target then
+        TeleportTo(target)
+    end
+end
+
+Tab_Taxi:Toggle({
+    ["Title"] = "自动出租车",
+    ["Desc"] = "自动检测订单目标并传送过去",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        taxiEnabled = bool
+        if bool then
+            if taxiConnection then
+                taxiConnection:Disconnect()
+                taxiConnection = nil
+            end
+            taxiConnection = RunService.Heartbeat:Connect(function()
+                if taxiEnabled then
+                    DoTaxi()
+                end
+            end)
+        else
+            if taxiConnection then
+                taxiConnection:Disconnect()
+                taxiConnection = nil
+            end
+        end
+    end
+})
+
+Tab_Taxi:Button({
+    ["Title"] = "手动传送订单目标",
+    ["Desc"] = "立即传送到当前订单目标位置",
+    ["Callback"] = function()
+        local target = GetTaxiTarget()
+        if target then
+            TeleportTo(target)
+            StarterGui:SetCore("SendNotification", {
+                Title = "出租车",
+                Text = "已传送到目标位置",
+                Duration = 2,
+            })
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "出租车",
+                Text = "未找到订单目标，请先接取订单",
+                Duration = 2,
+            })
+        end
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 甩飞
 -------------------------------------------------------------------------
 local Tab_Fling = Window:Tab({
@@ -967,6 +1105,11 @@ Tab_Settings:Button({
     ["Callback"] = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
+        taxiEnabled = false
+        if taxiConnection then
+            taxiConnection:Disconnect()
+            taxiConnection = nil
+        end
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
@@ -1094,4 +1237,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已更新透视样式 + 删除范围 + 删除警察预警")
+print("已添加出租车自动订单功能")
