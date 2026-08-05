@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 出租车
+-- Tab: 出租车（最终版）
 -------------------------------------------------------------------------
 local Tab_Taxi = Window:Tab({
     ["Locked"] = false,
@@ -849,71 +849,36 @@ Tab_Taxi:Section({
 local taxiEnabled = false
 local taxiConnection = nil
 
-local function GetTaxiTarget()
+local function FindAnyTarget()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
     
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    local isDelivering = false
-    local hasOrder = false
-    
-    -- 检测UI判断订单状态
-    if playerGui then
-        for _, child in ipairs(playerGui:GetDescendants()) do
-            if child:IsA("TextLabel") then
-                local text = child.Text or ""
-                if text:find("出租车订单") or text:find("运行中") then
-                    hasOrder = true
-                end
-                if text:find("驾驶客户前往目的地") then
-                    isDelivering = true
-                end
-            end
-        end
-    end
-    
-    if not hasOrder then
-        return nil
-    end
-    
     local closest = nil
-    local closestDist = math.huge
+    local closestDist = 99999
     
-    -- 接客阶段：找最近的NPC/顾客模型
-    if not isDelivering then
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") then
-                local name = obj.Name:lower()
-                if name:find("customer") or name:find("npc") or name:find("ped") or name:find("passenger") or name:find("client") or name:find("humanoid") then
-                    local root = obj:FindFirstChild("HumanoidRootPart")
-                    if root and root:IsA("BasePart") then
-                        local dist = (hrp.Position - root.Position).Magnitude
-                        if dist < closestDist and dist > 2 then
-                            closestDist = dist
-                            closest = root.Position
-                        end
-                    end
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Position then
+            local name = obj.Name:lower()
+            local isYellow = false
+            if obj.Color then
+                local c = obj.Color
+                if c.r > 0.6 and c.g > 0.6 and c.b < 0.4 then
+                    isYellow = true
                 end
             end
-        end
-    else
-        -- 送客阶段：找黄色标记点
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position then
-                local name = obj.Name:lower()
-                local isYellow = false
-                if obj.Color then
-                    local c = obj.Color
-                    if c.r > 0.7 and c.g > 0.7 and c.b < 0.4 then
-                        isYellow = true
-                    end
+            local keywords = {"target", "interaction", "vehicle", "marker", "customer", "npc", "point", "waypoint", "destination", "goal", "order"}
+            local match = false
+            for _, kw in ipairs(keywords) do
+                if name:find(kw) then
+                    match = true
+                    break
                 end
-                if name:find("target") or name:find("marker") or name:find("point") or name:find("waypoint") or name:find("destination") or isYellow then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < closestDist and dist > 3 then
-                        closestDist = dist
-                        closest = obj.Position
-                    end
+            end
+            if match or isYellow then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist > 3 and dist < closestDist then
+                    closestDist = dist
+                    closest = obj.Position
                 end
             end
         end
@@ -922,28 +887,20 @@ local function GetTaxiTarget()
     return closest
 end
 
-local function DoTaxi()
-    if not taxiEnabled then return end
-    local target = GetTaxiTarget()
-    if target then
-        TeleportTo(target)
-    end
-end
-
 Tab_Taxi:Toggle({
-    ["Title"] = "自动出租车刷钱",
-    ["Desc"] = "自动接客送客传送",
+    ["Title"] = "自动刷钱",
+    ["Desc"] = "自动检测目标并传送",
     ["Default"] = false,
     ["Callback"] = function(bool)
         taxiEnabled = bool
         if bool then
-            if taxiConnection then
-                taxiConnection:Disconnect()
-                taxiConnection = nil
-            end
+            if taxiConnection then taxiConnection:Disconnect() end
             taxiConnection = RunService.Heartbeat:Connect(function()
                 if taxiEnabled then
-                    DoTaxi()
+                    local target = FindAnyTarget()
+                    if target then
+                        TeleportTo(target)
+                    end
                 end
             end)
         else
@@ -1223,4 +1180,3 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("出租车自动刷钱已整合")
