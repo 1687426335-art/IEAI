@@ -186,6 +186,11 @@ local function CreateColorfulBorder()
     end)
 end
 
+-- ===== 传送函数（已失效） =====
+local function TeleportTo(pos)
+    ServerClosedNotify()
+end
+
 task.spawn(function()
     task.wait(0.8)
     CreateColorfulBorder()
@@ -214,7 +219,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "服务器已关闭，所有功能暂时停止使用",
+    ["Title"] = "服务器已关闭暂时停止使用，预计下午3点恢复",
     TextXAlignment = "Left",
 })
 
@@ -243,7 +248,7 @@ Tab_Notice:Section({
 })
 
 -------------------------------------------------------------------------
--- Tab: 通用（全部失效）
+-- Tab: 通用
 -------------------------------------------------------------------------
 local Tab_General = Window:Tab({
     ["Locked"] = false,
@@ -253,13 +258,13 @@ local Tab_General = Window:Tab({
 
 Tab_General:Section({
     TextSize = 17,
-    ["Title"] = "通用功能（已关闭）",
+    ["Title"] = "通用功能",
     TextXAlignment = "Left",
 })
 
 Tab_General:Button({
     ["Title"] = "飞天",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
         ServerClosedNotify()
     end
@@ -267,7 +272,7 @@ Tab_General:Button({
 
 Tab_General:Button({
     ["Title"] = "飞车",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "点击开启皮脚本飞车",
     ["Callback"] = function()
         ServerClosedNotify()
     end
@@ -275,14 +280,81 @@ Tab_General:Button({
 
 Tab_General:Button({
     ["Title"] = "断麦",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "强制断开所有人语音",
+    ["Callback"] = function()
+        ServerClosedNotify()
+    end
+})
+
+Tab_General:Textbox({
+    ["Title"] = "输入玩家名踢人",
+    ["Desc"] = "输入玩家名称然后点击踢人",
+    ["Callback"] = function(Value)
+        getgenv().kickname = Value
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "踢人",
+    ["Desc"] = "踢出输入的玩家",
+    ["Callback"] = function()
+        ServerClosedNotify()
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "踢出所有人",
+    ["Desc"] = "踢出服务器内所有玩家",
     ["Callback"] = function()
         ServerClosedNotify()
     end
 })
 
 -------------------------------------------------------------------------
--- Tab: 实用传送（全部失效）
+-- Tab: 帧率
+-------------------------------------------------------------------------
+local Tab_FPS = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "帧率",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_FPS:Section({
+    TextSize = 17,
+    ["Title"] = "帧率优化",
+    TextXAlignment = "Left",
+})
+
+local fpsLocked = false
+
+Tab_FPS:Toggle({
+    ["Title"] = "锁60帧",
+    ["Desc"] = "将帧率锁定在60帧，保持流畅",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        ServerClosedNotify()
+    end
+})
+
+Tab_FPS:Toggle({
+    ["Title"] = "性能模式",
+    ["Desc"] = "降低画质提高帧率",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        ServerClosedNotify()
+    end
+})
+
+Tab_FPS:Button({
+    ["Title"] = "优化游戏流畅度",
+    ["Desc"] = "一键优化",
+    ["Callback"] = function()
+        ServerClosedNotify()
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 实用传送
 -------------------------------------------------------------------------
 local Tab_Teleport = Window:Tab({
     ["Locked"] = false,
@@ -292,7 +364,7 @@ local Tab_Teleport = Window:Tab({
 
 Tab_Teleport:Section({
     TextSize = 17,
-    ["Title"] = "实用传送点（已关闭）",
+    ["Title"] = "实用传送点",
     TextXAlignment = "Left",
 })
 
@@ -323,7 +395,7 @@ local teleportPoints = {
 for _, point in ipairs(teleportPoints) do
     Tab_Teleport:Button({
         ["Title"] = point[1],
-        ["Desc"] = "服务器已关闭",
+        ["Desc"] = "传送至" .. point[1],
         ["Callback"] = function()
             ServerClosedNotify()
         end
@@ -331,7 +403,7 @@ for _, point in ipairs(teleportPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 售货机传送区（全部失效）
+-- Tab: 售货机传送区
 -------------------------------------------------------------------------
 local Tab_Vending = Window:Tab({
     ["Locked"] = false,
@@ -341,7 +413,7 @@ local Tab_Vending = Window:Tab({
 
 Tab_Vending:Section({
     TextSize = 17,
-    ["Title"] = "售货机传送点（已关闭）",
+    ["Title"] = "售货机传送点",
     TextXAlignment = "Left",
 })
 
@@ -355,7 +427,7 @@ local vendingPoints = {
 for _, point in ipairs(vendingPoints) do
     Tab_Vending:Button({
         ["Title"] = point[1],
-        ["Desc"] = "服务器已关闭",
+        ["Desc"] = "传送至" .. point[1],
         ["Callback"] = function()
             ServerClosedNotify()
         end
@@ -363,7 +435,7 @@ for _, point in ipairs(vendingPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 外卖员（全部失效）
+-- Tab: 外卖员
 -------------------------------------------------------------------------
 local Tab_Delivery = Window:Tab({
     ["Locked"] = false,
@@ -373,7 +445,7 @@ local Tab_Delivery = Window:Tab({
 
 Tab_Delivery:Section({
     TextSize = 17,
-    ["Title"] = "外卖员传送点（已关闭）",
+    ["Title"] = "外卖员传送点",
     TextXAlignment = "Left",
 })
 
@@ -386,7 +458,7 @@ local deliveryPoints = {
 for _, point in ipairs(deliveryPoints) do
     Tab_Delivery:Button({
         ["Title"] = point[1],
-        ["Desc"] = "服务器已关闭",
+        ["Desc"] = "传送至" .. point[1],
         ["Callback"] = function()
             ServerClosedNotify()
         end
@@ -394,7 +466,7 @@ for _, point in ipairs(deliveryPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 透视（全部失效）
+-- Tab: 透视
 -------------------------------------------------------------------------
 local Tab_ESP = Window:Tab({
     ["Locked"] = false,
@@ -404,111 +476,111 @@ local Tab_ESP = Window:Tab({
 
 Tab_ESP:Section({
     TextSize = 17,
-    ["Title"] = "透视功能（已关闭）",
+    ["Title"] = "透视开关",
     TextXAlignment = "Left",
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "透视总开关",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "开启/关闭所有透视功能",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制名字",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家名字",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制血量",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家血量条和数值",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制方框",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家方框",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制骨骼",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家骨骼点",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制距离",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示与玩家的距离",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "同行显示",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "检测并显示玩家使用的脚本（皮脚本/wdfex）",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "屏蔽自己",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "开启后自己不显示透视，关闭后自己显示透视",
     ["Default"] = true,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "显示队伍",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家所属队伍",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "绘制手持武器",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "显示玩家手持的武器名称",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_ESP:Toggle({
     ["Title"] = "警察靠近预警",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "警察靠近时在屏幕上方显示警告和距离",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 -------------------------------------------------------------------------
--- Tab: 甩飞（全部失效）
+-- Tab: 甩飞
 -------------------------------------------------------------------------
 local Tab_Fling = Window:Tab({
     ["Locked"] = false,
@@ -518,37 +590,40 @@ local Tab_Fling = Window:Tab({
 
 Tab_Fling:Section({
     TextSize = 17,
-    ["Title"] = "甩飞功能（已关闭）",
+    ["Title"] = "甩飞功能",
     TextXAlignment = "Left",
 })
 
 Tab_Fling:Button({
     ["Title"] = "碰飞",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "点击执行碰飞脚本",
     ["Callback"] = function()
         ServerClosedNotify()
     end
 })
 
+local antiFlingEnabled = false
+local antiFlingConnection = nil
+
 Tab_Fling:Toggle({
     ["Title"] = "防甩飞",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "防止自己被别人甩飞",
     ["Default"] = false,
-    ["Callback"] = function()
+    ["Callback"] = function(bool)
         ServerClosedNotify()
     end
 })
 
 Tab_Fling:Button({
     ["Title"] = "甩飞所有人",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "甩飞服务器内所有玩家",
     ["Callback"] = function()
         ServerClosedNotify()
     end
 })
 
 -------------------------------------------------------------------------
--- Tab: 范围（全部失效）
+-- Tab: 范围
 -------------------------------------------------------------------------
 local Tab_Range = Window:Tab({
     ["Locked"] = false,
@@ -558,31 +633,36 @@ local Tab_Range = Window:Tab({
 
 Tab_Range:Section({
     TextSize = 17,
-    ["Title"] = "范围功能（已关闭）",
+    ["Title"] = "范围功能",
     TextXAlignment = "Left",
+})
+
+_G.RangeConn = nil
+local function updateRange(size)
+    ServerClosedNotify()
+end
+
+Tab_Range:Button({
+    ["Title"] = "清空范围效果",
+    ["Desc"] = "关闭范围修改",
+    ["Callback"] = function()
+        ServerClosedNotify()
+    end
 })
 
 local rangeSizes = {10, 20, 30, 50, 70, 120, 300, 500, 999, 999999999}
 for _, size in ipairs(rangeSizes) do
     Tab_Range:Button({
         ["Title"] = "范围" .. size,
-        ["Desc"] = "服务器已关闭",
+        ["Desc"] = "设置碰撞箱大小为" .. size,
         ["Callback"] = function()
             ServerClosedNotify()
         end
     })
 end
 
-Tab_Range:Button({
-    ["Title"] = "清空范围效果",
-    ["Desc"] = "服务器已关闭",
-    ["Callback"] = function()
-        ServerClosedNotify()
-    end
-})
-
 -------------------------------------------------------------------------
--- Tab: 自瞄（全部失效）
+-- Tab: 自瞄
 -------------------------------------------------------------------------
 local Tab_Aimbot = Window:Tab({
     ["Locked"] = false,
@@ -592,13 +672,13 @@ local Tab_Aimbot = Window:Tab({
 
 Tab_Aimbot:Section({
     TextSize = 17,
-    ["Title"] = "自瞄功能（已关闭）",
+    ["Title"] = "皮脚本自瞄",
     TextXAlignment = "Left",
 })
 
 Tab_Aimbot:Button({
     ["Title"] = "开启皮脚本自瞄",
-    ["Desc"] = "服务器已关闭",
+    ["Desc"] = "点击开启皮脚本自瞄",
     ["Callback"] = function()
         ServerClosedNotify()
     end
