@@ -842,7 +842,7 @@ local Tab_Taxi = Window:Tab({
 
 Tab_Taxi:Section({
     TextSize = 17,
-    ["Title"] = "出租车自动订单",
+    ["Title"] = "出租车自动传送",
     TextXAlignment = "Left",
 })
 
@@ -850,68 +850,70 @@ local taxiEnabled = false
 local taxiConnection = nil
 
 local function GetTaxiTarget()
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return nil end
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
     
-    -- 搜索所有GUI查找订单目标
-    local function searchGUI(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("Frame") then
-                local text = child.Text or ""
-                -- 检测订单相关关键词
-                if text:find("前往客户位置") or text:find("距离") or text:find("英里") or text:find("客户") or text:find("目标") then
-                    -- 尝试从附近组件获取坐标
-                    local pos = nil
-                    local checkParent = child.Parent
-                    while checkParent do
-                        if checkParent:IsA("Frame") or checkParent:IsA("TextLabel") then
-                            local checkText = checkParent.Text or ""
-                            local x, y, z = checkText:match("(%-?%d+%.?%d*)%s*(%-?%d+%.?%d*)%s*(%-?%d+%.?%d*)")
-                            if x and y and z then
-                                pos = Vector3.new(tonumber(x), tonumber(y), tonumber(z))
-                                break
-                            end
-                        end
-                        checkParent = checkParent.Parent
-                    end
-                    if pos then
-                        return pos
-                    end
-                end
-            end
-            if child:IsA("ScreenGui") or child:IsA("Frame") or child:IsA("ScrollingFrame") then
-                local result = searchGUI(child)
-                if result then
-                    return result
-                end
-            end
-        end
-        return nil
-    end
+    local closestTarget = nil
+    local closestDist = math.huge
     
-    -- 从Workspace查找订单标记
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
+        if obj:IsA("BasePart") and obj.Position then
             local name = obj.Name:lower()
-            if name:find("taxi") or name:find("order") or name:find("target") or name:find("customer") or name:find("标记") or name:find("waypoint") then
-                if obj:IsA("BasePart") and obj.Position then
-                    return obj.Position
+            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("标记") or name:find("point") or name:find("destination") or name:find("goal") or name:find("order") then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestTarget = obj.Position
                 end
+            end
+            if obj.Color then
+                local color = obj.Color
+                if color.r > 0.7 and color.g > 0.7 and color.b < 0.3 then
+                    local dist = (hrp.Position - obj.Position).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closestTarget = obj.Position
+                    end
+                end
+            end
+        end
+        if obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("标记") or name:find("point") or name:find("destination") or name:find("goal") or name:find("order") then
                 local primaryPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
-                if primaryPart and primaryPart:IsA("BasePart") then
-                    return primaryPart.Position
+                if primaryPart and primaryPart:IsA("BasePart") and primaryPart.Position then
+                    local dist = (hrp.Position - primaryPart.Position).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closestTarget = primaryPart.Position
+                    end
+                end
+                for _, part in ipairs(obj:GetChildren()) do
+                    if part:IsA("BasePart") and part.Position then
+                        local dist = (hrp.Position - part.Position).Magnitude
+                        if dist < closestDist then
+                            closestDist = dist
+                            closestTarget = part.Position
+                        end
+                    end
+                end
+            end
+        end
+        if obj:IsA("Attachment") then
+            local name = obj.Name:lower()
+            if name:find("target") or name:find("waypoint") or name:find("marker") or name:find("point") then
+                if obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent.Position then
+                    local dist = (hrp.Position - obj.Parent.Position).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closestTarget = obj.Parent.Position
+                    end
                 end
             end
         end
     end
     
-    -- 从PlayerGui获取
-    local result = searchGUI(playerGui)
-    if result then
-        return result
-    end
-    
-    return nil
+    return closestTarget
 end
 
 local function DoTaxi()
@@ -923,8 +925,8 @@ local function DoTaxi()
 end
 
 Tab_Taxi:Toggle({
-    ["Title"] = "自动出租车",
-    ["Desc"] = "自动检测订单目标并传送过去",
+    ["Title"] = "自动传送订单目标",
+    ["Desc"] = "自动检测黄色标记点并传送",
     ["Default"] = false,
     ["Callback"] = function(bool)
         taxiEnabled = bool
@@ -943,28 +945,6 @@ Tab_Taxi:Toggle({
                 taxiConnection:Disconnect()
                 taxiConnection = nil
             end
-        end
-    end
-})
-
-Tab_Taxi:Button({
-    ["Title"] = "手动传送订单目标",
-    ["Desc"] = "立即传送到当前订单目标位置",
-    ["Callback"] = function()
-        local target = GetTaxiTarget()
-        if target then
-            TeleportTo(target)
-            StarterGui:SetCore("SendNotification", {
-                Title = "出租车",
-                Text = "已传送到目标位置",
-                Duration = 2,
-            })
-        else
-            StarterGui:SetCore("SendNotification", {
-                Title = "出租车",
-                Text = "未找到订单目标，请先接取订单",
-                Duration = 2,
-            })
         end
     end
 })
@@ -1237,4 +1217,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加出租车自动订单功能")
+print("已添加出租车自动传送 + 更新透视样式")
