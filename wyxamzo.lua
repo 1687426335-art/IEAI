@@ -253,7 +253,7 @@ local whiteoutEnabled = false
 
 Tab_Notice:Toggle({
     ["Title"] = "打开此开关有大惊喜",
-    ["Desc"] = "晚上没开灯的时候不建议打开",
+    ["Desc"] = "开启后游戏亮度拉满变成全白",
     ["Default"] = false,
     ["Callback"] = function(bool)
         whiteoutEnabled = bool
@@ -832,6 +832,289 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 车辆透视（实时刷新）
+-------------------------------------------------------------------------
+local Tab_VehicleESP = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "车辆透视",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_VehicleESP:Section({
+    TextSize = 17,
+    ["Title"] = "车辆透视",
+    TextXAlignment = "Left",
+})
+
+local vehicleESPEnabled = false
+local vehicleShowName = true
+local vehicleShowDist = true
+local vehicleShowLock = true
+local vehicleESPObjects = {}
+local vehicleESPConnection = nil
+local vehicleUpdateTimer = 0
+
+local function ClearVehicleESP()
+    for _, obj in ipairs(vehicleESPObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    vehicleESPObjects = {}
+    if vehicleESPConnection then
+        vehicleESPConnection:Disconnect()
+        vehicleESPConnection = nil
+    end
+end
+
+local function GetVehicleLockLevel(vehicle)
+    for _, child in ipairs(vehicle:GetDescendants()) do
+        if child:IsA("IntValue") or child:IsA("NumberValue") then
+            local name = child.Name:lower()
+            if name:find("lock") or name:find("level") or name:find("security") or name:find("等级") or name:find("安全") then
+                local val = tonumber(child.Value)
+                if val and val >= 1 and val <= 3 then
+                    return val
+                end
+            end
+        end
+        if child:IsA("StringValue") then
+            local name = child.Name:lower()
+            if name:find("lock") or name:find("level") or name:find("security") or name:find("等级") then
+                local val = child.Value
+                if val:find("1") or val:find("一级") or val:find("Lv1") then return 1 end
+                if val:find("2") or val:find("二级") or val:find("Lv2") then return 2 end
+                if val:find("3") or val:find("三级") or val:find("Lv3") then return 3 end
+            end
+        end
+    end
+    if vehicle:FindFirstChild("LockLevel") and vehicle.LockLevel:IsA("IntValue") then
+        local val = vehicle.LockLevel.Value
+        if val >= 1 and val <= 3 then return val end
+    end
+    if vehicle:FindFirstChild("SecurityLevel") and vehicle.SecurityLevel:IsA("IntValue") then
+        local val = vehicle.SecurityLevel.Value
+        if val >= 1 and val <= 3 then return val end
+    end
+    return nil
+end
+
+local function IsVehicle(obj)
+    if not obj:IsA("Model") then return false end
+    local name = obj.Name:lower()
+    local keywords = {"car", "vehicle", "车", "auto", "truck", "van", "taxi", "police", "suv", "sedan", "coupe", "motor", "bike", "chevelle", "forlet", "wordhog", "vista", "纳森", "切维尔", "雪弗莱", "福莱特"}
+    for _, kw in ipairs(keywords) do
+        if name:find(kw) then
+            return true
+        end
+    end
+    if obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart") then
+        local hasWheels = false
+        for _, part in ipairs(obj:GetChildren()) do
+            if part:IsA("BasePart") and (part.Name:lower():find("wheel") or part.Name:lower():find("tire")) then
+                hasWheels = true
+                break
+            end
+        end
+        if hasWheels then
+            return true
+        end
+    end
+    return false
+end
+
+local function GetRootPart(vehicle)
+    local root = vehicle:FindFirstChild("HumanoidRootPart")
+    if root and root:IsA("BasePart") then
+        return root
+    end
+    root = vehicle:FindFirstChild("PrimaryPart")
+    if root and root:IsA("BasePart") then
+        return root
+    end
+    for _, part in ipairs(vehicle:GetChildren()) do
+        if part:IsA("BasePart") then
+            return part
+        end
+    end
+    return nil
+end
+
+local function GetDisplayName(vehicle)
+    if vehicle:FindFirstChild("DisplayName") and vehicle.DisplayName:IsA("StringValue") then
+        return vehicle.DisplayName.Value
+    end
+    if vehicle:FindFirstChild("VehicleName") and vehicle.VehicleName:IsA("StringValue") then
+        return vehicle.VehicleName.Value
+    end
+    return vehicle.Name
+end
+
+local function CreateVehicleESP(vehicle)
+    local rootPart = GetRootPart(vehicle)
+    if not rootPart then return end
+    
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local distance = hrp and math.floor((hrp.Position - rootPart.Position).Magnitude) or 0
+    
+    local lockLevel = GetVehicleLockLevel(vehicle)
+    local vehicleName = GetDisplayName(vehicle)
+    
+    local lockText = "无锁"
+    local lockColor = Color3.fromRGB(200, 200, 200)
+    if lockLevel == 1 then
+        lockText = "一级锁"
+        lockColor = Color3.fromRGB(100, 255, 100)
+    elseif lockLevel == 2 then
+        lockText = "二级锁"
+        lockColor = Color3.fromRGB(255, 200, 50)
+    elseif lockLevel == 3 then
+        lockText = "三级锁"
+        lockColor = Color3.fromRGB(255, 50, 50)
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 200, 0, 80)
+    billboard.StudsOffset = Vector3.new(0, 4, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = rootPart
+    table.insert(vehicleESPObjects, billboard)
+    
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bg.BackgroundTransparency = 0.5
+    bg.BorderSizePixel = 1
+    bg.BorderColor3 = lockColor
+    bg.Parent = billboard
+    table.insert(vehicleESPObjects, bg)
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = bg
+    
+    local yOffset = 5
+    
+    if vehicleShowName then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -10, 0, 18)
+        nameLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = vehicleName
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.TextSize = 13
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.2
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.Parent = billboard
+        table.insert(vehicleESPObjects, nameLabel)
+        yOffset = yOffset + 20
+    end
+    
+    if vehicleShowLock then
+        local lockLabel = Instance.new("TextLabel")
+        lockLabel.Size = UDim2.new(1, -10, 0, 18)
+        lockLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        lockLabel.BackgroundTransparency = 1
+        lockLabel.Text = "安全等级: " .. lockText
+        lockLabel.TextColor3 = lockColor
+        lockLabel.TextSize = 13
+        lockLabel.Font = Enum.Font.GothamBold
+        lockLabel.TextStrokeTransparency = 0.2
+        lockLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        lockLabel.Parent = billboard
+        table.insert(vehicleESPObjects, lockLabel)
+        yOffset = yOffset + 20
+    end
+    
+    if vehicleShowDist then
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, -10, 0, 16)
+        distLabel.Position = UDim2.new(0, 5, 0, yOffset)
+        distLabel.BackgroundTransparency = 1
+        distLabel.Text = distance .. "m"
+        distLabel.TextColor3 = Color3.fromRGB(180, 180, 255)
+        distLabel.TextSize = 11
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextStrokeTransparency = 0.2
+        distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        distLabel.Parent = billboard
+        table.insert(vehicleESPObjects, distLabel)
+    end
+end
+
+local function UpdateVehicleESP()
+    ClearVehicleESP()
+    if not vehicleESPEnabled then return end
+    
+    local processed = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if IsVehicle(obj) and not processed[obj] then
+            processed[obj] = true
+            CreateVehicleESP(obj)
+        end
+    end
+end
+
+Tab_VehicleESP:Toggle({
+    ["Title"] = "车辆透视总开关",
+    ["Desc"] = "开启/关闭车辆透视",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        vehicleESPEnabled = bool
+        if bool then
+            UpdateVehicleESP()
+            if not vehicleESPConnection then
+                vehicleESPConnection = RunService.Heartbeat:Connect(function()
+                    vehicleUpdateTimer = vehicleUpdateTimer + 1
+                    if vehicleUpdateTimer >= 10 then
+                        vehicleUpdateTimer = 0
+                        if vehicleESPEnabled then
+                            UpdateVehicleESP()
+                        end
+                    end
+                end)
+            end
+            Workspace.DescendantAdded:Connect(function(obj)
+                if vehicleESPEnabled and IsVehicle(obj) then
+                    CreateVehicleESP(obj)
+                end
+            end)
+        else
+            ClearVehicleESP()
+        end
+    end
+})
+
+Tab_VehicleESP:Toggle({
+    ["Title"] = "显示车辆名字",
+    ["Desc"] = "显示车辆名称",
+    ["Default"] = true,
+    ["Callback"] = function(bool)
+        vehicleShowName = bool
+        if vehicleESPEnabled then UpdateVehicleESP() end
+    end
+})
+
+Tab_VehicleESP:Toggle({
+    ["Title"] = "显示车辆距离",
+    ["Desc"] = "显示与车辆的距离",
+    ["Default"] = true,
+    ["Callback"] = function(bool)
+        vehicleShowDist = bool
+        if vehicleESPEnabled then UpdateVehicleESP() end
+    end
+})
+
+Tab_VehicleESP:Toggle({
+    ["Title"] = "显示车辆安全等级",
+    ["Desc"] = "显示车辆安全等级（一级锁/二级锁/三级锁）",
+    ["Default"] = true,
+    ["Callback"] = function(bool)
+        vehicleShowLock = bool
+        if vehicleESPEnabled then UpdateVehicleESP() end
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 甩飞
 -------------------------------------------------------------------------
 local Tab_Fling = Window:Tab({
@@ -1031,6 +1314,7 @@ Tab_Settings:Button({
     ["Callback"] = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
+        vehicleESPEnabled = false
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
             antiFlingConnection = nil
@@ -1040,6 +1324,7 @@ Tab_Settings:Button({
             espRenderConnection = nil
         end
         ClearESP()
+        ClearVehicleESP()
         pcall(function()
             local frosty = CoreGui:FindFirstChild("frosty")
             if frosty then frosty:Destroy() end
@@ -1158,4 +1443,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("所有功能已恢复正常")
+print("车辆透视已添加（实时刷新）")
