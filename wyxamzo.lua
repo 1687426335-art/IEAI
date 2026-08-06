@@ -832,7 +832,7 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 子弹追踪
+-- Tab: 子弹追踪（修复版）
 -------------------------------------------------------------------------
 local Tab_BulletTrack = Window:Tab({
     ["Locked"] = false,
@@ -851,7 +851,7 @@ local trackConnection = nil
 local trackRadius = 50
 local trackDistance = 150
 local trackProbability = 100
-local trackTarget = "警车" -- 选项：警车、平民车辆
+local trackTarget = "警车"
 
 local function GetTargetVehicleTire()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
