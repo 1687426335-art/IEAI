@@ -1,5 +1,5 @@
--- 圣奥里出租车 v30 - 全光圈循环传送版
--- 扫描所有蓝色光圈，全部传送一遍，每个停4秒
+-- 圣奥里出租车 v34 - 地图标点传送版
+-- 检测到标点就传送，没检测到就显示未检测到
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -12,7 +12,7 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 280, 0, 340)
+Frame.Size = UDim2.new(0, 280, 0, 300)
 Frame.Position = UDim2.new(0.02, 0, 0.15, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(10, 10, 25)
 Frame.BackgroundTransparency = 0.1
@@ -46,7 +46,7 @@ TitleCorner.Parent = TitleBar
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里 v30"
+TitleLabel.Text = "🚖 圣奥里 v34"
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -68,13 +68,12 @@ local function MakeLabel(text, y, color, size)
 end
 
 local StatusLabel = MakeLabel("● 已停止", 48, Color3.fromRGB(255,80,80))
-local TargetLabel = MakeLabel("🎯 等待启动", 82, Color3.fromRGB(200,200,200), 13)
+local TargetLabel = MakeLabel("🎯 未检测到标点", 82, Color3.fromRGB(255,200,0), 13)
 local DebugLabel = MakeLabel("", 116, Color3.fromRGB(130,130,170), 11)
-local CountLabel = MakeLabel("", 150, Color3.fromRGB(100,100,150), 11)
 
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 110, 0, 36)
-ToggleBtn.Position = UDim2.new(0.5, -55, 0, 190)
+ToggleBtn.Position = UDim2.new(0.5, -55, 0, 170)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0,220,100)
 ToggleBtn.BackgroundTransparency = 0.15
 ToggleBtn.Text = "▶ 启动"
@@ -95,9 +94,9 @@ BtnStroke.Parent = ToggleBtn
 
 local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 18)
-Footer.Position = UDim2.new(0.05, 0, 0, 250)
+Footer.Position = UDim2.new(0.05, 0, 0, 230)
 Footer.BackgroundTransparency = 1
-Footer.Text = "扫描所有光圈 → 循环传送"
+Footer.Text = "检测标点 → 传送"
 Footer.TextColor3 = Color3.fromRGB(100,100,150)
 Footer.TextSize = 11
 Footer.TextXAlignment = Enum.TextXAlignment.Center
@@ -114,81 +113,48 @@ local function TeleportTo(pos)
     end
 end
 
--- 扫描所有蓝色光圈
-local function FindAllBlueCircles()
-    local circles = {}
+-- 检测地图标点
+local function FindMapMarker()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("BasePart") then
+        if obj:IsA("Part") or obj:IsA("BasePart") or obj:IsA("Attachment") then
             local name = obj.Name:lower()
-            if name:find("circle") or name:find("ring") or name:find("aura") or 
-               name:find("glow") or name:find("光环") or name:find("光圈") or
-               name:find("marker") or name:find("target") or name:find("highlight") or
-               name:find("point") or name:find("sphere") then
-                
-                local color = obj.Color
-                if color then
-                    local r, g, b = color.R * 255, color.G * 255, color.B * 255
-                    if b > r and b > g and b > 80 then
-                        table.insert(circles, {
-                            pos = obj.Position,
-                            name = obj.Name
-                        })
-                    end
-                end
-            end
-        end
-        -- 检测点光源
-        if obj:IsA("PointLight") or obj:IsA("SpotLight") then
-            local color = obj.Color
-            if color then
-                local r, g, b = color.R * 255, color.G * 255, color.B * 255
-                if b > r and b > g and b > 80 then
-                    local parent = obj.Parent
-                    if parent and (parent:IsA("Part") or parent:IsA("BasePart")) then
-                        table.insert(circles, {
-                            pos = parent.Position,
-                            name = parent.Name
-                        })
-                    end
+            if name:find("marker") or name:find("waypoint") or name:find("target") or 
+               name:find("destination") or name:find("nav") or name:find("point") or
+               name:find("arrow") or name:find("goal") or name:find("标点") or
+               name:find("ping") or name:find("loc") then
+                local pos = obj:IsA("Attachment") and obj.WorldPosition or obj.Position
+                if pos then
+                    return pos, obj.Name
                 end
             end
         end
     end
-    return circles
+    return nil, nil
 end
 
 local function MainLoop()
-    while isRunning do
-        local circles = FindAllBlueCircles()
-        CountLabel.Text = "🔵 找到 " .. #circles .. " 个光圈"
+    while task.wait(1) do
+        if not isRunning then break end
         
-        if #circles > 0 then
-            for i, circle in pairs(circles) do
-                if not isRunning then break end
-                
-                TargetLabel.Text = "🎯 传送 " .. i .. "/" .. #circles .. ": " .. circle.name
-                DebugLabel.Text = "距离: " .. math.floor((circle.pos - HumanoidRootPart.Position).Magnitude)
-                TeleportTo(circle.pos)
-                StatusLabel.Text = "● 已传送 (" .. i .. "/" .. #circles .. ")"
-                StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
-                
-                -- 等待4秒
-                for t = 4, 1, -1 do
-                    if not isRunning then break end
-                    CountLabel.Text = "⏳ 等待 " .. t .. "s"
-                    task.wait(1)
-                end
-            end
+        local pos, name = FindMapMarker()
+        
+        if pos then
+            TargetLabel.Text = "🎯 检测到标点: " .. name
+            TargetLabel.TextColor3 = Color3.fromRGB(0,255,100)
+            DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
+            TeleportTo(pos)
+            StatusLabel.Text = "● 已传送!"
+            StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
+            task.wait(0.5)
+            StatusLabel.Text = "● 运行中"
+            StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
         else
-            TargetLabel.Text = "🎯 未找到光圈"
+            TargetLabel.Text = "🎯 未检测到标点"
+            TargetLabel.TextColor3 = Color3.fromRGB(255,200,0)
             DebugLabel.Text = "扫描中..."
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
             task.wait(1)
         end
-        
-        if not isRunning then break end
-        CountLabel.Text = "🔄 重新扫描..."
-        task.wait(0.5)
     end
 end
 
@@ -200,8 +166,8 @@ ToggleBtn.MouseButton1Click:Connect(function()
         BtnStroke.Color = Color3.fromRGB(255,60,60)
         StatusLabel.Text = "● 运行中"
         StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
-        TargetLabel.Text = "🎯 扫描光圈..."
-        CountLabel.Text = "启动中..."
+        TargetLabel.Text = "🎯 扫描标点..."
+        TargetLabel.TextColor3 = Color3.fromRGB(200,200,200)
         if not loopThread then
             loopThread = coroutine.create(MainLoop)
             coroutine.resume(loopThread)
@@ -213,6 +179,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "● 已停止"
         StatusLabel.TextColor3 = Color3.fromRGB(255,80,80)
         TargetLabel.Text = "🎯 已暂停"
-        CountLabel.Text = ""
+        TargetLabel.TextColor3 = Color3.fromRGB(200,200,200)
     end
 end)
