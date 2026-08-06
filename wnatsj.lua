@@ -1,5 +1,5 @@
--- 圣奥里出租车刷单 v11 (最终暴力版)
--- 抓所有活人NPC + 修正传送高度
+-- 圣奥里出租车刷单 v13 (UI坐标提取版)
+-- 从游戏界面的文字里提取乘客坐标
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -42,7 +42,7 @@ TitleBar.Parent = Frame
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里出租车 v11"
+TitleLabel.Text = "🚖 圣奥里出租车 v13"
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -84,7 +84,7 @@ local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 20)
 Footer.Position = UDim2.new(0.05, 0, 0, 290)
 Footer.BackgroundTransparency = 1
-Footer.Text = "⚡ 抓活人NPC | 拖动窗口"
+Footer.Text = "⚡ UI坐标提取 | 拖动窗口"
 Footer.TextColor3 = Color3.fromRGB(130,130,160)
 Footer.TextSize = 11
 Footer.TextXAlignment = Enum.TextXAlignment.Center
@@ -98,46 +98,104 @@ local loopThread = nil
 
 local function TeleportTo(pos)
     if HumanoidRootPart and pos then
-        -- 修正高度，防止卡进栏杆
-        local fixedPos = Vector3.new(pos.X, pos.Y + 5, pos.Z)
-        HumanoidRootPart.CFrame = CFrame.new(fixedPos)
+        HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
     end
 end
 
--- 只抓带Humanoid的活人模型
-local function FindNearestNPC()
-    local best = nil
-    local bestDist = math.huge
-    local myPos = HumanoidRootPart.Position
-    
+-- 从UI里提取坐标数字
+local function ExtractCoordinatesFromUI()
+    local allText = {}
+    -- 扫描所有GUI里的文字
+    for _, gui in pairs(Player.PlayerGui:GetDescendants()) do
+        if gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox") then
+            local text = gui.Text or ""
+            -- 找包含三位数坐标的文本 (比如 "X: 123 Y: 456")
+            local x, y, z = text:match("(%d+)%.?(%d*)%s*[Xx]%s*[=:]%s*(%d+)%.?(%d*)%s*[Yy]%s*[=:]%s*(%d+)%.?(%d*)")
+            if x and y and z then
+                local pos = Vector3.new(tonumber(x), tonumber(y), tonumber(z))
+                return pos
+            end
+        end
+    end
+    return nil
+end
+
+-- 从workspace里找带"Waypoint"或"Marker"且会移动的对象
+local function FindMovingWaypoint()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Character then
-            local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
-            if root then
-                local dist = (root.Position - myPos).Magnitude
-                if dist < bestDist and dist > 1 then
-                    bestDist = dist
-                    best = root
+        if obj:IsA("Part") or obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            if name:find("waypoint") or name:find("marker") or name:find("nav") or name:find("arrow") then
+                -- 检查这个对象是否在移动 (速度 > 0)
+                local velocity = obj:FindFirstChild("Velocity")
+                if velocity and velocity.Value and velocity.Value.Magnitude > 1 then
+                    return obj.Position
                 end
             end
         end
     end
-    return best
+    return nil
 end
 
 local function MainLoop()
-    while task.wait(1.2) do
+    while task.wait(1.5) do
         if not isRunning then break end
         
-        local target = FindNearestNPC()
+        local targetPos = nil
         
-        if target then
-            local pos = target.Position
-            TargetLabel.Text = "🎯 目标: " .. target.Parent.Name
-            DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
-            
-            TeleportTo(pos)
-            TaskLabel.Text = "📋 任务: 已传送到乘客"
+        -- 方法1: 从UI提取坐标
+        local uiPos = ExtractCoordinatesFromUI()
+        if uiPos then
+            targetPos = uiPos
+            TargetLabel.Text = "🎯 目标: UI坐标提取"
+        end
+        
+        -- 方法2: 找移动中的导航点
+        if not targetPos then
+            local movingPoint = FindMovingWaypoint()
+            if movingPoint then
+                targetPos = movingPoint
+                TargetLabel.Text = "🎯 目标: 移动导航点"
+            end
+        end
+        
+        -- 方法3: 找最近的带Humanoid的NPC(排除玩家)
+        if not targetPos then
+            local best = nil
+            local bestDist = math.huge
+            local myPos = HumanoidRootPart.Position
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Character then
+                    -- 排除其他玩家
+                    local isPlayer = false
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p.Character == obj then
+                            isPlayer = true
+                            break
+                        end
+                    end
+                    if not isPlayer then
+                        local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
+                        if root then
+                            local dist = (root.Position - myPos).Magnitude
+                            if dist < bestDist and dist > 1 then
+                                bestDist = dist
+                                best = root
+                            end
+                        end
+                    end
+                end
+            end
+            if best then
+                targetPos = best.Position
+                TargetLabel.Text = "🎯 目标: NPC (" .. best.Parent.Name .. ")"
+            end
+        end
+        
+        if targetPos then
+            DebugLabel.Text = "距离: " .. math.floor((targetPos - HumanoidRootPart.Position).Magnitude)
+            TeleportTo(targetPos)
+            TaskLabel.Text = "📋 任务: 已传送"
             task.wait(0.3)
             
             local reward = math.random(2000, 6000)
@@ -149,10 +207,9 @@ local function MainLoop()
             task.wait(1)
             StatusLabel.Text = "● 状态: 运行中"
             StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
-            TaskLabel.Text = "📋 任务: 寻找下一NPC"
         else
-            TargetLabel.Text = "🎯 目标: 未找到NPC"
-            DebugLabel.Text = "扫描活人..."
+            TargetLabel.Text = "🎯 目标: 未找到任何数据"
+            DebugLabel.Text = "扫描UI和workspace..."
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
         end
     end
