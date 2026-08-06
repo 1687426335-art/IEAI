@@ -1,11 +1,10 @@
--- 圣奥里出租车刷单 v25 (视野扫描版)
--- 扫描玩家视野内最近的非玩家NPC，直接传送
+-- 圣奥里出租车刷单 v26 (极简自动版)
+-- 自动检测订单 → 传乘客 → 传目的地 → 循环
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local Camera = workspace.CurrentCamera
 
 -- ===== UI =====
 local ScreenGui = Instance.new("ScreenGui")
@@ -13,10 +12,10 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 260, 0, 320)
+Frame.Size = UDim2.new(0, 280, 0, 350)
 Frame.Position = UDim2.new(0.02, 0, 0.15, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
-Frame.BackgroundTransparency = 0.15
+Frame.BackgroundColor3 = Color3.fromRGB(10, 10, 25)
+Frame.BackgroundTransparency = 0.1
 Frame.BorderSizePixel = 0
 Frame.ClipsDescendants = true
 Frame.Active = true
@@ -24,11 +23,11 @@ Frame.Draggable = true
 Frame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 16)
+Corner.CornerRadius = UDim.new(0, 14)
 Corner.Parent = Frame
 
 local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(0, 220, 255)
+Stroke.Color = Color3.fromRGB(0, 200, 255)
 Stroke.Thickness = 1.5
 Stroke.Transparency = 0.4
 Stroke.Parent = Frame
@@ -36,31 +35,23 @@ Stroke.Parent = Frame
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 38)
 TitleBar.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-TitleBar.BackgroundTransparency = 0.15
+TitleBar.BackgroundTransparency = 0.2
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = Frame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 16)
+TitleCorner.CornerRadius = UDim.new(0, 14)
 TitleCorner.Parent = TitleBar
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里 v25"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.TextSize = 17
+TitleLabel.Text = "🚖 圣奥里 v26"
+TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Parent = TitleBar
-
-local Divider = Instance.new("Frame")
-Divider.Size = UDim2.new(0.9, 0, 0, 1)
-Divider.Position = UDim2.new(0.05, 0, 0.12, 0)
-Divider.BackgroundColor3 = Color3.fromRGB(0, 220, 255)
-Divider.BackgroundTransparency = 0.6
-Divider.BorderSizePixel = 0
-Divider.Parent = Frame
 
 local function MakeLabel(text, y, color, size)
     local label = Instance.new("TextLabel")
@@ -77,13 +68,13 @@ local function MakeLabel(text, y, color, size)
 end
 
 local StatusLabel = MakeLabel("● 已停止", 48, Color3.fromRGB(255,80,80))
-local TargetLabel = MakeLabel("🎯 等待启动", 82, Color3.fromRGB(200,200,200), 13)
-local StepLabel = MakeLabel("📌 空闲中", 116, Color3.fromRGB(180,180,220), 13)
+local OrderLabel = MakeLabel("📋 订单: 无", 82, Color3.fromRGB(200,200,200), 13)
+local TargetLabel = MakeLabel("🎯 目标: 等待中", 116, Color3.fromRGB(200,200,200), 13)
 local DebugLabel = MakeLabel("", 150, Color3.fromRGB(130,130,170), 11)
 
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 110, 0, 36)
-ToggleBtn.Position = UDim2.new(0.5, -55, 0, 185)
+ToggleBtn.Position = UDim2.new(0.5, -55, 0, 190)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0,220,100)
 ToggleBtn.BackgroundTransparency = 0.15
 ToggleBtn.Text = "▶ 启动"
@@ -104,9 +95,9 @@ BtnStroke.Parent = ToggleBtn
 
 local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 18)
-Footer.Position = UDim2.new(0.05, 0, 0, 240)
+Footer.Position = UDim2.new(0.05, 0, 0, 250)
 Footer.BackgroundTransparency = 1
-Footer.Text = "视野扫描模式"
+Footer.Text = "自动检测订单 → 传乘客 → 传目的地"
 Footer.TextColor3 = Color3.fromRGB(100,100,150)
 Footer.TextSize = 11
 Footer.TextXAlignment = Enum.TextXAlignment.Center
@@ -123,15 +114,24 @@ local function TeleportTo(pos)
     end
 end
 
--- 扫描视野内所有非玩家NPC
-local function FindNPCInView()
-    local myPos = HumanoidRootPart.Position
-    local camPos = Camera.CFrame.Position
-    local camLook = Camera.CFrame.LookVector
-    
+-- 检测是否有订单 (扫描UI里的"前往客户位置"或"新目标"等文字)
+local function HasOrder()
+    for _, gui in pairs(Player.PlayerGui:GetDescendants()) do
+        if gui:IsA("TextLabel") or gui:IsA("TextButton") then
+            local text = gui.Text or ""
+            if text:find("前往客户位置") or text:find("新目标") or text:find("驾驶客户") or text:find("送达") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 找最近的NPC (乘客)
+local function FindNearestNPC()
     local best = nil
-    local bestAngle = 0.5  -- 视野角度阈值
-    
+    local bestDist = math.huge
+    local myPos = HumanoidRootPart.Position
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Character then
             local isPlayer = false
@@ -141,10 +141,9 @@ local function FindNPCInView()
             if not isPlayer then
                 local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
                 if root then
-                    local dir = (root.Position - camPos).Unit
-                    local angle = camLook:Dot(dir)
-                    if angle > bestAngle then
-                        bestAngle = angle
+                    local dist = (root.Position - myPos).Magnitude
+                    if dist < bestDist then
+                        bestDist = dist
                         best = root
                     end
                 end
@@ -154,26 +153,63 @@ local function FindNPCInView()
     return best
 end
 
+-- 找目的地标记
+local function FindDestination()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Part") or obj:IsA("BasePart") or obj:IsA("Attachment") then
+            local name = obj.Name:lower()
+            if name:find("destination") or name:find("target") or name:find("goal") or 
+               name:find("waypoint") or name:find("marker") or name:find("arrow") or
+               name:find("drop") or name:find("终点") or name:find("mark") then
+                local pos = obj:IsA("Attachment") and obj.WorldPosition or obj.Position
+                if pos then
+                    return pos
+                end
+            end
+        end
+    end
+    return nil
+end
+
 local function MainLoop()
     while task.wait(1.5) do
         if not isRunning then break end
         
-        local target = FindNPCInView()
-        
-        if target then
-            local pos = target.Position
-            TargetLabel.Text = "🎯 目标: " .. target.Parent.Name
-            DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
-            TeleportTo(pos)
-            StepLabel.Text = "📌 已传送!"
-            StatusLabel.Text = "● 完成!"
-            StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
-            task.wait(1)
-            StatusLabel.Text = "● 运行中"
-            StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
+        -- 1. 检测有没有订单
+        if HasOrder() then
+            OrderLabel.Text = "📋 订单: 有 ✓"
+            
+            -- 2. 找乘客 (最近的NPC)
+            local npc = FindNearestNPC()
+            if npc then
+                local pos = npc.Position
+                TargetLabel.Text = "🎯 传送到乘客: " .. npc.Parent.Name
+                DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
+                TeleportTo(pos)
+                StatusLabel.Text = "● 已接客"
+                StatusLabel.TextColor3 = Color3.fromRGB(0,255,200)
+                task.wait(1)
+                
+                -- 3. 找目的地
+                local dest = FindDestination()
+                if dest then
+                    TargetLabel.Text = "🎯 传送到目的地"
+                    DebugLabel.Text = "距离: " .. math.floor((dest - HumanoidRootPart.Position).Magnitude)
+                    TeleportTo(dest)
+                    StatusLabel.Text = "● 已送达!"
+                    StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
+                    task.wait(1)
+                else
+                    DebugLabel.Text = "未找到目的地"
+                end
+            else
+                TargetLabel.Text = "🎯 未找到乘客NPC"
+                DebugLabel.Text = "扫描中..."
+            end
         else
-            TargetLabel.Text = "🎯 扫描视野..."
-            DebugLabel.Text = "未找到NPC"
+            OrderLabel.Text = "📋 订单: 无"
+            TargetLabel.Text = "🎯 等待接单..."
+            DebugLabel.Text = "去接个出租车订单"
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
         end
     end
@@ -188,7 +224,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "● 运行中"
         StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
         TargetLabel.Text = "🎯 扫描中..."
-        StepLabel.Text = "📌 寻找目标"
         if not loopThread then
             loopThread = coroutine.create(MainLoop)
             coroutine.resume(loopThread)
@@ -200,6 +235,5 @@ ToggleBtn.MouseButton1Click:Connect(function()
         StatusLabel.Text = "● 已停止"
         StatusLabel.TextColor3 = Color3.fromRGB(255,80,80)
         TargetLabel.Text = "🎯 已暂停"
-        StepLabel.Text = "📌 已停止"
     end
 end)
