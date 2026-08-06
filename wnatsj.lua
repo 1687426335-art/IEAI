@@ -1,5 +1,5 @@
--- 圣奥里出租车刷单 v26 (极简自动版)
--- 自动检测订单 → 传乘客 → 传目的地 → 循环
+-- 圣奥里出租车刷单 v27 (强制NPC扫描版)
+-- 不依赖UI文字，直接扫描任务NPC
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -46,7 +46,7 @@ TitleCorner.Parent = TitleBar
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里 v26"
+TitleLabel.Text = "🚖 圣奥里 v27"
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -68,7 +68,7 @@ local function MakeLabel(text, y, color, size)
 end
 
 local StatusLabel = MakeLabel("● 已停止", 48, Color3.fromRGB(255,80,80))
-local OrderLabel = MakeLabel("📋 订单: 无", 82, Color3.fromRGB(200,200,200), 13)
+local OrderLabel = MakeLabel("📋 状态: 待机", 82, Color3.fromRGB(200,200,200), 13)
 local TargetLabel = MakeLabel("🎯 目标: 等待中", 116, Color3.fromRGB(200,200,200), 13)
 local DebugLabel = MakeLabel("", 150, Color3.fromRGB(130,130,170), 11)
 
@@ -97,7 +97,7 @@ local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 18)
 Footer.Position = UDim2.new(0.05, 0, 0, 250)
 Footer.BackgroundTransparency = 1
-Footer.Text = "自动检测订单 → 传乘客 → 传目的地"
+Footer.Text = "自动扫描任务NPC → 传送"
 Footer.TextColor3 = Color3.fromRGB(100,100,150)
 Footer.TextSize = 11
 Footer.TextXAlignment = Enum.TextXAlignment.Center
@@ -114,24 +114,9 @@ local function TeleportTo(pos)
     end
 end
 
--- 检测是否有订单 (扫描UI里的"前往客户位置"或"新目标"等文字)
-local function HasOrder()
-    for _, gui in pairs(Player.PlayerGui:GetDescendants()) do
-        if gui:IsA("TextLabel") or gui:IsA("TextButton") then
-            local text = gui.Text or ""
-            if text:find("前往客户位置") or text:find("新目标") or text:find("驾驶客户") or text:find("送达") then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- 找最近的NPC (乘客)
-local function FindNearestNPC()
-    local best = nil
-    local bestDist = math.huge
-    local myPos = HumanoidRootPart.Position
+-- 找所有NPC（排除玩家）
+local function FindAllNPCs()
+    local npcs = {}
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Character then
             local isPlayer = false
@@ -141,29 +126,31 @@ local function FindNearestNPC()
             if not isPlayer then
                 local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
                 if root then
-                    local dist = (root.Position - myPos).Magnitude
-                    if dist < bestDist then
-                        bestDist = dist
-                        best = root
-                    end
+                    table.insert(npcs, {
+                        model = obj,
+                        root = root,
+                        pos = root.Position,
+                        name = obj.Name
+                    })
                 end
             end
         end
     end
-    return best
+    return npcs
 end
 
--- 找目的地标记
-local function FindDestination()
+-- 找任务标记（目的地）
+local function FindTaskMarker()
+    local keywords = {"destination", "target", "goal", "waypoint", "marker", "arrow", "nav", "drop", "终点", "标记", "箭头"}
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Part") or obj:IsA("BasePart") or obj:IsA("Attachment") then
             local name = obj.Name:lower()
-            if name:find("destination") or name:find("target") or name:find("goal") or 
-               name:find("waypoint") or name:find("marker") or name:find("arrow") or
-               name:find("drop") or name:find("终点") or name:find("mark") then
-                local pos = obj:IsA("Attachment") and obj.WorldPosition or obj.Position
-                if pos then
-                    return pos
+            for _, kw in pairs(keywords) do
+                if name:find(kw) then
+                    local pos = obj:IsA("Attachment") and obj.WorldPosition or obj.Position
+                    if pos then
+                        return pos
+                    end
                 end
             end
         end
@@ -171,45 +158,70 @@ local function FindDestination()
     return nil
 end
 
+-- 检测是否有活跃任务（通过NPC数量变化或标记存在）
+local function HasActiveTask()
+    -- 方法1: 检查有没有任务标记
+    local marker = FindTaskMarker()
+    if marker then return true end
+    
+    -- 方法2: 检查NPC数量是否>1 (有乘客)
+    local npcs = FindAllNPCs()
+    if #npcs > 1 then return true end
+    
+    return false
+end
+
 local function MainLoop()
     while task.wait(1.5) do
         if not isRunning then break end
         
-        -- 1. 检测有没有订单
-        if HasOrder() then
-            OrderLabel.Text = "📋 订单: 有 ✓"
+        -- 检测是否有任务
+        if HasActiveTask() then
+            OrderLabel.Text = "📋 状态: 有任务 ✓"
             
-            -- 2. 找乘客 (最近的NPC)
-            local npc = FindNearestNPC()
-            if npc then
-                local pos = npc.Position
-                TargetLabel.Text = "🎯 传送到乘客: " .. npc.Parent.Name
-                DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
-                TeleportTo(pos)
+            -- 找最近的NPC（乘客）
+            local npcs = FindAllNPCs()
+            local best = nil
+            local bestDist = math.huge
+            local myPos = HumanoidRootPart.Position
+            
+            for _, npc in pairs(npcs) do
+                local dist = (npc.pos - myPos).Magnitude
+                if dist < bestDist and dist > 2 then
+                    bestDist = dist
+                    best = npc
+                end
+            end
+            
+            if best then
+                TargetLabel.Text = "🎯 传送到: " .. best.name
+                DebugLabel.Text = "距离: " .. math.floor(bestDist)
+                TeleportTo(best.pos)
                 StatusLabel.Text = "● 已接客"
                 StatusLabel.TextColor3 = Color3.fromRGB(0,255,200)
-                task.wait(1)
+                task.wait(0.5)
                 
-                -- 3. 找目的地
-                local dest = FindDestination()
+                -- 找目的地
+                local dest = FindTaskMarker()
                 if dest then
                     TargetLabel.Text = "🎯 传送到目的地"
-                    DebugLabel.Text = "距离: " .. math.floor((dest - HumanoidRootPart.Position).Magnitude)
+                    DebugLabel.Text = "找到标记!"
                     TeleportTo(dest)
                     StatusLabel.Text = "● 已送达!"
                     StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
                     task.wait(1)
                 else
-                    DebugLabel.Text = "未找到目的地"
+                    DebugLabel.Text = "未找到目的地, 等待..."
+                    task.wait(1)
                 end
             else
-                TargetLabel.Text = "🎯 未找到乘客NPC"
+                TargetLabel.Text = "🎯 未找到乘客"
                 DebugLabel.Text = "扫描中..."
             end
         else
-            OrderLabel.Text = "📋 订单: 无"
+            OrderLabel.Text = "📋 状态: 无任务"
             TargetLabel.Text = "🎯 等待接单..."
-            DebugLabel.Text = "去接个出租车订单"
+            DebugLabel.Text = "去接出租车订单"
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
         end
     end
