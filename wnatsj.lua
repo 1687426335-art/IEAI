@@ -1,5 +1,8 @@
--- 圣奥里出租车刷单 v17 (蓝色光圈检测版)
--- 检测NPC旁边的蓝色光圈，只传送带光圈的NPC
+-- 圣奥里出租车刷单 v20 (精确尺寸光圈版)
+-- 只传送指定半径的光圈，防止传错
+
+local TARGET_RADIUS = 5  -- ← 把这个数改成你截图里那个光圈的半径！
+                        -- 先试试5，不对就改成3、4、6、7、8一个个试
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -42,9 +45,9 @@ TitleBar.Parent = Frame
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里出租车 v17"
+TitleLabel.Text = "🚖 圣奥里 v20 (精确尺寸)"
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
-TitleLabel.TextSize = 18
+TitleLabel.TextSize = 17
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Parent = TitleBar
@@ -67,7 +70,7 @@ local StatusLabel = MakeLabel("● 状态: 已停止", 50, Color3.fromRGB(255,50
 local TargetLabel = MakeLabel("🎯 目标: 未开始", 85, Color3.fromRGB(200,200,200), 14)
 local MoneyLabel = MakeLabel("💰 收入: $0", 120, Color3.fromRGB(255,215,0))
 local TaskLabel = MakeLabel("📋 任务: 等待启动", 155, Color3.fromRGB(200,200,255), 14)
-local DebugLabel = MakeLabel("", 190, Color3.fromRGB(150,150,180), 12)
+local DebugLabel = MakeLabel("光圈半径: " .. TARGET_RADIUS, 190, Color3.fromRGB(150,150,180), 12)
 
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 120, 0, 38)
@@ -84,11 +87,11 @@ local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 20)
 Footer.Position = UDim2.new(0.05, 0, 0, 290)
 Footer.BackgroundTransparency = 1
-Footer.Text = "🔵 检测蓝色光圈 | 拖动窗口"
-Footer.TextColor3 = Color3.fromRGB(130,130,160)
-Footer.TextSize = 11
+Footer.Text = "🎯 只传半径 " .. TARGET_RADIUS .. " 的光圈"
+Footer.TextColor3 = Color3.fromRGB(0, 200, 255)
+Footer.TextSize = 12
 Footer.TextXAlignment = Enum.TextXAlignment.Center
-Footer.Font = Enum.Font.Gotham
+Footer.Font = Enum.Font.GothamBold
 Footer.Parent = Frame
 
 -- ===== 核心 =====
@@ -102,46 +105,22 @@ local function TeleportTo(pos)
     end
 end
 
--- 检测NPC旁边是否有蓝色光圈
-local function FindNPCWithAura()
+-- 检测指定大小的光圈
+local function FindCircleByRadius()
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- 检测是否是光圈/光环/光晕类物体
-        local name = obj.Name:lower()
-        if obj:IsA("Part") or obj:IsA("BasePart") or obj:IsA("MeshPart") then
-            -- 检查名字是否包含光圈关键词
-            if name:find("aura") or name:find("ring") or name:find("glow") or name:find("circle") or 
-               name:find("光环") or name:find("光圈") or name:find("marker") or name:find("highlight") then
+        if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            -- 关键词匹配
+            if name:find("circle") or name:find("ring") or name:find("光圈") or name:find("光环") or 
+               name:find("marker") or name:find("highlight") or name:find("target") or name:find("point") then
                 
-                -- 检查是否是蓝色 (RGB接近蓝色)
-                local color = obj.BrickColor or obj.Color
-                if color then
-                    local r, g, b = color.R, color.G, color.B
-                    if b > r and b > g and b > 100 then  -- 蓝色调
-                        -- 找到这个光圈附近的NPC
-                        local pos = obj.Position
-                        local radius = 15  -- 搜索半径
-                        for _, npc in pairs(workspace:GetDescendants()) do
-                            if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and npc ~= Character then
-                                -- 排除其他玩家
-                                local isPlayer = false
-                                for _, p in pairs(Players:GetPlayers()) do
-                                    if p.Character == npc then
-                                        isPlayer = true
-                                        break
-                                    end
-                                end
-                                if not isPlayer then
-                                    local root = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("PrimaryPart")
-                                    if root then
-                                        local dist = (root.Position - pos).Magnitude
-                                        if dist < radius then
-                                            return root
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
+                -- 获取尺寸
+                local size = obj.Size
+                local radius = (size.X + size.Z) / 2  -- 圆形的话 X和Z差不多
+                
+                -- 匹配精确半径 (允许±0.5误差)
+                if math.abs(radius - TARGET_RADIUS) < 0.5 then
+                    return obj.Position
                 end
             end
         end
@@ -153,15 +132,14 @@ local function MainLoop()
     while task.wait(1.5) do
         if not isRunning then break end
         
-        local target = FindNPCWithAura()
+        local pos = FindCircleByRadius()
         
-        if target then
-            local pos = target.Position
-            TargetLabel.Text = "🎯 目标: " .. target.Parent.Name
+        if pos then
+            TargetLabel.Text = "🎯 目标: 光圈 (半径" .. TARGET_RADIUS .. ")"
             DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
             
             TeleportTo(pos)
-            TaskLabel.Text = "📋 任务: 已传送到光圈NPC"
+            TaskLabel.Text = "📋 任务: 已传送到光圈"
             task.wait(0.3)
             
             local reward = math.random(2000, 6000)
@@ -173,10 +151,10 @@ local function MainLoop()
             task.wait(1)
             StatusLabel.Text = "● 状态: 运行中"
             StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
-            TaskLabel.Text = "📋 任务: 扫描下一个光圈"
+            TaskLabel.Text = "📋 任务: 扫描下一光圈"
         else
-            TargetLabel.Text = "🎯 目标: 未找到光圈NPC"
-            DebugLabel.Text = "扫描蓝色光圈..."
+            TargetLabel.Text = "🎯 目标: 未找到匹配光圈"
+            DebugLabel.Text = "半径" .. TARGET_RADIUS .. " 扫描中..."
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
         end
     end
