@@ -832,160 +832,122 @@ Tab_ESP:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: 子弹追踪（修复版）
+-- Tab: 标点传送
 -------------------------------------------------------------------------
-local Tab_BulletTrack = Window:Tab({
+local Tab_Waypoint = Window:Tab({
     ["Locked"] = false,
-    ["Title"] = "子弹追踪",
+    ["Title"] = "标点传送",
     ["Icon"] = "rbxassetid://18520370419",
 })
 
-Tab_BulletTrack:Section({
+Tab_Waypoint:Section({
     TextSize = 17,
-    ["Title"] = "子弹追踪设置",
+    ["Title"] = "地图标点传送",
     TextXAlignment = "Left",
 })
 
-local bulletTrackEnabled = false
-local trackConnection = nil
-local trackRadius = 50
-local trackDistance = 150
-local trackProbability = 100
-local trackTarget = "警车"
-
-local function GetTargetVehicleTire()
+local function GetWaypointPosition()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
     
-    local closestTire = nil
-    local closestDist = trackRadius
+    local closest = nil
+    local closestDist = 9999
     
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") then
+        if obj:IsA("BasePart") and obj.Position then
             local name = obj.Name:lower()
-            local isTarget = false
-            
-            if trackTarget == "警车" then
-                if name:find("police") or name:find("cop") or name:find("警车") or name:find("sheriff") or name:find("pol") then
-                    isTarget = true
-                end
-            elseif trackTarget == "平民车辆" then
-                if not (name:find("police") or name:find("cop") or name:find("警车") or name:find("sheriff") or name:find("pol")) then
-                    isTarget = true
+            if name:find("waypoint") or name:find("marker") or name:find("标点") or name:find("导航") or name:find("nav") or name:find("目标") or name:find("target") or name:find("destination") or name:find("pin") then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist < closestDist and dist > 2 then
+                    closestDist = dist
+                    closest = obj.Position
                 end
             end
-            
-            if isTarget then
-                for _, part in ipairs(obj:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        local pName = part.Name:lower()
-                        if pName:find("tire") or pName:find("wheel") or pName:find("轮胎") or pName:find("轮子") then
-                            local dist = (hrp.Position - part.Position).Magnitude
-                            if dist < closestDist and dist <= trackDistance then
-                                closestDist = dist
-                                closestTire = part
-                            end
-                        end
+            if obj:FindFirstChild("BillboardGui") or obj:FindFirstChild("SelectionBox") or obj:FindFirstChild("SelectionSphere") then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist < closestDist and dist > 2 then
+                    closestDist = dist
+                    closest = obj.Position
+                end
+            end
+            if obj.Material == Enum.Material.Neon then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist < closestDist and dist > 2 then
+                    closestDist = dist
+                    closest = obj.Position
+                end
+            end
+        end
+        if obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("waypoint") or name:find("marker") or name:find("标点") or name:find("导航") or name:find("nav") or name:find("目标") then
+                local primary = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
+                if primary and primary:IsA("BasePart") then
+                    local dist = (hrp.Position - primary.Position).Magnitude
+                    if dist < closestDist and dist > 2 then
+                        closestDist = dist
+                        closest = primary.Position
                     end
                 end
             end
         end
     end
     
-    return closestTire
+    return closest
 end
 
-local function TrackBullet()
-    if not bulletTrackEnabled then return end
-    
-    if math.random(1, 100) > trackProbability then
-        return
-    end
-    
-    local tire = GetTargetVehicleTire()
-    if not tire then return end
-    
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local name = obj.Name:lower()
-            if name:find("bullet") or name:find("projectile") or name:find("弹") or name:find("射弹") or name:find("round") then
-                local bv = obj:FindFirstChild("BodyVelocity")
-                if bv and bv:IsA("BodyVelocity") then
-                    local dir = (tire.Position - obj.Position).Unit * bv.Velocity.Magnitude
-                    bv.Velocity = dir
-                end
-                local bm = obj:FindFirstChildWhichIsA("BodyVelocity")
-                if bm then
-                    local dir = (tire.Position - obj.Position).Unit * bm.Velocity.Magnitude
-                    bm.Velocity = dir
-                end
-            end
+Tab_Waypoint:Button({
+    ["Title"] = "传送到地图标点",
+    ["Desc"] = "自动检测地图上的标点并传送",
+    ["Callback"] = function()
+        local target = GetWaypointPosition()
+        if target then
+            TeleportTo(target)
+            StarterGui:SetCore("SendNotification", {
+                Title = "标点传送",
+                Text = "已传送到标点位置",
+                Duration = 2,
+            })
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "标点传送",
+                Text = "未找到地图标点",
+                Duration = 2,
+            })
         end
     end
+})
+
+local autoWaypointEnabled = false
+local autoWaypointConnection = nil
+
+local function AutoWaypoint()
+    if not autoWaypointEnabled then return end
+    local target = GetWaypointPosition()
+    if target then
+        TeleportTo(target)
+    end
 end
 
-Tab_BulletTrack:Toggle({
-    ["Title"] = "子弹追踪",
-    ["Desc"] = "开启/关闭子弹追踪",
+Tab_Waypoint:Toggle({
+    ["Title"] = "自动传送标点",
+    ["Desc"] = "自动检测标点并传送",
     ["Default"] = false,
     ["Callback"] = function(bool)
-        bulletTrackEnabled = bool
+        autoWaypointEnabled = bool
         if bool then
-            if trackConnection then trackConnection:Disconnect() end
-            trackConnection = RunService.Heartbeat:Connect(function()
-                if bulletTrackEnabled then
-                    TrackBullet()
+            if autoWaypointConnection then autoWaypointConnection:Disconnect() end
+            autoWaypointConnection = RunService.Heartbeat:Connect(function()
+                if autoWaypointEnabled then
+                    AutoWaypoint()
                 end
             end)
         else
-            if trackConnection then
-                trackConnection:Disconnect()
-                trackConnection = nil
+            if autoWaypointConnection then
+                autoWaypointConnection:Disconnect()
+                autoWaypointConnection = nil
             end
         end
-    end
-})
-
-Tab_BulletTrack:Dropdown({
-    ["Title"] = "追踪目标",
-    ["Desc"] = "选择要追踪的车辆类型",
-    ["Options"] = {"警车", "平民车辆"},
-    ["Default"] = "警车",
-    ["Callback"] = function(option)
-        trackTarget = option
-    end
-})
-
-Tab_BulletTrack:Slider({
-    ["Title"] = "追踪圈大小",
-    ["Desc"] = "检测车辆轮胎的范围（米）",
-    ["Default"] = 50,
-    ["Min"] = 10,
-    ["Max"] = 200,
-    ["Callback"] = function(value)
-        trackRadius = value
-    end
-})
-
-Tab_BulletTrack:Slider({
-    ["Title"] = "追踪距离",
-    ["Desc"] = "子弹追踪的最大距离（米）",
-    ["Default"] = 150,
-    ["Min"] = 1,
-    ["Max"] = 300,
-    ["Callback"] = function(value)
-        trackDistance = value
-    end
-})
-
-Tab_BulletTrack:Slider({
-    ["Title"] = "追踪概率",
-    ["Desc"] = "子弹追踪触发的概率（1-100）",
-    ["Default"] = 100,
-    ["Min"] = 1,
-    ["Max"] = 100,
-    ["Callback"] = function(value)
-        trackProbability = value
     end
 })
 
@@ -1189,10 +1151,10 @@ Tab_Settings:Button({
     ["Callback"] = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
-        bulletTrackEnabled = false
-        if trackConnection then
-            trackConnection:Disconnect()
-            trackConnection = nil
+        autoWaypointEnabled = false
+        if autoWaypointConnection then
+            autoWaypointConnection:Disconnect()
+            autoWaypointConnection = nil
         end
         if antiFlingConnection then
             antiFlingConnection:Disconnect()
@@ -1321,4 +1283,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("子弹追踪已添加（警车/平民车辆切换 + 追踪圈大小 + 追踪距离 + 追踪概率）")
+print("标点传送已添加")
