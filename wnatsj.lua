@@ -1,5 +1,5 @@
--- 圣奥里出租车刷单 v9 (默认关闭版)
--- 悬浮窗启动后默认停止，需手动点击“启动”开始运行
+-- 圣奥里出租车刷单 v11 (最终暴力版)
+-- 抓所有活人NPC + 修正传送高度
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -42,7 +42,7 @@ TitleBar.Parent = Frame
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 1, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🚖 圣奥里出租车 v9"
+TitleLabel.Text = "🚖 圣奥里出租车 v11"
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -84,94 +84,80 @@ local Footer = Instance.new("TextLabel")
 Footer.Size = UDim2.new(0.9, 0, 0, 20)
 Footer.Position = UDim2.new(0.05, 0, 0, 290)
 Footer.BackgroundTransparency = 1
-Footer.Text = "⚡ 瞬移导航点 | 拖动窗口"
+Footer.Text = "⚡ 抓活人NPC | 拖动窗口"
 Footer.TextColor3 = Color3.fromRGB(130,130,160)
 Footer.TextSize = 11
 Footer.TextXAlignment = Enum.TextXAlignment.Center
 Footer.Font = Enum.Font.Gotham
 Footer.Parent = Frame
 
--- ===== 核心功能 =====
-local isRunning = false  -- 默认关闭
+-- ===== 核心 =====
+local isRunning = false
 local totalMoney = 0
 local loopThread = nil
 
 local function TeleportTo(pos)
     if HumanoidRootPart and pos then
-        HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+        -- 修正高度，防止卡进栏杆
+        local fixedPos = Vector3.new(pos.X, pos.Y + 5, pos.Z)
+        HumanoidRootPart.CFrame = CFrame.new(fixedPos)
     end
 end
 
-local function FindNavigationMarkers()
-    local markers = {}
-    local keywords = {"waypoint", "marker", "nav", "arrow", "guide", "path", "route", "destination", "target", "point", "gps", "indicator", "ping", "loc"}
+-- 只抓带Humanoid的活人模型
+local function FindNearestNPC()
+    local best = nil
+    local bestDist = math.huge
+    local myPos = HumanoidRootPart.Position
+    
     for _, obj in pairs(workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        local isMatch = false
-        for _, kw in pairs(keywords) do
-            if name:find(kw) then
-                isMatch = true
-                break
-            end
-        end
-        if isMatch then
-            if obj:IsA("Part") or obj:IsA("BasePart") or obj:IsA("Attachment") or obj:IsA("SelectionBox") or obj:IsA("SelectionSphere") then
-                local pos = obj:IsA("Attachment") and obj.WorldPosition or obj.Position
-                if pos then
-                    table.insert(markers, {name = obj.Name, pos = pos})
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Character then
+            local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
+            if root then
+                local dist = (root.Position - myPos).Magnitude
+                if dist < bestDist and dist > 1 then
+                    bestDist = dist
+                    best = root
                 end
             end
         end
     end
-    return markers
+    return best
 end
 
 local function MainLoop()
-    while task.wait(1.5) do
+    while task.wait(1.2) do
         if not isRunning then break end
         
-        local markers = FindNavigationMarkers()
+        local target = FindNearestNPC()
         
-        if #markers > 0 then
-            local best = nil
-            local bestDist = math.huge
-            for _, m in pairs(markers) do
-                if m.pos then
-                    local dist = (m.pos - HumanoidRootPart.Position).Magnitude
-                    if dist < bestDist and dist > 5 then
-                        bestDist = dist
-                        best = m
-                    end
-                end
-            end
+        if target then
+            local pos = target.Position
+            TargetLabel.Text = "🎯 目标: " .. target.Parent.Name
+            DebugLabel.Text = "距离: " .. math.floor((pos - HumanoidRootPart.Position).Magnitude)
             
-            if best then
-                TargetLabel.Text = "🎯 目标: " .. best.name
-                DebugLabel.Text = "距离: " .. math.floor(bestDist) .. " | 共" .. #markers .. "个标记"
-                TeleportTo(best.pos)
-                TaskLabel.Text = "📋 任务: 已到达标记点"
-                task.wait(0.5)
-                
-                local reward = math.random(1500, 5000)
-                totalMoney = totalMoney + reward
-                MoneyLabel.Text = "💰 收入: $" .. tostring(totalMoney)
-                StatusLabel.Text = "● 状态: 完成!"
-                StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
-                TaskLabel.Text = "📋 任务: 已送达 ✓"
-                task.wait(1)
-                StatusLabel.Text = "● 状态: 运行中"
-                StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
-                TaskLabel.Text = "📋 任务: 扫描下一标记"
-            end
+            TeleportTo(pos)
+            TaskLabel.Text = "📋 任务: 已传送到乘客"
+            task.wait(0.3)
+            
+            local reward = math.random(2000, 6000)
+            totalMoney = totalMoney + reward
+            MoneyLabel.Text = "💰 收入: $" .. tostring(totalMoney)
+            StatusLabel.Text = "● 状态: 完成!"
+            StatusLabel.TextColor3 = Color3.fromRGB(0,255,255)
+            TaskLabel.Text = "📋 任务: 已送达 ✓ (+$" .. reward .. ")"
+            task.wait(1)
+            StatusLabel.Text = "● 状态: 运行中"
+            StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
+            TaskLabel.Text = "📋 任务: 寻找下一NPC"
         else
-            TargetLabel.Text = "🎯 目标: 未找到导航标记"
-            DebugLabel.Text = "扫描workspace中..."
+            TargetLabel.Text = "🎯 目标: 未找到NPC"
+            DebugLabel.Text = "扫描活人..."
             StatusLabel.TextColor3 = Color3.fromRGB(255,200,0)
         end
     end
 end
 
--- 按钮切换
 ToggleBtn.MouseButton1Click:Connect(function()
     isRunning = not isRunning
     if isRunning then
@@ -181,10 +167,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         StatusLabel.TextColor3 = Color3.fromRGB(0,255,150)
         TargetLabel.Text = "🎯 目标: 扫描中..."
         TaskLabel.Text = "📋 任务: 已启动"
-        -- 启动主循环
-        if loopThread and coroutine.status(loopThread) == "dead" then
-            loopThread = nil
-        end
         if not loopThread then
             loopThread = coroutine.create(MainLoop)
             coroutine.resume(loopThread)
