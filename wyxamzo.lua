@@ -856,19 +856,21 @@ local function GetWaypointPosition()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Position then
             local name = obj.Name:lower()
-            local keywords = {"waypoint", "marker", "标点", "导航", "nav", "目标", "target", "destination", "pin", "flag", "point", "位置", "location", "way", "route", "指引", "标记"}
-            local match = false
-            for _, kw in ipairs(keywords) do
-                if name:find(kw) then
-                    match = true
-                    break
-                end
-            end
-            if match then
+            if name:find("waypoint") or name:find("marker") or name:find("标点") or name:find("导航") or name:find("nav") or name:find("目标") or name:find("target") or name:find("destination") or name:find("pin") or name:find("flag") or name:find("point") or name:find("位置") or name:find("location") or name:find("way") or name:find("route") or name:find("指引") or name:find("标记") or name:find("gps") or name:find("map") then
                 local dist = (hrp.Position - obj.Position).Magnitude
                 if dist < closestDist and dist > 2 then
                     closestDist = dist
                     closest = obj.Position
+                end
+            end
+            if obj.Color then
+                local c = obj.Color
+                if c.r > 0.8 and c.g > 0.8 and c.b < 0.3 then
+                    local dist = (hrp.Position - obj.Position).Magnitude
+                    if dist < closestDist and dist > 2 then
+                        closestDist = dist
+                        closest = obj.Position
+                    end
                 end
             end
             if obj.Material == Enum.Material.Neon then
@@ -878,7 +880,7 @@ local function GetWaypointPosition()
                     closest = obj.Position
                 end
             end
-            if obj:FindFirstChild("BillboardGui") or obj:FindFirstChild("SelectionBox") or obj:FindFirstChild("SelectionSphere") then
+            if obj:FindFirstChild("BillboardGui") or obj:FindFirstChild("SelectionBox") then
                 local dist = (hrp.Position - obj.Position).Magnitude
                 if dist < closestDist and dist > 2 then
                     closestDist = dist
@@ -888,15 +890,7 @@ local function GetWaypointPosition()
         end
         if obj:IsA("Model") then
             local name = obj.Name:lower()
-            local keywords = {"waypoint", "marker", "标点", "导航", "nav", "目标", "target", "destination", "pin", "flag", "point", "位置", "指引", "标记"}
-            local match = false
-            for _, kw in ipairs(keywords) do
-                if name:find(kw) then
-                    match = true
-                    break
-                end
-            end
-            if match then
+            if name:find("waypoint") or name:find("marker") or name:find("标点") or name:find("导航") or name:find("nav") or name:find("目标") or name:find("target") or name:find("destination") or name:find("pin") or name:find("flag") or name:find("point") or name:find("位置") or name:find("指引") or name:find("标记") or name:find("gps") then
                 local primary = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
                 if primary and primary:IsA("BasePart") then
                     local dist = (hrp.Position - primary.Position).Magnitude
