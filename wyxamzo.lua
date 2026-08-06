@@ -239,7 +239,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "所有功能均在测试阶段有bug下次修复",
+    ["Title"] = "作者QQ: 1687426335",
     TextXAlignment = "Left",
 })
 
