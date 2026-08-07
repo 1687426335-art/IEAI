@@ -233,7 +233,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
+    ["Title"] = "所有功能都处于测试阶段有bug及时联系作者修复",
     TextXAlignment = "Left",
 })
 
@@ -272,7 +272,7 @@ Tab_General:Section({
 
 Tab_General:Button({
     ["Title"] = "反挂机",
-    ["Desc"] = "防止被踢出",
+    ["Desc"] = "防止挂机时长太久被服务器踢出",
     ["Callback"] = function()
         print("反挂机已开启")
         LocalPlayer.Idled:Connect(function()
@@ -376,8 +376,8 @@ Tab_General:Button({
 })
 
 Tab_General:Button({
-    ["Title"] = "重开",
-    ["Desc"] = "重新开始",
+    ["Title"] = "自杀",
+    ["Desc"] = "应该对你有用",
     ["Callback"] = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.Health = 0
@@ -387,7 +387,7 @@ Tab_General:Button({
 
 Tab_General:Toggle({
     ["Title"] = "防摔",
-    ["Desc"] = "从高处掉落时速度变慢，落地不会摔伤",
+    ["Desc"] = "防止从高处坠落摔死",
     ["Default"] = false,
     ["Callback"] = function(bool)
         if bool then
@@ -489,7 +489,7 @@ local locationPoints = {
     {"游轮码头", Vector3.new(985.45, -22.53, 1274.22)},
     {"车辆维修", Vector3.new(-409.58, 3.08, 2.80)},
     {"监狱", Vector3.new(-1605.21, 2.63, 1223.50)},
-    {"拆车场", Vector3.new(3434.49, 42.93, 2686.46)},
+    {"拆的地方", Vector3.new(3434.49, 42.93, 2686.46)},
     {"送货队伍", Vector3.new(4402.39, 3.04, 1607.56)},
     {"道路服务", Vector3.new(4275.96, 2.63, 1200.88)},
     {"消防队伍", Vector3.new(3578.02, 8.15, 577.34)},
