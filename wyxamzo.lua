@@ -271,6 +271,121 @@ Tab_General:Section({
 })
 
 Tab_General:Button({
+    ["Title"] = "反挂机",
+    ["Desc"] = "防止被踢出",
+    ["Callback"] = function()
+        print("反挂机已开启")
+        LocalPlayer.Idled:Connect(function()
+            VirtualUser:Button2Down(Vector2.new(0, 0), CurrentCamera.CFrame)
+            task.wait(1)
+            VirtualUser:Button2Up(Vector2.new(0, 0), CurrentCamera.CFrame)
+        end)
+        StarterGui:SetCore("SendNotification", {
+            Title = "反挂机",
+            Text = "已开启",
+            Duration = 3,
+        })
+    end
+})
+
+Tab_General:Slider({
+    ["Title"] = "速度设置",
+    ["Step"] = 1,
+    ["Value"] = { Min = 16, Default = 16, Max = 1000 },
+    ["Callback"] = function(Value)
+        local speed = type(Value) == "table" and Value[1] or Value
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = speed
+        end
+    end
+})
+
+Tab_General:Slider({
+    ["Title"] = "跳跃设置",
+    ["Step"] = 1,
+    ["Value"] = { Min = 50, Default = 50, Max = 200 },
+    ["Callback"] = function(Value)
+        local jump = type(Value) == "table" and Value[1] or Value
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = jump
+        end
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "帧率显示",
+    ["Desc"] = "显示FPS",
+    ["Callback"] = function()
+        if LocalPlayer.PlayerGui:FindFirstChild("FPSGui") then return end
+        
+        local ScreenGui = Instance.new("ScreenGui")
+        ScreenGui.Name = "FPSGui"
+        ScreenGui.ResetOnSpawn = false
+        ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        
+        local TextLabel = Instance.new("TextLabel")
+        TextLabel.Name = "FPSLabel"
+        TextLabel.Size = UDim2.new(0, 100, 0, 50)
+        TextLabel.Position = UDim2.new(0, 10, 0, 10)
+        TextLabel.BackgroundTransparency = 1
+        TextLabel.Font = Enum.Font.SourceSansBold
+        TextLabel.Text = "FPS: 0"
+        TextLabel.TextSize = 20
+        TextLabel.TextColor3 = Color3.new(1, 1, 1)
+        TextLabel.Parent = ScreenGui
+        
+        ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        
+        RunService.RenderStepped:Connect(function()
+            local fps = math.floor(1 / RunService.RenderStepped:Wait())
+            TextLabel.Text = "FPS: " .. fps
+        end)
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "时间显示",
+    ["Desc"] = "显示北京时间",
+    ["Callback"] = function()
+        if CoreGui:FindFirstChild("LBLG") then return end
+
+        local ScreenGui = Instance.new("ScreenGui")
+        ScreenGui.Name = "LBLG"
+        ScreenGui.Parent = CoreGui
+        ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        
+        local TextLabel = Instance.new("TextLabel")
+        TextLabel.Name = "LBL"
+        TextLabel.Parent = ScreenGui
+        TextLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+        TextLabel.BackgroundTransparency = 1
+        TextLabel.BorderColor3 = Color3.new(0, 0, 0)
+        TextLabel.Position = UDim2.new(0.75, 0, 0.01, 0)
+        TextLabel.Size = UDim2.new(0, 133, 0, 30)
+        TextLabel.Font = Enum.Font.GothamSemibold
+        TextLabel.TextColor3 = Color3.new(1, 1, 1)
+        TextLabel.TextScaled = true
+        TextLabel.TextSize = 14
+        TextLabel.TextWrapped = true
+        
+        RunService.Heartbeat:Connect(function()
+            local currentTime = os.date("%H时%M分%S秒")
+            TextLabel.Text = "北京时间:" .. currentTime
+        end)
+    end
+})
+
+Tab_General:Button({
+    ["Title"] = "重开",
+    ["Desc"] = "重新开始",
+    ["Callback"] = function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.Health = 0
+        end
+    end
+})
+
+Tab_General:Button({
     ["Title"] = "飞天",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
@@ -1326,4 +1441,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加枪械功能分类 + 无限子弹超快射速")
+print("已添加反挂机、速度设置、跳跃设置、帧率显示、时间显示、重开")
