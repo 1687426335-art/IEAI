@@ -328,7 +328,7 @@ Tab_General:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 地点传送
+-- Tab: 地点传送（字体调小）
 -------------------------------------------------------------------------
 local Tab_LocationTeleport = Window:Tab({
     ["Locked"] = false,
@@ -337,7 +337,7 @@ local Tab_LocationTeleport = Window:Tab({
 })
 
 Tab_LocationTeleport:Section({
-    TextSize = 17,
+    TextSize = 14,
     ["Title"] = "选择传送点",
     TextXAlignment = "Left",
 })
@@ -381,7 +381,7 @@ for _, loc in ipairs(locationPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 售货机传送区
+-- Tab: 售货机传送区（字体调小）
 -------------------------------------------------------------------------
 local Tab_Vending = Window:Tab({
     ["Locked"] = false,
@@ -390,7 +390,7 @@ local Tab_Vending = Window:Tab({
 })
 
 Tab_Vending:Section({
-    TextSize = 17,
+    TextSize = 14,
     ["Title"] = "售货机传送点",
     TextXAlignment = "Left",
 })
@@ -413,7 +413,7 @@ for _, point in ipairs(vendingPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 外卖员
+-- Tab: 外卖员（字体调小）
 -------------------------------------------------------------------------
 local Tab_Delivery = Window:Tab({
     ["Locked"] = false,
@@ -422,7 +422,7 @@ local Tab_Delivery = Window:Tab({
 })
 
 Tab_Delivery:Section({
-    TextSize = 17,
+    TextSize = 14,
     ["Title"] = "外卖员传送点",
     TextXAlignment = "Left",
 })
@@ -831,8 +831,7 @@ Tab_ESP:Toggle({
     ["Default"] = false,
     ["Callback"] = function(bool)
         espShowWeapon = bool
-        if espMasterEnabled then UpdateESP() end
-    end
+        if espMasterEnabled then UpdateESP() end    end
 })
 
 -------------------------------------------------------------------------
@@ -1313,4 +1312,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("所有功能已恢复")
+print("所有功能已恢复，传送相关字体已调小")
