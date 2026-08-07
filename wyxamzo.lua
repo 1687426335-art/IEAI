@@ -385,6 +385,55 @@ Tab_General:Button({
     end
 })
 
+Tab_General:Toggle({
+    ["Title"] = "防摔",
+    ["Desc"] = "从高处掉落时速度变慢，落地不会摔伤",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            local function onCharacterAdded(char)
+                local hrp = char:WaitForChild("HumanoidRootPart")
+                local humanoid = char:WaitForChild("Humanoid")
+                
+                local falling = false
+                
+                local connection
+                connection = RunService.Heartbeat:Connect(function()
+                    if not bool then
+                        connection:Disconnect()
+                        return
+                    end
+                    if not hrp or not hrp.Parent then return end
+                    
+                    local velocity = hrp.AssemblyLinearVelocity
+                    
+                    if velocity.Y < -5 and humanoid:GetState() ~= Enum.HumanoidStateType.Climbing and humanoid:GetState() ~= Enum.HumanoidStateType.Swimming then
+                        falling = true
+                    else
+                        falling = false
+                    end
+                    
+                    if falling then
+                        local newVel = Vector3.new(velocity.X, -8, velocity.Z)
+                        hrp.AssemblyLinearVelocity = newVel
+                    end
+                end)
+            end
+            
+            if LocalPlayer.Character then
+                onCharacterAdded(LocalPlayer.Character)
+            end
+            LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+        else
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = LocalPlayer.Character.HumanoidRootPart
+                local vel = hrp.AssemblyLinearVelocity
+                hrp.AssemblyLinearVelocity = Vector3.new(vel.X, vel.Y, vel.Z)
+            end
+        end
+    end
+})
+
 Tab_General:Button({
     ["Title"] = "飞天",
     ["Desc"] = "点击开启皮脚本飞行",
@@ -1266,29 +1315,6 @@ Tab_Weapon:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 自瞄
--------------------------------------------------------------------------
-local Tab_Aimbot = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "自瞄",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Aimbot:Section({
-    TextSize = 17,
-    ["Title"] = "皮脚本自瞄",
-    TextXAlignment = "Left",
-})
-
-Tab_Aimbot:Button({
-    ["Title"] = "开启皮脚本自瞄",
-    ["Desc"] = "点击开启皮脚本自瞄",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://pastefy.app/YnfF3sje/raw"))()
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 设置
 -------------------------------------------------------------------------
 local Tab_Settings = Window:Tab({
@@ -1441,4 +1467,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加反挂机、速度设置、跳跃设置、帧率显示、时间显示、重开")
+print("已删除自瞄Tab")
