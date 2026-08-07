@@ -53,115 +53,6 @@ local function ShowServerClosed()
     end)
 end
 
--- ===== 服务器关闭提示 + 倒计时 =====
-local function ShowServerClosedFull()
-    pcall(function()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "ServerClosedNotice"
-        gui.ResetOnSpawn = false
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        gui.Parent = CoreGui
-        
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        bg.BackgroundTransparency = 0.7
-        bg.Parent = gui
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 600, 0, 200)
-        frame.Position = UDim2.new(0.5, -300, 0.5, -100)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.1
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        frame.Parent = gui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = frame
-        
-        local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, -20, 0, 40)
-        titleLabel.Position = UDim2.new(0, 10, 0, 20)
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.Text = "服务器已关闭"
-        titleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        titleLabel.TextSize = 28
-        titleLabel.Font = Enum.Font.GothamBold
-        titleLabel.Parent = frame
-        
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Size = UDim2.new(1, -20, 0, 30)
-        infoLabel.Position = UDim2.new(0, 10, 0, 70)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.Text = "暂时对所有用户停止更新"
-        infoLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
-        infoLabel.TextSize = 18
-        infoLabel.Font = Enum.Font.GothamBold
-        infoLabel.Parent = frame
-        
-        local infoLabel2 = Instance.new("TextLabel")
-        infoLabel2.Size = UDim2.new(1, -20, 0, 30)
-        infoLabel2.Position = UDim2.new(0, 10, 0, 105)
-        infoLabel2.BackgroundTransparency = 1
-        infoLabel2.Text = "即将更换悬浮窗与添加功能"
-        infoLabel2.TextColor3 = Color3.fromRGB(255, 200, 200)
-        infoLabel2.TextSize = 18
-        infoLabel2.Font = Enum.Font.GothamBold
-        infoLabel2.Parent = frame
-        
-        local infoLabel3 = Instance.new("TextLabel")
-        infoLabel3.Size = UDim2.new(1, -20, 0, 30)
-        infoLabel3.Position = UDim2.new(0, 10, 0, 140)
-        infoLabel3.BackgroundTransparency = 1
-        infoLabel3.Text = "敬请期待"
-        infoLabel3.TextColor3 = Color3.fromRGB(255, 255, 100)
-        infoLabel3.TextSize = 20
-        infoLabel3.Font = Enum.Font.GothamBold
-        infoLabel3.Parent = frame
-        
-        local timerLabel = Instance.new("TextLabel")
-        timerLabel.Size = UDim2.new(0, 80, 0, 80)
-        timerLabel.Position = UDim2.new(1, -100, 0.5, -40)
-        timerLabel.BackgroundTransparency = 1
-        timerLabel.Text = "35"
-        timerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-        timerLabel.TextSize = 50
-        timerLabel.Font = Enum.Font.GothamBold
-        timerLabel.Parent = gui
-        
-        local countdown = 35
-        spawn(function()
-            while countdown > 0 do
-                task.wait(1)
-                countdown = countdown - 1
-                timerLabel.Text = tostring(countdown)
-            end
-            timerLabel.Text = "0"
-            task.wait(0.5)
-            pcall(function()
-                local hubGui = CoreGui:FindFirstChild("wdfexHub")
-                if hubGui then hubGui:Destroy() end
-                local borderGui = CoreGui:FindFirstChild("wdfexBorder")
-                if borderGui then borderGui:Destroy() end
-                local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
-                if welcomeGui then welcomeGui:Destroy() end
-                local notice = CoreGui:FindFirstChild("ServerClosedNotice")
-                if notice then notice:Destroy() end
-                local frosty = CoreGui:FindFirstChild("frosty")
-                if frosty then frosty:Destroy() end
-                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
-                if eggGui then eggGui:Destroy() end
-            end)
-            pcall(function()
-                Window:Close()
-            end)
-            error("脚本已关闭")
-        end)
-    end)
-end
-
 -- ===== 欢迎弹窗 =====
 local function ShowWelcome()
     pcall(function()
@@ -582,10 +473,6 @@ Tab_Settings:Button({
         Window:Close()
     end
 })
-
--- 启动服务器关闭提示
-task.wait(0.5)
-ShowServerClosedFull()
 
 print("wdfex-圣奥里已加载")
 print("服务器已关闭，所有功能暂时无法使用")
