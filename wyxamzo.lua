@@ -272,7 +272,7 @@ Tab_General:Section({
 
 Tab_General:Button({
     ["Title"] = "反挂机",
-    ["Desc"] = "防止挂机时长太久被服务器踢出",
+    ["Desc"] = "防止挂机太久被踢出",
     ["Callback"] = function()
         print("反挂机已开启")
         LocalPlayer.Idled:Connect(function()
@@ -377,7 +377,7 @@ Tab_General:Button({
 
 Tab_General:Button({
     ["Title"] = "自杀",
-    ["Desc"] = "应该对你有用",
+    ["Desc"] = "死亡",
     ["Callback"] = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.Health = 0
@@ -387,7 +387,7 @@ Tab_General:Button({
 
 Tab_General:Toggle({
     ["Title"] = "防摔",
-    ["Desc"] = "防止从高处坠落摔死",
+    ["Desc"] = "防止从高处掉下来被摔死（不知道有没有用）",
     ["Default"] = false,
     ["Callback"] = function(bool)
         if bool then
@@ -489,11 +489,12 @@ local locationPoints = {
     {"游轮码头", Vector3.new(985.45, -22.53, 1274.22)},
     {"车辆维修", Vector3.new(-409.58, 3.08, 2.80)},
     {"监狱", Vector3.new(-1605.21, 2.63, 1223.50)},
-    {"拆的地方", Vector3.new(3434.49, 42.93, 2686.46)},
+    {"拆车的地方", Vector3.new(3434.49, 42.93, 2686.46)},
     {"送货队伍", Vector3.new(4402.39, 3.04, 1607.56)},
     {"道路服务", Vector3.new(4275.96, 2.63, 1200.88)},
     {"消防队伍", Vector3.new(3578.02, 8.15, 577.34)},
     {"车店", Vector3.new(0, 0, 0)},
+    {"船艇修理店", Vector3.new(4087.73, -9.69, 2860.44)},
 }
 
 for _, loc in ipairs(locationPoints) do
@@ -1467,4 +1468,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已删除自瞄Tab")
+print("已添加船艇修理店传送点，已删除自瞄Tab")
