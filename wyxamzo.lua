@@ -233,7 +233,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
+    ["Title"] = "所有功能都处于测试阶段有bug联系作者修复🤓",
     TextXAlignment = "Left",
 })
 
