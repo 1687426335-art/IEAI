@@ -62,7 +62,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "欢迎使用 wdfex 脚本2.0版本"
+        label.Text = "欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -338,83 +338,47 @@ local Tab_LocationTeleport = Window:Tab({
 
 Tab_LocationTeleport:Section({
     TextSize = 17,
-    ["Title"] = "传送设置",
+    ["Title"] = "选择传送点",
     TextXAlignment = "Left",
 })
 
 local locationPoints = {
-    "枪店门口",
-    "黑色市场",
-    "小银行",
-    "大银行",
-    "农场",
-    "警察局",
-    "医院",
-    "游戏厅",
-    "超市",
-    "平民出生点",
-    "约克镇出生点",
-    "躲藏点",
-    "游轮码头",
-    "车辆维修",
-    "监狱",
-    "拆车场",
-    "送货队伍",
-    "道路服务",
-    "消防队伍",
-    "车店",
+    {"枪店门口", Vector3.new(-330.09, 2.63, 24.57)},
+    {"黑色市场", Vector3.new(1040.91, -22.73, 899.80)},
+    {"小银行", Vector3.new(-667.74, 2.63, -67.18)},
+    {"大银行", Vector3.new(3134.64, 6.12, -169.70)},
+    {"农场", Vector3.new(-1269.56, 2.57, 2559.51)},
+    {"警察局", Vector3.new(3313.52, 3.02, -476.74)},
+    {"医院", Vector3.new(3892.10, 3.02, -185.78)},
+    {"游戏厅", Vector3.new(2936.71, 2.63, 1688.17)},
+    {"超市", Vector3.new(3936.62, 3.04, 1136.92)},
+    {"平民出生点", Vector3.new(3741.79, 3.72, -438.95)},
+    {"约克镇出生点", Vector3.new(-221.64, 3.04, -84.56)},
+    {"躲藏点", Vector3.new(-1505.97, 253.98, -476.43)},
+    {"游轮码头", Vector3.new(985.45, -22.53, 1274.22)},
+    {"车辆维修", Vector3.new(-409.58, 3.08, 2.80)},
+    {"监狱", Vector3.new(-1605.21, 2.63, 1223.50)},
+    {"拆车场", Vector3.new(3434.49, 42.93, 2686.46)},
+    {"送货队伍", Vector3.new(4402.39, 3.04, 1607.56)},
+    {"道路服务", Vector3.new(4275.96, 2.63, 1200.88)},
+    {"消防队伍", Vector3.new(3578.02, 8.15, 577.34)},
+    {"车店", Vector3.new(0, 0, 0)},
 }
 
-local locationCoords = {
-    ["枪店门口"] = Vector3.new(-330.09, 2.63, 24.57),
-    ["黑色市场"] = Vector3.new(1040.91, -22.73, 899.80),
-    ["小银行"] = Vector3.new(-667.74, 2.63, -67.18),
-    ["大银行"] = Vector3.new(3134.64, 6.12, -169.70),
-    ["农场"] = Vector3.new(-1269.56, 2.57, 2559.51),
-    ["警察局"] = Vector3.new(3313.52, 3.02, -476.74),
-    ["医院"] = Vector3.new(3892.10, 3.02, -185.78),
-    ["游戏厅"] = Vector3.new(2936.71, 2.63, 1688.17),
-    ["超市"] = Vector3.new(3936.62, 3.04, 1136.92),
-    ["平民出生点"] = Vector3.new(3741.79, 3.72, -438.95),
-    ["约克镇出生点"] = Vector3.new(-221.64, 3.04, -84.56),
-    ["躲藏点"] = Vector3.new(-1505.97, 253.98, -476.43),
-    ["游轮码头"] = Vector3.new(985.45, -22.53, 1274.22),
-    ["车辆维修"] = Vector3.new(-409.58, 3.08, 2.80),
-    ["监狱"] = Vector3.new(-1605.21, 2.63, 1223.50),
-    ["拆车场"] = Vector3.new(3434.49, 42.93, 2686.46),
-    ["送货队伍"] = Vector3.new(4402.39, 3.04, 1607.56),
-    ["道路服务"] = Vector3.new(4275.96, 2.63, 1200.88),
-    ["消防队伍"] = Vector3.new(3578.02, 8.15, 577.34),
-    ["车店"] = Vector3.new(0, 0, 0),
-}
-
-local selectedLocation = locationPoints[1]
-
-Tab_LocationTeleport:Dropdown({
-    ["Title"] = "选择传送点",
-    ["Desc"] = "选择要传送的地点",
-    ["Options"] = locationPoints,
-    ["Default"] = locationPoints[1],
-    ["Callback"] = function(option)
-        selectedLocation = option
-    end
-})
-
-Tab_LocationTeleport:Button({
-    ["Title"] = "确认传送",
-    ["Desc"] = "传送到选择的地点",
-    ["Callback"] = function()
-        local pos = locationCoords[selectedLocation]
-        if pos then
-            TeleportTo(pos)
+for _, loc in ipairs(locationPoints) do
+    Tab_LocationTeleport:Button({
+        ["Title"] = loc[1],
+        ["Desc"] = "传送至" .. loc[1],
+        ["Callback"] = function()
+            TeleportTo(loc[2])
             StarterGui:SetCore("SendNotification", {
                 Title = "地点传送",
-                Text = "已传送到 " .. selectedLocation,
+                Text = "已传送到 " .. loc[1],
                 Duration = 2,
             })
         end
-    end
-})
+    })
+end
 
 -------------------------------------------------------------------------
 -- Tab: 售货机传送区
@@ -1349,4 +1313,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("地点传送已添加（Dropdown选择+确认传送）")
+print("所有功能已恢复")
