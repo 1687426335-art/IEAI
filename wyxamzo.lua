@@ -203,6 +203,12 @@ local Tab_Notice = Window:Tab({
 
 Tab_Notice:Section({
     TextSize = 17,
+    ["Title"] = "本脚本严禁外传发现永久拉黑无法使用此脚本",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
     ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
     TextXAlignment = "Left",
 })
@@ -249,45 +255,6 @@ Tab_Notice:Section({
     TextXAlignment = "Left",
 })
 
-local whiteoutEnabled = false
-
-Tab_Notice:Toggle({
-    ["Title"] = "打开此开关有大惊喜",
-    ["Desc"] = "开启后游戏亮度拉满变成全白",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        whiteoutEnabled = bool
-        if bool then
-            pcall(function()
-                Lighting.Brightness = 10
-                Lighting.ExposureCompensation = 10
-                Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-                Lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
-                Lighting.ColorShift_Bottom = Color3.fromRGB(255, 255, 255)
-                Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-                Lighting.GlobalShadows = false
-                Lighting.FogEnd = 100000
-                for _, atom in ipairs(Lighting:GetChildren()) do
-                    if atom:IsA("BloomEffect") or atom:IsA("BlurEffect") or atom:IsA("ColorCorrectionEffect") then
-                        atom.Enabled = false
-                    end
-                end
-            end)
-        else
-            pcall(function()
-                Lighting.Brightness = 2
-                Lighting.ExposureCompensation = 0
-                Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-                Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
-                Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
-                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
-                Lighting.GlobalShadows = true
-                Lighting.FogEnd = 100000
-            end)
-        end
-    end
-})
-
 -------------------------------------------------------------------------
 -- Tab: 通用
 -------------------------------------------------------------------------
@@ -328,7 +295,7 @@ Tab_General:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 地点传送（字体缩小）
+-- Tab: 地点传送
 -------------------------------------------------------------------------
 local Tab_LocationTeleport = Window:Tab({
     ["Locked"] = false,
@@ -337,7 +304,7 @@ local Tab_LocationTeleport = Window:Tab({
 })
 
 Tab_LocationTeleport:Section({
-    TextSize = 14,
+    TextSize = 17,
     ["Title"] = "选择传送点",
     TextXAlignment = "Left",
 })
@@ -381,7 +348,7 @@ for _, loc in ipairs(locationPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 售货机传送区（字体缩小）
+-- Tab: 售货机传送区
 -------------------------------------------------------------------------
 local Tab_Vending = Window:Tab({
     ["Locked"] = false,
@@ -390,7 +357,7 @@ local Tab_Vending = Window:Tab({
 })
 
 Tab_Vending:Section({
-    TextSize = 14,
+    TextSize = 17,
     ["Title"] = "售货机传送点",
     TextXAlignment = "Left",
 })
@@ -413,7 +380,7 @@ for _, point in ipairs(vendingPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 外卖员（字体缩小）
+-- Tab: 外卖员
 -------------------------------------------------------------------------
 local Tab_Delivery = Window:Tab({
     ["Locked"] = false,
@@ -422,7 +389,7 @@ local Tab_Delivery = Window:Tab({
 })
 
 Tab_Delivery:Section({
-    TextSize = 14,
+    TextSize = 17,
     ["Title"] = "外卖员传送点",
     TextXAlignment = "Left",
 })
@@ -442,6 +409,29 @@ for _, point in ipairs(deliveryPoints) do
         end
     })
 end
+
+-------------------------------------------------------------------------
+-- Tab: 出租车
+-------------------------------------------------------------------------
+local Tab_Taxi = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "出租车",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Taxi:Section({
+    TextSize = 17,
+    ["Title"] = "出租车功能",
+    TextXAlignment = "Left",
+})
+
+Tab_Taxi:Button({
+    ["Title"] = "wdfex出租车刷钱脚本",
+    ["Desc"] = "点击执行出租车刷钱脚本",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/wnatsj.lua"))()
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 透视
@@ -832,7 +822,8 @@ Tab_ESP:Toggle({
     ["Callback"] = function(bool)
         espShowWeapon = bool
         if espMasterEnabled then UpdateESP() end
-    end})
+    end
+})
 
 -------------------------------------------------------------------------
 -- Tab: 标点传送
@@ -1312,4 +1303,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("所有功能已恢复，传送相关字体已调小")
+print("已添加出租车Tab + 修改公告")
