@@ -62,7 +62,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "不欢迎使用 wdfex 脚本"
+        label.Text = "欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -239,7 +239,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "作者QQ: 1687426335",
+    ["Title"] = "所有功能均为测试阶段某些功能属于半成品后面将会增加一些暴力的功能“敬请期待”",
     TextXAlignment = "Left",
 })
 
