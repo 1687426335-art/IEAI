@@ -233,7 +233,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "所有功能都处于测试阶段有bug联系作者修复🤓",
+    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
     TextXAlignment = "Left",
 })
 
@@ -1128,6 +1128,29 @@ for _, size in ipairs(rangeSizes) do
 end
 
 -------------------------------------------------------------------------
+-- Tab: 枪械功能
+-------------------------------------------------------------------------
+local Tab_Weapon = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "枪械功能",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Weapon:Section({
+    TextSize = 17,
+    ["Title"] = "枪械功能",
+    TextXAlignment = "Left",
+})
+
+Tab_Weapon:Button({
+    ["Title"] = "无限子弹+超快射速（手枪可连发）",
+    ["Desc"] = "点击开启无限子弹+超快射速",
+    ["Callback"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/tzh.lua"))()
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 自瞄
 -------------------------------------------------------------------------
 local Tab_Aimbot = Window:Tab({
@@ -1303,4 +1326,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加出租车Tab + 修改公告")
+print("已添加枪械功能分类 + 无限子弹超快射速")
