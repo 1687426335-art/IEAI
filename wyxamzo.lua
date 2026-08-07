@@ -239,7 +239,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "有些功能是我瞎🐔🎱写的实在用不了我也没招",
+    ["Title"] = "作者QQ: 1687426335",
     TextXAlignment = "Left",
 })
 
@@ -328,7 +328,7 @@ Tab_General:Button({
 })
 
 -------------------------------------------------------------------------
--- Tab: 地点传送（字体调小）
+-- Tab: 地点传送（字体缩小）
 -------------------------------------------------------------------------
 local Tab_LocationTeleport = Window:Tab({
     ["Locked"] = false,
@@ -381,7 +381,7 @@ for _, loc in ipairs(locationPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 售货机传送区（字体调小）
+-- Tab: 售货机传送区（字体缩小）
 -------------------------------------------------------------------------
 local Tab_Vending = Window:Tab({
     ["Locked"] = false,
@@ -413,7 +413,7 @@ for _, point in ipairs(vendingPoints) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 外卖员（字体调小）
+-- Tab: 外卖员（字体缩小）
 -------------------------------------------------------------------------
 local Tab_Delivery = Window:Tab({
     ["Locked"] = false,
@@ -831,8 +831,8 @@ Tab_ESP:Toggle({
     ["Default"] = false,
     ["Callback"] = function(bool)
         espShowWeapon = bool
-        if espMasterEnabled then UpdateESP() end    end
-})
+        if espMasterEnabled then UpdateESP() end
+    end})
 
 -------------------------------------------------------------------------
 -- Tab: 标点传送
