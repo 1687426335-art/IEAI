@@ -240,7 +240,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "服务器已关闭，所有功能暂时无法使用",
+    ["Title"] = "服务器已关闭暂时对所有用户停止更新即将更换悬浮窗和增加一些功能敬请期待",
     TextXAlignment = "Left",
 })
 
