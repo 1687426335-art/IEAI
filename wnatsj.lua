@@ -1,187 +1,246 @@
--- ===== 悬浮窗 =====
-local function CreateFloatingWindow()
-    pcall(function()
-        -- 主悬浮窗
-        local floatingGui = Instance.new("ScreenGui")
-        floatingGui.Name = "FloatingWindow"
-        floatingGui.ResetOnSpawn = false
-        floatingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        floatingGui.Parent = CoreGui
-        
-        -- 背景框
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 160, 0, 180)
-        frame.Position = UDim2.new(0, 10, 0.5, -90)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.1
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        frame.Parent = floatingGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = frame
-        
-        -- 标题行
-        local titleFrame = Instance.new("Frame")
-        titleFrame.Size = UDim2.new(1, 0, 0, 30)
-        titleFrame.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        titleFrame.BackgroundTransparency = 0.2
-        titleFrame.BorderSizePixel = 0
-        titleFrame.Parent = frame
-        
-        local titleCorner = Instance.new("UICorner")
-        titleCorner.CornerRadius = UDim.new(0, 10)
-        titleCorner.Parent = titleFrame
-        
-        local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, 0, 1, 0)
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.Text = "等待目标..."
-        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        titleLabel.TextSize = 14
-        titleLabel.Font = Enum.Font.GothamBold
-        titleLabel.Parent = titleFrame
-        
-        -- 状态文字
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Size = UDim2.new(1, 0, 0, 25)
-        statusLabel.Position = UDim2.new(0, 0, 0, 35)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Text = "已停止"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        statusLabel.TextSize = 16
-        statusLabel.Font = Enum.Font.GothamBold
-        statusLabel.Parent = frame
-        
-        -- 分割线
-        local line = Instance.new("Frame")
-        line.Size = UDim2.new(0.8, 0, 0, 1)
-        line.Position = UDim2.new(0.1, 0, 0, 65)
-        line.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        line.BackgroundTransparency = 0.5
-        line.BorderSizePixel = 0
-        line.Parent = frame
-        
-        -- 功能按钮行1：出租车、高尔夫
-        local btn1 = Instance.new("TextButton")
-        btn1.Size = UDim2.new(0.4, 0, 0, 30)
-        btn1.Position = UDim2.new(0.05, 0, 0, 75)
-        btn1.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
-        btn1.BackgroundTransparency = 0.3
-        btn1.BorderSizePixel = 0
-        btn1.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn1.TextSize = 13
-        btn1.Font = Enum.Font.GothamBold
-        btn1.Text = "出租车"
-        btn1.Parent = frame
-        
-        local btn1Corner = Instance.new("UICorner")
-        btn1Corner.CornerRadius = UDim.new(0, 5)
-        btn1Corner.Parent = btn1
-        
-        local btn2 = Instance.new("TextButton")
-        btn2.Size = UDim2.new(0.4, 0, 0, 30)
-        btn2.Position = UDim2.new(0.55, 0, 0, 75)
-        btn2.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
-        btn2.BackgroundTransparency = 0.3
-        btn2.BorderSizePixel = 0
-        btn2.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn2.TextSize = 13
-        btn2.Font = Enum.Font.GothamBold
-        btn2.Text = "高尔夫"
-        btn2.Parent = frame
-        
-        local btn2Corner = Instance.new("UICorner")
-        btn2Corner.CornerRadius = UDim.new(0, 5)
-        btn2Corner.Parent = btn2
-        
-        -- 功能按钮行2：自动钓鱼、公交车
-        local btn3 = Instance.new("TextButton")
-        btn3.Size = UDim2.new(0.4, 0, 0, 30)
-        btn3.Position = UDim2.new(0.05, 0, 0, 115)
-        btn3.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
-        btn3.BackgroundTransparency = 0.3
-        btn3.BorderSizePixel = 0
-        btn3.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn3.TextSize = 13
-        btn3.Font = Enum.Font.GothamBold
-        btn3.Text = "自动钓鱼"
-        btn3.Parent = frame
-        
-        local btn3Corner = Instance.new("UICorner")
-        btn3Corner.CornerRadius = UDim.new(0, 5)
-        btn3Corner.Parent = btn3
-        
-        local btn4 = Instance.new("TextButton")
-        btn4.Size = UDim2.new(0.4, 0, 0, 30)
-        btn4.Position = UDim2.new(0.55, 0, 0, 115)
-        btn4.BackgroundColor3 = Color3.fromRGB(60, 150, 255)
-        btn4.BackgroundTransparency = 0.3
-        btn4.BorderSizePixel = 0
-        btn4.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn4.TextSize = 13
-        btn4.Font = Enum.Font.GothamBold
-        btn4.Text = "公交车"
-        btn4.Parent = frame
-        
-        local btn4Corner = Instance.new("UICorner")
-        btn4Corner.CornerRadius = UDim.new(0, 5)
-        btn4Corner.Parent = btn4
-        
-        -- 关闭按钮
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.new(0, 20, 0, 20)
-        closeBtn.Position = UDim2.new(1, -25, 0, 5)
-        closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        closeBtn.BackgroundTransparency = 0.3
-        closeBtn.BorderSizePixel = 0
-        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        closeBtn.TextSize = 14
-        closeBtn.Font = Enum.Font.GothamBold
-        closeBtn.Text = "✕"
-        closeBtn.Parent = frame
-        
-        local closeCorner = Instance.new("UICorner")
-        closeCorner.CornerRadius = UDim.new(0, 4)
-        closeCorner.Parent = closeBtn
-        
-        -- 拖动
-        local dragging = false
-        local dragStartX, dragStartY
-        local startPosX, startPosY
-        
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStartX = input.Position.X
-                dragStartY = input.Position.Y
-                startPosX = frame.Position.X.Offset
-                startPosY = frame.Position.Y.Offset
-            end
-        end)
-        
-        frame.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-        
-        frame.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local deltaX = input.Position.X - dragStartX
-                local deltaY = input.Position.Y - dragStartY
-                frame.Position = UDim2.new(0, startPosX + deltaX, 0, startPosY + deltaY)
-            end
-        end)
-        
-        closeBtn.MouseButton1Click:Connect(function()
-            floatingGui:Destroy()
-        end)
-    end)
+-- ========== wdfex 刷钱 ==========
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Player = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local isRunning = false
+local teleportCount = 0
+local currentMode = "出租车"
+local loopThread = nil
+
+local Settings = {
+    TaxiWaitTime = 7,
+}
+
+-- ===== UI =====
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Player.PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 240, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -120, 0.5, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.BorderSizePixel = 3
+mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Position = UDim2.new(0, 0, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "wdfex 刷钱"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+local titleLine = Instance.new("Frame")
+titleLine.Size = UDim2.new(0.8, 0, 0, 3)
+titleLine.Position = UDim2.new(0.1, 0, 0, 40)
+titleLine.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+titleLine.BorderSizePixel = 0
+titleLine.Parent = mainFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, 50)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "已停止"
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusLabel.TextScaled = true
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Parent = mainFrame
+
+local countLabel = Instance.new("TextLabel")
+countLabel.Size = UDim2.new(1, 0, 0, 25)
+countLabel.Position = UDim2.new(0, 10, 0, 80)
+countLabel.BackgroundTransparency = 1
+countLabel.Text = "传送: 0"
+countLabel.TextColor3 = Color3.fromRGB(70, 150, 255)
+countLabel.TextScaled = true
+countLabel.TextXAlignment = Enum.TextXAlignment.Left
+countLabel.Font = Enum.Font.GothamBold
+countLabel.Parent = mainFrame
+
+local modeLabel = Instance.new("TextLabel")
+modeLabel.Size = UDim2.new(1, 0, 0, 22)
+modeLabel.Position = UDim2.new(0, 10, 0, 108)
+modeLabel.BackgroundTransparency = 1
+modeLabel.Text = "模式: 出租车"
+modeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+modeLabel.TextScaled = true
+modeLabel.TextXAlignment = Enum.TextXAlignment.Left
+modeLabel.Font = Enum.Font.Gotham
+modeLabel.Parent = mainFrame
+
+local dotIndicator = Instance.new("Frame")
+dotIndicator.Size = UDim2.new(0, 14, 0, 14)
+dotIndicator.Position = UDim2.new(0, 0, 0, 50)
+dotIndicator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+dotIndicator.BorderSizePixel = 0
+dotIndicator.Parent = mainFrame
+
+local dotCorner = Instance.new("UICorner")
+dotCorner.CornerRadius = UDim.new(1, 0)
+dotCorner.Parent = dotIndicator
+
+local dotGlow = Instance.new("Frame")
+dotGlow.Size = UDim2.new(1, 12, 1, 12)
+dotGlow.Position = UDim2.new(0, -6, 0, -6)
+dotGlow.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+dotGlow.BackgroundTransparency = 0.6
+dotGlow.BorderSizePixel = 0
+dotGlow.Parent = dotIndicator
+
+local dotGlowCorner = Instance.new("UICorner")
+dotGlowCorner.CornerRadius = UDim.new(1, 0)
+dotGlowCorner.Parent = dotGlow
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 140, 0, 40)
+toggleButton.Position = UDim2.new(0.5, -70, 0, 160)
+toggleButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+toggleButton.Text = "启动"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextScaled = true
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 8)
+btnCorner.Parent = toggleButton
+
+local modeButton = Instance.new("TextButton")
+modeButton.Size = UDim2.new(0, 100, 0, 30)
+modeButton.Position = UDim2.new(0.5, -50, 0, 210)
+modeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+modeButton.Text = "切换: 出租车"
+modeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+modeButton.TextScaled = true
+modeButton.Font = Enum.Font.Gotham
+modeButton.BorderSizePixel = 0
+modeButton.Parent = mainFrame
+
+local modeBtnCorner = Instance.new("UICorner")
+modeBtnCorner.CornerRadius = UDim.new(0, 8)
+modeBtnCorner.Parent = modeButton
+
+-- ===== 功能函数 =====
+local function TeleportTo(pos)
+    local char = Player.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if root and pos then
+        local hum = char:FindFirstChild("Humanoid")
+        if hum and hum.SeatPart then hum.Sit = false task.wait(0.1) end
+        root.CFrame = CFrame.new(pos)
+        root.Velocity = Vector3.new(0,0,0)
+        root.RotVelocity = Vector3.new(0,0,0)
+        teleportCount = teleportCount + 1
+        countLabel.Text = "传送: " .. teleportCount
+    end
 end
 
-task.spawn(function()
-    task.wait(0.5)
-    CreateFloatingWindow()
+local function GetAreas()
+    local areas = {}
+    local clientContent = Workspace:FindFirstChild("Gameplay") and Workspace.Gameplay:FindFirstChild("Entities") and Workspace.Gameplay.Entities:FindFirstChild("ClientContent")
+    local searchRoot = clientContent or Workspace
+    for _, obj in ipairs(searchRoot:GetDescendants()) do
+        if obj.Name == "Area" and obj:IsA("BasePart") then
+            table.insert(areas, obj)
+        end
+    end
+    return areas
+end
+
+local function GetTargetPosition()
+    local targetFolder = Workspace:FindFirstChild("Gameplay") and Workspace.Gameplay:FindFirstChild("Entities") and Workspace.Gameplay.Entities:FindFirstChild("ClientContent")
+    if not targetFolder then return nil end
+    for _, child in ipairs(targetFolder:GetDescendants()) do
+        if child:IsA("BasePart") then
+            return child.Position + Vector3.new(0, 3, 0)
+        end
+    end
+    return nil
+end
+
+local function MainLoop()
+    while isRunning do
+        if currentMode == "出租车" then
+            local areas = GetAreas()
+            if #areas == 0 then
+                local pos = GetTargetPosition()
+                if pos then TeleportTo(pos) end
+                task.wait(Settings.TaxiWaitTime)
+            else
+                for _, area in ipairs(areas) do
+                    if not isRunning then break end
+                    TeleportTo(area.Position + Vector3.new(0, 0, 5))
+                    task.wait(Settings.TaxiWaitTime)
+                end
+            end
+        elseif currentMode == "公交车" then
+            local areas = GetAreas()
+            if #areas == 0 then
+                task.wait(5)
+            else
+                for _, area in ipairs(areas) do
+                    if not isRunning then break end
+                    local targetPos = area.Position + Vector3.new(3, 3, 16)
+                    TeleportTo(targetPos)
+                    task.wait(Settings.TaxiWaitTime)
+                end
+            end
+        end
+    end
+end
+
+-- ===== 按钮事件 =====
+toggleButton.MouseButton1Click:Connect(function()
+    isRunning = not isRunning
+    if isRunning then
+        toggleButton.Text = "停止"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        statusLabel.Text = "运行中"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        dotIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        dotGlow.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        if loopThread then loopThread = nil end
+        loopThread = task.spawn(MainLoop)
+    else
+        toggleButton.Text = "启动"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+        statusLabel.Text = "已停止"
+        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        dotIndicator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        dotGlow.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        if loopThread then task.cancel(loopThread) end
+        loopThread = nil
+    end
 end)
+
+modeButton.MouseButton1Click:Connect(function()
+    if currentMode == "出租车" then
+        currentMode = "公交车"
+        modeButton.Text = "切换: 公交车"
+        modeLabel.Text = "模式: 公交车"
+    else
+        currentMode = "出租车"
+        modeButton.Text = "切换: 出租车"
+        modeLabel.Text = "模式: 出租车"
+    end
+end)
+
+print("wdfex 刷钱已加载 | 模式: " .. currentMode)
