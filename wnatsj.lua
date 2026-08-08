@@ -62,13 +62,51 @@ gradient.Color = ColorSequence.new({
 gradient.Rotation = 0
 gradient.Parent = glowBorder
 
+-- 关闭按钮 (右上角X)
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeButton.BackgroundTransparency = 0.2
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 18
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeButton
+
+local closeGlow = Instance.new("Frame")
+closeGlow.Size = UDim2.new(1, 8, 1, 8)
+closeGlow.Position = UDim2.new(0, -4, 0, -4)
+closeGlow.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeGlow.BackgroundTransparency = 0.5
+closeGlow.BorderSizePixel = 0
+closeGlow.ZIndex = 0
+closeGlow.Parent = closeButton
+
+local closeGlowCorner = Instance.new("UICorner")
+closeGlowCorner.CornerRadius = UDim.new(1, 0)
+closeGlowCorner.Parent = closeGlow
+
+closeButton.MouseButton1Click:Connect(function()
+    StopLoop()
+    screenGui:Destroy()
+    print("脚本已退出")
+end)
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 35)
-title.Position = UDim2.new(0, 0, 0, 5)
+title.Size = UDim2.new(1, -40, 0, 35)
+title.Position = UDim2.new(0, 5, 0, 5)
 title.BackgroundTransparency = 1
 title.Text = "wdfex 出租车刷钱"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
+title.TextXAlignment = Enum.TextXAlignment.Center
 title.Font = Enum.Font.GothamBold
 title.Parent = mainFrame
 
