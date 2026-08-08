@@ -1,4 +1,4 @@
--- ========== wdfex 出租车刷钱1.0 ==========
+-- ========== wdfex 出租车刷钱 ==========
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
@@ -109,7 +109,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 35)
 title.Position = UDim2.new(0, 5, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "wdfex 出租车刷钱1.0"
+title.Text = "wdfex 出租车刷钱2.0"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.TextXAlignment = Enum.TextXAlignment.Center
@@ -287,55 +287,55 @@ local function ClickAt(x, y)
     VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
 end
 
--- 循环点击接单区域，直到成功
+-- 检测是否已有订单
+local function HasActiveOrder()
+    for _, gui in pairs(Player.PlayerGui:GetDescendants()) do
+        if gui:IsA("TextLabel") or gui:IsA("TextButton") then
+            local text = gui.Text or ""
+            if text:find("前往客户位置") or text:find("客户位置") or text:find("目的地") or text:find("送达") or text:find("正在进行的工作") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 循环点击接单，接到就停
 local function AcceptOrder()
-    local success = false
-    for attempt = 1, 20 do  -- 尝试20次
-        if not isRunning then break end
+    -- 如果已经有订单，直接返回成功
+    if HasActiveOrder() then
+        return true
+    end
+    
+    for attempt = 1, 30 do
+        if not isRunning then return false end
+        
         ClickAt(phoneX, phoneY)
-        task.wait(0.2)
+        task.wait(0.15)
         ClickAt(phoneX, phoneY + 100)
-        task.wait(0.2)
+        task.wait(0.15)
         ClickAt(phoneX, phoneY + 160)
-        task.wait(0.2)
+        task.wait(0.15)
         ClickAt(phoneX, phoneY + 240)
         task.wait(0.3)
         
-        -- 检查是否接到订单（有客户位置文字或者订单状态变化）
-        local hasOrder = false
-        for _, gui in pairs(Player.PlayerGui:GetDescendants()) do
-            if gui:IsA("TextLabel") or gui:IsA("TextButton") then
-                local text = gui.Text or ""
-                if text:find("前往客户位置") or text:find("客户位置") or text:find("目的地") or text:find("送达") then
-                    hasOrder = true
-                    break
-                end
-            end
+        -- 检查是否接到订单
+        if HasActiveOrder() then
+            orderCount = orderCount + 1
+            orderCountLabel.Text = "接单: " .. orderCount
+            print("已接单")
+            return true
         end
         
-        if hasOrder then
-            success = true
-            break
-        end
-        
-        task.wait(0.3)
+        task.wait(0.2)
     end
     
-    if success then
-        orderCount = orderCount + 1
-        orderCountLabel.Text = "接单: " .. orderCount
-        print("已接单")
-        return true
-    else
-        print("未接到订单，继续循环")
-        return false
-    end
+    return false
 end
 
 local function GetTargetPosition()
     local targetFolder = workspace.Gameplay and workspace.Gameplay.Entities and workspace.Gameplay.Entities.ClientContent
-    if not targetFolder then 
-        -- 尝试其他路径
+    if not targetFolder then
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj ~= Player.Character then
                 local isPlayer = false
@@ -411,23 +411,26 @@ local function StartLoop()
     UpdateUI(true)
     
     loopThread = coroutine.create(function()
-        print("自动出租车已启动 - 无限循环接单")
+        print("自动出租车已启动")
         
         while isRunning do
-            -- ==== 第一阶段：无限循环接单 ====
-            orderStatusLabel.Text = "正在循环接单..."
-            local gotOrder = false
-            while not gotOrder and isRunning do
-                gotOrder = AcceptOrder()
-                if not gotOrder then
-                    -- 没接到就继续循环，不等待太久
-                    task.wait(0.5)
+            -- 先检查是否已有订单
+            if HasActiveOrder() then
+                orderCount = orderCount + 1
+                orderCountLabel.Text = "接单: " .. orderCount
+            else
+                -- 没有订单才去接
+                orderStatusLabel.Text = "正在接单..."
+                local got = AcceptOrder()
+                if not got then
+                    orderStatusLabel.Text = "接单失败，重试..."
+                    task.wait(1)
                 end
             end
             
             if not isRunning then break end
             
-            -- ==== 第二阶段：传送 ====
+            -- 传送两次
             orderStatusLabel.Text = "第1次传送..."
             local targetPos1 = GetTargetPosition()
             if targetPos1 then
@@ -440,6 +443,8 @@ local function StartLoop()
             end
             task.wait(1)
             
+            if not isRunning then break end
+            
             orderStatusLabel.Text = "第2次传送..."
             local targetPos2 = GetTargetPosition()
             if targetPos2 then
@@ -451,8 +456,8 @@ local function StartLoop()
                 warn("未找到目标位置")
             end
             
-            orderStatusLabel.Text = "订单完成，继续接单..."
-            task.wait(1)
+            orderStatusLabel.Text = "订单完成"
+            task.wait(1.5)
         end
     end)
     
