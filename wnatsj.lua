@@ -1,6 +1,5 @@
--- ========== wdfex 出租车刷钱1.0 ==========
+-- ========== wdfex 公交车刷钱测试版 ==========
 local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 
@@ -93,11 +92,20 @@ local closeGlowCorner = Instance.new("UICorner")
 closeGlowCorner.CornerRadius = UDim.new(1, 0)
 closeGlowCorner.Parent = closeGlow
 
+closeButton.MouseButton1Click:Connect(function()
+    StopLoop()
+    task.wait(0.1)
+    if screenGui and screenGui.Parent then
+        screenGui:Destroy()
+    end
+    print("脚本已退出")
+end)
+
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 35)
 title.Position = UDim2.new(0, 5, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "wdfex 出租车刷钱1.0"
+title.Text = "wdfex 公交车刷钱测试"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.TextXAlignment = Enum.TextXAlignment.Center
@@ -143,7 +151,7 @@ local orderCountLabel = Instance.new("TextLabel")
 orderCountLabel.Size = UDim2.new(0.5, 0, 0, 25)
 orderCountLabel.Position = UDim2.new(0, 10, 0, 78)
 orderCountLabel.BackgroundTransparency = 1
-orderCountLabel.Text = "接单: 0"
+orderCountLabel.Text = "对齐: 0"
 orderCountLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
 orderCountLabel.TextScaled = true
 orderCountLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -165,7 +173,7 @@ local orderStatusLabel = Instance.new("TextLabel")
 orderStatusLabel.Size = UDim2.new(1, 0, 0, 22)
 orderStatusLabel.Position = UDim2.new(0, 10, 0, 105)
 orderStatusLabel.BackgroundTransparency = 1
-orderStatusLabel.Text = "等待接单..."
+orderStatusLabel.Text = "等待启动..."
 orderStatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 orderStatusLabel.TextScaled = true
 orderStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -262,46 +270,42 @@ RunService.Heartbeat:Connect(UpdateGlow)
 
 local isRunning = false
 local loopThread = nil
-local orderCount = 0
+local alignCount = 0
 local teleportCount = 0
 
-local screenSize = workspace.CurrentCamera.ViewportSize
-local phoneX = screenSize.X * 0.85
-local phoneY = screenSize.Y * 0.35
-
-local function ClickAt(x, y)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
-    task.wait(0.05)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
-end
-
-local function AcceptOrder()
-    ClickAt(phoneX, phoneY)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 100)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 160)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 240)
-    task.wait(0.3)
+-- ===== 找圈并让公交车对齐 =====
+local function FindNearestCircle()
+    local nearest = nil
+    local minDist = math.huge
+    local char = Player.Character
+    if not char then return nil end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
     
-    orderCount = orderCount + 1
-    orderCountLabel.Text = "接单: " .. orderCount
-    print("已接单")
-end
-
-local function GetTargetPosition()
-    local targetFolder = workspace.Gameplay.Entities.ClientContent
-    if not targetFolder then return nil end
-    for _, child in ipairs(targetFolder:GetDescendants()) do
-        if child:IsA("BasePart") then
-            return child.Position + Vector3.new(0, 3, 0)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            if name:find("circle") or name:find("ring") or name:find("aura") or 
+               name:find("glow") or name:find("光环") or name:find("光圈") or
+               name:find("marker") or name:find("target") or name:find("point") then
+                local color = obj.Color
+                if color then
+                    local r, g, b = color.R * 255, color.G * 255, color.B * 255
+                    if b > r and b > g and b > 80 then
+                        local dist = (obj.Position - hrp.Position).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            nearest = obj
+                        end
+                    end
+                end
+            end
         end
     end
-    return nil
+    return nearest
 end
 
-local function TeleportCharacter(targetPos)
+local function AlignToCircle(circle)
     local char = Player.Character
     if not char then return false end
     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -313,7 +317,10 @@ local function TeleportCharacter(targetPos)
         task.wait(0.1)
     end
     
-    hrp.CFrame = CFrame.new(targetPos)
+    local circlePos = circle.Position
+    local lookAt = circle.CFrame.LookVector or Vector3.new(1, 0, 0)
+    
+    hrp.CFrame = CFrame.new(circlePos + Vector3.new(0, 3, 0), circlePos + lookAt)
     hrp.Velocity = Vector3.new(0, 0, 0)
     hrp.RotVelocity = Vector3.new(0, 0, 0)
     return true
@@ -334,7 +341,7 @@ local function UpdateUI(isActive)
         toggleButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
         dotIndicator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
         dotGlow.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        orderStatusLabel.Text = "等待接单..."
+        orderStatusLabel.Text = "等待启动..."
     end
 end
 
@@ -352,45 +359,35 @@ local function StartLoop()
     UpdateUI(true)
     
     loopThread = coroutine.create(function()
-        print("自动出租车已启动")
+        print("公交车刷钱已启动")
         
         while isRunning do
-            orderStatusLabel.Text = "正在自动接单..."
-            AcceptOrder()
-            task.wait(1)
+            orderStatusLabel.Text = "正在寻找圈..."
+            local circle = FindNearestCircle()
             
-            orderStatusLabel.Text = "第1次传送..."
-            local targetPos1 = GetTargetPosition()
-            if targetPos1 then
-                TeleportCharacter(targetPos1)
-                teleportCount = teleportCount + 1
-                teleportCountLabel.Text = "传送: " .. teleportCount
-                print("第1次传送完成")
+            if circle then
+                orderStatusLabel.Text = "找到圈，正在对齐..."
+                local success = AlignToCircle(circle)
+                if success then
+                    alignCount = alignCount + 1
+                    orderCountLabel.Text = "对齐: " .. alignCount
+                    teleportCount = teleportCount + 1
+                    teleportCountLabel.Text = "传送: " .. teleportCount
+                    print("公交车已对齐到圈")
+                else
+                    warn("对齐失败")
+                end
+                task.wait(2)
             else
-                warn("未找到目标位置")
+                orderStatusLabel.Text = "未找到圈，继续搜索..."
+                task.wait(1)
             end
-            task.wait(2.5)
-            
-            orderStatusLabel.Text = "第2次传送..."
-            local targetPos2 = GetTargetPosition()
-            if targetPos2 then
-                TeleportCharacter(targetPos2)
-                teleportCount = teleportCount + 1
-                teleportCountLabel.Text = "传送: " .. teleportCount
-                print("第2次传送完成")
-            else
-                warn("未找到目标位置")
-            end
-            
-            orderStatusLabel.Text = "订单完成，等待下一单..."
-            task.wait(2)
         end
     end)
     
     coroutine.resume(loopThread)
 end
 
--- 按钮事件
 toggleButton.MouseButton1Click:Connect(function()
     if isRunning then
         StopLoop()
@@ -399,22 +396,12 @@ toggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 关闭按钮 - 彻底销毁GUI
-closeButton.MouseButton1Click:Connect(function()
-    StopLoop()
-    task.wait(0.1)
-    if screenGui and screenGui.Parent then
-        screenGui:Destroy()
-    end
-    print("脚本已退出")
-end)
-
 Player.CharacterAdded:Connect(function()
     if isRunning then
         task.wait(1)
-        local pos = GetTargetPosition()
-        if pos then
-            pcall(function() TeleportCharacter(pos) end)
+        local circle = FindNearestCircle()
+        if circle then
+            pcall(function() AlignToCircle(circle) end)
         end
     end
 end)
