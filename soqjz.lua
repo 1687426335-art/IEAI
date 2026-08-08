@@ -1,12 +1,3 @@
--- ============================================================
--- SANA缝合小子
--- 由PY_TEAM灰开源
--- SANA狗屎
--- 臭AI小子乱狗叫谁稀罕缝合呀
--- 看不惯我等着你过来打压我
--- 还有你那一帮护卫犬随便来
--- ============================================================
-
 -- 1. 加载库
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/ThemeManager.lua"))()
