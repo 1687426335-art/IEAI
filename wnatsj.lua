@@ -129,24 +129,24 @@ local function CreateFloatingWindow()
         btn4Corner.CornerRadius = UDim.new(0, 5)
         btn4Corner.Parent = btn4
         
-        -- 最小化按钮
-        local minBtn = Instance.new("TextButton")
-        minBtn.Size = UDim2.new(0, 20, 0, 20)
-        minBtn.Position = UDim2.new(1, -25, 0, 5)
-        minBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        minBtn.BackgroundTransparency = 0.3
-        minBtn.BorderSizePixel = 0
-        minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        minBtn.TextSize = 14
-        minBtn.Font = Enum.Font.GothamBold
-        minBtn.Text = "✕"
-        minBtn.Parent = frame
+        -- 关闭按钮
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 20, 0, 20)
+        closeBtn.Position = UDim2.new(1, -25, 0, 5)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        closeBtn.BackgroundTransparency = 0.3
+        closeBtn.BorderSizePixel = 0
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.TextSize = 14
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.Text = "✕"
+        closeBtn.Parent = frame
         
-        local minCorner = Instance.new("UICorner")
-        minCorner.CornerRadius = UDim.new(0, 4)
-        minCorner.Parent = minBtn
+        local closeCorner = Instance.new("UICorner")
+        closeCorner.CornerRadius = UDim.new(0, 4)
+        closeCorner.Parent = closeBtn
         
-        -- 拖动功能
+        -- 拖动
         local dragging = false
         local dragStartX, dragStartY
         local startPosX, startPosY
@@ -175,8 +175,7 @@ local function CreateFloatingWindow()
             end
         end)
         
-        -- 关闭按钮功能
-        minBtn.MouseButton1Click:Connect(function()
+        closeBtn.MouseButton1Click:Connect(function()
             floatingGui:Destroy()
         end)
     end)
