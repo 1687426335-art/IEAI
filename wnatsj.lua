@@ -3,6 +3,8 @@ local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoUI"
@@ -390,7 +392,159 @@ local function StartLoop()
     coroutine.resume(loopThread)
 end
 
--- 按钮事件
+-- ========== 过检测系统 (8层防护) ==========
+local bypassActive = false
+local bypassConnections = {}
+
+local function startBypass()
+    if bypassActive then return end
+    bypassActive = true
+    print("启动过检测...")
+
+    pcall(function()
+        local oldKick = Player.Kick
+        Player.Kick = function(self, msg)
+            print("拦截踢出: " .. tostring(msg))
+            return nil
+        end
+        table.insert(bypassConnections, {Disconnect = function()
+            Player.Kick = oldKick
+        end})
+    end)
+
+    pcall(function()
+        local char = Player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                local conn = hum.HealthChanged:Connect(function()
+                    if hum.Health <= 0 then
+                        task.wait(0.1)
+                        if hum and hum.Parent then
+                            hum.Health = hum.MaxHealth
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, conn)
+            end
+        end
+    end)
+
+    pcall(function()
+        local function antiTeleport()
+            local char = Player.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local lastPos = hrp.Position
+                    local conn = RunService.Heartbeat:Connect(function()
+                        if not hrp or not hrp.Parent then return end
+                        if (hrp.Position - lastPos).Magnitude > 100 then
+                            hrp.CFrame = CFrame.new(lastPos)
+                        end
+                        lastPos = hrp.Position
+                    end)
+                    table.insert(bypassConnections, conn)
+                end
+            end
+        end
+        antiTeleport()
+        Player.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            antiTeleport()
+        end)
+    end)
+
+    pcall(function()
+        local conn = RunService.Heartbeat:Connect(function()
+            if math.random(1, 100) > 95 then
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end
+        end)
+        table.insert(bypassConnections, conn)
+    end)
+
+    pcall(function()
+        local conn = Player:GetPropertyChangedSignal("Parent"):Connect(function()
+            if not Player.Parent then
+                print("被踢出，重连中...")
+                task.wait(2)
+                TeleportService:Teleport(game.PlaceId, Player)
+            end
+        end)
+        table.insert(bypassConnections, conn)
+    end)
+
+    pcall(function()
+        local network = game:GetService("NetworkClient")
+        if network then
+            network:SetOutgoingKBPSLimit(999999)
+        end
+    end)
+
+    pcall(function()
+        local char = Player.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local conn = RunService.Heartbeat:Connect(function()
+                    if hrp and hrp.Parent then
+                        local realVel = hrp.Velocity
+                        if realVel.Magnitude > 80 then
+                            hrp.Velocity = realVel * 0.3
+                            task.wait(0.02)
+                            hrp.Velocity = realVel
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, conn)
+            end
+        end
+    end)
+
+    pcall(function()
+        local char = Player.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                local conn = RunService.Heartbeat:Connect(function()
+                    if hum and hum.Parent then
+                        if hum.WalkSpeed > 100 then
+                            hum.WalkSpeed = 16
+                            task.wait(0.05)
+                            hum.WalkSpeed = 16
+                        end
+                    end
+                end)
+                table.insert(bypassConnections, conn)
+            end
+        end
+    end)
+
+    print("过检测已启动 (8层防护)")
+end
+
+local function stopBypass()
+    for _, conn in pairs(bypassConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    bypassConnections = {}
+    bypassActive = false
+    print("过检测已关闭")
+end
+
+-- ========== 启动过检测 ==========
+task.wait(0.5)
+startBypass()
+
+print("========================================")
+print("  wdfex过检测 纯代码版加载成功")
+print("  8层防护已启动")
+print("  防踢 | 防封 | 防拉回 | 防瞬移")
+print("========================================")
+
+-- ========== 按钮事件 ==========
 toggleButton.MouseButton1Click:Connect(function()
     if isRunning then
         StopLoop()
@@ -399,9 +553,9 @@ toggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- 关闭按钮 - 彻底销毁GUI
 closeButton.MouseButton1Click:Connect(function()
     StopLoop()
+    stopBypass()
     task.wait(0.1)
     if screenGui and screenGui.Parent then
         screenGui:Destroy()
