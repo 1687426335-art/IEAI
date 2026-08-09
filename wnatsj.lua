@@ -1,4 +1,4 @@
--- ========== wdfex 出租车刷钱 ==========
+-- ========== wdfex 出租车刷钱1.0 ==========
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
@@ -99,7 +99,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 35)
 title.Position = UDim2.new(0, 5, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "wdfex 出租车刷钱"
+title.Text = "wdfex 出租车刷钱1.0"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.TextXAlignment = Enum.TextXAlignment.Center
