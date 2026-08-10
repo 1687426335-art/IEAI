@@ -215,7 +215,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了然后等解开了就不会再被封了（除非被挂到DG）",
+    ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
     TextXAlignment = "Left",
 })
 
@@ -1406,6 +1406,175 @@ Tab_Weapon:Button({
 })
 
 -------------------------------------------------------------------------
+-- Tab: 杀戮光环
+-------------------------------------------------------------------------
+local Tab_KillAura = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "杀戮光环",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_KillAura:Section({
+    TextSize = 17,
+    ["Title"] = "杀戮光环设置",
+    TextXAlignment = "Left",
+})
+
+local killAuraEnabled = false
+local killAuraConnection = nil
+local killAuraRange = 50
+local killAuraDamage = 50
+local killAuraTargetPolice = false
+local killAuraTargetCivilian = false
+
+local function IsPlayerPolice(player)
+    if player.Team then
+        local teamName = player.Team.Name or ""
+        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("Sheriff") then
+            return true
+        end
+    end
+    if player.Character then
+        for _, child in ipairs(player.Character:GetDescendants()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警察") or name:find("sheriff") then
+                    return true
+                end
+            end
+        end
+    end
+    for _, child in ipairs(player:GetChildren()) do
+        if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
+            local name = child.Name:lower()
+            if name:find("police") or name:find("cop") or name:find("警察") or name:find("sheriff") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function GetTargets()
+    local targets = {}
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return targets end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        if not player.Character then continue end
+        local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if not targetHrp then continue end
+        
+        local isPolice = IsPlayerPolice(player)
+        
+        if killAuraTargetPolice and not isPolice then
+            continue
+        end
+        
+        if killAuraTargetCivilian and isPolice then
+            continue
+        end
+        
+        local dist = (hrp.Position - targetHrp.Position).Magnitude
+        if dist <= killAuraRange then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                table.insert(targets, {
+                    player = player,
+                    humanoid = humanoid,
+                    distance = dist
+                })
+            end
+        end
+    end
+    
+    return targets
+end
+
+local function DoKillAura()
+    if not killAuraEnabled then return end
+    local targets = GetTargets()
+    
+    for _, target in ipairs(targets) do
+        local humanoid = target.humanoid
+        if humanoid and humanoid.Health > 0 then
+            humanoid.Health = humanoid.Health - killAuraDamage
+            if humanoid.Health < 0 then
+                humanoid.Health = 0
+            end
+        end
+    end
+end
+
+Tab_KillAura:Toggle({
+    ["Title"] = "杀戮光环总开关",
+    ["Desc"] = "开启后自动攻击范围内所有敌人（无视墙）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        killAuraEnabled = bool
+        if bool then
+            if killAuraConnection then
+                killAuraConnection:Disconnect()
+                killAuraConnection = nil
+            end
+            killAuraConnection = RunService.Heartbeat:Connect(function()
+                if killAuraEnabled then
+                    DoKillAura()
+                end
+            end)
+        else
+            if killAuraConnection then
+                killAuraConnection:Disconnect()
+                killAuraConnection = nil
+            end
+        end
+    end
+})
+
+Tab_KillAura:Toggle({
+    ["Title"] = "只攻击警察",
+    ["Desc"] = "开启后只攻击警察队伍的玩家（关闭则攻击所有人）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        killAuraTargetPolice = bool
+        if bool and killAuraTargetCivilian then
+            killAuraTargetCivilian = false
+        end
+    end
+})
+
+Tab_KillAura:Toggle({
+    ["Title"] = "只攻击平民",
+    ["Desc"] = "开启后只攻击平民队伍的玩家（关闭则攻击所有人）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        killAuraTargetCivilian = bool
+        if bool and killAuraTargetPolice then
+            killAuraTargetPolice = false
+        end
+    end
+})
+
+Tab_KillAura:Slider({
+    ["Title"] = "攻击距离",
+    ["Step"] = 1,
+    ["Value"] = { Min = 1, Default = 50, Max = 500 },
+    ["Callback"] = function(Value)
+        killAuraRange = type(Value) == "table" and Value[1] or Value
+    end
+})
+
+Tab_KillAura:Slider({
+    ["Title"] = "攻击伤害",
+    ["Step"] = 1,
+    ["Value"] = { Min = 1, Default = 50, Max = 100 },
+    ["Callback"] = function(Value)
+        killAuraDamage = type(Value) == "table" and Value[1] or Value
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 警察显示
 -------------------------------------------------------------------------
 local Tab_Police = Window:Tab({
@@ -1430,39 +1599,9 @@ local function UpdatePoliceCount()
     
     local count = 0
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local isPolice = false
-            if player.Team then
-                local teamName = player.Team.Name or ""
-                if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("Sheriff") then
-                    isPolice = true
-                end
-            end
-            if not isPolice and player.Character then
-                for _, child in ipairs(player.Character:GetDescendants()) do
-                    if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                        local name = child.Name:lower()
-                        if name:find("police") or name:find("cop") or name:find("警察") or name:find("sheriff") then
-                            isPolice = true
-                            break
-                        end
-                    end
-                end
-            end
-            if not isPolice then
-                for _, child in ipairs(player:GetChildren()) do
-                    if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                        local name = child.Name:lower()
-                        if name:find("police") or name:find("cop") or name:find("警察") or name:find("sheriff") then
-                            isPolice = true
-                            break
-                        end
-                    end
-                end
-            end
-            if isPolice then
-                count = count + 1
-            end
+        if player == LocalPlayer then continue end
+        if IsPlayerPolice(player) then
+            count = count + 1
         end
     end
     
@@ -1571,7 +1710,12 @@ Tab_Settings:Button({
         antiFlingEnabled = false
         autoWaypointEnabled = false
         vehicleSpinEnabled = false
+        killAuraEnabled = false
         policeDisplayEnabled = false
+        if killAuraConnection then
+            killAuraConnection:Disconnect()
+            killAuraConnection = nil
+        end
         if policeDisplayConnection then
             policeDisplayConnection:Disconnect()
             policeDisplayConnection = nil
@@ -1718,4 +1862,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加公告防封教程 + 车辆旋转功能")
+print("已添加杀戮光环（只攻击警察/只攻击平民/距离/伤害）")
