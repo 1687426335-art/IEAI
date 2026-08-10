@@ -1422,10 +1422,179 @@ Tab_KillAura:Section({
 
 local killAuraEnabled = false
 local killAuraConnection = nil
-local killAuraRange = 50
-local killAuraDamage = 50
-local killAuraTargetPolice = false
-local killAuraTargetCivilian = false
+local killAuraRange = 90
+local selectedSoundId = "rbxassetid://8679627751"
+
+local soundList = {
+    "rbxassetid://8679627751",
+    "rbxassetid://3125624765",
+    "rbxassetid://17755696142",
+    "rbxassetid://10070796384"
+}
+
+local function GetHitFunction()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    for _, tool in ipairs(char:GetChildren()) do
+        if tool:IsA("Tool") then
+            local remotes = tool:FindFirstChild("Remotes")
+            if remotes then
+                local hitFunc = remotes:FindFirstChild("HitFunction")
+                if hitFunc then
+                    return hitFunc
+                end
+            end
+        end
+    end
+    return nil
+}
+
+local function GetEnemiesInRange()
+    local enemies = {}
+    local myChar = LocalPlayer.Character
+    if not myChar then return enemies end
+    local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return enemies end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character.Parent then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                if targetHrp then
+                    local dist = (myHrp.Position - targetHrp.Position).Magnitude
+                    if dist <= killAuraRange then
+                        table.insert(enemies, player)
+                    end
+                end
+            end
+        end
+    end
+    return enemies
+end
+
+local hue = 0
+local function GetRainbowColor()
+    hue = (hue + 0.02) % 1
+    return Color3.fromHSV(hue, 1, 1)
+end
+
+local function DrawTrajectory(origin, targetPos)
+    local color = GetRainbowColor()
+    local part = Instance.new("Part")
+    part.Anchored = true
+    part.CanCollide = false
+    part.Material = Enum.Material.Neon
+    part.Color = color
+    local distance = (origin - targetPos).Magnitude
+    if distance < 0.1 then return end
+    part.Size = Vector3.new(0.1, 0.1, distance)
+    part.CFrame = CFrame.lookAt(origin, targetPos) * CFrame.new(0, 0, -distance / 2)
+    part.Parent = workspace
+    Debris:AddItem(part, 0.3)
+end
+
+local function PlayShootSound()
+    local sound = Instance.new("Sound")
+    sound.SoundId = selectedSoundId
+    sound.Volume = 1
+    sound.Parent = LocalPlayer.Character or workspace
+    sound:Play()
+    task.delay(1, function() sound:Destroy() end)
+end
+
+local function AttackEnemy(targetPlayer, hitFunction)
+    local targetChar = targetPlayer.Character
+    if not targetChar then return end
+    local hitPart = targetChar:FindFirstChild("Left Arm") or targetChar:FindFirstChild("Right Arm") or targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
+    if not hitPart then return end
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+    local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return end
+    local origin = myHrp.Position
+    local targetPos = hitPart.Position
+    DrawTrajectory(origin, targetPos)
+    PlayShootSound()
+    local args = {
+        targetChar,
+        hitPart,
+        Vector3.new(1, 2, 1)
+    }
+    pcall(function()
+        hitFunction:InvokeServer(unpack(args))
+    end)
+end
+
+local function KillAuraLoop()
+    local hitFunction = GetHitFunction()
+    if not hitFunction then return end
+    local enemies = GetEnemiesInRange()
+    for _, enemy in ipairs(enemies) do
+        task.spawn(AttackEnemy, enemy, hitFunction)
+        task.wait(0.03)
+    end
+end
+
+Tab_KillAura:Toggle({
+    ["Title"] = "杀戮光环总开关",
+    ["Desc"] = "开启后自动攻击范围内所有敌人（调用游戏HitFunction）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        killAuraEnabled = bool
+        if bool then
+            if killAuraConnection then
+                killAuraConnection:Disconnect()
+                killAuraConnection = nil
+            end
+            killAuraConnection = RunService.Heartbeat:Connect(KillAuraLoop)
+        else
+            if killAuraConnection then
+                killAuraConnection:Disconnect()
+                killAuraConnection = nil
+            end
+        end
+    end
+})
+
+Tab_KillAura:Slider({
+    ["Title"] = "攻击距离",
+    ["Step"] = 1,
+    ["Value"] = { Min = 10, Default = 90, Max = 500 },
+    ["Callback"] = function(Value)
+        killAuraRange = type(Value) == "table" and Value[1] or Value
+    end
+})
+
+Tab_KillAura:Dropdown({
+    ["Title"] = "攻击音效",
+    ["Desc"] = "选择攻击时播放的音效",
+    ["Options"] = {"音效1", "音效2", "音效3", "音效4"},
+    ["Default"] = "音效1",
+    ["Callback"] = function(option)
+        local index = {["音效1"] = 1, ["音效2"] = 2, ["音效3"] = 3, ["音效4"] = 4}
+        selectedSoundId = soundList[index[option]] or soundList[1]
+    end
+})
+
+-------------------------------------------------------------------------
+-- Tab: 警察显示
+-------------------------------------------------------------------------
+local Tab_Police = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "警察显示",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Police:Section({
+    TextSize = 17,
+    ["Title"] = "警察数量显示",
+    TextXAlignment = "Left",
+})
+
+local policeDisplayEnabled = false
+local policeLabel = nil
+local policeGui = nil
+local policeDisplayConnection = nil
 
 local function IsPlayerPolice(player)
     if player.Team then
@@ -1454,145 +1623,6 @@ local function IsPlayerPolice(player)
     end
     return false
 end
-
-local function GetTargets()
-    local targets = {}
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return targets end
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if not player.Character then continue end
-        local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
-        if not targetHrp then continue end
-        
-        local isPolice = IsPlayerPolice(player)
-        
-        if killAuraTargetPolice and not isPolice then
-            continue
-        end
-        
-        if killAuraTargetCivilian and isPolice then
-            continue
-        end
-        
-        local dist = (hrp.Position - targetHrp.Position).Magnitude
-        if dist <= killAuraRange then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid.Health > 0 then
-                table.insert(targets, {
-                    player = player,
-                    humanoid = humanoid,
-                    distance = dist
-                })
-            end
-        end
-    end
-    
-    return targets
-end
-
-local function DoKillAura()
-    if not killAuraEnabled then return end
-    local targets = GetTargets()
-    
-    for _, target in ipairs(targets) do
-        local humanoid = target.humanoid
-        if humanoid and humanoid.Health > 0 then
-            humanoid.Health = humanoid.Health - killAuraDamage
-            if humanoid.Health < 0 then
-                humanoid.Health = 0
-            end
-        end
-    end
-end
-
-Tab_KillAura:Toggle({
-    ["Title"] = "杀戮光环总开关",
-    ["Desc"] = "开启后自动攻击范围内所有敌人（无视墙）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        killAuraEnabled = bool
-        if bool then
-            if killAuraConnection then
-                killAuraConnection:Disconnect()
-                killAuraConnection = nil
-            end
-            killAuraConnection = RunService.Heartbeat:Connect(function()
-                if killAuraEnabled then
-                    DoKillAura()
-                end
-            end)
-        else
-            if killAuraConnection then
-                killAuraConnection:Disconnect()
-                killAuraConnection = nil
-            end
-        end
-    end
-})
-
-Tab_KillAura:Toggle({
-    ["Title"] = "只攻击警察",
-    ["Desc"] = "开启后只攻击警察队伍的玩家（关闭则攻击所有人）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        killAuraTargetPolice = bool
-        if bool and killAuraTargetCivilian then
-            killAuraTargetCivilian = false
-        end
-    end
-})
-
-Tab_KillAura:Toggle({
-    ["Title"] = "只攻击平民",
-    ["Desc"] = "开启后只攻击平民队伍的玩家（关闭则攻击所有人）",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        killAuraTargetCivilian = bool
-        if bool and killAuraTargetPolice then
-            killAuraTargetPolice = false
-        end
-    end
-})
-
-Tab_KillAura:Slider({
-    ["Title"] = "攻击距离",
-    ["Step"] = 1,
-    ["Value"] = { Min = 1, Default = 50, Max = 500 },
-    ["Callback"] = function(Value)
-        killAuraRange = type(Value) == "table" and Value[1] or Value
-    end
-})
-
-Tab_KillAura:Slider({
-    ["Title"] = "攻击伤害",
-    ["Step"] = 1,
-    ["Value"] = { Min = 1, Default = 50, Max = 100 },
-    ["Callback"] = function(Value)
-        killAuraDamage = type(Value) == "table" and Value[1] or Value
-    end
-})
-
--------------------------------------------------------------------------
--- Tab: 警察显示
--------------------------------------------------------------------------
-local Tab_Police = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "警察显示",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Police:Section({
-    TextSize = 17,
-    ["Title"] = "警察数量显示",
-    TextXAlignment = "Left",
-})
-
-local policeDisplayEnabled = false
-local policeLabel = nil
-local policeGui = nil
-local policeDisplayConnection = nil
 
 local function UpdatePoliceCount()
     if not policeDisplayEnabled then return end
@@ -1862,4 +1892,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加杀戮光环（只攻击警察/只攻击平民/距离/伤害）")
+print("已添加杀戮光环（真·HitFunction版）")
