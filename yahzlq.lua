@@ -1105,7 +1105,7 @@ end)
         
         -- 显示通知
         Library:Notify({
-            Title = "XIAOXI HUB",
+            Title = "wdfex HUB",
             Description = "该服务器正在更新中无法加载",
             Time = 6
         })
@@ -1206,7 +1206,7 @@ end)
         
         -- 显示通知
         Library:Notify({
-            Title = "XIAOXI HUB",
+            Title = "wdfex HUB",
             Description = "该服务器正在更新中无法加载",
             Time = 6
         })
