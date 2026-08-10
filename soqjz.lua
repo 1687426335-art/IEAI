@@ -12,8 +12,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = Player.PlayerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 480)
-mainFrame.Position = UDim2.new(0.02, 0, 0.05, 0)
+mainFrame.Size = UDim2.new(0, 220, 0, 530)
+mainFrame.Position = UDim2.new(0.02, 0, 0.03, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 18)
 mainFrame.BackgroundTransparency = 0.08
 mainFrame.BorderSizePixel = 2
@@ -112,9 +112,9 @@ accelLabel.Parent = mainFrame
 local accelToggle = Instance.new("TextButton")
 accelToggle.Size = UDim2.new(0.3, 0, 0, 22)
 accelToggle.Position = UDim2.new(0.65, 0, 0, 76)
-accelToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+accelToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 accelToggle.BackgroundTransparency = 0.2
-accelToggle.Text = "lin_bobo77"
+accelToggle.Text = "已关闭"
 accelToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 accelToggle.TextSize = 11
 accelToggle.Font = Enum.Font.GothamBold
@@ -140,9 +140,9 @@ steerLabel.Parent = mainFrame
 local steerToggle = Instance.new("TextButton")
 steerToggle.Size = UDim2.new(0.3, 0, 0, 22)
 steerToggle.Position = UDim2.new(0.65, 0, 0, 106)
-steerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+steerToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 steerToggle.BackgroundTransparency = 0.2
-steerToggle.Text = "线性转向"
+steerToggle.Text = "已关闭"
 steerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 steerToggle.TextSize = 11
 steerToggle.Font = Enum.Font.GothamBold
@@ -237,9 +237,21 @@ local followCorner = Instance.new("UICorner")
 followCorner.CornerRadius = UDim.new(0, 6)
 followCorner.Parent = followToggle
 
+-- 引擎开关
+local engineLabel = Instance.new("TextLabel")
+engineLabel.Size = UDim2.new(0.8, 0, 0, 25)
+engineLabel.Position = UDim2.new(0.1, 0, 0, 225)
+engineLabel.BackgroundTransparency = 1
+engineLabel.Text = "引擎：已开启"
+engineLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+engineLabel.TextSize = 14
+engineLabel.TextXAlignment = Enum.TextXAlignment.Center
+engineLabel.Font = Enum.Font.GothamBold
+engineLabel.Parent = mainFrame
+
 local line2 = Instance.new("Frame")
 line2.Size = UDim2.new(0.9, 0, 0, 1)
-line2.Position = UDim2.new(0.05, 0, 0, 225)
+line2.Position = UDim2.new(0.05, 0, 0, 255)
 line2.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 line2.BackgroundTransparency = 0.5
 line2.BorderSizePixel = 0
@@ -248,7 +260,7 @@ line2.Parent = mainFrame
 -- 前进按钮
 local forwardBtn = Instance.new("TextButton")
 forwardBtn.Size = UDim2.new(0.8, 0, 0, 40)
-forwardBtn.Position = UDim2.new(0.1, 0, 0, 235)
+forwardBtn.Position = UDim2.new(0.1, 0, 0, 265)
 forwardBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
 forwardBtn.BackgroundTransparency = 0.2
 forwardBtn.Text = "前进"
@@ -261,18 +273,6 @@ forwardBtn.Parent = mainFrame
 local forwardCorner = Instance.new("UICorner")
 forwardCorner.CornerRadius = UDim.new(0, 8)
 forwardCorner.Parent = forwardBtn
-
--- 引擎状态
-local engineLabel = Instance.new("TextLabel")
-engineLabel.Size = UDim2.new(0.8, 0, 0, 25)
-engineLabel.Position = UDim2.new(0.1, 0, 0, 280)
-engineLabel.BackgroundTransparency = 1
-engineLabel.Text = "引擎运行中（已开启）"
-engineLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-engineLabel.TextSize = 14
-engineLabel.TextXAlignment = Enum.TextXAlignment.Center
-engineLabel.Font = Enum.Font.GothamBold
-engineLabel.Parent = mainFrame
 
 -- 后退按钮
 local backwardBtn = Instance.new("TextButton")
@@ -301,7 +301,6 @@ local followEnabled = false
 local engineRunning = true
 local isInVehicle = false
 local currentSpeed = 0
-local targetSpeed = 0
 
 -- 速度输入
 speedInput.FocusLost:Connect(function()
@@ -315,20 +314,29 @@ speedInput.FocusLost:Connect(function()
     print("速度上限已设为: " .. speed)
 end)
 
+-- ========== 开关函数 ==========
+local function ToggleButton(btn, label, state)
+    if state then
+        btn.Text = "已开启"
+        btn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+    else
+        btn.Text = "已关闭"
+        btn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end
+end
+
 -- 线性加速切换
 accelToggle.MouseButton1Click:Connect(function()
     accelEnabled = not accelEnabled
-    accelToggle.Text = accelEnabled and "lin_bobo77" or "lin_bobo77"
-    accelToggle.BackgroundColor3 = accelEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
-    print("线性加速: " .. (accelEnabled and "开启" or "关闭"))
+    ToggleButton(accelToggle, "线性加速", accelEnabled)
+    print("线性加速: " .. (accelEnabled and "已开启" or "已关闭"))
 end)
 
 -- 线性转向切换
 steerToggle.MouseButton1Click:Connect(function()
     steerEnabled = not steerEnabled
-    steerToggle.Text = steerEnabled and "线性转向" or "线性转向"
-    steerToggle.BackgroundColor3 = steerEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
-    print("线性转向: " .. (steerEnabled and "开启" or "关闭"))
+    ToggleButton(steerToggle, "线性转向", steerEnabled)
+    print("线性转向: " .. (steerEnabled and "已开启" or "已关闭"))
 end)
 
 -- 上车检测切换
@@ -338,31 +346,34 @@ boardToggle.MouseButton1Click:Connect(function()
         return
     end
     boardEnabled = not boardEnabled
-    boardToggle.Text = boardEnabled and "已上车" or "未上车"
-    boardToggle.BackgroundColor3 = boardEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
-    print("上车检测: " .. (boardEnabled and "开启" or "关闭"))
+    if boardEnabled then
+        boardToggle.Text = "已上车"
+        boardToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+    else
+        boardToggle.Text = "未上车"
+        boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end
+    print("上车检测: " .. (boardEnabled and "已开启" or "已关闭"))
 end)
 
 -- 横向移动辅助切换
 assistToggle.MouseButton1Click:Connect(function()
     assistEnabled = not assistEnabled
-    assistToggle.Text = assistEnabled and "已开启" or "已关闭"
-    assistToggle.BackgroundColor3 = assistEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    ToggleButton(assistToggle, "横向移动辅助", assistEnabled)
     print("横向移动辅助: " .. (assistEnabled and "已开启" or "已关闭"))
 end)
 
 -- 车头跟随切换
 followToggle.MouseButton1Click:Connect(function()
     followEnabled = not followEnabled
-    followToggle.Text = followEnabled and "已开启" or "已关闭"
-    followToggle.BackgroundColor3 = followEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    ToggleButton(followToggle, "车头跟随", followEnabled)
     print("车头跟随: " .. (followEnabled and "已开启" or "已关闭"))
 end)
 
 -- 引擎切换
 engineLabel.MouseButton1Click:Connect(function()
     engineRunning = not engineRunning
-    engineLabel.Text = engineRunning and "引擎运行中（已开启）" or "引擎已关闭（已关闭）"
+    engineLabel.Text = engineRunning and "引擎：已开启" or "引擎：已关闭"
     engineLabel.TextColor3 = engineRunning and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
     print("引擎: " .. (engineRunning and "已开启" or "已关闭"))
 end)
@@ -379,7 +390,6 @@ local function CheckInVehicle()
     return false
 end
 
--- 实时检测上车状态
 RunService.Heartbeat:Connect(function()
     local newState = CheckInVehicle()
     if newState ~= isInVehicle then
@@ -433,16 +443,13 @@ local function ApplyForce(forward)
     local force = dir * (forward and 1 or -1) * speed * 0.5
     
     if accelEnabled then
-        -- 线性加速：从0慢慢加速到目标速度
         currentSpeed = currentSpeed + (speed - currentSpeed) * 0.05
         local currentForce = dir * (forward and 1 or -1) * currentSpeed * 0.5
         root.Velocity = root.Velocity + currentForce * 0.1
     else
-        -- 直接达到目标速度
         root.Velocity = dir * (forward and 1 or -1) * speed * 0.3
     end
     
-    -- 车头跟随：摄像头方向
     if followEnabled then
         local camLook = Camera.CFrame.LookVector
         local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
@@ -452,7 +459,6 @@ local function ApplyForce(forward)
     end
 end
 
--- 前进按钮
 forwardBtn.MouseButton1Down:Connect(function()
     if not isInVehicle then
         print("未上车，无法前进")
@@ -465,7 +471,6 @@ forwardBtn.MouseButton1Up:Connect(function()
     currentSpeed = 0
 end)
 
--- 后退按钮
 backwardBtn.MouseButton1Down:Connect(function()
     if not isInVehicle then
         print("未上车，无法后退")
@@ -478,7 +483,6 @@ backwardBtn.MouseButton1Up:Connect(function()
     currentSpeed = 0
 end)
 
--- 键盘控制
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.W then
@@ -548,6 +552,6 @@ RunService.Heartbeat:Connect(function()
 end)
 
 print("Car Speed Gui 已加载")
-print("速度上限可自定义输入")
+print("所有功能均为可开关状态")
 print("上车检测: 上车后自动识别")
 print("车头跟随: 开启后摄像头方向控制车头")
