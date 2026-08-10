@@ -1,703 +1,553 @@
--- 1. 加载库
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua"))()
-
--- 2. 服务和工具
+-- ========== Car Speed Gui 车辆加速悬浮窗 ==========
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
+local Player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Camera = workspace.CurrentCamera
 
-local FromRGB = Color3.fromRGB
-local Vector3_new = Vector3.new
-local CFrame_new = CFrame.new
-local task = task
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CarSpeedGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = Player.PlayerGui
 
--- 3. 远程事件与模块
-local PlayerEvent = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("PlayerEvent")
-local Modules = ReplicatedStorage.Modules
-local Algorithms = require(Modules.Algorithms)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 480)
+mainFrame.Position = UDim2.new(0.02, 0, 0.05, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 18)
+mainFrame.BackgroundTransparency = 0.08
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(0, 150, 255)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
--- 4. 全局状态
-local Character = LocalPlayer.Character
-local Humanoid = Character and Character:FindFirstChild("Humanoid")
-local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
 
-local Toggles = {
-    Noclip = false,
-    KillAura = false,
-    Hitbox = false,
-    Whitelist = false,
-    Aim = false,
-    NoDizziness = false,
-    Taxi = false,
-    AutoBus = false,
-    AtmHack = false,
-    Teleport = false,
-    BulletTrack = false,
-    ScreenPriority = true,
-    DistancePriority = false,
-    ShowCustomCursor = true,
-}
+-- ========== 关闭按钮 ==========
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -30, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeButton.BackgroundTransparency = 0.3
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BorderSizePixel = 0
+closeButton.Parent = mainFrame
 
-local Settings = {
-    HoldTime = 0,
-    Distance = 25,
-    KillAuraRange = 50,
-    HitboxSize = 10,
-    AimSmoothness = 5,
-    AimMaxDistance = 200,
-    AimCheckWall = true,
-    NoDizzinessSpeed = 24,
-    TaxiWaitTime = 7,
-}
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeButton
 
-local KillAuraConnection = nil
-local NoDizzinessConnection = nil
-local AutoBusTask = nil
-local AtmHackTask = nil
-local TaxiTask = nil
-local FriendWhitelist = {}
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+    print("Car Speed Gui 已关闭")
+end)
 
--- ============================================================
--- 5. 核心功能（完全原始逻辑）
--- ============================================================
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -35, 0, 30)
+title.Position = UDim2.new(0, 5, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Car Speed Gui"
+title.TextColor3 = Color3.fromRGB(0, 150, 255)
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
 
-function ApplyHitbox(size)
-    size = size or Settings.HitboxSize
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local char = player.Character
-            if char then
-                local head = char:FindFirstChild("Head")
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 and head then
-                    head.Size = Vector3_new(size, size, size)
-                    head.Transparency = 1
-                    head.Color = FromRGB(255, 215, 0)
-                    head.Material = Enum.Material.Neon
-                    head.CanCollide = false
-                end
-            end
-        end
-    end
-end
+local line1 = Instance.new("Frame")
+line1.Size = UDim2.new(0.9, 0, 0, 1)
+line1.Position = UDim2.new(0.05, 0, 0, 38)
+line1.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+line1.BackgroundTransparency = 0.5
+line1.BorderSizePixel = 0
+line1.Parent = mainFrame
 
-function ResetHitbox()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local char = player.Character
-            if char then
-                local head = char:FindFirstChild("Head")
-                if head then
-                    head.Size = Vector3_new(2, 2, 2)
-                    head.Transparency = 0
-                    head.Color = FromRGB(255, 255, 255)
-                    head.Material = Enum.Material.SmoothPlastic
-                    head.CanCollide = true
-                end
-            end
-        end
-    end
-end
+-- 速度上限
+local speedLimitLabel = Instance.new("TextLabel")
+speedLimitLabel.Size = UDim2.new(0.5, 0, 0, 25)
+speedLimitLabel.Position = UDim2.new(0.05, 0, 0, 45)
+speedLimitLabel.BackgroundTransparency = 1
+speedLimitLabel.Text = "速度上限："
+speedLimitLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+speedLimitLabel.TextSize = 14
+speedLimitLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLimitLabel.Font = Enum.Font.Gotham
+speedLimitLabel.Parent = mainFrame
 
-function UpdateWhitelist()
-    local userId = LocalPlayer.UserId
-    FriendWhitelist = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            pcall(function()
-                if player:IsFriendsWith(userId) then
-                    FriendWhitelist[player.UserId] = true
-                end
-            end)
-        end
-    end
-end
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(0.3, 0, 0, 25)
+speedInput.Position = UDim2.new(0.6, 0, 0, 45)
+speedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+speedInput.BackgroundTransparency = 0.3
+speedInput.Text = "90"
+speedInput.TextColor3 = Color3.fromRGB(0, 200, 255)
+speedInput.TextSize = 14
+speedInput.TextXAlignment = Enum.TextXAlignment.Center
+speedInput.Font = Enum.Font.GothamBold
+speedInput.ClearTextOnFocus = false
+speedInput.Parent = mainFrame
 
-function ToggleKillAura(enabled)
-    Toggles.KillAura = enabled
-    if enabled then
-        pcall(function()
-            PlayerEvent:FireServer("combatMode", true)
-        end)
-        StartKillAura()
+local speedCorner = Instance.new("UICorner")
+speedCorner.CornerRadius = UDim.new(0, 5)
+speedCorner.Parent = speedInput
+
+-- 线性加速
+local accelLabel = Instance.new("TextLabel")
+accelLabel.Size = UDim2.new(0.5, 0, 0, 25)
+accelLabel.Position = UDim2.new(0.05, 0, 0, 75)
+accelLabel.BackgroundTransparency = 1
+accelLabel.Text = "线性加速"
+accelLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+accelLabel.TextSize = 14
+accelLabel.TextXAlignment = Enum.TextXAlignment.Left
+accelLabel.Font = Enum.Font.Gotham
+accelLabel.Parent = mainFrame
+
+local accelToggle = Instance.new("TextButton")
+accelToggle.Size = UDim2.new(0.3, 0, 0, 22)
+accelToggle.Position = UDim2.new(0.65, 0, 0, 76)
+accelToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+accelToggle.BackgroundTransparency = 0.2
+accelToggle.Text = "lin_bobo77"
+accelToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+accelToggle.TextSize = 11
+accelToggle.Font = Enum.Font.GothamBold
+accelToggle.BorderSizePixel = 0
+accelToggle.Parent = mainFrame
+
+local accelCorner = Instance.new("UICorner")
+accelCorner.CornerRadius = UDim.new(0, 6)
+accelCorner.Parent = accelToggle
+
+-- 线性转向
+local steerLabel = Instance.new("TextLabel")
+steerLabel.Size = UDim2.new(0.5, 0, 0, 25)
+steerLabel.Position = UDim2.new(0.05, 0, 0, 105)
+steerLabel.BackgroundTransparency = 1
+steerLabel.Text = "线性转向"
+steerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+steerLabel.TextSize = 14
+steerLabel.TextXAlignment = Enum.TextXAlignment.Left
+steerLabel.Font = Enum.Font.Gotham
+steerLabel.Parent = mainFrame
+
+local steerToggle = Instance.new("TextButton")
+steerToggle.Size = UDim2.new(0.3, 0, 0, 22)
+steerToggle.Position = UDim2.new(0.65, 0, 0, 106)
+steerToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+steerToggle.BackgroundTransparency = 0.2
+steerToggle.Text = "线性转向"
+steerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+steerToggle.TextSize = 11
+steerToggle.Font = Enum.Font.GothamBold
+steerToggle.BorderSizePixel = 0
+steerToggle.Parent = mainFrame
+
+local steerCorner = Instance.new("UICorner")
+steerCorner.CornerRadius = UDim.new(0, 6)
+steerCorner.Parent = steerToggle
+
+-- 上车检测
+local boardLabel = Instance.new("TextLabel")
+boardLabel.Size = UDim2.new(0.5, 0, 0, 25)
+boardLabel.Position = UDim2.new(0.05, 0, 0, 135)
+boardLabel.BackgroundTransparency = 1
+boardLabel.Text = "上车检测"
+boardLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+boardLabel.TextSize = 14
+boardLabel.TextXAlignment = Enum.TextXAlignment.Left
+boardLabel.Font = Enum.Font.Gotham
+boardLabel.Parent = mainFrame
+
+local boardToggle = Instance.new("TextButton")
+boardToggle.Size = UDim2.new(0.3, 0, 0, 22)
+boardToggle.Position = UDim2.new(0.65, 0, 0, 136)
+boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+boardToggle.BackgroundTransparency = 0.2
+boardToggle.Text = "未上车"
+boardToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+boardToggle.TextSize = 11
+boardToggle.Font = Enum.Font.GothamBold
+boardToggle.BorderSizePixel = 0
+boardToggle.Parent = mainFrame
+
+local boardCorner = Instance.new("UICorner")
+boardCorner.CornerRadius = UDim.new(0, 6)
+boardCorner.Parent = boardToggle
+
+-- 横向移动辅助
+local assistLabel = Instance.new("TextLabel")
+assistLabel.Size = UDim2.new(0.55, 0, 0, 25)
+assistLabel.Position = UDim2.new(0.05, 0, 0, 165)
+assistLabel.BackgroundTransparency = 1
+assistLabel.Text = "横向移动辅助："
+assistLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+assistLabel.TextSize = 14
+assistLabel.TextXAlignment = Enum.TextXAlignment.Left
+assistLabel.Font = Enum.Font.Gotham
+assistLabel.Parent = mainFrame
+
+local assistToggle = Instance.new("TextButton")
+assistToggle.Size = UDim2.new(0.3, 0, 0, 22)
+assistToggle.Position = UDim2.new(0.65, 0, 0, 166)
+assistToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+assistToggle.BackgroundTransparency = 0.2
+assistToggle.Text = "已关闭"
+assistToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+assistToggle.TextSize = 11
+assistToggle.Font = Enum.Font.GothamBold
+assistToggle.BorderSizePixel = 0
+assistToggle.Parent = mainFrame
+
+local assistCorner = Instance.new("UICorner")
+assistCorner.CornerRadius = UDim.new(0, 6)
+assistCorner.Parent = assistToggle
+
+-- 车头跟随
+local followLabel = Instance.new("TextLabel")
+followLabel.Size = UDim2.new(0.55, 0, 0, 25)
+followLabel.Position = UDim2.new(0.05, 0, 0, 195)
+followLabel.BackgroundTransparency = 1
+followLabel.Text = "车头跟随："
+followLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+followLabel.TextSize = 14
+followLabel.TextXAlignment = Enum.TextXAlignment.Left
+followLabel.Font = Enum.Font.Gotham
+followLabel.Parent = mainFrame
+
+local followToggle = Instance.new("TextButton")
+followToggle.Size = UDim2.new(0.3, 0, 0, 22)
+followToggle.Position = UDim2.new(0.65, 0, 0, 196)
+followToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+followToggle.BackgroundTransparency = 0.2
+followToggle.Text = "已关闭"
+followToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+followToggle.TextSize = 11
+followToggle.Font = Enum.Font.GothamBold
+followToggle.BorderSizePixel = 0
+followToggle.Parent = mainFrame
+
+local followCorner = Instance.new("UICorner")
+followCorner.CornerRadius = UDim.new(0, 6)
+followCorner.Parent = followToggle
+
+local line2 = Instance.new("Frame")
+line2.Size = UDim2.new(0.9, 0, 0, 1)
+line2.Position = UDim2.new(0.05, 0, 0, 225)
+line2.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+line2.BackgroundTransparency = 0.5
+line2.BorderSizePixel = 0
+line2.Parent = mainFrame
+
+-- 前进按钮
+local forwardBtn = Instance.new("TextButton")
+forwardBtn.Size = UDim2.new(0.8, 0, 0, 40)
+forwardBtn.Position = UDim2.new(0.1, 0, 0, 235)
+forwardBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+forwardBtn.BackgroundTransparency = 0.2
+forwardBtn.Text = "前进"
+forwardBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+forwardBtn.TextSize = 18
+forwardBtn.Font = Enum.Font.GothamBold
+forwardBtn.BorderSizePixel = 0
+forwardBtn.Parent = mainFrame
+
+local forwardCorner = Instance.new("UICorner")
+forwardCorner.CornerRadius = UDim.new(0, 8)
+forwardCorner.Parent = forwardBtn
+
+-- 引擎状态
+local engineLabel = Instance.new("TextLabel")
+engineLabel.Size = UDim2.new(0.8, 0, 0, 25)
+engineLabel.Position = UDim2.new(0.1, 0, 0, 280)
+engineLabel.BackgroundTransparency = 1
+engineLabel.Text = "引擎运行中（已开启）"
+engineLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+engineLabel.TextSize = 14
+engineLabel.TextXAlignment = Enum.TextXAlignment.Center
+engineLabel.Font = Enum.Font.GothamBold
+engineLabel.Parent = mainFrame
+
+-- 后退按钮
+local backwardBtn = Instance.new("TextButton")
+backwardBtn.Size = UDim2.new(0.8, 0, 0, 40)
+backwardBtn.Position = UDim2.new(0.1, 0, 0, 310)
+backwardBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+backwardBtn.BackgroundTransparency = 0.2
+backwardBtn.Text = "后退"
+backwardBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+backwardBtn.TextSize = 18
+backwardBtn.Font = Enum.Font.GothamBold
+backwardBtn.BorderSizePixel = 0
+backwardBtn.Parent = mainFrame
+
+local backwardCorner = Instance.new("UICorner")
+backwardCorner.CornerRadius = UDim.new(0, 8)
+backwardCorner.Parent = backwardBtn
+
+-- ========== 功能逻辑 ==========
+local speed = 90
+local accelEnabled = false
+local steerEnabled = false
+local boardEnabled = false
+local assistEnabled = false
+local followEnabled = false
+local engineRunning = true
+local isInVehicle = false
+local currentSpeed = 0
+local targetSpeed = 0
+
+-- 速度输入
+speedInput.FocusLost:Connect(function()
+    local val = tonumber(speedInput.Text)
+    if val and val > 0 then
+        speed = val
+        speedInput.Text = tostring(speed)
     else
-        if KillAuraConnection then KillAuraConnection:Disconnect() end
-        KillAuraConnection = nil
+        speedInput.Text = tostring(speed)
     end
-end
+    print("速度上限已设为: " .. speed)
+end)
 
-function StartKillAura()
-    if KillAuraConnection then KillAuraConnection:Disconnect() end
-    KillAuraConnection = RunService.Heartbeat:Connect(function()
-        if not Toggles.KillAura then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if not root then return end
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                if Toggles.Whitelist and FriendWhitelist[player.UserId] then continue end
-                local targetChar = player.Character
-                if targetChar then
-                    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
-                    local targetHum = targetChar:FindFirstChildOfClass("Humanoid")
-                    if targetRoot and targetHum and targetHum.Health > 0 then
-                        local dist = (targetRoot.Position - root.Position).Magnitude
-                        if dist <= Settings.KillAuraRange then
-                            pcall(function()
-                                PlayerEvent:FireServer("attack", targetRoot.Position)
-                            end)
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
+-- 线性加速切换
+accelToggle.MouseButton1Click:Connect(function()
+    accelEnabled = not accelEnabled
+    accelToggle.Text = accelEnabled and "lin_bobo77" or "lin_bobo77"
+    accelToggle.BackgroundColor3 = accelEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    print("线性加速: " .. (accelEnabled and "开启" or "关闭"))
+end)
 
-function StartNoDizziness()
-    if NoDizzinessConnection then NoDizzinessConnection:Disconnect() end
-    NoDizzinessConnection = RunService.RenderStepped:Connect(function()
-        if not Toggles.NoDizziness then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local hum = char:FindFirstChild("Humanoid")
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if hum and root then
-            local moveDir = hum.MoveDirection
-            if moveDir.Magnitude > 0 then
-                local speed = Settings.NoDizzinessSpeed
-                root.AssemblyLinearVelocity = Vector3_new(
-                    moveDir.X * speed,
-                    root.AssemblyLinearVelocity.Y,
-                    moveDir.Z * speed
-                )
-            end
-        end
-    end)
-end
+-- 线性转向切换
+steerToggle.MouseButton1Click:Connect(function()
+    steerEnabled = not steerEnabled
+    steerToggle.Text = steerEnabled and "线性转向" or "线性转向"
+    steerToggle.BackgroundColor3 = steerEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    print("线性转向: " .. (steerEnabled and "开启" or "关闭"))
+end)
 
-function StopNoDizziness()
-    if NoDizzinessConnection then
-        NoDizzinessConnection:Disconnect()
-        NoDizzinessConnection = nil
-    end
-end
-
-function ToggleTaxi(enabled)
-    Toggles.Taxi = enabled
-    if enabled then
-        if TaxiTask then task.cancel(TaxiTask) end
-        TaxiTask = task.spawn(function()
-            while Toggles.Taxi do
-                local areas = {}
-                local clientContent = Workspace:FindFirstChild("Gameplay") and Workspace.Gameplay:FindFirstChild("Entities") and Workspace.Gameplay.Entities:FindFirstChild("ClientContent")
-                local searchRoot = clientContent or Workspace
-                for _, obj in ipairs(searchRoot:GetDescendants()) do
-                    if obj.Name == "Area" then
-                        table.insert(areas, obj)
-                    end
-                end
-                if #areas == 0 then
-                    task.wait(5)
-                else
-                    for _, area in ipairs(areas) do
-                        if not Toggles.Taxi then break end
-                        local char = LocalPlayer.Character
-                        if not char then break end
-                        local root = char:FindFirstChild("HumanoidRootPart")
-                        if root then
-                            pcall(function()
-                                root.CFrame = area.CFrame * CFrame_new(0, 0, 5)
-                            end)
-                        end
-                        task.wait(Settings.TaxiWaitTime)
-                    end
-                end
-            end
-        end)
-        Library:Notify({Time = 2, Title = "出租车", Description = "已开启"})
-    else
-        if TaxiTask then
-            task.cancel(TaxiTask)
-            TaxiTask = nil
-        end
-    end
-end
-
--- 公交车（严格原始顺序：不移动根部件，只操作座位）
-function StartAutoBus()
-    if AutoBusTask then task.cancel(AutoBusTask) end
-    AutoBusTask = task.spawn(function()
-        while Toggles.AutoBus do
-            local areas = {}
-            local clientContent = Workspace:FindFirstChild("Gameplay") and Workspace.Gameplay:FindFirstChild("Entities") and Workspace.Gameplay.Entities:FindFirstChild("ClientContent")
-            local searchRoot = clientContent or Workspace
-            for _, obj in ipairs(searchRoot:GetDescendants()) do
-                if obj.Name == "Area" then
-                    table.insert(areas, obj)
-                end
-            end
-            if #areas == 0 then
-                task.wait(5)
-            else
-                for _, area in ipairs(areas) do
-                    if not Toggles.AutoBus then break end
-                    local char = LocalPlayer.Character
-                    if not char then break end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    local hum = char:FindFirstChild("Humanoid")
-                    if root and hum then
-                        local targetCF = (area.CFrame * CFrame_new(3, 3, 16)) * CFrame.Angles(0, math.pi, 0)
-                        pcall(function()
-                            local seat = hum.SeatPart
-                            if seat then
-                                local oldRootCF = root.CFrame
-                                local newSeatCF = targetCF * oldRootCF:ToObjectSpace(seat.CFrame)
-                                seat.CFrame = newSeatCF
-                                seat.Velocity = Vector3_new(0, 0, 0)
-                                seat.RotVelocity = Vector3_new(0, 0, 0)
-                                task.wait(0.1)
-                                hum.Sit = false
-                            end
-                        end)
-                    end
-                    task.wait(Settings.TaxiWaitTime)
-                end
-            end
-        end
-    end)
-end
-
-function StopAutoBus()
-    if AutoBusTask then
-        task.cancel(AutoBusTask)
-        AutoBusTask = nil
-    end
-end
-
-function ToggleAtmHack(enabled)
-    Toggles.AtmHack = enabled
-    if enabled then
-        if AtmHackTask then task.cancel(AtmHackTask) end
-        AtmHackTask = task.spawn(function()
-            while Toggles.AtmHack do
-                task.wait(5)
-                pcall(function()
-                    PlayerEvent:FireServer("atmHack")
-                end)
-            end
-        end)
-        Library:Notify({Time = 2, Title = "ATM破解", Description = "已开启"})
-    else
-        if AtmHackTask then
-            task.cancel(AtmHackTask)
-            AtmHackTask = nil
-        end
-        Library:Notify({Time = 2, Title = "ATM破解", Description = "已关闭"})
-    end
-end
-
-function TeleportTo(position)
-    if not Toggles.Teleport then
-        Library:Notify({Time = 2, Title = "传送", Description = "请先开启传送开关"})
+-- 上车检测切换
+boardToggle.MouseButton1Click:Connect(function()
+    if not isInVehicle then
+        print("未检测到上车，无法开启")
         return
     end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if root then
-        pcall(function()
-            root.CFrame = CFrame_new(position)
-        end)
-        Library:Notify({Time = 2, Title = "传送", Description = "已传送"})
+    boardEnabled = not boardEnabled
+    boardToggle.Text = boardEnabled and "已上车" or "未上车"
+    boardToggle.BackgroundColor3 = boardEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    print("上车检测: " .. (boardEnabled and "开启" or "关闭"))
+end)
+
+-- 横向移动辅助切换
+assistToggle.MouseButton1Click:Connect(function()
+    assistEnabled = not assistEnabled
+    assistToggle.Text = assistEnabled and "已开启" or "已关闭"
+    assistToggle.BackgroundColor3 = assistEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    print("横向移动辅助: " .. (assistEnabled and "已开启" or "已关闭"))
+end)
+
+-- 车头跟随切换
+followToggle.MouseButton1Click:Connect(function()
+    followEnabled = not followEnabled
+    followToggle.Text = followEnabled and "已开启" or "已关闭"
+    followToggle.BackgroundColor3 = followEnabled and Color3.fromRGB(0, 200, 50) or Color3.fromRGB(200, 50, 50)
+    print("车头跟随: " .. (followEnabled and "已开启" or "已关闭"))
+end)
+
+-- 引擎切换
+engineLabel.MouseButton1Click:Connect(function()
+    engineRunning = not engineRunning
+    engineLabel.Text = engineRunning and "引擎运行中（已开启）" or "引擎已关闭（已关闭）"
+    engineLabel.TextColor3 = engineRunning and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+    print("引擎: " .. (engineRunning and "已开启" or "已关闭"))
+end)
+
+-- ========== 上车检测 ==========
+local function CheckInVehicle()
+    local char = Player.Character
+    if not char then return false end
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum then return false end
+    if hum.SeatPart then
+        return true
     end
+    return false
 end
 
-function ToggleBulletTrack(enabled)
-    Toggles.BulletTrack = enabled
-    if enabled then
-        pcall(function()
-            local old = Algorithms.bulletSpread
-            Algorithms.bulletSpread = function(...)
-                if Toggles.BulletTrack then
-                    -- 追踪逻辑（原始未实现）
-                end
-                return old(...)
-            end
-        end)
-    end
-end
-
--- ============================================================
--- 6. GUI 构建（与原始完全一致，无额外控件）
--- ============================================================
-
-local Window = Library:CreateWindow({
-    Title = "SANA HUB",
-    Footer = "SANA | 正式版本 | v1.0.1",
-    NotifySide = "Right",
-    MobileButtonsSide = "Right",
-    Icon = 95816097006870,
-    ShowCustomCursor = true,
-})
-
-local TabMain = Window:AddTab("主要", "target")
-local TabTeleport = Window:AddTab("传送点", "map-pin")
-local TabSettings = Window:AddTab("设置", "settings")
-local TabBullet = Window:AddTab("子弹追踪", "crosshair")
-
--- 主要标签页分组
-local LeftMain = TabMain:AddLeftGroupbox("交互设置", "hand")
-local RightMain = TabMain:AddRightGroupbox("碰撞箱扩展", "target")
-local AimGroup = TabMain:AddRightGroupbox("自瞄功能", "crosshair")
-local MoveGroup = TabMain:AddRightGroupbox("移动增强", "move")
-local TaxiGroup = TabMain:AddLeftGroupbox("自动赚钱（出租车）", "car")
-local BusGroup = TabMain:AddLeftGroupbox("自动公交车", "bus")
-local AtmGroup = TabMain:AddLeftGroupbox("ATM自动破解", "dollar-sign")
-
--- 交互设置
-LeftMain:AddSlider("HoldTime", {
-    Min = 0, Default = 0, Suffix = "秒", Max = 10, Text = "按住时间",
-    Callback = function(val)
-        Settings.HoldTime = val
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then obj.HoldDuration = val end
-        end
-    end,
-    Rounding = 0
-})
-LeftMain:AddSlider("Distance", {
-    Min = 5, Default = 25, Suffix = "单位", Max = 150, Text = "触发距离",
-    Callback = function(val)
-        Settings.Distance = val
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then obj.MaxActivationDistance = val end
-        end
-    end,
-    Rounding = 0
-})
-LeftMain:AddDivider()
-LeftMain:AddToggle("NoclipToggle", {
-    Text = "启用人物穿墙",
-    Default = false,
-    Callback = function(val)
-        Toggles.Noclip = val
-        local char = LocalPlayer.Character
-        if char then
-            for _, part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = not val end
-            end
-        end
-    end
-})
-
--- 碰撞箱扩展
-RightMain:AddToggle("KillAuraToggle", {
-    Text = "杀戮光环",
-    Default = false,
-    Callback = function(val) ToggleKillAura(val) end
-})
-RightMain:AddSlider("KillAuraRange", {
-    Min = 1, Default = 50, Suffix = "单位", Max = 1000, Text = "杀戮光环距离",
-    Callback = function(val) Settings.KillAuraRange = val end,
-    Rounding = 0
-})
-RightMain:AddToggle("HitboxToggle", {
-    Text = "启用头部碰撞箱",
-    Default = false,
-    Callback = function(val)
-        Toggles.Hitbox = val
-        if val then ApplyHitbox(Settings.HitboxSize) else ResetHitbox() end
-    end
-})
-RightMain:AddSlider("HitboxSize", {
-    Min = 5, Default = 10, Suffix = "单位", Max = 40, Text = "头部大小",
-    Callback = function(val)
-        Settings.HitboxSize = val
-        if Toggles.Hitbox then ApplyHitbox(val) end
-    end,
-    Rounding = 0
-})
-RightMain:AddToggle("WhitelistToggle", {
-    Text = "好友检测 (白名单)",
-    Default = false,
-    Callback = function(val)
-        Toggles.Whitelist = val
-        if val then UpdateWhitelist() end
-    end
-})
-
--- 自瞄
-AimGroup:AddToggle("AimToggle", {
-    Text = "启用自瞄",
-    Default = false,
-    Callback = function(val) Toggles.Aim = val end
-})
-AimGroup:AddSlider("AimSmoothness", {
-    Min = 1, Default = 5, Max = 20, Text = "平滑度", Rounding = 0,
-    Callback = function(val) Settings.AimSmoothness = val end
-})
-AimGroup:AddSlider("AimMaxDistance", {
-    Min = 50, Default = 200, Suffix = "单位", Max = 500, Text = "检测距离", Rounding = 0,
-    Callback = function(val) Settings.AimMaxDistance = val end
-})
-AimGroup:AddToggle("AimCheckWall", {
-    Text = "墙壁检测",
-    Default = true,
-    Callback = function(val) Settings.AimCheckWall = val end
-})
-
--- 移动增强
-MoveGroup:AddToggle("NoDizzinessToggle", {
-    Text = "无眩晕",
-    Default = false,
-    Callback = function(val)
-        Toggles.NoDizziness = val
-        if val then StartNoDizziness() else StopNoDizziness() end
-    end
-})
-MoveGroup:AddSlider("NoDizzinessSpeed", {
-    Min = 5, Default = 24, Suffix = "stud/s", Max = 80, Text = "移动速度", Rounding = 0,
-    Callback = function(val) Settings.NoDizzinessSpeed = val end
-})
-
--- ESP（仅UI）
-TabMain:AddLeftGroupbox("ESP透视", "target"):AddToggle("SkeletonToggle", {
-    Text = "启用ESP透视",
-    Default = false,
-    Callback = function(val) end
-})
-
--- 出租车
-TaxiGroup:AddToggle("TaxiToggle", {
-    Text = "启用出租车自动循环",
-    Default = false,
-    Callback = function(val) ToggleTaxi(val) end
-})
-TaxiGroup:AddSlider("TaxiWaitTime", {
-    Min = 1, Default = 7, Suffix = "秒", Max = 30, Text = "每次等待秒数",
-    Callback = function(val) Settings.TaxiWaitTime = val end,
-    Rounding = 0
-})
-
--- 自动公交车（无额外偏移滑块）
-BusGroup:AddToggle("AutoBusToggle", {
-    Text = "启用自动传送（圈）",
-    Default = false,
-    Callback = function(val)
-        Toggles.AutoBus = val
-        if val then
-            StartAutoBus()
-            Library:Notify({Time = 2, Title = "自动公交车", Description = "已启动"})
+-- 实时检测上车状态
+RunService.Heartbeat:Connect(function()
+    local newState = CheckInVehicle()
+    if newState ~= isInVehicle then
+        isInVehicle = newState
+        if isInVehicle then
+            boardToggle.Text = "已上车"
+            boardToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+            print("检测到上车")
         else
-            StopAutoBus()
-            Library:Notify({Time = 2, Title = "自动公交车", Description = "已停止"})
+            boardToggle.Text = "未上车"
+            boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            boardEnabled = false
+            print("已下车")
         end
     end
-})
+end)
 
--- ATM
-AtmGroup:AddToggle("AtmHackToggle", {
-    Text = "启用ATM自动破解（每5秒）",
-    Default = false,
-    Callback = function(val) ToggleAtmHack(val) end
-})
-
--- ---- 传送点标签页 ----
-local TeleLeft = TabTeleport:AddLeftGroupbox("传送控制", "navigation")
-TeleLeft:AddToggle("TeleportToggle", {
-    Text = "启用传送",
-    Default = false,
-    Callback = function(val) Toggles.Teleport = val end
-})
-
-local function AddTeleportButton(group, name, pos)
-    group:AddButton({
-        Text = name,
-        Func = function() TeleportTo(pos) end
-    })
+-- ========== 前进/后退 ==========
+local function GetVehicle()
+    local char = Player.Character
+    if not char then return nil end
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum then return nil end
+    return hum.SeatPart
 end
 
--- 所有传送点（与原始一致）
-local TeleLeft1 = TabTeleport:AddLeftGroupbox("其他", "map-pin")
-AddTeleportButton(TeleLeft1, "黑色市场", Vector3_new(1038.969849, -22.73295, 895.430237))
-AddTeleportButton(TeleLeft1, "鱼夫码头", Vector3_new(-50.147552, -24.555279, 1462.145996))
-AddTeleportButton(TeleLeft1, "农场", Vector3_new(-1268.339233, 2.572412, 2560.060303))
-AddTeleportButton(TeleLeft1, "监狱门口", Vector3_new(-1697.931885, 2.630666, 1284.567383))
-AddTeleportButton(TeleLeft1, "监狱广场", Vector3_new(-1600.602417, 2.631028, 1268.060059))
-AddTeleportButton(TeleLeft1, "代尔山", Vector3_new(847.062988, 194.115753, -326.212708))
-AddTeleportButton(TeleLeft1, "水帘洞(消星点)", Vector3_new(3040.956055, 109.688538, 2711.069336))
-AddTeleportButton(TeleLeft1, "大桥", Vector3_new(949.014954, 25.215754, 2897.654785))
-AddTeleportButton(TeleLeft1, "地图右下(消星点)", Vector3_new(-1651.38501, 2.414712, 3225.27832))
-AddTeleportButton(TeleLeft1, "下部加油站", Vector3_new(2270.378174, 2.630927, 154.161484))
-AddTeleportButton(TeleLeft1, "游戏厅", Vector3_new(2934.893799, 2.956458, 1693.660034))
-AddTeleportButton(TeleLeft1, "高尔夫", Vector3_new(2280.76709, 3.037836, 1982.3573))
-AddTeleportButton(TeleLeft1, "修船厂", Vector3_new(4096.405273, -30.401447, 2865.045166))
-
-local TeleRight1 = TabTeleport:AddRightGroupbox("圣奥里", "map-pin")
-AddTeleportButton(TeleRight1, "车辆经销商", Vector3_new(3719.9501953125, 3.0185735225677, -333.31185913086))
-AddTeleportButton(TeleRight1, "医院", Vector3_new(3980.0910644531, 2.8760607242584, -138.79454040527))
-AddTeleportButton(TeleRight1, "警察局", Vector3_new(3364.2731933594, 3.9188079834, -394.7233581543))
-AddTeleportButton(TeleRight1, "圣奥里修车店", Vector3_new(2782.46875, 2.6309957504272, -418.59930419922))
-AddTeleportButton(TeleRight1, "圣奥里银行", Vector3_new(3134.0541992188, 6.1160483360291, -171.36976623535))
-AddTeleportButton(TeleRight1, "圣奥里服装店", Vector3_new(3617.9125976562, 3.1072206497192, -452.82064819336))
-AddTeleportButton(TeleRight1, "圣奥里平民重生", Vector3_new(3741.1149902344, 3.7205736637115, -438.10598754883))
-AddTeleportButton(TeleRight1, "圣奥里码头", Vector3_new(4527.65625, -23.968238830566, -280.59356689453))
-AddTeleportButton(TeleRight1, "圣奥里餐饮店", Vector3_new(3182.4167480469, 3.0185918807983, 426.51791381836))
-AddTeleportButton(TeleRight1, "消防部门", Vector3_new(3578.6760253906, 8.4088230133057, 579.65679931641))
-AddTeleportButton(TeleRight1, "宠物店", Vector3_new(3678.237305, 3.01792, 693.114624))
-AddTeleportButton(TeleRight1, "圣奥里大码头", Vector3_new(2736.307617, 2.630299, -1120.333008))
-AddTeleportButton(TeleRight1, "圣奥里海滩桥下(消星点)", Vector3_new(3964.504395, -25.068211, -854.057251))
-
-local TeleLeft2 = TabTeleport:AddLeftGroupbox("大景", "map-pin")
-AddTeleportButton(TeleLeft2, "大景超级超市", Vector3_new(3936.582764, 3.038293, 1136.326416))
-AddTeleportButton(TeleLeft2, "转镜中心", Vector3_new(4152.919922, 2.631675, 941.446045))
-AddTeleportButton(TeleLeft2, "道路服务", Vector3_new(4271.33252, 2.628108, 1200.086914))
-AddTeleportButton(TeleLeft2, "大景餐饮店", Vector3_new(4476.997559, 3.037825, 906.802979))
-AddTeleportButton(TeleLeft2, "送货中心(美团外卖)", Vector3_new(4399.419434, 3.038999, 1609.455933))
-AddTeleportButton(TeleLeft2, "大景卖车店", Vector3_new(3434.377441, 42.931786, 2687.99707))
-
-local TeleRight2 = TabTeleport:AddRightGroupbox("米尔顿", "map-pin")
-AddTeleportButton(TeleRight2, "米尔顿左上加油站", Vector3_new(1145.635742, 2.630916, -864.273682))
-AddTeleportButton(TeleRight2, "米尔顿右下加油站", Vector3_new(-1646.802734, 2.630164, 1812.894653))
-AddTeleportButton(TeleRight2, "米尔顿上方加油站", Vector3_new(-900.70166, 2.630927, 1124.683105))
-AddTeleportButton(TeleRight2, "米尔顿居民区", Vector3_new(-528.565552, 2.630996, 1331.981689))
-
-local TeleLeft3 = TabTeleport:AddLeftGroupbox("约克镇", "map-pin")
-AddTeleportButton(TeleLeft3, "约克镇小银行", Vector3_new(-668.217224, 2.630995, -65.347839))
-AddTeleportButton(TeleLeft3, "约克镇修车厂", Vector3_new(-407.163025, 3.076807, -6.098211))
-AddTeleportButton(TeleLeft3, "约克镇枪店", Vector3_new(-323.869293, 3.037825, 37.14967))
-AddTeleportButton(TeleLeft3, "约克镇重生点", Vector3_new(-219.560318, 3.039824, -85.725433))
-AddTeleportButton(TeleLeft3, "约克镇当铺", Vector3_new(-168.513733, 3.039, -106.926529))
-AddTeleportButton(TeleLeft3, "约克镇卫星车", Vector3_new(-302.093567, 3.037825, -167.621017))
-AddTeleportButton(TeleLeft3, "约克镇中心点", Vector3_new(-275.995209, 2.630996, -139.985352))
-
-local TeleRight3 = TabTeleport:AddRightGroupbox("莱斯维尔", "map-pin")
-AddTeleportButton(TeleRight3, "莱斯维尔餐饮店", Vector3_new(753.757812, 3.039824, 998.132996))
-AddTeleportButton(TeleRight3, "莱斯维尔服装店", Vector3_new(820.745117, 2.766988, 1047.445679))
-AddTeleportButton(TeleRight3, "莱斯维尔自由广场", Vector3_new(926.523376, 2.630995, 865.764771))
-AddTeleportButton(TeleRight3, "莱斯维尔码头(游艇)", Vector3_new(947.84021, -22.529087, 1216.085693))
-
--- ---- 设置标签页 ----
-local SetLeft = TabSettings:AddLeftGroupbox("菜单设置", "sliders")
-SetLeft:AddToggle("ShowCustomCursor", {
-    Text = "自定义光标",
-    Default = Library.ShowCustomCursor,
-    Callback = function(val)
-        Library.ShowCustomCursor = val
-        Toggles.ShowCustomCursor = val
+local function GetVehicleRoot(vehicle)
+    if not vehicle then return nil end
+    local root = vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChild("PrimaryPart")
+    if not root then
+        root = vehicle:FindFirstChildOfClass("BasePart")
     end
-})
-SetLeft:AddButton({
-    Text = "卸载 SANA HUB",
-    Func = function() Library:Unload() end,
-    Risky = true
-})
-
--- ---- 子弹追踪标签页 ----
-local BulletGroup = TabBullet:AddLeftGroupbox("追踪控制", "target")
-BulletGroup:AddToggle("BulletTrackToggle", {
-    Text = "启用子弹追踪",
-    Default = false,
-    Callback = function(val) ToggleBulletTrack(val) end
-})
-BulletGroup:AddDivider()
-BulletGroup:AddToggle("ScreenPriority", {
-    Text = "屏幕中心优先",
-    Default = true,
-    Callback = function(val) Toggles.ScreenPriority = val end
-})
-BulletGroup:AddToggle("DistancePriority", {
-    Text = "距离优先（锁定最近）",
-    Default = false,
-    Callback = function(val) Toggles.DistancePriority = val end
-})
-
--- ============================================================
--- 7. 事件监听
--- ============================================================
-
-LocalPlayer.CharacterAdded:Connect(function(newChar)
-    Character = newChar
-    task.wait(0.5)
-    if Toggles.Noclip then
-        for _, part in ipairs(newChar:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-    if Toggles.Hitbox then ApplyHitbox(Settings.HitboxSize) end
-    if Toggles.AutoBus then StartAutoBus() end
-    if Toggles.Taxi then ToggleTaxi(true) end
-    if Toggles.KillAura then StartKillAura() end
-    if Toggles.NoDizziness then StartNoDizziness() end
-end)
-
-Workspace.DescendantAdded:Connect(function(desc)
-    if desc:IsA("ProximityPrompt") then
-        desc.HoldDuration = Settings.HoldTime
-        desc.MaxActivationDistance = Settings.Distance
-    end
-end)
-
-Players.PlayerAdded:Connect(function(player)
-    if Toggles.Whitelist then
-        pcall(function()
-            if player:IsFriendsWith(LocalPlayer.UserId) then
-                FriendWhitelist[player.UserId] = true
-            end
-        end)
-    end
-end)
-
--- ============================================================
--- 8. 配置管理
--- ============================================================
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({"MenuKeybind"})
-ThemeManager:SetFolder("SANA_HUB")
-SaveManager:SetFolder("SANA_HUB")
-SaveManager:SetSubFolder("Configs")
-SaveManager:BuildConfigSection(TabSettings)
-ThemeManager:ApplyToTab(TabSettings)
-SaveManager:LoadAutoloadConfig()
-
--- ============================================================
--- 9. 初始化默认值
--- ============================================================
-
-task.spawn(function()
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            obj.HoldDuration = 0
-            obj.MaxActivationDistance = 25
-        end
-    end
-end)
-
--- ============================================================
--- 10. 卸载清理
--- ============================================================
-
-local OldUnload = Library.OnUnload
-Library.OnUnload = function(...)
-    Toggles.AutoBus = false; StopAutoBus()
-    Toggles.Taxi = false; ToggleTaxi(false)
-    Toggles.AtmHack = false; ToggleAtmHack(false)
-    Toggles.KillAura = false; ToggleKillAura(false)
-    Toggles.NoDizziness = false; StopNoDizziness()
-    if Toggles.Hitbox then ResetHitbox() end
-    if OldUnload then OldUnload(...) end
-    Library:Notify({Time = 1, Title = "SANA HUB", Description = "已卸载"})
+    return root
 end
 
-print("SANA已加载")
-print("冷知识: 脚本作者其实是个gay")
+local function ApplyForce(forward)
+    local char = Player.Character
+    if not char then return end
+    if not engineRunning then return end
+    if not isInVehicle then return end
+    
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum then return end
+    local vehicle = hum.SeatPart
+    if not vehicle then return end
+    
+    local root = GetVehicleRoot(vehicle)
+    if not root then return end
+    
+    local dir = forward and root.CFrame.LookVector or -root.CFrame.LookVector
+    local force = dir * (forward and 1 or -1) * speed * 0.5
+    
+    if accelEnabled then
+        -- 线性加速：从0慢慢加速到目标速度
+        currentSpeed = currentSpeed + (speed - currentSpeed) * 0.05
+        local currentForce = dir * (forward and 1 or -1) * currentSpeed * 0.5
+        root.Velocity = root.Velocity + currentForce * 0.1
+    else
+        -- 直接达到目标速度
+        root.Velocity = dir * (forward and 1 or -1) * speed * 0.3
+    end
+    
+    -- 车头跟随：摄像头方向
+    if followEnabled then
+        local camLook = Camera.CFrame.LookVector
+        local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+        if flatLook.Magnitude > 0.1 then
+            root.CFrame = CFrame.new(root.Position, root.Position + flatLook)
+        end
+    end
+end
+
+-- 前进按钮
+forwardBtn.MouseButton1Down:Connect(function()
+    if not isInVehicle then
+        print("未上车，无法前进")
+        return
+    end
+    ApplyForce(true)
+end)
+
+forwardBtn.MouseButton1Up:Connect(function()
+    currentSpeed = 0
+end)
+
+-- 后退按钮
+backwardBtn.MouseButton1Down:Connect(function()
+    if not isInVehicle then
+        print("未上车，无法后退")
+        return
+    end
+    ApplyForce(false)
+end)
+
+backwardBtn.MouseButton1Up:Connect(function()
+    currentSpeed = 0
+end)
+
+-- 键盘控制
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then
+        forwardBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+        forwardBtn.BackgroundTransparency = 0.1
+        if isInVehicle and engineRunning then
+            ApplyForce(true)
+        end
+    end
+    if input.KeyCode == Enum.KeyCode.S then
+        backwardBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        backwardBtn.BackgroundTransparency = 0.1
+        if isInVehicle and engineRunning then
+            ApplyForce(false)
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.W then
+        forwardBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+        forwardBtn.BackgroundTransparency = 0.2
+        currentSpeed = 0
+    end
+    if input.KeyCode == Enum.KeyCode.S then
+        backwardBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        backwardBtn.BackgroundTransparency = 0.2
+        currentSpeed = 0
+    end
+end)
+
+-- ========== 速度限制 ==========
+RunService.Heartbeat:Connect(function()
+    local char = Player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local vel = hrp.Velocity
+    local speedVal = vel.Magnitude
+    if speedVal > speed then
+        local ratio = speed / speedVal
+        hrp.Velocity = vel * ratio
+    end
+end)
+
+-- ========== 车头跟随循环 ==========
+RunService.Heartbeat:Connect(function()
+    if not followEnabled then return end
+    if not isInVehicle then return end
+    
+    local char = Player.Character
+    if not char then return end
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum then return end
+    local vehicle = hum.SeatPart
+    if not vehicle then return end
+    
+    local root = GetVehicleRoot(vehicle)
+    if not root then return end
+    
+    local camLook = Camera.CFrame.LookVector
+    local flatLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+    if flatLook.Magnitude > 0.1 then
+        root.CFrame = CFrame.new(root.Position, root.Position + flatLook)
+    end
+end)
+
+print("Car Speed Gui 已加载")
+print("速度上限可自定义输入")
+print("上车检测: 上车后自动识别")
+print("车头跟随: 开启后摄像头方向控制车头")
