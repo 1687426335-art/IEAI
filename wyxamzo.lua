@@ -1,333 +1,199 @@
--- ===== wdfex 圣奥里传送 =====
+local Env = getfenv()
 
--- 基础服务定义
+local LogService = game:GetService("LogService")
+local getconnections = Env.getconnections
+local MessageOut = "MessageOut"
+local cons = getconnections(LogService[MessageOut])
+if cons then
+    for _, v in pairs(cons) do
+        pcall(function() v:Disable() end)
+    end
+end
+
+local function cleanupConnections()
+    pcall(function()
+        
+        for _, conn in ipairs(getconnections(LogService.MessageOut) or {}) do
+            pcall(function() conn:Disable() end)
+        end
+    end)
+end
+cleanupConnections()
+
+print("环境净化完成，LogService 干扰已禁用")
+
+local WindUI
+
+do
+    local ok, result = pcall(function()
+        return require("./src/Init")
+    end)
+
+    if ok then
+        WindUI = result
+    else 
+        WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+    end
+end
+
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
-local StarterGui = game:GetService("StarterGui")
-local VirtualUser = game:GetService("VirtualUser")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
-local Debris = game:GetService("Debris")
-
 local LocalPlayer = Players.LocalPlayer
-local CurrentCamera = Workspace.CurrentCamera
+local Camera = Workspace.CurrentCamera
 
--- ===== 欢迎弹窗 =====
-local function ShowWelcome()
-    pcall(function()
-        local welcomeGui = Instance.new("ScreenGui")
-        welcomeGui.Name = "wdfexWelcome"
-        welcomeGui.ResetOnSpawn = false
-        welcomeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        welcomeGui.Parent = CoreGui
+local function createUI()
+    local Window = WindUI:CreateWindow({
+        Title = "<font color='#FFFFFF'>w</font><font color='#CCCCCC'>d</font><font color='#999999'>f</font><font color='#666666'>e</font><font color='#444444'>x</font> <font color='#666666'>圣</font><font color='#444444'>奥</font><font color='#222222'>里</font>",
+        Folder = "wdfexHub",
+        NewElements = true,
+        HideSearchBar = false,
+        Size = UDim2.fromOffset(600, 450),
+        Theme = "Dark",  
+        UserEnabled = true,
+        SideBarWidth = 135,
+        HasOutline = true,
+        Background = "video:https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/extracted_1_3.mp4",
         
-        local sound = Instance.new("Sound")
-        sound.Name = "WelcomeSound"
-        sound.SoundId = "rbxassetid://9120393428"
-        sound.Volume = 0.5
-        sound.Parent = welcomeGui
-        sound:Play()
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 320, 0, 60)
-        frame.Position = UDim2.new(1, -340, 0, 10)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.15
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        frame.ClipsDescendants = true
-        frame.Parent = welcomeGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = frame
-        
-        local colorBar = Instance.new("Frame")
-        colorBar.Size = UDim2.new(0, 5, 1, 0)
-        colorBar.Position = UDim2.new(0, 0, 0, 0)
-        colorBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        colorBar.BorderSizePixel = 0
-        colorBar.Parent = frame
-        
-        local corner2 = Instance.new("UICorner")
-        corner2.CornerRadius = UDim.new(0, 5)
-        corner2.Parent = colorBar
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -15, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = "欢迎使用 wdfex 脚本"
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextSize = 18
-        label.Font = Enum.Font.GothamBold
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
-        frame.Position = UDim2.new(1, 0, 0, 10)
-        local tween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -340, 0, 10)
-        })
-        tween:Play()
-        
-        task.wait(6)
-        local outTween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, 0, 0, 10)
-        })
-        outTween:Play()
-        outTween.Completed:Wait()
-        welcomeGui:Destroy()
-    end)
-end
-
-ShowWelcome()
-
--- 加载 UI 库
-local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
-local Library = loadstring(game:HttpGet(UI_Library_URL))()
-
-if not Library then
-    UI_Library_URL = "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/UI.Lua"
-    Library = loadstring(game:HttpGet(UI_Library_URL))()
-end
-
-local Window = Library:CreateWindow({
-    ["Folder"] = "wdfexHub",
-    ["Title"] = "wdfex-圣奥里",
-    ["Author"] = "wdfex",
-    ["Icon"] = "rbxassetid://7734068321",
-    HideSearchBar = false,
-})
-
--- ===== 创建彩色边框 =====
-local function CreateColorfulBorder()
-    pcall(function()
-        task.wait(0.5)
-        local mainGui = CoreGui:FindFirstChild("wdfexHub")
-        if not mainGui then
-            for _, child in ipairs(CoreGui:GetChildren()) do
-                if child:IsA("ScreenGui") and (child.Name:find("wdfex") or child.Name:find("MyTestHub")) then
-                    mainGui = child
-                    break
-                end
-            end
-        end
-        if not mainGui then return end
-        
-        local oldBorder = mainGui:FindFirstChild("wdfexBorder")
-        if oldBorder then oldBorder:Destroy() end
-        
-        local borderGui = Instance.new("Frame")
-        borderGui.Name = "wdfexBorder"
-        borderGui.Size = UDim2.new(1, 12, 1, 12)
-        borderGui.Position = UDim2.new(0, -6, 0, -6)
-        borderGui.BackgroundTransparency = 1
-        borderGui.ZIndex = -1
-        borderGui.Parent = mainGui
-        
-        local colors = {
-            Color3.fromRGB(255, 50, 50),
-            Color3.fromRGB(255, 200, 50),
-            Color3.fromRGB(50, 255, 50),
-            Color3.fromRGB(50, 150, 255),
-            Color3.fromRGB(255, 50, 255),
-            Color3.fromRGB(255, 100, 200),
+        OpenButton = {
+            Title = "<font color='#FFFFFF'>w</font><font color='#CCCCCC'>d</font><font color='#999999'>f</font><font color='#666666'>e</font><font color='#444444'>x</font> <font color='#666666'>圣</font><font color='#444444'>奥</font><font color='#222222'>里</font>",
+            CornerRadius = UDim.new(1,0),
+            StrokeThickness = 1.5,
+            Enabled = true,
+            Draggable = true,
+            OnlyMobile = false,
+            Color = ColorSequence.new(
+                Color3.fromHex("FFFFFF"), 
+                Color3.fromHex("FFFFFF")
+            )
+        },
+        Topbar = {
+            Height = 44,
+            ButtonsType = "Mac",
         }
-        
-        local borderSize = 3
-        local sides = {
-            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 0, 0)},
-            {size = UDim2.new(1, 0, 0, borderSize), pos = UDim2.new(0, 0, 1, -borderSize)},
-            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(0, 0, 0, 0)},
-            {size = UDim2.new(0, borderSize, 1, 0), pos = UDim2.new(1, -borderSize, 0, 0)},
-        }
-        
-        for i, side in ipairs(sides) do
-            local bar = Instance.new("Frame")
-            bar.Size = side.size
-            bar.Position = side.pos
-            bar.BackgroundColor3 = colors[i]
-            bar.BackgroundTransparency = 0.15
-            bar.BorderSizePixel = 0
-            bar.Parent = borderGui
-        end
-        
-        local cornerSize = 12
-        local corners = {
-            {pos = UDim2.new(0, 0, 0, 0), color = colors[1]},
-            {pos = UDim2.new(1, -cornerSize, 0, 0), color = colors[2]},
-            {pos = UDim2.new(0, 0, 1, -cornerSize), color = colors[4]},
-            {pos = UDim2.new(1, -cornerSize, 1, -cornerSize), color = colors[5]},
-        }
-        
-        for _, cornerData in ipairs(corners) do
-            local cornerFrame = Instance.new("Frame")
-            cornerFrame.Size = UDim2.new(0, cornerSize, 0, cornerSize)
-            cornerFrame.Position = cornerData.pos
-            cornerFrame.BackgroundColor3 = cornerData.color
-            cornerFrame.BackgroundTransparency = 0.2
-            cornerFrame.BorderSizePixel = 0
-            cornerFrame.Parent = borderGui
-        end
-    end)
-end
+    })
+    
+AddSnowEffect(Window.UIElements.Main.Background, 30, 14, 0.5)
 
--- ===== 传送函数 =====
-local function TeleportTo(pos)
-    pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = CFrame.new(pos)
-        end
-    end)
-end
-
-task.spawn(function()
-    task.wait(0.8)
-    CreateColorfulBorder()
-end)
-
--------------------------------------------------------------------------
--- Tab: 公告
--------------------------------------------------------------------------
-local Tab_Notice = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "公告",
-    ["Icon"] = "rbxassetid://115466270141583",
+    Window:Tag({
+    Title = "wdfex",
+    Radius = 10,
+    Color = Color3.fromHex("#ffffff"),
 })
 
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "本脚本严禁外传发现永久拉黑无法使用此脚本",
-    TextXAlignment = "Left",
+Window:Tag({
+    Title = "wdfex圣奥里",
+    Radius = 10,
+    Color = Color3.fromHex("#ffffff"),
 })
 
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
+    local White = Color3.fromHex("#FFFFFF")
+    local LightGray = Color3.fromHex("#CCCCCC")
+    local Gray = Color3.fromHex("#999999")
+    local DarkGray = Color3.fromHex("#666666")
+    local AlmostBlack = Color3.fromHex("#333333")
+
+    local AboutTab = Window:Tab({
+        Title = "公告",
+        Desc = "脚本信息", 
+        Icon = "solar:info-square-bold",
+        IconColor = Gray,
+        IconShape = "Square",
+        Border = true,
+    })
+
+AboutTab:Paragraph({
+    Title = "wdfex圣奥里",
+    Desc = [[
+本脚本严禁外传发现永久拉黑无法使用此脚本
+作者: wdfex
+QQ: 1687426335
+    ]],
+    BackgroundColor3 = Color3.fromHex("#FFFFFF"),
+    BackgroundTransparency = 0,
+    Color = Color3.fromHex("#000000"),
+    OutlineColor = Color3.fromHex("#CCCCCC"),
+    OutlineThickness = 1
 })
 
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
-    TextXAlignment = "Left",
+AboutTab:Keybind({
+    Flag = "KeybindTest",
+    Title = "快捷键",
+    Desc = "打开UI的快捷键",
+    Value = "G",
+    Callback = function(v) 
+        Window:SetToggleKey(Enum.KeyCode[v]) 
+    end
 })
 
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "作者: wdfex",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "如果有什么需要的功能可以向作者提出建议",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "作者快手名字: wdfex",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "作者QQ: 1687426335",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
+    AboutTab:Divider()
 
 -------------------------------------------------------------------------
 -- Tab: 通用
 -------------------------------------------------------------------------
-local Tab_General = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "通用",
-    ["Icon"] = "rbxassetid://18520370419",
+local GeneralTab = Window:Tab({
+    Title = "通用",
+    Desc = "通用功能",
+    Icon = "solar:code-square-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_General:Section({
-    TextSize = 17,
-    ["Title"] = "通用功能",
-    TextXAlignment = "Left",
+local GeneralSection = GeneralTab:Section({
+    Title = "通用功能",
+    Description = "反挂机、速度、跳跃等"
 })
 
-Tab_General:Button({
-    ["Title"] = "反挂机",
-    ["Desc"] = "防止被踢出",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "反挂机",
+    Description = "防止被踢出",
+    Icon = "shield",
+    Callback = function()
         print("反挂机已开启")
         LocalPlayer.Idled:Connect(function()
-            VirtualUser:Button2Down(Vector2.new(0, 0), CurrentCamera.CFrame)
+            game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), Camera.CFrame)
             task.wait(1)
-            VirtualUser:Button2Up(Vector2.new(0, 0), CurrentCamera.CFrame)
+            game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), Camera.CFrame)
         end)
-        StarterGui:SetCore("SendNotification", {
+        WindUI:Notify({
             Title = "反挂机",
-            Text = "已开启",
-            Duration = 3,
+            Content = "已开启",
+            Duration = 3
         })
     end
 })
 
-Tab_General:Slider({
-    ["Title"] = "速度设置",
-    ["Step"] = 1,
-    ["Value"] = { Min = 16, Default = 16, Max = 1000 },
-    ["Callback"] = function(Value)
-        local speed = type(Value) == "table" and Value[1] or Value
+GeneralSection:Slider({
+    Title = "速度设置",
+    Min = 16,
+    Max = 1000,
+    Default = 16,
+    Callback = function(Value)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = speed
+            LocalPlayer.Character.Humanoid.WalkSpeed = Value
         end
     end
 })
 
-Tab_General:Slider({
-    ["Title"] = "跳跃设置",
-    ["Step"] = 1,
-    ["Value"] = { Min = 50, Default = 50, Max = 200 },
-    ["Callback"] = function(Value)
-        local jump = type(Value) == "table" and Value[1] or Value
+GeneralSection:Slider({
+    Title = "跳跃设置",
+    Min = 50,
+    Max = 200,
+    Default = 50,
+    Callback = function(Value)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = jump
+            LocalPlayer.Character.Humanoid.JumpPower = Value
         end
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "帧率显示",
-    ["Desc"] = "显示FPS",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "帧率显示",
+    Description = "显示FPS",
+    Icon = "eye",
+    Callback = function()
         if LocalPlayer.PlayerGui:FindFirstChild("FPSGui") then return end
         
         local ScreenGui = Instance.new("ScreenGui")
@@ -355,15 +221,16 @@ Tab_General:Button({
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "时间显示",
-    ["Desc"] = "显示北京时间",
-    ["Callback"] = function()
-        if CoreGui:FindFirstChild("LBLG") then return end
+GeneralSection:Button({
+    Title = "时间显示",
+    Description = "显示北京时间",
+    Icon = "clock",
+    Callback = function()
+        if game.CoreGui:FindFirstChild("LBLG") then return end
 
         local ScreenGui = Instance.new("ScreenGui")
         ScreenGui.Name = "LBLG"
-        ScreenGui.Parent = CoreGui
+        ScreenGui.Parent = game.CoreGui
         ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         
         local TextLabel = Instance.new("TextLabel")
@@ -387,21 +254,22 @@ Tab_General:Button({
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "重开",
-    ["Desc"] = "重新开始",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "重开",
+    Description = "重新开始",
+    Icon = "refresh-cw",
+    Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.Health = 0
         end
     end
 })
 
-Tab_General:Toggle({
-    ["Title"] = "防摔",
-    ["Desc"] = "从高处掉落时一下快一下慢",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+GeneralSection:Toggle({
+    Title = "防摔",
+    Description = "从高处掉落时一下快一下慢",
+    Default = false,
+    Callback = function(bool)
         if bool then
             local function onCharacterAdded(char)
                 local hrp = char:WaitForChild("HumanoidRootPart")
@@ -455,26 +323,29 @@ Tab_General:Toggle({
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "飞天",
-    ["Desc"] = "点击开启皮脚本飞行",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "飞天",
+    Description = "点击开启皮脚本飞行",
+    Icon = "plane",
+    Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "飞车",
-    ["Desc"] = "点击开启皮脚本飞车",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "飞车",
+    Description = "点击开启皮脚本飞车",
+    Icon = "car",
+    Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
     end
 })
 
-Tab_General:Button({
-    ["Title"] = "断麦",
-    ["Desc"] = "强制断开所有人语音",
-    ["Callback"] = function()
+GeneralSection:Button({
+    Title = "断麦",
+    Description = "强制断开所有人语音",
+    Icon = "mic-off",
+    Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Rootleak/Stalkie-2.0/refs/heads/main/vc.lua"))()
     end
 })
@@ -482,16 +353,18 @@ Tab_General:Button({
 -------------------------------------------------------------------------
 -- Tab: 地点传送
 -------------------------------------------------------------------------
-local Tab_LocationTeleport = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "地点传送",
-    ["Icon"] = "rbxassetid://18520370419",
+local TeleportTab = Window:Tab({
+    Title = "地点传送",
+    Desc = "传送点",
+    Icon = "solar:map-point-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_LocationTeleport:Section({
-    TextSize = 17,
-    ["Title"] = "选择传送点",
-    TextXAlignment = "Left",
+local TeleportSection = TeleportTab:Section({
+    Title = "选择传送点",
+    Description = "点击传送"
 })
 
 local locationPoints = {
@@ -519,16 +392,19 @@ local locationPoints = {
 }
 
 for _, loc in ipairs(locationPoints) do
-    Tab_LocationTeleport:Button({
-        ["Title"] = loc[1],
-        ["Desc"] = "传送至" .. loc[1],
-        ["Callback"] = function()
-            TeleportTo(loc[2])
-            StarterGui:SetCore("SendNotification", {
-                Title = "地点传送",
-                Text = "已传送到 " .. loc[1],
-                Duration = 2,
-            })
+    TeleportSection:Button({
+        Title = loc[1],
+        Icon = "map-pin",
+        Callback = function()
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(loc[2])
+                WindUI:Notify({
+                    Title = "地点传送",
+                    Content = "已传送到 " .. loc[1],
+                    Duration = 2
+                })
+            end
         end
     })
 end
@@ -536,16 +412,17 @@ end
 -------------------------------------------------------------------------
 -- Tab: 售货机传送区
 -------------------------------------------------------------------------
-local Tab_Vending = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "售货机传送区",
-    ["Icon"] = "rbxassetid://18520370419",
+local VendingTab = Window:Tab({
+    Title = "售货机传送",
+    Desc = "售货机传送点",
+    Icon = "solar:shop-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Vending:Section({
-    TextSize = 17,
-    ["Title"] = "售货机传送点",
-    TextXAlignment = "Left",
+local VendingSection = VendingTab:Section({
+    Title = "售货机传送点"
 })
 
 local vendingPoints = {
@@ -556,11 +433,19 @@ local vendingPoints = {
 }
 
 for _, point in ipairs(vendingPoints) do
-    Tab_Vending:Button({
-        ["Title"] = point[1],
-        ["Desc"] = "传送至" .. point[1],
-        ["Callback"] = function()
-            TeleportTo(point[2])
+    VendingSection:Button({
+        Title = point[1],
+        Icon = "shopping-cart",
+        Callback = function()
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(point[2])
+                WindUI:Notify({
+                    Title = "售货机传送",
+                    Content = "已传送到 " .. point[1],
+                    Duration = 2
+                })
+            end
         end
     })
 end
@@ -568,16 +453,17 @@ end
 -------------------------------------------------------------------------
 -- Tab: 外卖员
 -------------------------------------------------------------------------
-local Tab_Delivery = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "外卖员",
-    ["Icon"] = "rbxassetid://15440802720",
+local DeliveryTab = Window:Tab({
+    Title = "外卖员",
+    Desc = "外卖员传送点",
+    Icon = "solar:bicycle-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Delivery:Section({
-    TextSize = 17,
-    ["Title"] = "外卖员传送点",
-    TextXAlignment = "Left",
+local DeliverySection = DeliveryTab:Section({
+    Title = "外卖员传送点"
 })
 
 local deliveryPoints = {
@@ -587,11 +473,19 @@ local deliveryPoints = {
 }
 
 for _, point in ipairs(deliveryPoints) do
-    Tab_Delivery:Button({
-        ["Title"] = point[1],
-        ["Desc"] = "传送至" .. point[1],
-        ["Callback"] = function()
-            TeleportTo(point[2])
+    DeliverySection:Button({
+        Title = point[1],
+        Icon = "truck",
+        Callback = function()
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(point[2])
+                WindUI:Notify({
+                    Title = "外卖员传送",
+                    Content = "已传送到 " .. point[1],
+                    Duration = 2
+                })
+            end
         end
     })
 end
@@ -599,22 +493,23 @@ end
 -------------------------------------------------------------------------
 -- Tab: 出租车
 -------------------------------------------------------------------------
-local Tab_Taxi = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "出租车",
-    ["Icon"] = "rbxassetid://18520370419",
+local TaxiTab = Window:Tab({
+    Title = "出租车",
+    Desc = "出租车功能",
+    Icon = "solar:car-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Taxi:Section({
-    TextSize = 17,
-    ["Title"] = "出租车功能",
-    TextXAlignment = "Left",
+local TaxiSection = TaxiTab:Section({
+    Title = "出租车功能"
 })
 
-Tab_Taxi:Button({
-    ["Title"] = "wdfex出租车刷钱脚本",
-    ["Desc"] = "点击执行出租车刷钱脚本",
-    ["Callback"] = function()
+TaxiSection:Button({
+    Title = "wdfex出租车刷钱脚本",
+    Icon = "dollar-sign",
+    Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/wnatsj.lua"))()
     end
 })
@@ -622,16 +517,17 @@ Tab_Taxi:Button({
 -------------------------------------------------------------------------
 -- Tab: 透视
 -------------------------------------------------------------------------
-local Tab_ESP = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "透视",
-    ["Icon"] = "rbxassetid://18520370419",
+local ESPTab = Window:Tab({
+    Title = "透视",
+    Desc = "透视功能",
+    Icon = "solar:eye-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_ESP:Section({
-    TextSize = 17,
-    ["Title"] = "透视开关",
-    TextXAlignment = "Left",
+local ESPSection = ESPTab:Section({
+    Title = "透视开关"
 })
 
 local espMasterEnabled = false
@@ -901,11 +797,10 @@ local function UpdateESP()
     end
 end
 
-Tab_ESP:Toggle({
-    ["Title"] = "透视总开关",
-    ["Desc"] = "开启/关闭所有透视功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "透视总开关",
+    Default = false,
+    Callback = function(bool)
         espMasterEnabled = bool
         if bool then
             UpdateESP()
@@ -931,81 +826,73 @@ Tab_ESP:Toggle({
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "绘制名字",
-    ["Desc"] = "显示玩家名字",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "绘制名字",
+    Default = false,
+    Callback = function(bool)
         espShowName = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "绘制血量",
-    ["Desc"] = "显示玩家血量条和数值",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "绘制血量",
+    Default = false,
+    Callback = function(bool)
         espShowHealth = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "绘制方框",
-    ["Desc"] = "显示玩家方框",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "绘制方框",
+    Default = false,
+    Callback = function(bool)
         espShowBox = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "绘制距离",
-    ["Desc"] = "显示与玩家的距离",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "绘制距离",
+    Default = false,
+    Callback = function(bool)
         espShowDist = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "同行显示",
-    ["Desc"] = "检测并显示玩家使用的脚本",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "同行显示",
+    Default = false,
+    Callback = function(bool)
         espShowScriptTag = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "屏蔽自己",
-    ["Desc"] = "开启后自己不显示透视",
-    ["Default"] = true,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "屏蔽自己",
+    Default = true,
+    Callback = function(bool)
         espShowSelf = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "显示队伍",
-    ["Desc"] = "显示玩家所属队伍",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "显示队伍",
+    Default = false,
+    Callback = function(bool)
         espShowTeam = bool
         if espMasterEnabled then UpdateESP() end
     end
 })
 
-Tab_ESP:Toggle({
-    ["Title"] = "绘制手持武器",
-    ["Desc"] = "显示玩家手持的武器名称",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+ESPSection:Toggle({
+    Title = "绘制手持武器",
+    Default = false,
+    Callback = function(bool)
         espShowWeapon = bool
         if espMasterEnabled then UpdateESP() end
     end
@@ -1014,16 +901,17 @@ Tab_ESP:Toggle({
 -------------------------------------------------------------------------
 -- Tab: 标点传送
 -------------------------------------------------------------------------
-local Tab_Waypoint = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "标点传送",
-    ["Icon"] = "rbxassetid://18520370419",
+local WaypointTab = Window:Tab({
+    Title = "标点传送",
+    Desc = "地图标点传送",
+    Icon = "solar:map-pin-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Waypoint:Section({
-    TextSize = 17,
-    ["Title"] = "地图标点传送",
-    TextXAlignment = "Left",
+local WaypointSection = WaypointTab:Section({
+    Title = "地图标点传送"
 })
 
 local function GetWaypointPosition()
@@ -1102,23 +990,26 @@ local function GetWaypointPosition()
     return closest
 end
 
-Tab_Waypoint:Button({
-    ["Title"] = "传送到地图标点",
-    ["Desc"] = "自动检测地图上的标点并传送",
-    ["Callback"] = function()
+WaypointSection:Button({
+    Title = "传送到地图标点",
+    Icon = "navigation",
+    Callback = function()
         local target = GetWaypointPosition()
         if target then
-            TeleportTo(target)
-            StarterGui:SetCore("SendNotification", {
-                Title = "标点传送",
-                Text = "已传送到标点位置",
-                Duration = 2,
-            })
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(target)
+                WindUI:Notify({
+                    Title = "标点传送",
+                    Content = "已传送到标点位置",
+                    Duration = 2
+                })
+            end
         else
-            StarterGui:SetCore("SendNotification", {
+            WindUI:Notify({
                 Title = "标点传送",
-                Text = "未找到地图标点，请先在地图上标点",
-                Duration = 2,
+                Content = "未找到地图标点，请先在地图上标点",
+                Duration = 2
             })
         end
     end
@@ -1131,15 +1022,17 @@ local function AutoWaypoint()
     if not autoWaypointEnabled then return end
     local target = GetWaypointPosition()
     if target then
-        TeleportTo(target)
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(target)
+        end
     end
 end
 
-Tab_Waypoint:Toggle({
-    ["Title"] = "自动传送标点",
-    ["Desc"] = "自动检测标点并传送",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+WaypointSection:Toggle({
+    Title = "自动传送标点",
+    Default = false,
+    Callback = function(bool)
         autoWaypointEnabled = bool
         if bool then
             if autoWaypointConnection then autoWaypointConnection:Disconnect() end
@@ -1160,22 +1053,23 @@ Tab_Waypoint:Toggle({
 -------------------------------------------------------------------------
 -- Tab: 甩飞
 -------------------------------------------------------------------------
-local Tab_Fling = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "甩飞",
-    ["Icon"] = "rbxassetid://18520370419",
+local FlingTab = Window:Tab({
+    Title = "甩飞",
+    Desc = "甩飞功能",
+    Icon = "solar:flame-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Fling:Section({
-    TextSize = 17,
-    ["Title"] = "甩飞功能",
-    TextXAlignment = "Left",
+local FlingSection = FlingTab:Section({
+    Title = "甩飞功能"
 })
 
-Tab_Fling:Button({
-    ["Title"] = "碰飞",
-    ["Desc"] = "点击执行碰飞脚本",
-    ["Callback"] = function()
+FlingSection:Button({
+    Title = "碰飞",
+    Icon = "zap",
+    Callback = function()
         loadstring(game:HttpGet(('https://gist.githubusercontent.com/axelinharlem182/1ee425c9d850af697f8c3cb108a9d816/raw/c4660b01faf4db266e8031e310121a65836f98a7/The%2520Villain'),true))()
     end
 })
@@ -1183,11 +1077,10 @@ Tab_Fling:Button({
 local antiFlingEnabled = false
 local antiFlingConnection = nil
 
-Tab_Fling:Toggle({
-    ["Title"] = "防甩飞",
-    ["Desc"] = "防止自己被别人甩飞",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+FlingSection:Toggle({
+    Title = "防甩飞",
+    Default = false,
+    Callback = function(bool)
         antiFlingEnabled = bool
         if bool then
             if antiFlingConnection then
@@ -1237,10 +1130,10 @@ local function SkidFling(TargetPlayer)
     task.wait(0.05)
 end
 
-Tab_Fling:Button({
-    ["Title"] = "甩飞所有人",
-    ["Desc"] = "甩飞服务器内所有玩家",
-    ["Callback"] = function()
+FlingSection:Button({
+    Title = "甩飞所有人",
+    Icon = "users",
+    Callback = function()
         for _, x in next, Players:GetPlayers() do
             if x ~= LocalPlayer then
                 SkidFling(x)
@@ -1252,16 +1145,17 @@ Tab_Fling:Button({
 -------------------------------------------------------------------------
 -- Tab: 范围
 -------------------------------------------------------------------------
-local Tab_Range = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "范围",
-    ["Icon"] = "rbxassetid://87107069659024",
+local RangeTab = Window:Tab({
+    Title = "范围",
+    Desc = "范围功能",
+    Icon = "solar:target-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Range:Section({
-    TextSize = 17,
-    ["Title"] = "范围功能",
-    TextXAlignment = "Left",
+local RangeSection = RangeTab:Section({
+    Title = "范围功能"
 })
 
 _G.RangeConn = nil
@@ -1294,49 +1188,49 @@ local function updateRange(size)
     end)
 end
 
-Tab_Range:Button({
-    ["Title"] = "清空范围效果",
-    ["Desc"] = "关闭范围修改",
-    ["Callback"] = function()
-        updateRange(0)
-    end
-})
-
 local rangeSizes = {10, 20, 30, 50, 70, 120, 300, 500, 999, 999999999}
 for _, size in ipairs(rangeSizes) do
-    Tab_Range:Button({
-        ["Title"] = "范围" .. size,
-        ["Desc"] = "设置碰撞箱大小为" .. size,
-        ["Callback"] = function()
+    RangeSection:Button({
+        Title = "范围" .. size,
+        Callback = function()
             updateRange(size)
         end
     })
 end
 
+RangeSection:Button({
+    Title = "清空范围效果",
+    Icon = "x",
+    Callback = function()
+        updateRange(0)
+    end
+})
+
 -------------------------------------------------------------------------
 -- Tab: 车辆功能
 -------------------------------------------------------------------------
-local Tab_Vehicle = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "车辆功能",
-    ["Icon"] = "rbxassetid://18520370419",
+local VehicleTab = Window:Tab({
+    Title = "车辆功能",
+    Desc = "车辆功能",
+    Icon = "solar:car-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Vehicle:Section({
-    TextSize = 17,
-    ["Title"] = "车辆功能",
-    TextXAlignment = "Left",
+local VehicleSection = VehicleTab:Section({
+    Title = "车辆功能"
 })
 
 local vehicleSpinEnabled = false
 local vehicleSpinConnection = nil
 local spinSpeed = 30
 
-Tab_Vehicle:Toggle({
-    ["Title"] = "车辆旋转",
-    ["Desc"] = "开启后人物旋转上车车也会跟着旋转",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+VehicleSection:Toggle({
+    Title = "车辆旋转",
+    Description = "开启后人物旋转上车车也会跟着旋转",
+    Default = false,
+    Callback = function(bool)
         vehicleSpinEnabled = bool
         if bool then
             if vehicleSpinConnection then
@@ -1373,34 +1267,36 @@ Tab_Vehicle:Toggle({
     end
 })
 
-Tab_Vehicle:Slider({
-    ["Title"] = "旋转速度",
-    ["Step"] = 1,
-    ["Value"] = { Min = 5, Default = 30, Max = 200 },
-    ["Callback"] = function(Value)
-        spinSpeed = type(Value) == "table" and Value[1] or Value
+VehicleSection:Slider({
+    Title = "旋转速度",
+    Min = 5,
+    Max = 200,
+    Default = 30,
+    Callback = function(Value)
+        spinSpeed = Value
     end
 })
 
 -------------------------------------------------------------------------
 -- Tab: 枪械功能
 -------------------------------------------------------------------------
-local Tab_Weapon = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "枪械功能",
-    ["Icon"] = "rbxassetid://18520370419",
+local WeaponTab = Window:Tab({
+    Title = "枪械功能",
+    Desc = "枪械功能",
+    Icon = "solar:gun-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Weapon:Section({
-    TextSize = 17,
-    ["Title"] = "枪械功能",
-    TextXAlignment = "Left",
+local WeaponSection = WeaponTab:Section({
+    Title = "枪械功能"
 })
 
-Tab_Weapon:Button({
-    ["Title"] = "无限子弹+超快射速（手枪可连发）",
-    ["Desc"] = "点击开启无限子弹+超快射速",
-    ["Callback"] = function()
+WeaponSection:Button({
+    Title = "无限子弹+超快射速（手枪可连发）",
+    Icon = "bullet",
+    Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/tzh.lua"))()
     end
 })
@@ -1408,22 +1304,24 @@ Tab_Weapon:Button({
 -------------------------------------------------------------------------
 -- Tab: 杀戮光环
 -------------------------------------------------------------------------
-local Tab_KillAura = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "杀戮光环",
-    ["Icon"] = "rbxassetid://18520370419",
+local KillAuraTab = Window:Tab({
+    Title = "杀戮光环",
+    Desc = "杀戮光环",
+    Icon = "solar:skull-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_KillAura:Section({
-    TextSize = 17,
-    ["Title"] = "杀戮光环",
-    TextXAlignment = "Left",
+local KillAuraSection = KillAuraTab:Section({
+    Title = "杀戮光环"
 })
 
-Tab_KillAura:Button({
-    ["Title"] = "开启杀戮光环",
-    ["Desc"] = "点击执行杀戮光环脚本",
-    ["Callback"] = function()
+KillAuraSection:Button({
+    Title = "开启杀戮光环",
+    Description = "点击执行杀戮光环脚本",
+    Icon = "sword",
+    Callback = function()
         local Players = game:GetService("Players")
         local LocalPlayer = Players.LocalPlayer
         local RunService = game:GetService("RunService")
@@ -1553,16 +1451,17 @@ Tab_KillAura:Button({
 -------------------------------------------------------------------------
 -- Tab: 警察显示
 -------------------------------------------------------------------------
-local Tab_Police = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "警察显示",
-    ["Icon"] = "rbxassetid://18520370419",
+local PoliceTab = Window:Tab({
+    Title = "警察显示",
+    Desc = "警察数量显示",
+    Icon = "solar:shield-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Police:Section({
-    TextSize = 17,
-    ["Title"] = "警察数量显示",
-    TextXAlignment = "Left",
+local PoliceSection = PoliceTab:Section({
+    Title = "警察数量显示"
 })
 
 local policeDisplayEnabled = false
@@ -1621,11 +1520,11 @@ local function UpdatePoliceCount()
     end
 end
 
-Tab_Police:Toggle({
-    ["Title"] = "显示警察数量",
-    ["Desc"] = "在屏幕右上方实时显示警察数量",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
+PoliceSection:Toggle({
+    Title = "显示警察数量",
+    Description = "在屏幕右上方实时显示警察数量",
+    Default = false,
+    Callback = function(bool)
         policeDisplayEnabled = bool
         if bool then
             if policeGui then
@@ -1638,7 +1537,7 @@ Tab_Police:Toggle({
             policeGui.Name = "PoliceDisplay"
             policeGui.ResetOnSpawn = false
             policeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            policeGui.Parent = CoreGui
+            policeGui.Parent = game.CoreGui
             
             policeLabel = Instance.new("TextLabel")
             policeLabel.Name = "PoliceLabel"
@@ -1694,22 +1593,24 @@ Tab_Police:Toggle({
 -------------------------------------------------------------------------
 -- Tab: 设置
 -------------------------------------------------------------------------
-local Tab_Settings = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "设置",
-    ["Icon"] = "rbxassetid://14895392107",
+local SettingsTab = Window:Tab({
+    Title = "设置",
+    Desc = "设置",
+    Icon = "solar:settings-bold",
+    IconColor = Gray,
+    IconShape = "Square",
+    Border = true,
 })
 
-Tab_Settings:Section({
-    TextSize = 17,
-    ["Title"] = "控制",
-    TextXAlignment = "Left",
+local SettingsSection = SettingsTab:Section({
+    Title = "控制"
 })
 
-Tab_Settings:Button({
-    ["Title"] = "关闭脚本",
-    ["Desc"] = "关闭脚本并清理UI",
-    ["Callback"] = function()
+SettingsSection:Button({
+    Title = "关闭脚本",
+    Description = "关闭脚本并清理UI",
+    Icon = "power",
+    Callback = function()
         getgenv().EasterEgg = false
         antiFlingEnabled = false
         autoWaypointEnabled = false
@@ -1742,38 +1643,35 @@ Tab_Settings:Button({
         end
         ClearESP()
         pcall(function()
-            local frosty = CoreGui:FindFirstChild("frosty")
+            local frosty = game.CoreGui:FindFirstChild("frosty")
             if frosty then frosty:Destroy() end
-            local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+            local eggGui = game.CoreGui:FindFirstChild("EasterEggGui")
             if eggGui then eggGui:Destroy() end
-            local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
+            local welcomeGui = game.CoreGui:FindFirstChild("wdfexWelcome")
             if welcomeGui then welcomeGui:Destroy() end
-            local borderGui = CoreGui:FindFirstChild("wdfexBorder")
+            local borderGui = game.CoreGui:FindFirstChild("wdfexBorder")
             if borderGui then borderGui:Destroy() end
-            local hubGui = CoreGui:FindFirstChild("wdfexHub")
+            local hubGui = game.CoreGui:FindFirstChild("wdfexHub")
             if hubGui then hubGui:Destroy() end
-            local policeGui = CoreGui:FindFirstChild("PoliceDisplay")
+            local policeGui = game.CoreGui:FindFirstChild("PoliceDisplay")
             if policeGui then policeGui:Destroy() end
         end)
-        Window:Close()
+        Window:Destroy()
     end
 })
 
-local easterEggEnabled = false
-local eggSound = nil
-local eggVolumeConnection = nil
-local eggPlaying = false
-
-Tab_Settings:Toggle({
-    ["Title"] = "彩蛋开关",
-    ["Desc"] = "开启彩蛋功能",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        easterEggEnabled = bool
+SettingsSection:Toggle({
+    Title = "彩蛋开关",
+    Description = "开启彩蛋功能",
+    Default = false,
+    Callback = function(bool)
         getgenv().EasterEgg = bool
         
         if bool then
-            TeleportTo(Vector3.new(4402.39, 3.04, 1607.56))
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(Vector3.new(4402.39, 3.04, 1607.56))
+            end
             
             pcall(function()
                 local soundService = game:GetService("SoundService")
@@ -1786,7 +1684,7 @@ Tab_Settings:Toggle({
                 eggVolumeConnection = nil
             end
             eggVolumeConnection = RunService.Heartbeat:Connect(function()
-                if not easterEggEnabled then return end
+                if not getgenv().EasterEgg then return end
                 pcall(function()
                     game:GetService("SoundService").Volume = 1
                 end)
@@ -1802,7 +1700,7 @@ Tab_Settings:Toggle({
                 eggSound.Volume = 10
                 eggSound.Looped = false
                 eggSound.PlayOnRemove = false
-                eggSound.Parent = CoreGui
+                eggSound.Parent = game.CoreGui
                 eggSound:Play()
                 eggPlaying = true
                 
@@ -1814,7 +1712,7 @@ Tab_Settings:Toggle({
             pcall(function()
                 local eggGui = Instance.new("ScreenGui")
                 eggGui.Name = "EasterEggGui"
-                eggGui.Parent = CoreGui
+                eggGui.Parent = game.CoreGui
                 eggGui.ResetOnSpawn = false
                 
                 local textLabel = Instance.new("TextLabel")
@@ -1853,12 +1751,42 @@ Tab_Settings:Toggle({
             end)
             
             pcall(function()
-                local eggGui = CoreGui:FindFirstChild("EasterEggGui")
+                local eggGui = game.CoreGui:FindFirstChild("EasterEggGui")
                 if eggGui then eggGui:Destroy() end
             end)
         end
     end
 })
 
-print("wdfex-圣奥里已加载")
-print("已添加杀戮光环（完整版+音效+轨迹）")
+    -- 窗口关闭清理
+    Window:OnClose(function()
+        print("窗口关闭")
+    end)
+
+    Window:OnDestroy(function()
+        print("窗口已销毁")
+    end)
+end
+
+WindUI:Popup({
+    Title = "<font color='#FFFFFF'>w</font><font color='#CCCCCC'>d</font><font color='#999999'>f</font><font color='#666666'>e</font><font color='#444444'>x</font> <font color='#666666'>圣</font><font color='#444444'>奥</font><font color='#222222'>里</font>",
+    IconThemed = true,
+    Content = "尊贵wdfex脚本用户 " .. game.Players.LocalPlayer.Name .. " 使用 wdfex圣奥里",
+    Buttons = {
+        {
+            Title = "取消",
+            Callback = function() 
+                createUI()
+            end,
+            Variant = "Secondary",
+        },
+        {
+            Title = "执行",
+            Icon = "arrow-right",
+            Callback = function() 
+                createUI()
+            end,
+            Variant = "Primary",
+        }
+    }
+})
