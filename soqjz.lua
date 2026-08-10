@@ -153,7 +153,7 @@ local steerCorner = Instance.new("UICorner")
 steerCorner.CornerRadius = UDim.new(0, 6)
 steerCorner.Parent = steerToggle
 
--- 上车检测
+-- 上车检测 (可开关)
 local boardLabel = Instance.new("TextLabel")
 boardLabel.Size = UDim2.new(0.5, 0, 0, 25)
 boardLabel.Position = UDim2.new(0.05, 0, 0, 135)
@@ -170,7 +170,7 @@ boardToggle.Size = UDim2.new(0.3, 0, 0, 22)
 boardToggle.Position = UDim2.new(0.65, 0, 0, 136)
 boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 boardToggle.BackgroundTransparency = 0.2
-boardToggle.Text = "未上车"
+boardToggle.Text = "已关闭"
 boardToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 boardToggle.TextSize = 11
 boardToggle.Font = Enum.Font.GothamBold
@@ -315,7 +315,7 @@ speedInput.FocusLost:Connect(function()
 end)
 
 -- ========== 开关函数 ==========
-local function ToggleButton(btn, label, state)
+local function ToggleButton(btn, state)
     if state then
         btn.Text = "已开启"
         btn.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
@@ -328,45 +328,48 @@ end
 -- 线性加速切换
 accelToggle.MouseButton1Click:Connect(function()
     accelEnabled = not accelEnabled
-    ToggleButton(accelToggle, "线性加速", accelEnabled)
+    ToggleButton(accelToggle, accelEnabled)
     print("线性加速: " .. (accelEnabled and "已开启" or "已关闭"))
 end)
 
 -- 线性转向切换
 steerToggle.MouseButton1Click:Connect(function()
     steerEnabled = not steerEnabled
-    ToggleButton(steerToggle, "线性转向", steerEnabled)
+    ToggleButton(steerToggle, steerEnabled)
     print("线性转向: " .. (steerEnabled and "已开启" or "已关闭"))
 end)
 
--- 上车检测切换
+-- 上车检测切换 (可开关)
 boardToggle.MouseButton1Click:Connect(function()
-    if not isInVehicle then
-        print("未检测到上车，无法开启")
-        return
-    end
     boardEnabled = not boardEnabled
     if boardEnabled then
-        boardToggle.Text = "已上车"
+        boardToggle.Text = "已开启"
         boardToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
+        -- 开启时立即检测一次上车状态
+        isInVehicle = CheckInVehicle()
+        if isInVehicle then
+            print("上车检测: 已开启，当前在车上")
+        else
+            print("上车检测: 已开启，当前未上车")
+        end
     else
-        boardToggle.Text = "未上车"
+        boardToggle.Text = "已关闭"
         boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        print("上车检测: 已关闭")
     end
-    print("上车检测: " .. (boardEnabled and "已开启" or "已关闭"))
 end)
 
 -- 横向移动辅助切换
 assistToggle.MouseButton1Click:Connect(function()
     assistEnabled = not assistEnabled
-    ToggleButton(assistToggle, "横向移动辅助", assistEnabled)
+    ToggleButton(assistToggle, assistEnabled)
     print("横向移动辅助: " .. (assistEnabled and "已开启" or "已关闭"))
 end)
 
 -- 车头跟随切换
 followToggle.MouseButton1Click:Connect(function()
     followEnabled = not followEnabled
-    ToggleButton(followToggle, "车头跟随", followEnabled)
+    ToggleButton(followToggle, followEnabled)
     print("车头跟随: " .. (followEnabled and "已开启" or "已关闭"))
 end)
 
@@ -384,24 +387,58 @@ local function CheckInVehicle()
     if not char then return false end
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return false end
-    if hum.SeatPart then
-        return true
+    
+    -- 方法1: 检测是否坐着
+    if hum.Sit == true then
+        -- 检测座位是否存在
+        if hum.SeatPart then
+            return true
+        end
+        -- 有些游戏用 VehicleSeat
+        if hum:FindFirstChild("VehicleSeat") then
+            return true
+        end
     end
+    
+    -- 方法2: 检测角色下面是否有车 (通过HumanoidRootPart下面是否有Vehicle)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local rayOrigin = hrp.Position
+        local rayDirection = Vector3.new(0, -5, 0)
+        local params = RaycastParams.new()
+        params.FilterDescendantsInstances = {char}
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        local result = workspace:Raycast(rayOrigin, rayDirection, params)
+        if result then
+            local hit = result.Instance
+            -- 检查是不是车辆
+            if hit:IsA("Part") or hit:IsA("BasePart") then
+                if hit.Name:lower():find("seat") or hit.Name:lower():find("vehicle") or hit.Name:lower():find("car") then
+                    return true
+                end
+            end
+        end
+    end
+    
     return false
 end
 
+-- 实时检测上车状态 (只有开启时才检测)
 RunService.Heartbeat:Connect(function()
+    if not boardEnabled then
+        -- 如果上车检测关闭，保持未上车状态
+        if isInVehicle then
+            isInVehicle = false
+        end
+        return
+    end
+    
     local newState = CheckInVehicle()
     if newState ~= isInVehicle then
         isInVehicle = newState
         if isInVehicle then
-            boardToggle.Text = "已上车"
-            boardToggle.BackgroundColor3 = Color3.fromRGB(0, 200, 50)
             print("检测到上车")
         else
-            boardToggle.Text = "未上车"
-            boardToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-            boardEnabled = false
             print("已下车")
         end
     end
@@ -413,7 +450,23 @@ local function GetVehicle()
     if not char then return nil end
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return nil end
-    return hum.SeatPart
+    -- 尝试获取座位
+    local seat = hum.SeatPart
+    if seat then return seat end
+    -- 尝试从角色下方检测
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local rayOrigin = hrp.Position
+        local rayDirection = Vector3.new(0, -5, 0)
+        local params = RaycastParams.new()
+        params.FilterDescendantsInstances = {char}
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        local result = workspace:Raycast(rayOrigin, rayDirection, params)
+        if result then
+            return result.Instance
+        end
+    end
+    return nil
 end
 
 local function GetVehicleRoot(vehicle)
@@ -433,21 +486,24 @@ local function ApplyForce(forward)
     
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return end
-    local vehicle = hum.SeatPart
+    local vehicle = GetVehicle()
     if not vehicle then return end
     
     local root = GetVehicleRoot(vehicle)
     if not root then return end
     
     local dir = forward and root.CFrame.LookVector or -root.CFrame.LookVector
-    local force = dir * (forward and 1 or -1) * speed * 0.5
+    local dirFlat = Vector3.new(dir.X, 0, dir.Z).Unit
+    if dirFlat.Magnitude < 0.1 then
+        dirFlat = forward and Vector3.new(1, 0, 0) or Vector3.new(-1, 0, 0)
+    end
     
     if accelEnabled then
         currentSpeed = currentSpeed + (speed - currentSpeed) * 0.05
-        local currentForce = dir * (forward and 1 or -1) * currentSpeed * 0.5
+        local currentForce = dirFlat * (forward and 1 or -1) * currentSpeed * 0.5
         root.Velocity = root.Velocity + currentForce * 0.1
     else
-        root.Velocity = dir * (forward and 1 or -1) * speed * 0.3
+        root.Velocity = dirFlat * (forward and 1 or -1) * speed * 0.3
     end
     
     if followEnabled then
@@ -538,7 +594,7 @@ RunService.Heartbeat:Connect(function()
     if not char then return end
     local hum = char:FindFirstChild("Humanoid")
     if not hum then return end
-    local vehicle = hum.SeatPart
+    local vehicle = GetVehicle()
     if not vehicle then return end
     
     local root = GetVehicleRoot(vehicle)
@@ -552,6 +608,5 @@ RunService.Heartbeat:Connect(function()
 end)
 
 print("Car Speed Gui 已加载")
-print("所有功能均为可开关状态")
-print("上车检测: 上车后自动识别")
-print("车头跟随: 开启后摄像头方向控制车头")
+print("上车检测: 点击开关可手动开启/关闭")
+print("开启后自动检测是否在车上")
