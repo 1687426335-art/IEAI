@@ -215,6 +215,18 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
+    ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    TextXAlignment = "Left",
+})
+
+Tab_Notice:Section({
+    TextSize = 17,
     ["Title"] = "作者: wdfex",
     TextXAlignment = "Left",
 })
@@ -1302,6 +1314,75 @@ for _, size in ipairs(rangeSizes) do
 end
 
 -------------------------------------------------------------------------
+-- Tab: 车辆功能
+-------------------------------------------------------------------------
+local Tab_Vehicle = Window:Tab({
+    ["Locked"] = false,
+    ["Title"] = "车辆功能",
+    ["Icon"] = "rbxassetid://18520370419",
+})
+
+Tab_Vehicle:Section({
+    TextSize = 17,
+    ["Title"] = "车辆功能",
+    TextXAlignment = "Left",
+})
+
+local vehicleSpinEnabled = false
+local vehicleSpinConnection = nil
+local spinSpeed = 30
+
+Tab_Vehicle:Toggle({
+    ["Title"] = "车辆旋转",
+    ["Desc"] = "开启后人物旋转上车车也会跟着旋转",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        vehicleSpinEnabled = bool
+        if bool then
+            if vehicleSpinConnection then
+                vehicleSpinConnection:Disconnect()
+                vehicleSpinConnection = nil
+            end
+            vehicleSpinConnection = RunService.Heartbeat:Connect(function()
+                if not vehicleSpinEnabled then return end
+                if not LocalPlayer.Character then return end
+                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                local seat = hrp:FindFirstChild("SeatPart") or hrp:FindFirstChild("SeatWeld")
+                if seat then
+                    local currentCFrame = hrp.CFrame
+                    local newCFrame = currentCFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+                    hrp.CFrame = newCFrame
+                    
+                    local vehicle = seat.Parent
+                    if vehicle and vehicle:IsA("Model") then
+                        local vehicleHRP = vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChild("PrimaryPart")
+                        if vehicleHRP and vehicleHRP:IsA("BasePart") then
+                            vehicleHRP.CFrame = vehicleHRP.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+                        end
+                    end
+                end
+            end)
+        else
+            if vehicleSpinConnection then
+                vehicleSpinConnection:Disconnect()
+                vehicleSpinConnection = nil
+            end
+        end
+    end
+})
+
+Tab_Vehicle:Slider({
+    ["Title"] = "旋转速度",
+    ["Step"] = 1,
+    ["Value"] = { Min = 5, Default = 30, Max = 200 },
+    ["Callback"] = function(Value)
+        spinSpeed = type(Value) == "table" and Value[1] or Value
+    end
+})
+
+-------------------------------------------------------------------------
 -- Tab: 枪械功能
 -------------------------------------------------------------------------
 local Tab_Weapon = Window:Tab({
@@ -1489,6 +1570,7 @@ Tab_Settings:Button({
         getgenv().EasterEgg = false
         antiFlingEnabled = false
         autoWaypointEnabled = false
+        vehicleSpinEnabled = false
         policeDisplayEnabled = false
         if policeDisplayConnection then
             policeDisplayConnection:Disconnect()
@@ -1498,6 +1580,10 @@ Tab_Settings:Button({
             policeGui:Destroy()
             policeGui = nil
             policeLabel = nil
+        end
+        if vehicleSpinConnection then
+            vehicleSpinConnection:Disconnect()
+            vehicleSpinConnection = nil
         end
         if autoWaypointConnection then
             autoWaypointConnection:Disconnect()
@@ -1632,4 +1718,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加警察显示Tab")
+print("已添加公告防封教程 + 车辆旋转功能")
