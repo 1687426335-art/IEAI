@@ -17,6 +17,144 @@ local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
+-- ===== 投票弹窗 =====
+local function ShowVote()
+    pcall(function()
+        local voteGui = Instance.new("ScreenGui")
+        voteGui.Name = "VoteGui"
+        voteGui.ResetOnSpawn = false
+        voteGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        voteGui.Parent = CoreGui
+        
+        local bg = Instance.new("Frame")
+        bg.Size = UDim2.new(1, 0, 1, 0)
+        bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        bg.BackgroundTransparency = 0.6
+        bg.Parent = voteGui
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 400, 0, 250)
+        frame.Position = UDim2.new(0.5, -200, 0.5, -125)
+        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        frame.BackgroundTransparency = 0.05
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        frame.Parent = voteGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = frame
+        
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 40)
+        title.Position = UDim2.new(0, 0, 0, 15)
+        title.BackgroundTransparency = 1
+        title.Text = "需不需要更换悬浮窗？"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextSize = 22
+        title.Font = Enum.Font.GothamBold
+        title.Parent = frame
+        
+        -- 投票结果框
+        local resultFrame = Instance.new("Frame")
+        resultFrame.Size = UDim2.new(0.9, 0, 0, 50)
+        resultFrame.Position = UDim2.new(0.05, 0, 0, 70)
+        resultFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        resultFrame.BackgroundTransparency = 0.3
+        resultFrame.BorderSizePixel = 1
+        resultFrame.BorderColor3 = Color3.fromRGB(60, 60, 80)
+        resultFrame.Parent = frame
+        
+        local corner2 = Instance.new("UICorner")
+        corner2.CornerRadius = UDim.new(0, 8)
+        corner2.Parent = resultFrame
+        
+        -- 左边（需要）
+        local needLabel = Instance.new("TextLabel")
+        needLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        needLabel.Position = UDim2.new(0, 0, 0, 0)
+        needLabel.BackgroundTransparency = 1
+        needLabel.Text = "需要：36人"
+        needLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        needLabel.TextSize = 18
+        needLabel.Font = Enum.Font.GothamBold
+        needLabel.Parent = resultFrame
+        
+        -- 右边（不需要）
+        local noNeedLabel = Instance.new("TextLabel")
+        noNeedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        noNeedLabel.Position = UDim2.new(0.5, 0, 0, 0)
+        noNeedLabel.BackgroundTransparency = 1
+        noNeedLabel.Text = "不需要：16人"
+        noNeedLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        noNeedLabel.TextSize = 18
+        noNeedLabel.Font = Enum.Font.GothamBold
+        noNeedLabel.Parent = resultFrame
+        
+        -- 分隔线
+        local line = Instance.new("Frame")
+        line.Size = UDim2.new(0, 1, 1, -10)
+        line.Position = UDim2.new(0.5, -0.5, 0, 5)
+        line.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        line.BorderSizePixel = 0
+        line.Parent = resultFrame
+        
+        -- 需要按钮
+        local needBtn = Instance.new("TextButton")
+        needBtn.Size = UDim2.new(0.35, 0, 0, 45)
+        needBtn.Position = UDim2.new(0.1, 0, 0, 145)
+        needBtn.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
+        needBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        needBtn.TextSize = 18
+        needBtn.Font = Enum.Font.GothamBold
+        needBtn.Text = "需要"
+        needBtn.Parent = frame
+        
+        local corner3 = Instance.new("UICorner")
+        corner3.CornerRadius = UDim.new(0, 8)
+        corner3.Parent = needBtn
+        
+        -- 不需要按钮
+        local noNeedBtn = Instance.new("TextButton")
+        noNeedBtn.Size = UDim2.new(0.35, 0, 0, 45)
+        noNeedBtn.Position = UDim2.new(0.55, 0, 0, 145)
+        noNeedBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+        noNeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        noNeedBtn.TextSize = 18
+        noNeedBtn.Font = Enum.Font.GothamBold
+        noNeedBtn.Text = "不需要"
+        noNeedBtn.Parent = frame
+        
+        local corner4 = Instance.new("UICorner")
+        corner4.CornerRadius = UDim.new(0, 8)
+        corner4.Parent = noNeedBtn
+        
+        local function OnVote()
+            -- 显示投票成功
+            local successLabel = Instance.new("TextLabel")
+            successLabel.Size = UDim2.new(1, 0, 0, 30)
+            successLabel.Position = UDim2.new(0, 0, 0, 200)
+            successLabel.BackgroundTransparency = 1
+            successLabel.Text = "✅ 投票成功！"
+            successLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            successLabel.TextSize = 20
+            successLabel.Font = Enum.Font.GothamBold
+            successLabel.Parent = frame
+            
+            -- 隐藏按钮
+            needBtn.Visible = false
+            noNeedBtn.Visible = false
+            
+            -- 3秒后关闭弹窗
+            task.wait(2)
+            voteGui:Destroy()
+        end
+        
+        needBtn.MouseButton1Click:Connect(OnVote)
+        noNeedBtn.MouseButton1Click:Connect(OnVote)
+    end)
+end
+
 -- ===== 欢迎弹窗 =====
 local function ShowWelcome()
     pcall(function()
@@ -86,6 +224,10 @@ local function ShowWelcome()
 end
 
 ShowWelcome()
+
+-- 显示投票弹窗
+task.wait(1)
+ShowVote()
 
 -- 加载 UI 库
 local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
@@ -199,12 +341,6 @@ local Tab_Notice = Window:Tab({
     ["Locked"] = false,
     ["Title"] = "公告",
     ["Icon"] = "rbxassetid://115466270141583",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "本脚本严禁外传发现永久拉黑无法使用此脚本",
-    TextXAlignment = "Left",
 })
 
 Tab_Notice:Section({
@@ -1424,7 +1560,129 @@ Tab_KillAura:Button({
     ["Title"] = "开启杀戮光环",
     ["Desc"] = "点击执行杀戮光环脚本",
     ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/yahzlq.lua"))()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local RunService = game:GetService("RunService")
+        local Debris = game:GetService("Debris")
+
+        local loopConnection = nil
+        local selectedSoundId = "rbxassetid://8679627751"
+        local AURA_RANGE = 90
+        local soundList = {
+            "rbxassetid://8679627751",
+            "rbxassetid://3125624765",
+            "rbxassetid://17755696142",
+            "rbxassetid://10070796384"
+        }
+
+        local function GetHitFunction()
+            local char = LocalPlayer.Character
+            if not char then return nil end
+            for _, tool in ipairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local remotes = tool:FindFirstChild("Remotes")
+                    if remotes then
+                        local hitFunc = remotes:FindFirstChild("HitFunction")
+                        if hitFunc then
+                            return hitFunc
+                        end
+                    end
+                end
+            end
+            return nil
+        end
+
+        local function GetEnemiesInRange()
+            local enemies = {}
+            local myChar = LocalPlayer.Character
+            if not myChar then return enemies end
+            local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+            if not myHrp then return enemies end
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character.Parent then
+                    local humanoid = player.Character:FindFirstChild("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                        if targetHrp then
+                            local dist = (myHrp.Position - targetHrp.Position).Magnitude
+                            if dist <= AURA_RANGE then
+                                table.insert(enemies, player)
+                            end
+                        end
+                    end
+                end
+            end
+            return enemies
+        end
+
+        local hue = 0
+        local function GetRainbowColor()
+            hue = (hue + 0.02) % 1
+            return Color3.fromHSV(hue, 1, 1)
+        end
+
+        local function DrawTrajectory(origin, targetPos)
+            local color = GetRainbowColor()
+            local part = Instance.new("Part")
+            part.Anchored = true
+            part.CanCollide = false
+            part.Material = Enum.Material.Neon
+            part.Color = color
+            local distance = (origin - targetPos).Magnitude
+            if distance < 0.1 then return end
+            part.Size = Vector3.new(0.1, 0.1, distance)
+            part.CFrame = CFrame.lookAt(origin, targetPos) * CFrame.new(0, 0, -distance / 2)
+            part.Parent = workspace
+            Debris:AddItem(part, 0.3)
+        end
+
+        local function PlayShootSound()
+            local sound = Instance.new("Sound")
+            sound.SoundId = selectedSoundId
+            sound.Volume = 1
+            sound.Parent = LocalPlayer.Character or workspace
+            sound:Play()
+            task.delay(1, function() sound:Destroy() end)
+        end
+
+        local function AttackEnemy(targetPlayer, hitFunction)
+            local targetChar = targetPlayer.Character
+            if not targetChar then return end
+            local hitPart = targetChar:FindFirstChild("Left Arm") or targetChar:FindFirstChild("Right Arm") or targetChar:FindFirstChild("Head") or targetChar:FindFirstChild("HumanoidRootPart")
+            if not hitPart then return end
+            local myChar = LocalPlayer.Character
+            if not myChar then return end
+            local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+            if not myHrp then return end
+            local origin = myHrp.Position
+            local targetPos = hitPart.Position
+            DrawTrajectory(origin, targetPos)
+            PlayShootSound()
+            local args = {
+                targetChar,
+                hitPart,
+                Vector3.new(1, 2, 1)
+            }
+            pcall(function()
+                hitFunction:InvokeServer(unpack(args))
+            end)
+        end
+
+        local function KillAuraLoop()
+            local hitFunction = GetHitFunction()
+            if not hitFunction then return end
+            local enemies = GetEnemiesInRange()
+            for _, enemy in ipairs(enemies) do
+                task.spawn(AttackEnemy, enemy, hitFunction)
+                task.wait(0.03)
+            end
+        end
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            print("1")
+        end)
+        loopConnection = RunService.Heartbeat:Connect(KillAuraLoop)
     end
 })
 
@@ -1739,4 +1997,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加所有功能 + 杀戮光环按钮 + 警察显示 + 车辆旋转 + 枪械功能")
+print("已添加投票弹窗 + 删除外传公告")
