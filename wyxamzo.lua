@@ -17,9 +17,52 @@ local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
+-- ===== 检测服务器 =====
+local function CheckServer()
+    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
+    local jobId = game.JobId or ""
+    local placeId = game.PlaceId
+    
+    -- 检测是否为圣奥里 (San Aurie)
+    local isSanAurie = false
+    if gameName:find("San Aurie") or gameName:find("圣奥里") or placeId == 1234567890 then -- 替换为实际PlaceId
+        isSanAurie = true
+    end
+    
+    -- 检测Workspace中是否有圣奥里相关标识
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("StringValue") or obj:IsA("BoolValue") then
+            local name = obj.Name:lower()
+            if name:find("san") or name:find("aurie") or name:find("圣奥里") then
+                isSanAurie = true
+                break
+            end
+        end
+    end
+    
+    -- 检测玩家数量或特定NPC
+    if #Players:GetPlayers() > 0 then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                for _, child in ipairs(player.Character:GetDescendants()) do
+                    if child:IsA("StringValue") and (child.Name:find("San") or child.Name:find("Aurie")) then
+                        isSanAurie = true
+                        break
+                    end
+                end
+            end
+        end
+    end
+    
+    return isSanAurie
+end
+
 -- ===== 检测弹窗 =====
 local function ShowDetectProgress()
     pcall(function()
+        -- 先检测服务器
+        local isSanAurie = CheckServer()
+        
         local detectGui = Instance.new("ScreenGui")
         detectGui.Name = "DetectGui"
         detectGui.ResetOnSpawn = false
@@ -33,32 +76,80 @@ local function ShowDetectProgress()
         bg.Parent = detectGui
         
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 450, 0, 200)
-        frame.Position = UDim2.new(0.5, -225, 0.5, -100)
+        frame.Size = UDim2.new(0, 450, 0, 250)
+        frame.Position = UDim2.new(0.5, -225, 0.5, -125)
         frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
         frame.BackgroundTransparency = 0.05
         frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        frame.BorderColor3 = isSanAurie and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(255, 50, 50)
         frame.Parent = detectGui
         
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(0, 12)
         corner.Parent = frame
         
+        -- 标题
         local title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, 0, 0, 35)
         title.Position = UDim2.new(0, 0, 0, 10)
         title.BackgroundTransparency = 1
-        title.Text = "正在检测服务器所有检测..."
-        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.Text = isSanAurie and "正在检测服务器所有检测..." or "服务器检测失败"
+        title.TextColor3 = isSanAurie and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 100, 100)
         title.TextSize = 20
         title.Font = Enum.Font.GothamBold
         title.Parent = frame
         
-        -- 进度条背景
+        -- 服务器状态
+        local serverLabel = Instance.new("TextLabel")
+        serverLabel.Size = UDim2.new(1, 0, 0, 30)
+        serverLabel.Position = UDim2.new(0, 0, 0, 50)
+        serverLabel.BackgroundTransparency = 1
+        serverLabel.Text = isSanAurie and "当前服务器: 圣奥里 (San Aurie) ✅" or "当前服务器: 未知 (Unknown) ❌"
+        serverLabel.TextColor3 = isSanAurie and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+        serverLabel.TextSize = 16
+        serverLabel.Font = Enum.Font.GothamBold
+        serverLabel.Parent = frame
+        
+        if not isSanAurie then
+            -- 不是圣奥里服务器
+            local errorLabel = Instance.new("TextLabel")
+            errorLabel.Size = UDim2.new(1, 0, 0, 60)
+            errorLabel.Position = UDim2.new(0, 0, 0, 100)
+            errorLabel.BackgroundTransparency = 1
+            errorLabel.Text = "未检测到您所在的服务器是\n圣奥里 (San Aurie)\n无法使用此脚本"
+            errorLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+            errorLabel.TextSize = 18
+            errorLabel.Font = Enum.Font.GothamBold
+            errorLabel.Parent = frame
+            
+            local closeBtn = Instance.new("TextButton")
+            closeBtn.Size = UDim2.new(0.3, 0, 0, 40)
+            closeBtn.Position = UDim2.new(0.35, 0, 0, 185)
+            closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+            closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            closeBtn.TextSize = 16
+            closeBtn.Font = Enum.Font.GothamBold
+            closeBtn.Text = "确定"
+            closeBtn.Parent = frame
+            
+            local corner3 = Instance.new("UICorner")
+            corner3.CornerRadius = UDim.new(0, 8)
+            corner3.Parent = closeBtn
+            
+            closeBtn.MouseButton1Click:Connect(function()
+                detectGui:Destroy()
+            end)
+            
+            -- 自动关闭
+            task.wait(5)
+            detectGui:Destroy()
+            return
+        end
+        
+        -- 进度条
         local progressBg = Instance.new("Frame")
         progressBg.Size = UDim2.new(0.8, 0, 0, 20)
-        progressBg.Position = UDim2.new(0.1, 0, 0, 60)
+        progressBg.Position = UDim2.new(0.1, 0, 0, 100)
         progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         progressBg.BorderSizePixel = 1
         progressBg.BorderColor3 = Color3.fromRGB(80, 80, 100)
@@ -68,21 +159,19 @@ local function ShowDetectProgress()
         corner2.CornerRadius = UDim.new(0, 10)
         corner2.Parent = progressBg
         
-        -- 进度条
         local progressBar = Instance.new("Frame")
         progressBar.Size = UDim2.new(0, 0, 1, 0)
         progressBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
         progressBar.BorderSizePixel = 0
         progressBar.Parent = progressBg
         
-        local corner3 = Instance.new("UICorner")
-        corner3.CornerRadius = UDim.new(0, 10)
-        corner3.Parent = progressBar
+        local cornerProgress = Instance.new("UICorner")
+        cornerProgress.CornerRadius = UDim.new(0, 10)
+        cornerProgress.Parent = progressBar
         
-        -- 进度百分比
         local progressLabel = Instance.new("TextLabel")
         progressLabel.Size = UDim2.new(0.8, 0, 0, 30)
-        progressLabel.Position = UDim2.new(0.1, 0, 0, 88)
+        progressLabel.Position = UDim2.new(0.1, 0, 0, 128)
         progressLabel.BackgroundTransparency = 1
         progressLabel.Text = "0%"
         progressLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -90,10 +179,9 @@ local function ShowDetectProgress()
         progressLabel.Font = Enum.Font.GothamBold
         progressLabel.Parent = frame
         
-        -- 检测状态
         local statusLabel = Instance.new("TextLabel")
         statusLabel.Size = UDim2.new(1, 0, 0, 30)
-        statusLabel.Position = UDim2.new(0, 0, 0, 125)
+        statusLabel.Position = UDim2.new(0, 0, 0, 165)
         statusLabel.BackgroundTransparency = 1
         statusLabel.Text = "正在扫描..."
         statusLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
@@ -101,10 +189,9 @@ local function ShowDetectProgress()
         statusLabel.Font = Enum.Font.Gotham
         statusLabel.Parent = frame
         
-        -- 检测结果列表
         local resultLabel = Instance.new("TextLabel")
         resultLabel.Size = UDim2.new(1, 0, 0, 30)
-        resultLabel.Position = UDim2.new(0, 0, 0, 155)
+        resultLabel.Position = UDim2.new(0, 0, 0, 195)
         resultLabel.BackgroundTransparency = 1
         resultLabel.Text = ""
         resultLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
@@ -112,7 +199,7 @@ local function ShowDetectProgress()
         resultLabel.Font = Enum.Font.Gotham
         resultLabel.Parent = frame
         
-        -- 模拟检测过程
+        -- 模拟检测
         local detections = {
             "移速检测",
             "穿墙检测", 
@@ -133,7 +220,6 @@ local function ShowDetectProgress()
             progressLabel.Text = progress .. "%"
             statusLabel.Text = "正在检测: " .. detectName
             
-            -- 模拟找到检测
             if math.random(1, 100) > 20 then
                 table.insert(foundDetections, detectName)
                 resultLabel.Text = "已过掉: " .. table.concat(foundDetections, ", ")
@@ -143,7 +229,6 @@ local function ShowDetectProgress()
             task.wait(0.3 + math.random(0, 5) / 10)
         end
         
-        -- 完成
         progressBar.Size = UDim2.new(1, 0, 1, 0)
         progressLabel.Text = "100%"
         statusLabel.Text = "检测完成！共过掉 " .. #foundDetections .. " 个检测"
@@ -157,7 +242,6 @@ local function ShowDetectProgress()
             resultLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         end
         
-        -- 3秒后自动关闭
         task.wait(3)
         detectGui:Destroy()
     end)
@@ -1657,8 +1741,7 @@ local function IsPlayerPolice(player)
                     return true
                 end
             end
-        end
-    end
+        end    end
     for _, child in ipairs(player:GetChildren()) do
         if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
             local name = child.Name:lower()
@@ -1933,4 +2016,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加过检测系统 + 检测进度弹窗")
+print("已添加服务器检测 + 过检测系统 + 检测进度弹窗")
