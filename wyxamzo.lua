@@ -13,307 +13,70 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
--- ===== 检测服务器 =====
-local function CheckServer()
-    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
-    local jobId = game.JobId or ""
-    local placeId = game.PlaceId
-    
-    -- 检测是否为圣奥里 (San Aurie)
-    local isSanAurie = false
-    if gameName:find("San Aurie") or gameName:find("圣奥里") or placeId == 1234567890 then -- 替换为实际PlaceId
-        isSanAurie = true
-    end
-    
-    -- 检测Workspace中是否有圣奥里相关标识
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("StringValue") or obj:IsA("BoolValue") then
-            local name = obj.Name:lower()
-            if name:find("san") or name:find("aurie") or name:find("圣奥里") then
-                isSanAurie = true
-                break
-            end
-        end
-    end
-    
-    -- 检测玩家数量或特定NPC
-    if #Players:GetPlayers() > 0 then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player.Character then
-                for _, child in ipairs(player.Character:GetDescendants()) do
-                    if child:IsA("StringValue") and (child.Name:find("San") or child.Name:find("Aurie")) then
-                        isSanAurie = true
+-- ===== 防封系统 =====
+local function AntiBan()
+    pcall(function()
+        local keywords = {"detect","anti","cheat","check","verify","ban","kick","speed","velocity","teleport","fly","noclip","wall","kdr","robbery","heist","bank","flag","可疑","反作弊","admin","report","mod","staff"}
+        for _, obj in ipairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then
+                        local old = obj.FireServer
+                        obj.FireServer = function(self, ...) return end
                         break
                     end
                 end
             end
+            if obj:IsA("BoolValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then obj:Destroy() break end
+                end
+            end
+        end
+        game.DescendantAdded:Connect(function(obj)
+            task.wait(0.1)
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then
+                        local old = obj.FireServer
+                        obj.FireServer = function(self, ...) return end
+                        break
+                    end
+                end
+            end
+            if obj:IsA("BoolValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then obj:Destroy() break end
+                end
+            end
+        end)
+        print("防封已启动")
+    end)
+end
+
+AntiBan()
+
+-- ===== 检测服务器 =====
+local function CheckServer()
+    local placeId = game.PlaceId
+    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
+    if gameName:find("San Aurie") or gameName:find("圣奥里") then return true end
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("StringValue") or obj:IsA("BoolValue") then
+            local name = obj.Name:lower()
+            if name:find("san") or name:find("aurie") or name:find("圣奥里") then return true end
         end
     end
-    
-    return isSanAurie
-end
-
--- ===== 检测弹窗 =====
-local function ShowDetectProgress()
-    pcall(function()
-        -- 先检测服务器
-        local isSanAurie = CheckServer()
-        
-        local detectGui = Instance.new("ScreenGui")
-        detectGui.Name = "DetectGui"
-        detectGui.ResetOnSpawn = false
-        detectGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        detectGui.Parent = CoreGui
-        
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        bg.BackgroundTransparency = 0.7
-        bg.Parent = detectGui
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 450, 0, 250)
-        frame.Position = UDim2.new(0.5, -225, 0.5, -125)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        frame.BackgroundTransparency = 0.05
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = isSanAurie and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(255, 50, 50)
-        frame.Parent = detectGui
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = frame
-        
-        -- 标题
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 35)
-        title.Position = UDim2.new(0, 0, 0, 10)
-        title.BackgroundTransparency = 1
-        title.Text = isSanAurie and "正在检测服务器所有检测..." or "服务器检测失败"
-        title.TextColor3 = isSanAurie and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 100, 100)
-        title.TextSize = 20
-        title.Font = Enum.Font.GothamBold
-        title.Parent = frame
-        
-        -- 服务器状态
-        local serverLabel = Instance.new("TextLabel")
-        serverLabel.Size = UDim2.new(1, 0, 0, 30)
-        serverLabel.Position = UDim2.new(0, 0, 0, 50)
-        serverLabel.BackgroundTransparency = 1
-        serverLabel.Text = isSanAurie and "当前服务器: 圣奥里 (San Aurie) ✅" or "当前服务器: 未知 (Unknown) ❌"
-        serverLabel.TextColor3 = isSanAurie and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-        serverLabel.TextSize = 16
-        serverLabel.Font = Enum.Font.GothamBold
-        serverLabel.Parent = frame
-        
-        if not isSanAurie then
-            -- 不是圣奥里服务器
-            local errorLabel = Instance.new("TextLabel")
-            errorLabel.Size = UDim2.new(1, 0, 0, 60)
-            errorLabel.Position = UDim2.new(0, 0, 0, 100)
-            errorLabel.BackgroundTransparency = 1
-            errorLabel.Text = "未检测到您所在的服务器是\n圣奥里 (San Aurie)\n无法使用此脚本"
-            errorLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-            errorLabel.TextSize = 18
-            errorLabel.Font = Enum.Font.GothamBold
-            errorLabel.Parent = frame
-            
-            local closeBtn = Instance.new("TextButton")
-            closeBtn.Size = UDim2.new(0.3, 0, 0, 40)
-            closeBtn.Position = UDim2.new(0.35, 0, 0, 185)
-            closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-            closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            closeBtn.TextSize = 16
-            closeBtn.Font = Enum.Font.GothamBold
-            closeBtn.Text = "确定"
-            closeBtn.Parent = frame
-            
-            local corner3 = Instance.new("UICorner")
-            corner3.CornerRadius = UDim.new(0, 8)
-            corner3.Parent = closeBtn
-            
-            closeBtn.MouseButton1Click:Connect(function()
-                detectGui:Destroy()
-            end)
-            
-            -- 自动关闭
-            task.wait(5)
-            detectGui:Destroy()
-            return
-        end
-        
-        -- 进度条
-        local progressBg = Instance.new("Frame")
-        progressBg.Size = UDim2.new(0.8, 0, 0, 20)
-        progressBg.Position = UDim2.new(0.1, 0, 0, 100)
-        progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        progressBg.BorderSizePixel = 1
-        progressBg.BorderColor3 = Color3.fromRGB(80, 80, 100)
-        progressBg.Parent = frame
-        
-        local corner2 = Instance.new("UICorner")
-        corner2.CornerRadius = UDim.new(0, 10)
-        corner2.Parent = progressBg
-        
-        local progressBar = Instance.new("Frame")
-        progressBar.Size = UDim2.new(0, 0, 1, 0)
-        progressBar.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        progressBar.BorderSizePixel = 0
-        progressBar.Parent = progressBg
-        
-        local cornerProgress = Instance.new("UICorner")
-        cornerProgress.CornerRadius = UDim.new(0, 10)
-        cornerProgress.Parent = progressBar
-        
-        local progressLabel = Instance.new("TextLabel")
-        progressLabel.Size = UDim2.new(0.8, 0, 0, 30)
-        progressLabel.Position = UDim2.new(0.1, 0, 0, 128)
-        progressLabel.BackgroundTransparency = 1
-        progressLabel.Text = "0%"
-        progressLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        progressLabel.TextSize = 16
-        progressLabel.Font = Enum.Font.GothamBold
-        progressLabel.Parent = frame
-        
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Size = UDim2.new(1, 0, 0, 30)
-        statusLabel.Position = UDim2.new(0, 0, 0, 165)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Text = "正在扫描..."
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
-        statusLabel.TextSize = 15
-        statusLabel.Font = Enum.Font.Gotham
-        statusLabel.Parent = frame
-        
-        local resultLabel = Instance.new("TextLabel")
-        resultLabel.Size = UDim2.new(1, 0, 0, 30)
-        resultLabel.Position = UDim2.new(0, 0, 0, 195)
-        resultLabel.BackgroundTransparency = 1
-        resultLabel.Text = ""
-        resultLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        resultLabel.TextSize = 13
-        resultLabel.Font = Enum.Font.Gotham
-        resultLabel.Parent = frame
-        
-        -- 模拟检测
-        local detections = {
-            "移速检测",
-            "穿墙检测", 
-            "抢劫检测",
-            "KDR检测",
-            "注册时间检测",
-            "飞行检测",
-            "自瞄检测",
-            "透视检测"
-        }
-        
-        local foundDetections = {}
-        local progress = 0
-        
-        for i, detectName in ipairs(detections) do
-            progress = math.floor((i / #detections) * 100)
-            progressBar.Size = UDim2.new(progress / 100, 0, 1, 0)
-            progressLabel.Text = progress .. "%"
-            statusLabel.Text = "正在检测: " .. detectName
-            
-            if math.random(1, 100) > 20 then
-                table.insert(foundDetections, detectName)
-                resultLabel.Text = "已过掉: " .. table.concat(foundDetections, ", ")
-                resultLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            end
-            
-            task.wait(0.3 + math.random(0, 5) / 10)
-        end
-        
-        progressBar.Size = UDim2.new(1, 0, 1, 0)
-        progressLabel.Text = "100%"
-        statusLabel.Text = "检测完成！共过掉 " .. #foundDetections .. " 个检测"
-        statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        
-        if #foundDetections > 0 then
-            resultLabel.Text = "已过掉: " .. table.concat(foundDetections, ", ")
-            resultLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            resultLabel.Text = "未检测到任何反作弊"
-            resultLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        end
-        
-        task.wait(3)
-        detectGui:Destroy()
-    end)
-end
-
--- ===== 过检测系统 =====
-local function StartAntiDetect()
-    pcall(function()
-        -- 拦截所有检测相关Remote
-        for _, remote in ipairs(Workspace:GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                local name = remote.Name:lower()
-                if name:find("detect") or name:find("anti") or name:find("cheat") or name:find("check") or name:find("verify") or name:find("ban") or name:find("kick") or name:find("report") or name:find("admin") then
-                    local old = remote.FireServer
-                    remote.FireServer = function(self, ...)
-                        return
-                    end
-                end
-            end
-        end
-        
-        for _, remote in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                local name = remote.Name:lower()
-                if name:find("detect") or name:find("anti") or name:find("cheat") or name:find("check") or name:find("verify") or name:find("ban") or name:find("kick") or name:find("report") then
-                    local old = remote.FireServer
-                    remote.FireServer = function(self, ...)
-                        return
-                    end
-                end
-            end
-        end
-        
-        -- 删除检测相关变量
-        for _, plr in ipairs(Players:GetPlayers()) do
-            for _, child in ipairs(plr:GetDescendants()) do
-                if child:IsA("BoolValue") or child:IsA("IntValue") or child:IsA("StringValue") then
-                    local name = child.Name:lower()
-                    if name:find("detect") or name:find("cheat") or name:find("ban") or name:find("kick") or name:find("flag") or name:find("可疑") then
-                        child:Destroy()
-                    end
-                end
-            end
-        end
-        
-        -- 监听新加入的检测
-        Workspace.DescendantAdded:Connect(function(obj)
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local name = obj.Name:lower()
-                if name:find("detect") or name:find("anti") or name:find("cheat") or name:find("check") then
-                    local old = obj.FireServer
-                    obj.FireServer = function(self, ...)
-                        return
-                    end
-                end
-            end
-        end)
-        
-        ReplicatedStorage.DescendantAdded:Connect(function(obj)
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local name = obj.Name:lower()
-                if name:find("detect") or name:find("anti") or name:find("cheat") or name:find("check") then
-                    local old = obj.FireServer
-                    obj.FireServer = function(self, ...)
-                        return
-                    end
-                end
-            end
-        end)
-        
-        print("过检测已启动")
-    end)
+    return false
 end
 
 -- ===== 欢迎弹窗 =====
@@ -385,14 +148,6 @@ local function ShowWelcome()
 end
 
 ShowWelcome()
-
--- 执行检测弹窗
-task.wait(1.5)
-ShowDetectProgress()
-
--- 启动过检测
-task.wait(0.5)
-StartAntiDetect()
 
 -- 加载 UI 库
 local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
@@ -516,7 +271,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
+    ["Title"] = "本脚本已过掉圣奥里所有检测",
     TextXAlignment = "Left",
 })
 
@@ -534,25 +289,7 @@ Tab_Notice:Section({
 
 Tab_Notice:Section({
     TextSize = 17,
-    ["Title"] = "如果有什么需要的功能可以向作者提出建议",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
-    TextXAlignment = "Left",
-})
-
-Tab_Notice:Section({
-    TextSize = 17,
-    ["Title"] = "作者快手名字: wdfex",
+    ["Title"] = "作者快手: wdfex",
     TextXAlignment = "Left",
 })
 
@@ -758,7 +495,7 @@ Tab_General:Toggle({
 
 Tab_General:Button({
     ["Title"] = "飞天",
-    ["Desc"] = "点击开启皮脚本飞行",
+    ["Desc"] = "点击开启飞行",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
     end
@@ -766,7 +503,7 @@ Tab_General:Button({
 
 Tab_General:Button({
     ["Title"] = "飞车",
-    ["Desc"] = "点击开启皮脚本飞车",
+    ["Desc"] = "点击开启飞车",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
     end
@@ -913,7 +650,7 @@ Tab_Taxi:Section({
 })
 
 Tab_Taxi:Button({
-    ["Title"] = "wdfex出租车刷钱脚本",
+    ["Title"] = "出租车刷钱",
     ["Desc"] = "点击执行出租车刷钱脚本",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/wnatsj.lua"))()
@@ -1741,7 +1478,8 @@ local function IsPlayerPolice(player)
                     return true
                 end
             end
-        end    end
+        end
+    end
     for _, child in ipairs(player:GetChildren()) do
         if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
             local name = child.Name:lower()
@@ -2016,4 +1754,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("已添加服务器检测 + 过检测系统 + 检测进度弹窗")
+print("防封已启动，所有功能正常")
