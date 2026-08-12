@@ -18,6 +18,156 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
+-- ===== 检测服务器并处理 =====
+local function CheckServerAndHandle()
+    pcall(function()
+        local isSanAurie = false
+        local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
+        if gameName:find("San Aurie") or gameName:find("圣奥里") then
+            isSanAurie = true
+        end
+        if not isSanAurie then
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("StringValue") or obj:IsA("BoolValue") then
+                    local name = obj.Name:lower()
+                    if name:find("san") or name:find("aurie") or name:find("圣奥里") then
+                        isSanAurie = true
+                        break
+                    end
+                end
+            end
+        end
+        
+        if not isSanAurie then
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "ServerCheckGui"
+            gui.ResetOnSpawn = false
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.Parent = CoreGui
+            
+            local bg = Instance.new("Frame")
+            bg.Size = UDim2.new(1, 0, 1, 0)
+            bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            bg.BackgroundTransparency = 0.7
+            bg.Parent = gui
+            
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 400, 0, 200)
+            frame.Position = UDim2.new(0.5, -200, 0.5, -100)
+            frame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+            frame.BackgroundTransparency = 0.05
+            frame.BorderSizePixel = 2
+            frame.BorderColor3 = Color3.fromRGB(255, 50, 50)
+            frame.Parent = gui
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 12)
+            corner.Parent = frame
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, 0, 0, 35)
+            title.Position = UDim2.new(0, 0, 0, 10)
+            title.BackgroundTransparency = 1
+            title.Text = "服务器错误"
+            title.TextColor3 = Color3.fromRGB(255, 100, 100)
+            title.TextSize = 22
+            title.Font = Enum.Font.GothamBold
+            title.Parent = frame
+            
+            local msg = Instance.new("TextLabel")
+            msg.Size = UDim2.new(1, -20, 0, 40)
+            msg.Position = UDim2.new(0, 10, 0, 55)
+            msg.BackgroundTransparency = 1
+            msg.Text = "当前服务器不是圣奥里 (San Aurie)\n此脚本仅支持圣奥里"
+            msg.TextColor3 = Color3.fromRGB(255, 255, 255)
+            msg.TextSize = 16
+            msg.Font = Enum.Font.Gotham
+            msg.TextWrapped = true
+            msg.Parent = frame
+            
+            local btnFrame = Instance.new("Frame")
+            btnFrame.Size = UDim2.new(1, 0, 0, 50)
+            btnFrame.Position = UDim2.new(0, 0, 0, 115)
+            btnFrame.BackgroundTransparency = 1
+            btnFrame.Parent = frame
+            
+            local exitBtn = Instance.new("TextButton")
+            exitBtn.Size = UDim2.new(0.4, 0, 0, 40)
+            exitBtn.Position = UDim2.new(0.05, 0, 0, 5)
+            exitBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+            exitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            exitBtn.TextSize = 16
+            exitBtn.Font = Enum.Font.GothamBold
+            exitBtn.Text = "退出脚本"
+            exitBtn.Parent = btnFrame
+            
+            local corner2 = Instance.new("UICorner")
+            corner2.CornerRadius = UDim.new(0, 8)
+            corner2.Parent = exitBtn
+            
+            local enterBtn = Instance.new("TextButton")
+            enterBtn.Size = UDim2.new(0.4, 0, 0, 40)
+            enterBtn.Position = UDim2.new(0.55, 0, 0, 5)
+            enterBtn.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
+            enterBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            enterBtn.TextSize = 16
+            enterBtn.Font = Enum.Font.GothamBold
+            enterBtn.Text = "进入圣奥里"
+            enterBtn.Parent = btnFrame
+            
+            local corner3 = Instance.new("UICorner")
+            corner3.CornerRadius = UDim.new(0, 8)
+            corner3.Parent = enterBtn
+            
+            exitBtn.MouseButton1Click:Connect(function()
+                gui:Destroy()
+                Window:Close()
+                pcall(function()
+                    local hubGui = CoreGui:FindFirstChild("wdfexHub")
+                    if hubGui then hubGui:Destroy() end
+                    local borderGui = CoreGui:FindFirstChild("wdfexBorder")
+                    if borderGui then borderGui:Destroy() end
+                    local welcomeGui = CoreGui:FindFirstChild("wdfexWelcome")
+                    if welcomeGui then welcomeGui:Destroy() end
+                end)
+                print("脚本已退出")
+            end)
+            
+            enterBtn.MouseButton1Click:Connect(function()
+                gui:Destroy()
+                StarterGui:SetCore("SendNotification", {
+                    Title = "正在进入",
+                    Text = "正在查找圣奥里服务器...",
+                    Duration = 2,
+                })
+                task.wait(0.5)
+                local servers = game:GetService("TeleportService"):GetServerList(game.PlaceId)
+                if #servers > 0 then
+                    for _, server in ipairs(servers) do
+                        local info = server.Players or 0
+                        if info < 10 then
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.JobId, LocalPlayer)
+                            return
+                        end
+                    end
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[1].JobId, LocalPlayer)
+                else
+                    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                end
+            end)
+            
+            return false
+        end
+        return true
+    end)
+    return true
+end
+
+local isCorrectServer = CheckServerAndHandle()
+if not isCorrectServer then
+    return
+end
+
 -- ===== 防封系统 =====
 local function AntiBan()
     pcall(function()
@@ -59,24 +209,92 @@ local function AntiBan()
                 end
             end
         end)
-        print("防封已启动")
     end)
 end
 
 AntiBan()
 
--- ===== 检测服务器 =====
-local function CheckServer()
-    local placeId = game.PlaceId
-    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or ""
-    if gameName:find("San Aurie") or gameName:find("圣奥里") then return true end
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("StringValue") or obj:IsA("BoolValue") then
-            local name = obj.Name:lower()
-            if name:find("san") or name:find("aurie") or name:find("圣奥里") then return true end
+-- ===== 检测悬浮窗 =====
+local function ShowDetectResult()
+    pcall(function()
+        local detectedList = {}
+        local keywords = {"detect","anti","cheat","check","verify","ban","kick","speed","velocity","teleport","fly","noclip","wall","kdr","robbery","heist","bank","flag","可疑","反作弊","admin","report","mod","staff"}
+        
+        for _, obj in ipairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then
+                        table.insert(detectedList, obj.Name)
+                        break
+                    end
+                end
+            end
+            if obj:IsA("BoolValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
+                local name = obj.Name:lower()
+                for _, kw in ipairs(keywords) do
+                    if name:find(kw) then
+                        table.insert(detectedList, obj.Name)
+                        break
+                    end
+                end
+            end
         end
-    end
-    return false
+        
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "DetectResult"
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = CoreGui
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 350, 0, 120)
+        frame.Position = UDim2.new(0.5, -175, 0.2, 0)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BackgroundTransparency = 0.6
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = #detectedList > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 200, 100)
+        frame.Parent = gui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = frame
+        
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 25)
+        title.Position = UDim2.new(0, 0, 0, 5)
+        title.BackgroundTransparency = 1
+        title.Text = "检测结果"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextSize = 16
+        title.Font = Enum.Font.GothamBold
+        title.Parent = frame
+        
+        local countLabel = Instance.new("TextLabel")
+        countLabel.Size = UDim2.new(1, 0, 0, 25)
+        countLabel.Position = UDim2.new(0, 0, 0, 32)
+        countLabel.BackgroundTransparency = 1
+        countLabel.Text = "共检测到 " .. #detectedList .. " 个反作弊"
+        countLabel.TextColor3 = #detectedList > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 255, 255)
+        countLabel.TextSize = 14
+        countLabel.Font = Enum.Font.Gotham
+        countLabel.Parent = frame
+        
+        local listLabel = Instance.new("TextLabel")
+        listLabel.Size = UDim2.new(1, -20, 0, 40)
+        listLabel.Position = UDim2.new(0, 10, 0, 58)
+        listLabel.BackgroundTransparency = 1
+        listLabel.Text = #detectedList > 0 and table.concat(detectedList, ", ") or "未检测到"
+        listLabel.TextColor3 = #detectedList > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
+        listLabel.TextSize = 12
+        listLabel.Font = Enum.Font.Gotham
+        listLabel.TextXAlignment = Enum.TextXAlignment.Left
+        listLabel.TextWrapped = true
+        listLabel.Parent = frame
+        
+        task.wait(4)
+        gui:Destroy()
+    end)
 end
 
 -- ===== 欢迎弹窗 =====
@@ -148,6 +366,8 @@ local function ShowWelcome()
 end
 
 ShowWelcome()
+task.wait(0.5)
+ShowDetectResult()
 
 -- 加载 UI 库
 local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
@@ -1754,4 +1974,4 @@ Tab_Settings:Toggle({
 })
 
 print("wdfex-圣奥里已加载")
-print("防封已启动，所有功能正常")
+print("服务器检测 + 防封已启动，所有功能正常")
