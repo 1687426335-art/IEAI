@@ -3,17 +3,17 @@ if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
-if not isfolder("wdfex-Hub") then
-    makefolder("wdfex-Hub")
+if not isfolder("XA-Hub") then
+    makefolder("XA-Hub")
 end
-if not isfolder("wdfex-Hub/Fluent") then
-    makefolder("wdfex-Hub/Fluent")
+if not isfolder("XA-Hub/Fluent") then
+    makefolder("XA-Hub/Fluent")
 end
-if not isfile("wdfex-Hub/Fluent/AutoFindMoneyPrinter.txt") then
-    writefile("wdfex-Hub/Fluent/AutoFindMoneyPrinter.txt", "false")
+if not isfile("XA-Hub/Fluent/AutoFindMoneyPrinter.txt") then
+    writefile("XA-Hub/Fluent/AutoFindMoneyPrinter.txt", "false")
 end
 
-local autoFind = readfile("wdfex-Hub/Fluent/AutoFindMoneyPrinter.txt")
+local autoFind = readfile("XA-Hub/Fluent/AutoFindMoneyPrinter.txt")
 if autoFind == "true" then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Games/俄亥俄州_印钞机.lua"))()
     return
@@ -73,7 +73,7 @@ task.spawn(function()
         if fn and getfenv(fn).script == ReplicatedStorage.devv.client.Handlers.ClientValidate then
             conn:Disable()
             game.StarterGui:SetCore("SendNotification", {
-                Title = "wdfex：提示",
+                Title = "XA：提示",
                 Text = "飞行/速度封禁绕过成功"
             })
         end
@@ -99,7 +99,7 @@ local function FindPlayer(input)
         end
     end
     game.StarterGui:SetCore("SendNotification", {
-        Title = "wdfex：错误",
+        Title = "XA：错误",
         Text = "未找到玩家"
     })
     return nil
@@ -309,7 +309,7 @@ Fluent:GiveSignal(UserInputService.JumpRequest:Connect(function()
 end))
 
 local Window = Fluent:CreateWindow({
-    Title = "wdfex Hub",
+    Title = "XA Hub",
     SubTitle = "俄亥俄州",
     TabWidth = 160,
     Size = UDim2.fromOffset(550, 350),
@@ -577,7 +577,7 @@ TabCombat:AddButton({
                             if not table.find(Whitelist, SelectedTarget.UserId) then
                                 table.insert(Whitelist, SelectedTarget.UserId)
                             else
-                                Fluent:Notify({ Title = "wdfex：错误", Content = "该玩家已经被添加至白名单" })
+                                Fluent:Notify({ Title = "XA：错误", Content = "该玩家已经被添加至白名单" })
                             end
                         end
                     },
@@ -585,7 +585,7 @@ TabCombat:AddButton({
                 }
             })
         else
-            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            Fluent:Notify({ Title = "XA：错误", Content = "请先输入名称" })
         end
     end
 })
@@ -605,7 +605,7 @@ TabCombat:AddButton({
                             if idx then
                                 table.remove(Whitelist, idx)
                             else
-                                Fluent:Notify({ Title = "wdfex：错误", Content = "该玩家没有白名单，无法移除" })
+                                Fluent:Notify({ Title = "XA：错误", Content = "该玩家没有白名单，无法移除" })
                             end
                         end
                     },
@@ -613,7 +613,7 @@ TabCombat:AddButton({
                 }
             })
         else
-            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            Fluent:Notify({ Title = "XA：错误", Content = "请先输入名称" })
         end
     end
 })
@@ -956,7 +956,7 @@ TabAuto:AddButton({
             Content = "如果您的注入器不受脚本支持\n请在手机目录/" .. identifyexecutor() .. "/Autoexec文件夹添加脚本 以便脚本自动执行"
         })
         wait(3)
-        writefile("wdfex-Hub/Fluent/AutoFindMoneyPrinter.txt", "true")
+        writefile("XA-Hub/Fluent/AutoFindMoneyPrinter.txt", "true")
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Games/俄亥俄州_印钞机.lua"))()
     end
 })
@@ -1009,7 +1009,7 @@ FunTargetInput = TabFun:AddInput("Input", {
 
 TabFun:AddInput("SpamMessage", {
     Title = "输入消息",
-    Default = "wdfex-Hub No.1",
+    Default = "XA-Hub No.1",
     Numeric = false,
     Finished = true
 })
@@ -1019,7 +1019,7 @@ TabFun:AddToggle("SpamPlayer", {
     Default = false,
     Callback = function()
         if not FunTarget then
-            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            Fluent:Notify({ Title = "XA：错误", Content = "请先输入名称" })
             return
         end
         while Fluent.Options.SpamPlayer.Value do
@@ -1034,7 +1034,7 @@ TabFun:AddToggle("SpamCall", {
     Default = false,
     Callback = function()
         if not FunTarget then
-            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            Fluent:Notify({ Title = "XA：错误", Content = "请先输入名称" })
             return
         end
         while Fluent.Options.SpamCall.Value do
@@ -1159,11 +1159,11 @@ local SaveManager = FluentResult[3]
 local InterfaceManager = FluentResult[4]
 
 InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:SetFolder("wdfex-Hub/Fluent")
+InterfaceManager:SetFolder("XA-Hub/Fluent")
 InterfaceManager:BuildInterfaceSection(TabSettings)
 
 SaveManager:SetLibrary(Fluent)
-SaveManager:SetFolder("wdfex-Hub/Fluent/" .. game.PlaceId)
+SaveManager:SetFolder("XA-Hub/Fluent/" .. game.PlaceId)
 SaveManager:IgnoreThemeSettings()
 SaveManager:BuildConfigSection(TabSettings)
 SaveManager:LoadAutoloadConfig()
