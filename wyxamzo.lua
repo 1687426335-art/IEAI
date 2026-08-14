@@ -341,55 +341,101 @@ local Tab_Items = Window:Tab({
 
 Tab_Items:Section({
     TextSize = 17,
-    ["Title"] = "物品功能",
+    ["Title"] = "购买物品",
     TextXAlignment = "Left",
 })
 
-local SelectedItem = nil
-local ItemsOnSaleList = {}
-
-task.spawn(function()
-    pcall(function()
-        for _, item in pairs(workspace.ItemsOnSale:GetChildren()) do
-            ItemsOnSaleList[item.Name] = item.Name
-        end
-    end)
-end)
-
-local itemNames = {}
-for k in pairs(ItemsOnSaleList) do
-    table.insert(itemNames, k)
-end
-table.sort(itemNames)
-
-Tab_Items:Dropdown({
-    ["Title"] = "选择物品",
-    ["Desc"] = "选择要购买的物品",
-    ["List"] = #itemNames > 0 and itemNames or {"无物品"},
-    ["Callback"] = function(Value)
-        SelectedItem = Value
-    end
-})
-
 Tab_Items:Button({
-    ["Title"] = "购买",
-    ["Desc"] = "购买选中的物品",
+    ["Title"] = "购买拳头",
+    ["Desc"] = "购买拳头",
     ["Callback"] = function()
-        if SelectedItem and Remotes then
+        if Remotes then
             pcall(function()
-                Remotes.InvokeServer("attemptPurchase", SelectedItem)
+                Remotes.InvokeServer("attemptPurchase", "Fists")
             end)
         end
     end
 })
 
 Tab_Items:Button({
-    ["Title"] = "购买子弹",
-    ["Desc"] = "购买选中物品的子弹",
+    ["Title"] = "购买RPG",
+    ["Desc"] = "购买RPG火箭筒",
     ["Callback"] = function()
-        if SelectedItem and Remotes then
+        if Remotes then
             pcall(function()
-                Remotes.InvokeServer("attemptPurchaseAmmo", SelectedItem)
+                Remotes.InvokeServer("attemptPurchase", "RPG")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买手枪",
+    ["Desc"] = "购买手枪",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Pistol")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买步枪",
+    ["Desc"] = "购买步枪",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Rifle")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买霰弹枪",
+    ["Desc"] = "购买霰弹枪",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Shotgun")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买狙击枪",
+    ["Desc"] = "购买狙击枪",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Sniper")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买轻甲",
+    ["Desc"] = "购买轻型护甲",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Light Vest")
+            end)
+        end
+    end
+})
+
+Tab_Items:Button({
+    ["Title"] = "购买重甲",
+    ["Desc"] = "购买重型护甲",
+    ["Callback"] = function()
+        if Remotes then
+            pcall(function()
+                Remotes.InvokeServer("attemptPurchase", "Heavy Vest")
             end)
         end
     end
@@ -593,14 +639,6 @@ Tab_Teleport:Button({
         TeleportTo(Locations["游乐场"])
     end
 })
-
-Tab_Teleport:Section({
-    TextSize = 17,
-    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-    TextXAlignment = "Left",
-})
-
--- 下面是其他功能占位，你可以自己加
 
 -------------------------------------------------------------------------
 -- Tab: 娱乐
