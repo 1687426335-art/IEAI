@@ -1,171 +1,1197 @@
---[[
-╔═══════════════════════════════════════════════╗
-║                                               ║
-║                 by Ye Script                  ║
-║                                               ║
-╚═══════════════════════════════════════════════╝
-]]
+-- ===== wdfex-Hub =====
+
+-- 基础服务定义
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Debris = game:GetService("Debris")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ========= 配置 =========
-local QQ_NUMBER = "Your Discord invitation or something else"
-local CONFIG_FILE = "loader_config.txt"
-local LOAD_URL = "Your script repository link"
+local LocalPlayer = Players.LocalPlayer
+local CurrentCamera = Workspace.CurrentCamera
+local Character = LocalPlayer.Character
+local Humanoid = Character and Character:WaitForChild("Humanoid", 5)
+local HumanoidRootPart = Character and Character:WaitForChild("HumanoidRootPart", 5)
 
-local blacklist = {
-    ["name"] = true,
-    ["name"] = true,
-    ["name"] = true,
-    ["name"] = true,
-    ["name"] = true,
+-- ===== 检测环境 =====
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- ===== 创建文件夹 =====
+if not isfolder("wdfex-Hub") then
+    makefolder("wdfex-Hub")
+end
+if not isfolder("wdfex-Hub/Fluent") then
+    makefolder("wdfex-Hub/Fluent")
+end
+
+-- ===== 加载 UI 库 =====
+local FluentResult = {
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Library/Fluent.lua"))()
+}
+local Fluent = loadstring(FluentResult[2]:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Library/Fluent.lua"))()
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/ESPLibrary.lua"))()
+ESP.ESPFolder.Parent = workspace
+
+-- ===== 变量定义 =====
+local SelectedTarget = nil
+local FunTarget = nil
+local SelectedLocation = nil
+local SelectedItem = nil
+local HitboxConnection = nil
+local FastInteractConn = nil
+
+local Whitelist = {
+    2953444466,
+    5509421902
+}
+local ItemsOnSaleList = {}
+local Locations = {
+    ["军械库"] = CFrame.new(671.68688964844, 6.2448601722717, -655.50268554688),
+    ["银行"] = CFrame.new(1091.5296630859, 6.0434188842773, -457.62033081055),
+    ["珠宝店"] = CFrame.new(1543.3168945312, 6.2433180809021, -682.63525390625),
+    ["警察局"] = CFrame.new(655.10638427734, 9.035834312439, -903.20697021484),
+    ["军事基地"] = CFrame.new(835.84875488281, 25.234800338745, -1327.0417480469),
+    ["医院"] = CFrame.new(1112.4508056641, 6.0434203147888, -973.91772460938),
+    ["游乐场"] = CFrame.new(1170.8796386719, 13.850684165955, -25.795112609863)
 }
 
--- ========= 黑名单 =========
-if blacklist[player.Name] then
-    task.wait(1)
-    player:Kick("You have been blacklisted. The information is:\n Our script has blacklisted you. Please try to contact the author.")
-    return
-end
+local AirdropCallback = Instance.new("BindableFunction")
 
--- ========= 文件 =========
-local canSave = (writefile and readfile)
+-- ===== 获取 Remotes =====
+local RemotesModule = require(ReplicatedStorage.devv.client.Helpers.remotes.Signal)
+local Remotes = debug.getupvalue(RemotesModule.FireServer, 1)
+local ClientReplicator = require(ReplicatedStorage.devv.client.Helpers.objectProperties.ClientReplicator)
+local Inventory = require(ReplicatedStorage.devv.client.Objects.v3item.modules.inventory)
 
-local function loadConfig()
-    if not canSave then return false end
-    if isfile and isfile(CONFIG_FILE) then
-        return readfile(CONFIG_FILE) == "true"
-    end
-    return false
-end
-
-local function saveConfig()
-    if canSave then
-        writefile(CONFIG_FILE, "true")
-    end
-end
-
-local function runScript()
-    loadstring(game:HttpGet(LOAD_URL))()
-end
-
--- ========= 已不再提示 =========
-if loadConfig() then
-    runScript()
-    return
-end
-
--- ========= UI =========
-local gui = Instance.new("ScreenGui")
-gui.Parent = game.CoreGui
-gui.ResetOnSpawn = false
-
-local blur = Instance.new("BlurEffect")
-blur.Size = 18
-blur.Parent = game.Lighting
-
--- 主框（真正居中）
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 320, 0, 200)
-frame.AnchorPoint = Vector2.new(0.5, 0.5)
-frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-frame.BackgroundTransparency = 0.25
-frame.Parent = gui
-
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
-
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(255,255,255)
-stroke.Transparency = 0.7
-
--- 标题
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,40)
-title.Text = "Join our Discord"
-title.TextColor3 = Color3.new(1,1,1)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.Parent = frame
-
--- QQ
-local qqLabel = Instance.new("TextLabel")
-qqLabel.Size = UDim2.new(1,0,0,30)
-qqLabel.Position = UDim2.new(0,0,0,40)
-qqLabel.Text = "Discord "..QQ_NUMBER
-qqLabel.TextColor3 = Color3.new(1,1,1)
-qqLabel.BackgroundTransparency = 1
-qqLabel.Parent = frame
-
--- 勾选
-local checked = false
-
-local checkbox = Instance.new("TextButton")
-checkbox.Size = UDim2.new(0,18,0,18)
-checkbox.Position = UDim2.new(0,20,0,90)
-checkbox.BackgroundColor3 = Color3.fromRGB(40,40,40)
-checkbox.Text = ""
-checkbox.Parent = frame
-Instance.new("UICorner", checkbox)
-
-local checkText = Instance.new("TextLabel")
-checkText.Size = UDim2.new(0,120,0,20)
-checkText.Position = UDim2.new(0,42,0,88) -- ⭐ 靠近对齐
-checkText.Text = "不再提示"
-checkText.TextColor3 = Color3.new(1,1,1)
-checkText.BackgroundTransparency = 1
-checkText.TextXAlignment = Enum.TextXAlignment.Left
-checkText.Parent = frame
-
-checkbox.MouseButton1Click:Connect(function()
-    checked = not checked
-    checkbox.Text = checked and "✅" or ""
-end)
-
--- 按钮样式
-local function style(btn)
-    btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    btn.TextColor3 = Color3.new(1,1,1)
-    Instance.new("UICorner", btn)
-end
-
--- 拒绝
-local refuse = Instance.new("TextButton")
-refuse.Size = UDim2.new(0.4,0,0,40)
-refuse.Position = UDim2.new(0.1,0,1,-55)
-refuse.Text = "No"
-refuse.Parent = frame
-style(refuse)
-
-refuse.MouseButton1Click:Connect(function()
-    if checked then saveConfig() end
-    blur:Destroy()
-    gui:Destroy()
-    runScript()
-end)
-
--- 加入QQ群
-local join = Instance.new("TextButton")
-join.Size = UDim2.new(0.4,0,0,40)
-join.Position = UDim2.new(0.5,0,1,-55)
-join.Text = "Copy the link"
-join.Parent = frame
-style(join)
-
-join.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(QQ_NUMBER)
+-- ===== 初始化物品列表 =====
+task.spawn(function()
+    for _, item in pairs(workspace.ItemsOnSale:GetChildren()) do
+        ItemsOnSaleList[item.Name] = item.Name
     end
 
-    -- ⭐ 自动不再提示（关键改动）
-    saveConfig()
+    for _, conn in pairs(getconnections(game:GetService("RunService").Heartbeat)) do
+        local fn = conn.Function
+        if fn and getfenv(fn).script == ReplicatedStorage.devv.client.Handlers.ClientValidate then
+            conn:Disable()
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "wdfex：提示",
+                Text = "飞行/速度封禁绕过成功"
+            })
+        end
+    end
 
-    join.Text = "Copide"
-
-    task.wait(0.5)
-
-    blur:Destroy()
-    gui:Destroy()
-    runScript()
+    getgenv().fixedremotes = {}
+    for name, remote in next, RemotesModule do
+        local upval = debug.getupvalue(remote, 1)
+        if upval then
+            getgenv().fixedremotes[name] = upval
+        end
+    end
 end)
+
+-- ===== 辅助函数 =====
+local function FindPlayer(input)
+    local query = input:gsub("%s+", "")
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name:lower():match("^" .. query:lower()) then
+            return player
+        end
+        if player.DisplayName:lower():match("^" .. query:lower()) then
+            return player
+        end
+    end
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "wdfex：错误",
+        Text = "未找到玩家"
+    })
+    return nil
+end
+
+local function RefreshItemESP()
+    for _, item in pairs(workspace.Game.Entities.ItemPickup:GetChildren()) do
+        for _, part in pairs(item:GetDescendants()) do
+            if part:IsA("MeshPart") then
+                for _, prompt in pairs(part:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") then
+                        ESP.Add({
+                            Object = part,
+                            Name = prompt.ObjectText,
+                            Color = Color3.new(1, 1, 1),
+                            TextSize = 12,
+                            Tag = "ItemESP",
+                            ShowDistance = false
+                        })
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- ===== Hook =====
+local OriginalNamecall
+OriginalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+
+    if checkcaller() then
+        return OriginalNamecall(self, ...)
+    end
+
+    if method == "FireServer" and self == Remotes.meleeItemHit then
+        if tostring(args[1]) == "player" and not table.find(Whitelist, args[2].hitPlayerId) then
+            if Fluent.Options.OnePunch.Value then
+                if not string.find(tostring(args[2].meleeType), "swing") then
+                    args[2].meleeType = "meleemegapunch"
+                end
+            end
+            if Fluent.Options.OneSwing.Value then
+                if string.find(tostring(args[2].meleeType), "swing") then
+                    args[2].meleeType = "meleemegaswing"
+                end
+            end
+            return OriginalNamecall(self, unpack(args))
+        end
+    end
+
+    if Fluent.Options.Hitbox.Value and method == "FireServer" and self == Remotes.projectileHit then
+        local hitPart = args[2].hitPart
+        local model = hitPart:FindFirstAncestorOfClass("Model")
+        local hitPlayer = Players:GetPlayerFromCharacter(model)
+        if model and hitPlayer then
+            args[2].hitPart = model.Hitbox["Head_Hitbox"]
+            args[2].hitPlayerId = hitPlayer.UserId
+            args[2].hitSize = args[2].hitPart.Size
+            args[2].pos = args[2].hitPart.Position
+        end
+        return OriginalNamecall(self, unpack(args))
+    end
+
+    return OriginalNamecall(self, ...)
+end)
+
+-- ===== 事件连接 =====
+Fluent:GiveSignal(workspace.Game.Entities.ItemPickup.DescendantAdded:Connect(function(obj)
+    if Fluent.Options.SItemsFarm.Value and obj:IsA("ProximityPrompt") then
+        local v = Fluent.Options.SelectedItems.Value
+        local match = (v["红卡"] and obj.ObjectText == "Military Armory Keycard")
+            or (v["蓝卡"] and obj.ObjectText == "Police Armory Keycard")
+            or (v["印钞机"] and obj.ObjectText == "Money Printer")
+            or (v["气球"] and obj.ObjectText:match("Balloon"))
+        if match then
+            local savedCF = HumanoidRootPart.CFrame
+            Character:PivotTo(obj.Parent:GetPivot())
+            task.wait()
+            for i = 1, 5 do
+                fireproximityprompt(obj)
+                task.wait(0.1)
+            end
+            if Fluent.Options.ReturnOnTeleport.Value then
+                Character:PivotTo(savedCF)
+            end
+        end
+    end
+end))
+
+Fluent:GiveSignal(workspace.Game.Entities.ItemPickup.ChildAdded:Connect(function()
+    if Fluent.Options.ItemESP.Value then
+        ESP.Clear("ItemESP")
+        RefreshItemESP()
+    end
+end))
+
+Fluent:GiveSignal(workspace.Game.Airdrops.ChildAdded:Connect(function(airdrop)
+    if not Fluent.Options.NotifyAirdrop.Value then return end
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "空投已刷新",
+        Text = "是否传送到空投？",
+        Duration = 5,
+        Button1 = "是",
+        Button2 = "否",
+        Callback = AirdropCallback
+    })
+    AirdropCallback.OnInvoke = function(response)
+        if response == "是" then
+            Character:PivotTo(airdrop:GetPivot())
+        end
+    end
+end))
+
+Fluent:GiveSignal(workspace.Game.Entities.CashBundle.ChildAdded:Connect(function(obj)
+    if not Fluent.Options.CashESP.Value then return end
+    task.delay(0.2, function()
+        local intVal = obj:FindFirstChildOfClass("IntValue")
+        if intVal then
+            ESP.Add(obj, intVal.Value, Color3.fromRGB(23, 255, 42), 10, "CashESP")
+        end
+    end)
+end))
+
+Fluent:GiveSignal(LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    Humanoid = char:WaitForChild("Humanoid")
+    HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+    if Fluent.Options.AutoEquip.Value then
+        Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
+    end
+end))
+
+Fluent:GiveSignal(RunService.RenderStepped:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if not char then continue end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hum or not hrp then continue end
+            if char:FindFirstChild("ForceField") then continue end
+            if table.find(Whitelist, player.UserId) then continue end
+
+            if Fluent.Options.KillAura.Value then
+                local dist = (HumanoidRootPart.Position - hrp.Position).Magnitude
+                if dist < 35 and hum.Health > 5 then
+                    Remotes.FireServer("meleeItemHit", "player", {
+                        meleeType = "meleemegapunch",
+                        hitPlayerId = player.UserId
+                    })
+                end
+            end
+
+            if Fluent.Options.StompAura.Value then
+                if ClientReplicator.Get(player, "knocked") then
+                    local dist = (HumanoidRootPart.Position - hrp.Position).Magnitude
+                    if dist < 30 then
+                        Remotes.FireServer("stomp", player)
+                    end
+                end
+            end
+
+            if Fluent.Options.GrabAura.Value then
+                if ClientReplicator.Get(player, "knocked") then
+                    local dist = (HumanoidRootPart.Position - hrp.Position).Magnitude
+                    if dist < 35 then
+                        Remotes.FireServer("grabPlayer", player)
+                    end
+                end
+            end
+        end
+    end
+
+    if Fluent.Options.Godmode.Value then
+        if ClientReplicator.Get(LocalPlayer, "knocked") then
+            ClientReplicator.Set(LocalPlayer, "knocked", false)
+        end
+    end
+
+    if Fluent.Options.WalkSpeed.IsMoved and Humanoid then
+        Humanoid.WalkSpeed = Fluent.Options.WalkSpeed.Value
+    end
+    if Fluent.Options.JumpPower.IsMoved and Humanoid then
+        Humanoid.JumpPower = Fluent.Options.JumpPower.Value
+        Humanoid.UseJumpPower = true
+    end
+
+    if Fluent.Options.Noclip.Value and Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+
+    if Fluent.Options.Fullbright.Value then
+        Lighting.Ambient = Color3.new(1, 1, 1)
+    else
+        Lighting.Ambient = Color3.new(0, 0, 0)
+    end
+end))
+
+Fluent:GiveSignal(UserInputService.JumpRequest:Connect(function()
+    if Fluent.Options.InfJump.Value and Humanoid then
+        Humanoid:ChangeState("Jumping")
+    end
+end))
+
+-- ===== 创建窗口 =====
+local Window = Fluent:CreateWindow({
+    Title = "wdfex-Hub",
+    SubTitle = "多功能综合脚本",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 420),
+    Acrylic = false,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+-- ============================================
+-- 标签页 1：战斗类
+-- ============================================
+local TabCombat = Window:AddTab({ Title = "战斗类", Icon = "" })
+
+TabCombat:AddToggle("OnePunch", {
+    Title = "一拳秒杀",
+    Default = false
+})
+
+TabCombat:AddToggle("OneSwing", {
+    Title = "其他近战武器秒杀",
+    Default = false
+})
+
+TabCombat:AddToggle("KillAura", {
+    Title = "杀戮光环",
+    Default = false,
+    Callback = function(val)
+        if val then
+            Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
+        end
+    end
+})
+
+TabCombat:AddToggle("StompAura", {
+    Title = "踩人光环",
+    Default = false
+})
+
+TabCombat:AddToggle("GrabAura", {
+    Title = "抓人光环",
+    Default = false
+})
+
+TabCombat:AddToggle("Killall", {
+    Title = "杀死全部",
+    Default = false,
+    Callback = function(val)
+        if val then
+            Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
+        end
+        HumanoidRootPart.Anchored = val
+        while Fluent.Options.Killall.Value do
+            task.wait()
+            for _, player in pairs(Players:GetPlayers()) do
+                if not Fluent.Options.Killall.Value then break end
+                if player == LocalPlayer then continue end
+                if table.find(Whitelist, player.UserId) then continue end
+                local char = player.Character
+                if not char then continue end
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if not hum then continue end
+                if char:FindFirstChild("ForceField") then continue end
+                if hum.Health <= 5 then continue end
+                task.wait()
+                Humanoid.Sit = false
+                Character:PivotTo(char.HumanoidRootPart.CFrame)
+                Remotes.FireServer("meleeItemHit", "player", {
+                    meleeType = "meleemegapunch",
+                    hitPlayerId = player.UserId
+                })
+                Remotes.FireServer("stomp", player)
+                task.wait(0.7)
+            end
+        end
+        HumanoidRootPart.Anchored = false
+    end
+})
+
+TabCombat:AddToggle("AutoEquip", {
+    Title = "死亡自动装备拳头",
+    Default = false
+})
+
+TabCombat:AddToggle("Godmode", {
+    Title = "防倒地",
+    Default = false
+})
+
+TabCombat:AddToggle("Invisible", {
+    Title = "隐身",
+    Description = "可用枪械攻击",
+    Default = false,
+    Callback = function(val)
+        if val then
+            local savedCF = HumanoidRootPart.CFrame
+            Character:MoveTo(Vector3.new(-25.95, 84, 3537.55))
+            task.wait(0.15)
+            local chair = Instance.new("Seat", workspace)
+            chair.Anchored = false
+            chair.CanCollide = false
+            chair.Name = "invischair"
+            chair.Transparency = 1
+            chair.Position = Vector3.new(-25.95, 84, 3537.55)
+            local weld = Instance.new("Weld", chair)
+            weld.Part0 = chair
+            local torso = Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")
+            if torso then
+                weld.Part1 = torso
+                task.wait()
+                Instance.new("Seat", workspace).CFrame = savedCF
+            end
+        else
+            local chair = workspace:FindFirstChild("invischair")
+            if chair then chair:Remove() end
+        end
+    end
+})
+
+TabCombat:AddToggle("RPGBomb", {
+    Title = "RPG全图轰炸",
+    Default = false,
+    Callback = function(val)
+        if not val then return end
+        if not Inventory.getFromName("RPG") then
+            Remotes.InvokeServer("attemptPurchase", "RPG")
+        end
+        local equip = Inventory.getEquippedItem()
+        if equip and equip.name ~= "RPG" then return end
+        if equip then
+            Remotes.FireServer("replicateProjectiles", equip.guid, {
+                { "AmmoGuid", HumanoidRootPart.CFrame }
+            }, "semi")
+        end
+        task.spawn(function()
+            while Fluent.Options.RPGBomb.Value do
+                task.wait()
+                local item = Inventory.getEquippedItem()
+                if not item or item.name ~= "RPG" then continue end
+                for _, player in pairs(Players:GetPlayers()) do
+                    if not Fluent.Options.RPGBomb.Value then break end
+                    if player == LocalPlayer then continue end
+                    if table.find(Whitelist, player.UserId) then continue end
+                    local char = player.Character
+                    if not char then continue end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum or hum.Health <= 10 then continue end
+                    if char:FindFirstChild("ForceField") then continue end
+                    Remotes.FireServer("rocketHit", "AmmoGuid", "explosionGUID", char.HumanoidRootPart.Position)
+                end
+            end
+        end)
+        repeat task.wait(5) until not Fluent.Options.RPGBomb.Value
+    end
+})
+
+TabCombat:AddToggle("AutoArmor", {
+    Title = "自动穿甲",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.AutoArmor.Value do
+            task.wait()
+            if not Character then continue end
+            local armor = LocalPlayer:GetAttribute("armor")
+            if not armor or armor <= 0 then
+                Remotes.InvokeServer("attemptPurchase", "Light Vest")
+                local guid = Inventory.getFromName("Light Vest").guid
+                Remotes.FireServer("equip", guid)
+                Remotes.FireServer("useConsumable", guid)
+                Remotes.FireServer("removeItem", guid)
+            end
+        end
+    end
+})
+
+TabCombat:AddSection("子弹范围")
+
+TabCombat:AddToggle("Hitbox", {
+    Title = "开关",
+    Default = false,
+    Callback = function(val)
+        if val then
+            HitboxConnection = RunService.RenderStepped:Connect(function()
+                for _, player in next, Players:GetPlayers() do
+                    pcall(function()
+                        player.Character.HumanoidRootPart.Size = Vector3.new(
+                            Fluent.Options.HitboxSize.Value,
+                            Fluent.Options.HitboxSize.Value,
+                            Fluent.Options.HitboxSize.Value
+                        )
+                        player.Character.HumanoidRootPart.Transparency = Fluent.Options.HitboxTransparency.Value
+                        player.Character.HumanoidRootPart.Color = Color3.fromRGB(0, 0, 0)
+                        player.Character.HumanoidRootPart.Material = "Neon"
+                        player.Character.HumanoidRootPart.CanCollide = false
+                    end)
+                end
+            end)
+        else
+            if HitboxConnection then HitboxConnection:Disconnect() end
+            task.wait()
+            for _, player in next, Players:GetPlayers() do
+                pcall(function()
+                    player.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                    player.Character.HumanoidRootPart.Transparency = 1
+                    player.Character.HumanoidRootPart.Color = Color3.fromRGB(163, 162, 165)
+                    player.Character.HumanoidRootPart.BrickColor = BrickColor.new("Medium stone grey")
+                    player.Character.HumanoidRootPart.Material = "Plastic"
+                    player.Character.HumanoidRootPart.CanCollide = false
+                end)
+            end
+        end
+    end
+})
+
+TabCombat:AddInput("HitboxSize", {
+    Title = "输入大小",
+    Default = "15",
+    Numeric = false,
+    Finished = true
+})
+
+TabCombat:AddInput("HitboxTransparency", {
+    Title = "输入透明度",
+    Default = "0.8",
+    Numeric = false,
+    Finished = true
+})
+
+TabCombat:AddSection("白名单")
+
+local WhitelistInput
+WhitelistInput = TabCombat:AddInput("Input", {
+    Title = "输入名称 当前：无",
+    Numeric = false,
+    Finished = true,
+    Callback = function(val)
+        local found = FindPlayer(val)
+        if found then
+            WhitelistInput:SetTitle("输入名称 当前：" .. found.Name)
+            SelectedTarget = found
+        else
+            WhitelistInput:SetTitle("输入名称 当前：无")
+            SelectedTarget = nil
+        end
+    end
+})
+
+TabCombat:AddButton({
+    Title = "添加至白名单",
+    Callback = function()
+        if SelectedTarget then
+            Window:Dialog({
+                Title = "添加白名单",
+                Content = "是否将玩家" .. SelectedTarget.Name .. "添加至白名单？",
+                Buttons = {
+                    {
+                        Title = "是",
+                        Callback = function()
+                            if not table.find(Whitelist, SelectedTarget.UserId) then
+                                table.insert(Whitelist, SelectedTarget.UserId)
+                            else
+                                Fluent:Notify({ Title = "wdfex：错误", Content = "该玩家已经被添加至白名单" })
+                            end
+                        end
+                    },
+                    { Title = "否", Callback = function() end }
+                }
+            })
+        else
+            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+        end
+    end
+})
+
+TabCombat:AddButton({
+    Title = "移除白名单",
+    Callback = function()
+        if SelectedTarget then
+            Window:Dialog({
+                Title = "移除白名单",
+                Content = "是否将玩家" .. SelectedTarget.Name .. "移除白名单？",
+                Buttons = {
+                    {
+                        Title = "是",
+                        Callback = function()
+                            local idx = table.find(Whitelist, SelectedTarget.UserId)
+                            if idx then
+                                table.remove(Whitelist, idx)
+                            else
+                                Fluent:Notify({ Title = "wdfex：错误", Content = "该玩家没有白名单，无法移除" })
+                            end
+                        end
+                    },
+                    { Title = "否" }
+                }
+            })
+        else
+            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+        end
+    end
+})
+
+TabCombat:AddButton({
+    Title = "清空白名单",
+    Callback = function()
+        table.clear(Whitelist)
+    end
+})
+
+-- ============================================
+-- 标签页 2：物品
+-- ============================================
+local TabItems = Window:AddTab({ Title = "物品", Icon = "" })
+
+TabItems:AddDropdown("SelectItem", {
+    Title = "选择物品",
+    Values = (function()
+        local list = {}
+        for k in pairs(ItemsOnSaleList) do
+            table.insert(list, k)
+        end
+        table.sort(list)
+        return list
+    end)(),
+    Multi = false,
+    Searchable = true,
+    Callback = function(val)
+        SelectedItem = val
+    end
+})
+
+TabItems:AddButton({
+    Title = "购买",
+    Callback = function()
+        if SelectedItem then
+            Remotes.InvokeServer("attemptPurchase", SelectedItem)
+        else
+            game.StarterGui:SetCore("SendNotification", { Title = "错误", Text = "请先选择物品" })
+        end
+    end
+})
+
+TabItems:AddButton({
+    Title = "购买子弹",
+    Callback = function()
+        if SelectedItem then
+            Remotes.InvokeServer("attemptPurchaseAmmo", SelectedItem)
+        else
+            game.StarterGui:SetCore("SendNotification", { Title = "错误", Text = "请先选择物品" })
+        end
+    end
+})
+
+TabItems:AddToggle("ShowBuyUI", {
+    Title = "显示购买界面",
+    Default = false,
+    Callback = function()
+        if not SelectedItem then return end
+        while Fluent.Options.ShowBuyUI.Value do
+            task.wait()
+            local itemNode = workspace.ItemsOnSale:FindFirstChild(SelectedItem)
+            if itemNode then
+                local td = itemNode:FindFirstChildOfClass("TouchDetector")
+                if td then
+                    firetouchinterest(td.Parent, HumanoidRootPart, 0)
+                    firetouchinterest(td.Parent, HumanoidRootPart, 1)
+                end
+            end
+        end
+    end
+})
+
+TabItems:AddToggle("BlackMarket", {
+    Title = "远程黑市",
+    Default = false,
+    Callback = function(val)
+        workspace.BlackMarket.Dealer.Dealer.ProximityPrompt.MaxActivationDistance = val and 10000 or 20
+    end
+})
+
+TabItems:AddToggle("Locker", {
+    Title = "远程储物柜",
+    Description = "打开背包即可",
+    Default = false,
+    Callback = function(val)
+        LocalPlayer.PlayerGui.Backpack.Holder.Locker.Visible = val
+    end
+})
+
+TabItems:AddToggle("FastInteract", {
+    Title = "快速互动",
+    Default = false,
+    Callback = function(val)
+        if val then
+            FastInteractConn = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+                fireproximityprompt(prompt)
+            end)
+        else
+            if FastInteractConn then FastInteractConn:Disconnect() end
+        end
+    end
+})
+
+TabItems:AddToggle("ItemESP", {
+    Title = "透视物品",
+    Default = false,
+    Callback = function(val)
+        if val then
+            RefreshItemESP()
+        else
+            ESP.Clear("ItemESP")
+        end
+    end
+})
+
+-- ============================================
+-- 标签页 3：自动
+-- ============================================
+local TabAuto = Window:AddTab({ Title = "自动", Icon = "" })
+
+TabAuto:AddToggle("ATMFarm", {
+    Title = "自动打ATM",
+    Default = false,
+    Callback = function(val)
+        if val then
+            Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
+        end
+        while Fluent.Options.ATMFarm.Value do
+            task.wait()
+            for _, atm in pairs(workspace.Game.Props.ATM:GetChildren()) do
+                if not Fluent.Options.ATMFarm.Value then break end
+                if atm:GetAttribute("state") ~= "destroyed" then
+                    while atm:GetAttribute("state") ~= "destroyed" and Fluent.Options.ATMFarm.Value do
+                        task.wait()
+                        Character:PivotTo(atm:GetPivot())
+                        Remotes.FireServer("meleeItemHit", "prop", {
+                            meleeType = "meleepunch",
+                            guid = atm:GetAttribute("guid")
+                        })
+                    end
+                    task.wait(1)
+                    for _, bundle in pairs(workspace.Game.Entities.CashBundle:GetChildren()) do
+                        local cd = bundle:FindFirstChildOfClass("ClickDetector")
+                        if cd and (HumanoidRootPart.Position - bundle:GetPivot().Position).Magnitude <= cd.MaxActivationDistance then
+                            fireclickdetector(cd)
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+TabAuto:AddToggle("RegisterFarm", {
+    Title = "自动打收银机",
+    Default = false,
+    Callback = function(val)
+        if val then
+            Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
+        end
+        while Fluent.Options.RegisterFarm.Value do
+            task.wait()
+            for _, reg in pairs(workspace.Game.Props.CashRegister:GetChildren()) do
+                if not Fluent.Options.RegisterFarm.Value then break end
+                if reg:GetAttribute("state") ~= "destroyed" then
+                    while reg:GetAttribute("state") ~= "destroyed" and Fluent.Options.RegisterFarm.Value do
+                        task.wait()
+                        Character:PivotTo(reg:GetPivot())
+                        Remotes.FireServer("meleeItemHit", "prop", {
+                            meleeType = "meleepunch",
+                            guid = reg:GetAttribute("guid")
+                        })
+                    end
+                    task.wait(1)
+                    for _, bundle in pairs(workspace.Game.Entities.CashBundle:GetChildren()) do
+                        local cd = bundle:FindFirstChildOfClass("ClickDetector")
+                        if cd and (HumanoidRootPart.Position - bundle:GetPivot().Position).Magnitude <= cd.MaxActivationDistance then
+                            fireclickdetector(cd)
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+TabAuto:AddToggle("AutoRobBank", {
+    Title = "自动抢银行",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.AutoRobBank.Value do
+            local cash = workspace.BankRobbery.BankCash.Cash
+            repeat task.wait() until #cash:GetChildren() ~= 0
+            pcall(function()
+                HumanoidRootPart.CFrame = workspace.BankRobbery.VaultDoor.Door.CFrame
+                fireproximityprompt(workspace.BankRobbery.VaultDoor.Door.Attachment.ProximityPrompt)
+                task.wait(0.5)
+            end)
+            repeat task.wait() until not workspace.BankRobbery.VaultDoor.Door.Attachment.ProximityPrompt.Enabled
+            HumanoidRootPart.CFrame = workspace.BankRobbery.BankCash.Pallet.CFrame
+            fireproximityprompt(workspace.BankRobbery.BankCash.Main.Attachment.ProximityPrompt)
+            task.wait(0.5)
+            task.wait()
+        end
+    end
+})
+
+TabAuto:AddToggle("CashFarm", {
+    Title = "自动捡钱(未测试)",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.CashFarm.Value do
+            task.wait()
+            for _, bundle in pairs(workspace.Game.Entities.CashBundle:GetChildren()) do
+                if not Fluent.Options.CashFarm.Value then break end
+                local cd = bundle:FindFirstChildOfClass("ClickDetector")
+                if cd then
+                    Character:PivotTo(bundle:GetPivot())
+                    task.wait(0.5)
+                    fireclickdetector(cd)
+                    task.wait(1)
+                end
+            end
+        end
+    end
+})
+
+TabAuto:AddToggle("CashAura", {
+    Title = "捡钱光环",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.CashAura.Value do
+            for _, bundle in pairs(workspace.Game.Entities.CashBundle:GetChildren()) do
+                local cd = bundle:FindFirstChildOfClass("ClickDetector")
+                if cd and (HumanoidRootPart.Position - bundle:GetPivot().Position).Magnitude <= cd.MaxActivationDistance then
+                    fireclickdetector(cd)
+                end
+            end
+            wait(0.25)
+        end
+    end
+})
+
+TabAuto:AddToggle("ItemFarm", {
+    Title = "自动捡物品",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.ItemFarm.Value do
+            task.wait()
+            for _, item in pairs(workspace.Game.Entities.ItemPickup:GetChildren()) do
+                if not Fluent.Options.ItemFarm.Value then break end
+                local cd = item:FindFirstChildWhichIsA("ClickDetector", true)
+                if cd then
+                    Character:PivotTo(cd.Parent.CFrame)
+                    task.wait(0.5)
+                    fireclickdetector(cd)
+                    task.wait(1.5)
+                end
+            end
+        end
+    end
+})
+
+TabAuto:AddToggle("ItemAura", {
+    Title = "捡物品光环",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.ItemAura.Value do
+            for _, item in pairs(workspace.Game.Entities.ItemPickup:GetChildren()) do
+                if not Fluent.Options.ItemAura.Value then
+                    wait(0.25)
+                    continue
+                end
+                pcall(function()
+                    local cd = item:FindFirstChildWhichIsA("ClickDetector", true)
+                    if cd and (HumanoidRootPart.Position - item:GetPivot().Position).Magnitude <= cd.MaxActivationDistance then
+                        fireclickdetector(cd)
+                    end
+                end)
+            end
+        end
+    end
+})
+
+TabAuto:AddDropdown("SelectedItems", {
+    Title = "选择物品",
+    Values = { "红卡", "蓝卡", "印钞机", "气球" },
+    Multi = true,
+    AllowNull = true,
+    Callback = function()
+        if Fluent.Options.SItemsFarm.Value then
+            Fluent.Options.SItemsFarm:SetValue(true)
+        end
+    end
+})
+
+TabAuto:AddToggle("SItemsFarm", {
+    Title = "自动捡选中的物品",
+    Default = false,
+    Callback = function(val)
+        if not val then return end
+        local v = Fluent.Options.SelectedItems.Value
+        for _, item in pairs(workspace.Game.Entities.ItemPickup:GetDescendants()) do
+            if item:IsA("ProximityPrompt") then
+                local match = (v["红卡"] and item.ObjectText == "Military Armory Keycard")
+                    or (v["蓝卡"] and item.ObjectText == "Police Armory Keycard")
+                    or (v["印钞机"] and item.ObjectText == "Money Printer")
+                    or (v["气球"] and item.ObjectText:match("Balloon"))
+                if match then
+                    local savedCF = HumanoidRootPart.CFrame
+                    Character:PivotTo(item.Parent:GetPivot())
+                    task.wait()
+                    for i = 1, 5 do
+                        fireproximityprompt(item)
+                        task.wait(0.1)
+                    end
+                    Character:PivotTo(savedCF)
+                    wait(1.5)
+                end
+            end
+        end
+    end
+})
+
+TabAuto:AddToggle("ReturnOnTeleport", {
+    Title = "是否回传",
+    Default = false
+})
+
+TabAuto:AddToggle("NotifyAirdrop", {
+    Title = "空投刷新提示",
+    Default = false
+})
+
+TabAuto:AddButton({
+    Title = "自动换服寻找印钞机",
+    Callback = function()
+        Fluent:Notify({
+            Title = "使用说明",
+            Content = "如果您的注入器不受脚本支持\n请在手机目录/" .. identifyexecutor() .. "/Autoexec文件夹添加脚本 以便脚本自动执行"
+        })
+        wait(3)
+        writefile("wdfex-Hub/Fluent/AutoFindMoneyPrinter.txt", "true")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Games/俄亥俄州_印钞机.lua"))()
+    end
+})
+
+-- ============================================
+-- 标签页 4：传送
+-- ============================================
+local TabTeleport = Window:AddTab({ Title = "传送", Icon = "" })
+
+TabTeleport:AddDropdown("SelectLocation", {
+    Title = "选择地点",
+    Values = (function()
+        local list = {}
+        for k in pairs(Locations) do
+            table.insert(list, k)
+        end
+        return list
+    end)(),
+    Multi = false,
+    Callback = function(val)
+        SelectedLocation = val
+    end
+})
+
+TabTeleport:AddButton({
+    Title = "传送",
+    Callback = function()
+        if SelectedLocation then
+            Character:PivotTo(Locations[SelectedLocation])
+        end
+    end
+})
+
+-- ============================================
+-- 标签页 5：娱乐
+-- ============================================
+local TabFun = Window:AddTab({ Title = "娱乐", Icon = "" })
+local FunTargetInput
+
+FunTargetInput = TabFun:AddInput("Input", {
+    Title = "输入名称 当前：无",
+    Numeric = false,
+    Finished = true,
+    Callback = function(val)
+        local found = FindPlayer(val)
+        FunTarget = found
+        if found then
+            FunTargetInput:SetTitle("输入名称 当前：" .. found.Name)
+        else
+            FunTargetInput:SetTitle("输入名称 当前：无")
+        end
+    end
+})
+
+TabFun:AddInput("SpamMessage", {
+    Title = "输入消息",
+    Default = "wdfex-Hub No.1",
+    Numeric = false,
+    Finished = true
+})
+
+TabFun:AddToggle("SpamPlayer", {
+    Title = "消息轰炸",
+    Default = false,
+    Callback = function()
+        if not FunTarget then
+            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            return
+        end
+        while Fluent.Options.SpamPlayer.Value do
+            task.wait(0.2)
+            Remotes.FireServer("sendMessage", FunTarget.UserId, Fluent.Options.SpamMessage.Value)
+        end
+    end
+})
+
+TabFun:AddToggle("SpamCall", {
+    Title = "电话骚扰",
+    Default = false,
+    Callback = function()
+        if not FunTarget then
+            Fluent:Notify({ Title = "wdfex：错误", Content = "请先输入名称" })
+            return
+        end
+        while Fluent.Options.SpamCall.Value do
+            task.wait(0.2)
+            Remotes.InvokeServer("attemptCall", FunTarget.UserId)
+        end
+    end
+})
+
+TabFun:AddToggle("SpamAll", {
+    Title = "消息轰炸全体",
+    Default = false,
+    Callback = function()
+        while Fluent.Options.SpamAll.Value do
+            task.wait(0.2)
+            for _, player in pairs(Players:GetPlayers()) do
+                if not Fluent.Options.SpamAll.Value then break end
+                Remotes.FireServer("sendMessage", player.UserId, Fluent.Options.SpamMessage.Value)
+            end
+        end
+    end
+})
+
+-- ============================================
+-- 标签页 6：数据
+-- ============================================
+local TabData = Window:AddTab({ Title = "数据", Icon = "" })
+
+TabData:AddParagraph({ Title = "是否被封禁：否" })
+TabData:AddParagraph({ Title = "封禁开始期：无" })
+TabData:AddParagraph({ Title = "封禁结束期：无" })
+local BanTimeLabel = TabData:AddParagraph({ Title = "剩余封禁时间：无" })
+TabData:AddParagraph({ Title = "封禁原因：无" })
+TabData:AddParagraph({ Title = "历史封禁次数：0" })
+
+-- ============================================
+-- 标签页 7：其他
+-- ============================================
+local TabOther = Window:AddTab({ Title = "其他", Icon = "" })
+
+TabOther:AddToggle("ShowChat", {
+    Title = "显示聊天框",
+    Default = false,
+    Callback = function(val)
+        game:GetService("TextChatService").ChatWindowConfiguration.Enabled = val
+    end
+})
+
+TabOther:AddToggle("CashESP", {
+    Title = "透视钱",
+    Default = false,
+    Callback = function(val)
+        if val then
+            for _, bundle in pairs(workspace.Game.Entities.CashBundle:GetChildren()) do
+                local intVal = bundle:FindFirstChildOfClass("IntValue")
+                if intVal then
+                    ESP.Add(bundle, intVal.Value, Color3.fromRGB(23, 255, 42), 10, "CashESP")
+                end
+            end
+        else
+            ESP.Clear("CashESP")
+        end
+    end
+})
+
+TabOther:AddInput("ItemSlots", {
+    Title = "设置物品栏数量",
+    Numeric = true,
+    Finished = true,
+    Callback = function(val)
+        Inventory.numSlots = tonumber(val)
+    end
+})
+
+TabOther:AddSection("通用")
+
+TabOther:AddSlider("WalkSpeed", {
+    Title = "移动速度",
+    Default = 16,
+    Min = 0,
+    Max = 500,
+    Rounding = 1
+})
+
+TabOther:AddSlider("JumpPower", {
+    Title = "跳跃高度",
+    Default = 50,
+    Min = 0,
+    Max = 500,
+    Rounding = 1
+})
+
+TabOther:AddButton({
+    Title = "飞行",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/main/Content/FlyGuiV3"))()
+    end
+})
+
+TabOther:AddToggle("Noclip", {
+    Title = "穿墙",
+    Default = false,
+    Callback = function(val)
+        if not val and Humanoid then
+            Humanoid:ChangeState("Flying")
+        end
+    end
+})
+
+TabOther:AddToggle("Fullbright", {
+    Title = "夜视",
+    Default = false,
+    Callback = function(val)
+        if not val then
+            Lighting.Ambient = Color3.new(0, 0, 0)
+        end
+    end
+})
+
+TabOther:AddToggle("InfJump", {
+    Title = "无限跳",
+    Default = false
+})
+
+-- ============================================
+-- 标签页 8：设置
+-- ============================================
+local TabSettings = Window:AddTab({ Title = "设置", Icon = "" })
+
+local SaveManager = FluentResult[3]
+local InterfaceManager = FluentResult[4]
+
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:SetFolder("wdfex-Hub/Fluent")
+InterfaceManager:BuildInterfaceSection(TabSettings)
+
+SaveManager:SetLibrary(Fluent)
+SaveManager:SetFolder("wdfex-Hub/Fluent/" .. game.PlaceId)
+SaveManager:IgnoreThemeSettings()
+SaveManager:BuildConfigSection(TabSettings)
+SaveManager:LoadAutoloadConfig()
+
+Window:SelectTab(1)
