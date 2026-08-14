@@ -1,17 +1,3 @@
----关注b站UID:1531514159
----一群1035184654
----二群2168053189（聊天群）
----十九群1064447273（五百人群）
----二十一群178021813（五百人群）
----二十二群336225224（五百人群）
----二十三群218012845（五百人群）
----二十四群1035646571（五百人群）
----二十五群1071017763（五百人群）
----二十六群820782679（五百人群）
----二十七群1067211151（五百人群）
----Kenny脚本群1019547871（五百人群）
----sp源码分享协会727992470
----神青你妈死了瞎骂死爹烂妈
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 WindUI.TransparencyValue = 0.2
 WindUI:SetTheme("Dark")
@@ -370,7 +356,7 @@ for i = 1, #username do
 end
 
 WindUI:Popup({
-    Title = 'wdfex-HUB V3',
+    Title = 'wdfex-HUB',
     IconThemed = true,
     Icon = "crown",
     Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-HUB\n你的支持是我们更新的动力\n91",
@@ -396,7 +382,7 @@ function createUI()
         Title = 'wdfex-HUB',
         Icon = "crown",
         IconThemed = true,
-        Author = "v3.0.1 by wdfex",
+        Author = "当前版本：v1.0作者：wdfex",
         Folder = "CloudHub",
         Size = UDim2.fromOffset(300, 200),
         Transparent = true,
