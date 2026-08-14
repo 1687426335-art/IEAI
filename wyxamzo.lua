@@ -64,7 +64,7 @@ local function ShowWelcome()
         label.Size = UDim2.new(1, -15, 1, 0)
         label.Position = UDim2.new(0, 10, 0, 0)
         label.BackgroundTransparency = 1
-        label.Text = "欢迎使用 wdfex-Hub"
+        label.Text = "欢迎使用 wdfex 脚本"
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         label.TextSize = 18
         label.Font = Enum.Font.GothamBold
@@ -194,20 +194,6 @@ local function TeleportTo(pos)
     end)
 end
 
--- ===== 玩家查找函数 =====
-local function FindPlayer(input)
-    local query = input:gsub("%s+", "")
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():match("^" .. query:lower()) then
-            return player
-        end
-        if player.DisplayName:lower():match("^" .. query:lower()) then
-            return player
-        end
-    end
-    return nil
-end
-
 -- ===== 坐标列表 =====
 local Locations = {
     ["军械库"] = Vector3.new(671.68688964844, 6.2448601722717, -655.50268554688),
@@ -218,10 +204,6 @@ local Locations = {
     ["医院"] = Vector3.new(1112.4508056641, 6.0434203147888, -973.91772460938),
     ["游乐场"] = Vector3.new(1170.8796386719, 13.850684165955, -25.795112609863)
 }
-
--- ===== 状态变量 =====
-local KillAuraEnabled = false
-local RPGBombEnabled = false
 
 -- ===== 获取俄亥俄州 Remotes =====
 local Remotes, Inventory
@@ -269,34 +251,11 @@ Tab_Combat:Toggle({
     ["Desc"] = "自动攻击周围敌人",
     ["Default"] = false,
     ["Callback"] = function(bool)
-        KillAuraEnabled = bool
+        _G.KillAura = bool
         if bool and Remotes then
             pcall(function()
                 Remotes.FireServer("equip", Inventory.getFromName("Fists").guid)
             end)
-        end
-        while KillAuraEnabled do
-            task.wait(0.1)
-            if not Remotes then break end
-            for _, player in pairs(Players:GetPlayers()) do
-                if player == LocalPlayer then continue end
-                local char = player.Character
-                if not char then continue end
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if not hum or not hrp then continue end
-                if char:FindFirstChild("ForceField") then continue end
-                if hum.Health <= 5 then continue end
-                local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude or 999
-                if dist < 35 then
-                    pcall(function()
-                        Remotes.FireServer("meleeItemHit", "player", {
-                            meleeType = "meleemegapunch",
-                            hitPlayerId = player.UserId
-                        })
-                    end)
-                end
-            end
         end
     end
 })
@@ -333,40 +292,7 @@ Tab_Combat:Toggle({
     ["Desc"] = "使用RPG轰炸全图",
     ["Default"] = false,
     ["Callback"] = function(bool)
-        RPGBombEnabled = bool
-        if bool and Remotes then
-            if not Inventory.getFromName("RPG") then
-                pcall(function()
-                    Remotes.InvokeServer("attemptPurchase", "RPG")
-                end)
-            end
-            local equip = Inventory.getEquippedItem()
-            if equip and equip.name ~= "RPG" then return end
-            if equip then
-                pcall(function()
-                    Remotes.FireServer("replicateProjectiles", equip.guid, {
-                        { "AmmoGuid", LocalPlayer.Character.HumanoidRootPart.CFrame }
-                    }, "semi")
-                end)
-            end
-            while RPGBombEnabled do
-                task.wait(0.3)
-                local item = Inventory.getEquippedItem()
-                if not item or item.name ~= "RPG" then continue end
-                for _, player in pairs(Players:GetPlayers()) do
-                    if not RPGBombEnabled then break end
-                    if player == LocalPlayer then continue end
-                    local char = player.Character
-                    if not char then continue end
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if not hum or hum.Health <= 10 then continue end
-                    if char:FindFirstChild("ForceField") then continue end
-                    pcall(function()
-                        Remotes.FireServer("rocketHit", "AmmoGuid", "explosionGUID", char.HumanoidRootPart.Position)
-                    end)
-                end
-            end
-        end
+        _G.RPGBomb = bool
     end
 })
 
@@ -381,7 +307,7 @@ Tab_Combat:Toggle({
 
 Tab_Combat:Section({
     TextSize = 17,
-    ["Title"] = "子弹范围",
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
     TextXAlignment = "Left",
 })
 
@@ -401,15 +327,6 @@ Tab_Combat:Slider({
     ["Callback"] = function(Value)
         local size = type(Value) == "table" and Value[1] or Value
         _G.HitboxSize = size
-        if _G.HitboxEnabled then
-            for _, player in pairs(Players:GetPlayers()) do
-                pcall(function()
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        player.Character.HumanoidRootPart.Size = Vector3.new(size, size, size)
-                    end
-                end)
-            end
-        end
     end
 })
 
@@ -476,6 +393,12 @@ Tab_Items:Button({
             end)
         end
     end
+})
+
+Tab_Items:Section({
+    TextSize = 17,
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    TextXAlignment = "Left",
 })
 
 Tab_Items:Toggle({
@@ -585,6 +508,12 @@ Tab_Auto:Toggle({
     end
 })
 
+Tab_Auto:Section({
+    TextSize = 17,
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    TextXAlignment = "Left",
+})
+
 Tab_Auto:Toggle({
     ["Title"] = "空投刷新提示",
     ["Desc"] = "空投刷新时提示",
@@ -609,32 +538,69 @@ Tab_Teleport:Section({
     TextXAlignment = "Left",
 })
 
-local locNames = {}
-for k in pairs(Locations) do
-    table.insert(locNames, k)
-end
-table.sort(locNames)
-
-local SelectedLocation = nil
-
-Tab_Teleport:Dropdown({
-    ["Title"] = "选择地点",
-    ["Desc"] = "选择要传送的地点",
-    ["List"] = locNames,
-    ["Callback"] = function(Value)
-        SelectedLocation = Value
+Tab_Teleport:Button({
+    ["Title"] = "军械库",
+    ["Desc"] = "传送到军械库",
+    ["Callback"] = function()
+        TeleportTo(Locations["军械库"])
     end
 })
 
 Tab_Teleport:Button({
-    ["Title"] = "传送",
-    ["Desc"] = "传送到选中的地点",
+    ["Title"] = "银行",
+    ["Desc"] = "传送到银行",
     ["Callback"] = function()
-        if SelectedLocation and Locations[SelectedLocation] then
-            TeleportTo(Locations[SelectedLocation])
-        end
+        TeleportTo(Locations["银行"])
     end
 })
+
+Tab_Teleport:Button({
+    ["Title"] = "珠宝店",
+    ["Desc"] = "传送到珠宝店",
+    ["Callback"] = function()
+        TeleportTo(Locations["珠宝店"])
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "警察局",
+    ["Desc"] = "传送到警察局",
+    ["Callback"] = function()
+        TeleportTo(Locations["警察局"])
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "军事基地",
+    ["Desc"] = "传送到军事基地",
+    ["Callback"] = function()
+        TeleportTo(Locations["军事基地"])
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "医院",
+    ["Desc"] = "传送到医院",
+    ["Callback"] = function()
+        TeleportTo(Locations["医院"])
+    end
+})
+
+Tab_Teleport:Button({
+    ["Title"] = "游乐场",
+    ["Desc"] = "传送到游乐场",
+    ["Callback"] = function()
+        TeleportTo(Locations["游乐场"])
+    end
+})
+
+Tab_Teleport:Section({
+    TextSize = 17,
+    ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
+    TextXAlignment = "Left",
+})
+
+-- 下面是其他功能占位，你可以自己加
 
 -------------------------------------------------------------------------
 -- Tab: 娱乐
@@ -651,19 +617,23 @@ Tab_Fun:Section({
     TextXAlignment = "Left",
 })
 
-local FunTargetInput
 local FunTarget = nil
 local SpamMessage = "wdfex-Hub"
 
-FunTargetInput = Tab_Fun:Input({
+Tab_Fun:Input({
     ["Title"] = "输入目标名称",
     ["Desc"] = "输入玩家名称",
     ["Callback"] = function(Value)
-        FunTarget = FindPlayer(Value)
-        if FunTarget then
-            FunTargetInput:SetTitle("目标: " .. FunTarget.Name)
-        else
-            FunTargetInput:SetTitle("输入目标名称")
+        local query = Value:gsub("%s+", "")
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Name:lower():match("^" .. query:lower()) then
+                FunTarget = player
+                break
+            end
+            if player.DisplayName:lower():match("^" .. query:lower()) then
+                FunTarget = player
+                break
+            end
         end
     end
 })
@@ -704,41 +674,8 @@ Tab_Fun:Toggle({
 })
 
 -------------------------------------------------------------------------
--- Tab: Hook 核心（后台运行）
+-- 后台运行循环
 -------------------------------------------------------------------------
-local function SetupHooks()
-    local OriginalNamecall
-    OriginalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local args = {...}
-        local method = getnamecallmethod()
-        
-        if checkcaller() then
-            return OriginalNamecall(self, ...)
-        end
-        
-        if method == "FireServer" and self == Remotes and Remotes.meleeItemHit then
-            if tostring(args[1]) == "player" then
-                if _G.OnePunch then
-                    if not string.find(tostring(args[2].meleeType), "swing") then
-                        args[2].meleeType = "meleemegapunch"
-                    end
-                end
-                if _G.OneSwing then
-                    if string.find(tostring(args[2].meleeType), "swing") then
-                        args[2].meleeType = "meleemegaswing"
-                    end
-                end
-                return OriginalNamecall(self, unpack(args))
-            end
-        end
-        
-        return OriginalNamecall(self, ...)
-    end)
-end
-
-pcall(SetupHooks)
-
--- ===== 后台运行循环 =====
 task.spawn(function()
     while task.wait(0.1) do
         pcall(function()
@@ -746,57 +683,75 @@ task.spawn(function()
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
             
-            -- 防倒地
-            if _G.Godmode and ClientReplicator then
-                if ClientReplicator.Get(LocalPlayer, "knocked") then
-                    ClientReplicator.Set(LocalPlayer, "knocked", false)
+            -- 杀戮光环
+            if _G.KillAura and Remotes then
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player == LocalPlayer then continue end
+                    local pchar = player.Character
+                    if not pchar then continue end
+                    local hum = pchar:FindFirstChildOfClass("Humanoid")
+                    local phrp = pchar:FindFirstChild("HumanoidRootPart")
+                    if not hum or not phrp then continue end
+                    if pchar:FindFirstChild("ForceField") then continue end
+                    if hum.Health <= 5 then continue end
+                    local dist = (hrp.Position - phrp.Position).Magnitude
+                    if dist < 35 then
+                        pcall(function()
+                            Remotes.FireServer("meleeItemHit", "player", {
+                                meleeType = "meleemegapunch",
+                                hitPlayerId = player.UserId
+                            })
+                        end)
+                    end
                 end
+            end
+            
+            -- 防倒地
+            if _G.Godmode then
+                pcall(function()
+                    local ClientReplicator = require(ReplicatedStorage.devv.client.Helpers.objectProperties.ClientReplicator)
+                    if ClientReplicator.Get(LocalPlayer, "knocked") then
+                        ClientReplicator.Set(LocalPlayer, "knocked", false)
+                    end
+                end)
             end
             
             -- 踩人光环
             if _G.StompAura and Remotes then
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player == LocalPlayer then continue end
-                    if ClientReplicator and ClientReplicator.Get(player, "knocked") then
-                        local pchar = player.Character
-                        if pchar and pchar:FindFirstChild("HumanoidRootPart") then
-                            local dist = (hrp.Position - pchar.HumanoidRootPart.Position).Magnitude
-                            if dist < 30 then
-                                Remotes.FireServer("stomp", player)
+                pcall(function()
+                    local ClientReplicator = require(ReplicatedStorage.devv.client.Helpers.objectProperties.ClientReplicator)
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player == LocalPlayer then continue end
+                        if ClientReplicator.Get(player, "knocked") then
+                            local pchar = player.Character
+                            if pchar and pchar:FindFirstChild("HumanoidRootPart") then
+                                local dist = (hrp.Position - pchar.HumanoidRootPart.Position).Magnitude
+                                if dist < 30 then
+                                    Remotes.FireServer("stomp", player)
+                                end
                             end
                         end
                     end
-                end
+                end)
             end
             
             -- 抓人光环
             if _G.GrabAura and Remotes then
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player == LocalPlayer then continue end
-                    if ClientReplicator and ClientReplicator.Get(player, "knocked") then
-                        local pchar = player.Character
-                        if pchar and pchar:FindFirstChild("HumanoidRootPart") then
-                            local dist = (hrp.Position - pchar.HumanoidRootPart.Position).Magnitude
-                            if dist < 35 then
-                                Remotes.FireServer("grabPlayer", player)
+                pcall(function()
+                    local ClientReplicator = require(ReplicatedStorage.devv.client.Helpers.objectProperties.ClientReplicator)
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player == LocalPlayer then continue end
+                        if ClientReplicator.Get(player, "knocked") then
+                            local pchar = player.Character
+                            if pchar and pchar:FindFirstChild("HumanoidRootPart") then
+                                local dist = (hrp.Position - pchar.HumanoidRootPart.Position).Magnitude
+                                if dist < 35 then
+                                    Remotes.FireServer("grabPlayer", player)
+                                end
                             end
                         end
                     end
-                end
-            end
-            
-            -- 自动穿甲
-            if _G.AutoArmor and Remotes and Inventory then
-                local armor = LocalPlayer:GetAttribute("armor")
-                if not armor or armor <= 0 then
-                    pcall(function()
-                        Remotes.InvokeServer("attemptPurchase", "Light Vest")
-                        local guid = Inventory.getFromName("Light Vest").guid
-                        Remotes.FireServer("equip", guid)
-                        Remotes.FireServer("useConsumable", guid)
-                        Remotes.FireServer("removeItem", guid)
-                    end)
-                end
+                end)
             end
             
             -- 子弹范围
@@ -825,6 +780,39 @@ task.spawn(function()
                         end
                     end)
                 end
+            end
+            
+            -- RPG全图轰炸
+            if _G.RPGBomb and Remotes then
+                local item = Inventory.getEquippedItem()
+                if item and item.name == "RPG" then
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player == LocalPlayer then continue end
+                        local pchar = player.Character
+                        if not pchar then continue end
+                        local hum = pchar:FindFirstChildOfClass("Humanoid")
+                        if not hum or hum.Health <= 10 then continue end
+                        if pchar:FindFirstChild("ForceField") then continue end
+                        pcall(function()
+                            Remotes.FireServer("rocketHit", "AmmoGuid", "explosionGUID", pchar.HumanoidRootPart.Position)
+                        end)
+                    end
+                end
+                task.wait(0.3)
+            end
+            
+            -- 自动穿甲
+            if _G.AutoArmor and Remotes then
+                pcall(function()
+                    local armor = LocalPlayer:GetAttribute("armor")
+                    if not armor or armor <= 0 then
+                        Remotes.InvokeServer("attemptPurchase", "Light Vest")
+                        local guid = Inventory.getFromName("Light Vest").guid
+                        Remotes.FireServer("equip", guid)
+                        Remotes.FireServer("useConsumable", guid)
+                        Remotes.FireServer("removeItem", guid)
+                    end
+                end)
             end
             
             -- ATM自动刷
@@ -857,16 +845,16 @@ task.spawn(function()
             
             -- 自动抢银行
             if _G.AutoRobBank then
-                local cash = workspace.BankRobbery.BankCash.Cash
-                if #cash:GetChildren() ~= 0 then
-                    pcall(function()
+                pcall(function()
+                    local cash = workspace.BankRobbery.BankCash.Cash
+                    if #cash:GetChildren() ~= 0 then
                         hrp.CFrame = workspace.BankRobbery.VaultDoor.Door.CFrame
                         fireproximityprompt(workspace.BankRobbery.VaultDoor.Door.Attachment.ProximityPrompt)
                         task.wait(0.5)
                         hrp.CFrame = workspace.BankRobbery.BankCash.Pallet.CFrame
                         fireproximityprompt(workspace.BankRobbery.BankCash.Main.Attachment.ProximityPrompt)
-                    end)
-                end
+                    end
+                end)
             end
             
             -- 自动捡钱
