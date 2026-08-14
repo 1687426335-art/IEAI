@@ -1,5 +1,5 @@
 -- ===== wdfex 圣奥里 过检测版 =====
--- 绕过截图中的所有检测 + 飞天检测 + 保留所有功能
+-- 绕过13种检测 | 内置飞车开关
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -14,7 +14,6 @@ local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
@@ -28,7 +27,6 @@ local function startBypass()
     bypassActive = true
     print("🛡️ 启动圣奥里过检测...")
 
-    -- 1. 拦截踢出
     pcall(function()
         local oldKick = LocalPlayer.Kick
         LocalPlayer.Kick = function(self, msg)
@@ -40,7 +38,6 @@ local function startBypass()
         end})
     end)
 
-    -- 2. 防死亡
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -59,14 +56,12 @@ local function startBypass()
         end
     end)
 
-    -- 3. 移速检测绕过
     pcall(function()
         local function bypassSpeedCheck()
             local char = LocalPlayer.Character
             if not char then return end
             local hum = char:FindFirstChild("Humanoid")
             if not hum then return end
-            
             hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
                 local currentSpeed = hum.WalkSpeed
                 if currentSpeed > 100 then
@@ -83,17 +78,12 @@ local function startBypass()
         end)
     end)
 
-    -- 4. 穿墙检测绕过
     pcall(function()
         local function bypassWallCheck()
-            local char = LocalPlayer.Character
-            if not char then return end
-            
             local touchConn = Workspace.DescendantAdded:Connect(function(desc)
                 if desc:IsA("BasePart") then
                     desc.Touched:Connect(function(hit)
-                        if hit and hit.Parent == LocalPlayer.Character then
-                        end
+                        if hit and hit.Parent == LocalPlayer.Character then end
                     end)
                 end
             end)
@@ -102,7 +92,6 @@ local function startBypass()
         bypassWallCheck()
     end)
 
-    -- 5. 抢劫检测绕过
     pcall(function()
         if ReplicatedStorage then
             for _, child in pairs(ReplicatedStorage:GetChildren()) do
@@ -125,7 +114,6 @@ local function startBypass()
         end
     end)
 
-    -- 6. KDR检测绕过
     pcall(function()
         local stats = LocalPlayer:FindFirstChild("leaderstats")
         if stats then
@@ -142,7 +130,6 @@ local function startBypass()
         end
     end)
 
-    -- 7. 注册天数检测绕过
     pcall(function()
         local accountAge = LocalPlayer.AccountAge
         if accountAge < 180 then
@@ -160,7 +147,6 @@ local function startBypass()
         end
     end)
 
-    -- 8. 伪装玩家行为
     pcall(function()
         local conn = RunService.Heartbeat:Connect(function()
             if math.random(1, 100) > 95 then
@@ -171,7 +157,6 @@ local function startBypass()
         table.insert(bypassConnections, conn)
     end)
 
-    -- 9. 自动重连
     pcall(function()
         local conn = LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
             if not LocalPlayer.Parent then
@@ -183,7 +168,6 @@ local function startBypass()
         table.insert(bypassConnections, conn)
     end)
 
-    -- 10. 伪装网络数据
     pcall(function()
         local network = game:GetService("NetworkClient")
         if network then
@@ -191,7 +175,6 @@ local function startBypass()
         end
     end)
 
-    -- 11. 伪装速度上报
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -212,7 +195,6 @@ local function startBypass()
         end
     end)
 
-    -- 12. 监听检测关键词
     pcall(function()
         local chat = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
         if chat then
@@ -233,7 +215,6 @@ local function startBypass()
         end
     end)
 
-    -- 13. 飞天检测绕过
     pcall(function()
         local char = LocalPlayer.Character
         if char then
@@ -454,6 +435,68 @@ task.spawn(function()
 end)
 
 ShowWelcome()
+
+-- ==================== 内置飞车功能 ====================
+local flyCarEnabled = false
+local flyCarBV = nil
+local flyCarBG = nil
+local flyCarConn = nil
+local flyCarSpeed = 80
+
+local function toggleFlyCar()
+    flyCarEnabled = not flyCarEnabled
+    
+    if flyCarEnabled then
+        print("✅ 飞车开启")
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChild("Humanoid")
+        if not hrp or not hum then return end
+        
+        hum.PlatformStand = true
+        
+        flyCarBV = Instance.new("BodyVelocity")
+        flyCarBV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        flyCarBV.Velocity = Vector3.new(0, 20, 0)
+        flyCarBV.Parent = hrp
+        
+        flyCarBG = Instance.new("BodyGyro")
+        flyCarBG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        flyCarBG.D = 5000
+        flyCarBG.P = 50000
+        flyCarBG.CFrame = CurrentCamera.CFrame
+        flyCarBG.Parent = hrp
+        
+        flyCarConn = RunService.Heartbeat:Connect(function()
+            if not flyCarEnabled then
+                if flyCarConn then flyCarConn:Disconnect(); flyCarConn = nil end
+                return
+            end
+            if not hrp or not hrp.Parent then
+                flyCarEnabled = false
+                if flyCarConn then flyCarConn:Disconnect(); flyCarConn = nil end
+                return
+            end
+            if flyCarBV and flyCarBG then
+                flyCarBV.Velocity = CurrentCamera.CFrame.LookVector * flyCarSpeed
+                flyCarBG.CFrame = CurrentCamera.CFrame
+            end
+        end)
+        
+    else
+        print("❌ 飞车关闭")
+        if flyCarBV then flyCarBV:Destroy(); flyCarBV = nil end
+        if flyCarBG then flyCarBG:Destroy(); flyCarBG = nil end
+        if flyCarConn then flyCarConn:Disconnect(); flyCarConn = nil end
+        
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then hum.PlatformStand = false end
+        end
+    end
+end
 
 -------------------------------------------------------------------------
 -- Tab: 公告
@@ -688,19 +731,37 @@ Tab_General:Toggle({
     end
 })
 
+-- ===== 飞车开关（内置） =====
+Tab_General:Toggle({
+    ["Title"] = "飞车",
+    ["Desc"] = "点击开启/关闭飞车（WASD控制方向，空格上升）",
+    ["Default"] = false,
+    ["Callback"] = function(bool)
+        if bool then
+            toggleFlyCar()
+        else
+            if flyCarEnabled then
+                toggleFlyCar()
+            end
+        end
+    end
+})
+
+-- ===== 飞车速度调节 =====
+Tab_General:Slider({
+    ["Title"] = "飞车速度",
+    ["Step"] = 5,
+    ["Value"] = { Min = 20, Default = 80, Max = 300 },
+    ["Callback"] = function(Value)
+        flyCarSpeed = type(Value) == "table" and Value[1] or Value
+    end
+})
+
 Tab_General:Button({
     ["Title"] = "飞天",
     ["Desc"] = "点击开启皮脚本飞行",
     ["Callback"] = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
-    end
-})
-
-Tab_General:Button({
-    ["Title"] = "飞车",
-    ["Desc"] = "点击开启皮脚本飞车",
-    ["Callback"] = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
     end
 })
 
@@ -1547,75 +1608,6 @@ for _, size in ipairs(rangeSizes) do
 end
 
 -------------------------------------------------------------------------
--- Tab: 车辆功能
--------------------------------------------------------------------------
-local Tab_Vehicle = Window:Tab({
-    ["Locked"] = false,
-    ["Title"] = "车辆功能",
-    ["Icon"] = "rbxassetid://18520370419",
-})
-
-Tab_Vehicle:Section({
-    TextSize = 17,
-    ["Title"] = "车辆功能",
-    TextXAlignment = "Left",
-})
-
-local vehicleSpinEnabled = false
-local vehicleSpinConnection = nil
-local spinSpeed = 30
-
-Tab_Vehicle:Toggle({
-    ["Title"] = "车辆旋转",
-    ["Desc"] = "开启后人物旋转上车车也会跟着旋转",
-    ["Default"] = false,
-    ["Callback"] = function(bool)
-        vehicleSpinEnabled = bool
-        if bool then
-            if vehicleSpinConnection then
-                vehicleSpinConnection:Disconnect()
-                vehicleSpinConnection = nil
-            end
-            vehicleSpinConnection = RunService.Heartbeat:Connect(function()
-                if not vehicleSpinEnabled then return end
-                if not LocalPlayer.Character then return end
-                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                
-                local seat = hrp:FindFirstChild("SeatPart") or hrp:FindFirstChild("SeatWeld")
-                if seat then
-                    local currentCFrame = hrp.CFrame
-                    local newCFrame = currentCFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
-                    hrp.CFrame = newCFrame
-                    
-                    local vehicle = seat.Parent
-                    if vehicle and vehicle:IsA("Model") then
-                        local vehicleHRP = vehicle:FindFirstChild("HumanoidRootPart") or vehicle:FindFirstChild("PrimaryPart")
-                        if vehicleHRP and vehicleHRP:IsA("BasePart") then
-                            vehicleHRP.CFrame = vehicleHRP.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
-                        end
-                    end
-                end
-            end)
-        else
-            if vehicleSpinConnection then
-                vehicleSpinConnection:Disconnect()
-                vehicleSpinConnection = nil
-            end
-        end
-    end
-})
-
-Tab_Vehicle:Slider({
-    ["Title"] = "旋转速度",
-    ["Step"] = 1,
-    ["Value"] = { Min = 5, Default = 30, Max = 200 },
-    ["Callback"] = function(Value)
-        spinSpeed = type(Value) == "table" and Value[1] or Value
-    end
-})
-
--------------------------------------------------------------------------
 -- Tab: 枪械功能
 -------------------------------------------------------------------------
 local Tab_Weapon = Window:Tab({
@@ -1801,7 +1793,6 @@ Tab_Settings:Button({
         getgenv().EasterEgg = false
         antiFlingEnabled = false
         autoWaypointEnabled = false
-        vehicleSpinEnabled = false
         policeDisplayEnabled = false
         if policeDisplayConnection then
             policeDisplayConnection:Disconnect()
@@ -1811,10 +1802,6 @@ Tab_Settings:Button({
             policeGui:Destroy()
             policeGui = nil
             policeLabel = nil
-        end
-        if vehicleSpinConnection then
-            vehicleSpinConnection:Disconnect()
-            vehicleSpinConnection = nil
         end
         if autoWaypointConnection then
             autoWaypointConnection:Disconnect()
@@ -1956,5 +1943,5 @@ print("========================================")
 print("  ✅ wdfex-圣奥里过检测版 加载成功")
 print("  🛡️ 已绕过13种检测")
 print("  注册天数 | 移速 | 抢劫 | KDR | 穿墙 | 飞天")
-print("  所有功能已保留")
+print("  🚗 内置飞车开关（可开可关）")
 print("========================================")
