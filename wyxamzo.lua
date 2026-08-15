@@ -119,9 +119,9 @@ local function applyFontColorGradient(textElement, colorScheme)
 end
 
 local function applyFontStyleToWindow(fontStyle)
-    if not Window or not Window.UIElements then 
+    if not MainWindow or not MainWindow.UIElements then 
         wait(0.5)
-        if not Window or not Window.UIElements then
+        if not MainWindow or not MainWindow.UIElements then
             return false
         end
     end
@@ -141,13 +141,13 @@ local function applyFontStyleToWindow(fontStyle)
         end
     end
     
-    processElement(Window.UIElements.Main)
+    processElement(MainWindow.UIElements.Main)
     
     return successCount, totalCount
 end
 
 local function applyFontColorsToWindow(colorScheme)
-    if not Window or not Window.UIElements then return end
+    if not MainWindow or not MainWindow.UIElements then return end
     
     local function processElement(element)
         for _, child in ipairs(element:GetDescendants()) do
@@ -157,7 +157,7 @@ local function applyFontColorsToWindow(colorScheme)
         end
     end
     
-    processElement(Window.UIElements.Main)
+    processElement(MainWindow.UIElements.Main)
 end
 
 local function createRainbowBorder(window, colorScheme, speed)
@@ -259,10 +259,10 @@ end
 local function initializeRainbowBorder(scheme, speed)
     speed = speed or animationSpeed
     
-    local rainbowStroke, _ = createRainbowBorder(Window, scheme, speed)
+    local rainbowStroke, _ = createRainbowBorder(MainWindow, scheme, speed)
     if rainbowStroke then
         if borderEnabled then
-            startBorderAnimation(Window, speed)
+            startBorderAnimation(MainWindow, speed)
         end
         borderInitialized = true
         return true
@@ -302,8 +302,8 @@ local function applyBlurEffect(enabled)
 end
 
 local function applyUIScale(scale)
-    if Window and Window.UIElements and Window.UIElements.Main then
-        local mainFrame = Window.UIElements.Main
+    if MainWindow and MainWindow.UIElements and MainWindow.UIElements.Main then
+        local mainFrame = MainWindow.UIElements.Main
         mainFrame.Size = UDim2.new(0, 600 * scale, 0, 400 * scale)
     end
 end
@@ -374,6 +374,7 @@ local SelectedItem = nil
 local SelectedLocation = nil
 local HitboxConnection = nil
 local FastInteractConn = nil
+local MainWindow = nil  -- 主窗口变量
 
 -- ============ 俄亥俄州功能函数 ============
 local function FindPlayer(input)
@@ -387,7 +388,7 @@ local function FindPlayer(input)
         end
     end
     WindUI:Notify({
-        Title = "XA：错误",
+        Title = "错误",
         Content = "未找到玩家",
         Duration = 2,
         Icon = "x"
@@ -396,7 +397,6 @@ local function FindPlayer(input)
 end
 
 local function RefreshItemESP()
-    -- ESP功能需要额外库，这里用WindUI通知替代
     WindUI:Notify({
         Title = "物品透视",
         Content = "需要ESP库支持",
@@ -429,7 +429,7 @@ WindUI:Popup({
 })
 
 function createUI()
-    local Window = WindUI:CreateWindow({
+    MainWindow = WindUI:CreateWindow({
         Title = 'wdfex-HUB',
         Icon = "crown",
         IconThemed = true,
@@ -478,7 +478,7 @@ function createUI()
         }
     })
 
-    Window:EditOpenButton({
+    MainWindow:EditOpenButton({
         Title = "wdfex-HUB",
         Icon = "crown",
         CornerRadius = UDim.new(0,16),
@@ -486,11 +486,11 @@ function createUI()
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
     })
-    Window:Tag({
+    MainWindow:Tag({
         Title = "正在寻求",
         Color = Color3.fromHex("#00008B") 
     })
-    Window:Tag({
+    MainWindow:Tag({
         Title = "3.0.1",
         Color = Color3.fromHex("#32CD32")
     })
@@ -498,7 +498,7 @@ function createUI()
         while true do
             for hue = 0, 1, 0.01 do  
                 local color = Color3.fromHSV(hue, 0.8, 1)  
-                Window:EditOpenButton({
+                MainWindow:EditOpenButton({
                     Color = ColorSequence.new(color)
                 })
                 wait(0.04)  
@@ -516,7 +516,7 @@ function createUI()
 
     local windowOpen = true
 
-    Window:OnClose(function()
+    MainWindow:OnClose(function()
         windowOpen = false
         if rainbowBorderAnimation then
             rainbowBorderAnimation:Disconnect()
@@ -524,23 +524,23 @@ function createUI()
         end
     end)
 
-    local originalOpenFunction = Window.Open
-    Window.Open = function(...)
+    local originalOpenFunction = MainWindow.Open
+    MainWindow.Open = function(...)
         windowOpen = true
         local result = originalOpenFunction(...)
         
         if borderInitialized and borderEnabled and not rainbowBorderAnimation then
             wait(0.1)
-            startBorderAnimation(Window, animationSpeed)
+            startBorderAnimation(MainWindow, animationSpeed)
         end
         
         return result
     end
 
     -- ============================================================
-    -- 分类1: 通知（保留）
+    -- 分类1: 通知
     -- ============================================================
-    local infoTab = Window:Tab({Title = "通知", Icon = "layout-grid", Locked = false})
+    local infoTab = MainWindow:Tab({Title = "通知", Icon = "layout-grid", Locked = false})
 
     local infoSection = infoTab:Section({Title = "详情信息", Icon = "info", Opened = true})
     infoSection:Divider()
@@ -569,9 +569,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类2: 战斗类（移植）
+    -- 分类2: 战斗类
     -- ============================================================
-    local TabCombat = Window:Tab({Title = "战斗类", Icon = "swords"})
+    local TabCombat = MainWindow:Tab({Title = "战斗类", Icon = "swords"})
 
     local combatSection1 = TabCombat:Section({Title = "秒杀设置", Icon = "swords", Opened = true})
     
@@ -581,7 +581,6 @@ function createUI()
         Default = onePunchValue,
         Callback = function(v)
             onePunchValue = v
-            -- 功能实现需要hook，这里用通知替代
             WindUI:Notify({
                 Title = "一拳秒杀",
                 Content = v and "已开启" or "已关闭",
@@ -1026,9 +1025,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类3: 物品（移植）
+    -- 分类3: 物品
     -- ============================================================
-    local TabItems = Window:Tab({Title = "物品", Icon = "box"})
+    local TabItems = MainWindow:Tab({Title = "物品", Icon = "box"})
 
     local itemSection = TabItems:Section({Title = "物品购买", Icon = "shopping-cart", Opened = true})
 
@@ -1213,9 +1212,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类4: 自动（移植）
+    -- 分类4: 自动
     -- ============================================================
-    local TabAuto = Window:Tab({Title = "自动", Icon = "zap"})
+    local TabAuto = MainWindow:Tab({Title = "自动", Icon = "zap"})
 
     local autoSection = TabAuto:Section({Title = "自动农场", Icon = "zap", Opened = true})
 
@@ -1575,9 +1574,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类5: 传送（移植）
+    -- 分类5: 传送
     -- ============================================================
-    local TabTeleport = Window:Tab({Title = "传送", Icon = "map-pin"})
+    local TabTeleport = MainWindow:Tab({Title = "传送", Icon = "map-pin"})
 
     local teleSection = TabTeleport:Section({Title = "地点传送", Icon = "map-pin", Opened = true})
 
@@ -1623,9 +1622,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类6: 娱乐（移植 + 原有发言功能）
+    -- 分类6: 娱乐
     -- ============================================================
-    local TabFun = Window:Tab({Title = "娱乐", Icon = "settings"})
+    local TabFun = MainWindow:Tab({Title = "娱乐", Icon = "settings"})
 
     local funSection = TabFun:Section({Title = "娱乐功能", Icon = "smile", Opened = true})
 
@@ -1750,7 +1749,7 @@ function createUI()
         end
     })
 
-    -- ========== 原有发言功能（保留） ==========
+    -- 原有发言功能
     funSection:Divider()
     funSection:Paragraph({
         Title = "自动发言",
@@ -1955,9 +1954,9 @@ function createUI()
     _G.ChatSystem = chatSystem
 
     -- ============================================================
-    -- 分类7: 数据（移植）
+    -- 分类7: 数据
     -- ============================================================
-    local TabData = Window:Tab({Title = "数据", Icon = "database"})
+    local TabData = MainWindow:Tab({Title = "数据", Icon = "database"})
 
     local dataSection = TabData:Section({Title = "封禁信息", Icon = "database", Opened = true})
     dataSection:Paragraph({ Title = "是否被封禁：否", ThumbnailSize = 190 })
@@ -1968,9 +1967,9 @@ function createUI()
     dataSection:Paragraph({ Title = "历史封禁次数：0", ThumbnailSize = 190 })
 
     -- ============================================================
-    -- 分类8: 其他（移植）
+    -- 分类8: 其他
     -- ============================================================
-    local TabOther = Window:Tab({Title = "其他", Icon = "settings"})
+    local TabOther = MainWindow:Tab({Title = "其他", Icon = "settings"})
 
     local otherSection = TabOther:Section({Title = "其他功能", Icon = "settings", Opened = true})
 
@@ -2155,9 +2154,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 分类9: UI设置（保留）
+    -- 分类9: UI设置
     -- ============================================================
-    local Settings = Window:Tab({Title = "ui设置", Icon = "palette"})
+    local Settings = MainWindow:Tab({Title = "ui设置", Icon = "palette"})
     Settings:Paragraph({
         Title = "ui设置",
         Desc = "二改wind原版ui",
@@ -2171,13 +2170,13 @@ function createUI()
         Value = borderEnabled,
         Callback = function(value)
             borderEnabled = value
-            local mainFrame = Window.UIElements and Window.UIElements.Main
+            local mainFrame = MainWindow.UIElements and MainWindow.UIElements.Main
             if mainFrame then
                 local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
                 if rainbowStroke then
                     rainbowStroke.Enabled = value
                     if value and windowOpen and not rainbowBorderAnimation then
-                        startBorderAnimation(Window, animationSpeed)
+                        startBorderAnimation(MainWindow, animationSpeed)
                     elseif not value and rainbowBorderAnimation then
                         rainbowBorderAnimation:Disconnect()
                         rainbowBorderAnimation = nil
@@ -2316,7 +2315,7 @@ function createUI()
                 rainbowBorderAnimation = nil
             end
             if borderEnabled then
-                startBorderAnimation(Window, animationSpeed)
+                startBorderAnimation(MainWindow, animationSpeed)
             end
             
             applyFontColorsToWindow(currentFontColorScheme)
@@ -2352,7 +2351,7 @@ function createUI()
         },
         Step = 0.1,
         Callback = function(value)
-            Window:ToggleTransparency(tonumber(value) > 0)
+            MainWindow:ToggleTransparency(tonumber(value) > 0)
             WindUI.TransparencyValue = tonumber(value)
             playSound()
         end
@@ -2367,8 +2366,8 @@ function createUI()
             Default = 600,
         },
         Callback = function(value)
-            if Window.UIElements and Window.UIElements.Main then
-                Window.UIElements.Main.Size = UDim2.fromOffset(value, 400)
+            if MainWindow.UIElements and MainWindow.UIElements.Main then
+                MainWindow.UIElements.Main.Size = UDim2.fromOffset(value, 400)
             end
             playSound()
         end
@@ -2383,9 +2382,9 @@ function createUI()
             Default = 400,
         },
         Callback = function(value)
-            if Window.UIElements and Window.UIElements.Main then
-                local currentWidth = Window.UIElements.Main.Size.X.Offset
-                Window.UIElements.Main.Size = UDim2.fromOffset(currentWidth, value)
+            if MainWindow.UIElements and MainWindow.UIElements.Main then
+                local currentWidth = MainWindow.UIElements.Main.Size.X.Offset
+                MainWindow.UIElements.Main.Size = UDim2.fromOffset(currentWidth, value)
             end
             playSound()
         end
@@ -2401,7 +2400,7 @@ function createUI()
         },
         Step = 0.5,
         Callback = function(value)
-            local mainFrame = Window.UIElements and Window.UIElements.Main
+            local mainFrame = MainWindow.UIElements and MainWindow.UIElements.Main
             if mainFrame then
                 local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
                 if rainbowStroke then
@@ -2421,7 +2420,7 @@ function createUI()
             Default = 16,
         },
         Callback = function(value)
-            local mainFrame = Window.UIElements and Window.UIElements.Main
+            local mainFrame = MainWindow.UIElements and MainWindow.UIElements.Main
             if mainFrame then
                 local corner = mainFrame:FindFirstChildOfClass("UICorner")
                 if not corner then
@@ -2438,8 +2437,8 @@ function createUI()
         Title = "恢复UI到原位",
         Icon = "rotate-ccw",
         Callback = function()
-            if Window.UIElements and Window.UIElements.Main then
-                Window.UIElements.Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+            if MainWindow.UIElements and MainWindow.UIElements.Main then
+                MainWindow.UIElements.Main.Position = UDim2.new(0.5, 0, 0.5, 0)
                 playSound()
             end
         end
@@ -2449,8 +2448,8 @@ function createUI()
         Title = "重置UI大小",
         Icon = "maximize-2",
         Callback = function()
-            if Window.UIElements and Window.UIElements.Main then
-                Window.UIElements.Main.Size = UDim2.fromOffset(600, 400)
+            if MainWindow.UIElements and MainWindow.UIElements.Main then
+                MainWindow.UIElements.Main.Size = UDim2.fromOffset(600, 400)
                 playSound()
             end
         end
@@ -2534,7 +2533,7 @@ function createUI()
         end
     })
 
-    Window:OnClose(function()
+    MainWindow:OnClose(function()
         windowOpen = false
         if rainbowBorderAnimation then
             rainbowBorderAnimation:Disconnect()
@@ -2543,7 +2542,7 @@ function createUI()
         applyBlurEffect(false)
     end)
 
-    Window:OnDestroy(function()
+    MainWindow:OnDestroy(function()
         windowOpen = false
         if rainbowBorderAnimation then
             rainbowBorderAnimation:Disconnect()
