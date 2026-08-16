@@ -13,7 +13,7 @@ local Window = WindUI:CreateWindow({
     Title = "wdfex自动翻译",
     Transparent = true,
     Theme = "Dark",
-    Author = "Kenny开源",
+    Author = "wdfex",
     Icon = "languages",
     Size = UDim2.fromOffset(300, 300),
 })
