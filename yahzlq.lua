@@ -854,7 +854,7 @@ function createUI()
         end
     })
 
-    -- ===== 透视Tab =====
+    -- ===== 透视Tab（已删除黑色背景框） =====
     local Tab_ESP = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "透视",
@@ -973,19 +973,6 @@ function createUI()
         billboard.AlwaysOnTop = true
         billboard.Parent = rootPart
         table.insert(espObjects, billboard)
-        
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        bg.BackgroundTransparency = 0.5
-        bg.BorderSizePixel = 1
-        bg.BorderColor3 = Color3.fromRGB(255, 255, 255)
-        bg.Parent = billboard
-        table.insert(espObjects, bg)
-        
-        local corner1 = Instance.new("UICorner")
-        corner1.CornerRadius = UDim.new(0, 6)
-        corner1.Parent = bg
         
         local yOffset = 5
         
