@@ -320,63 +320,58 @@ local function applyUIScale(scale)
     end
 end
 
--- 发送消息函数
-local function SendChatMessage(msg)
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Players = game:GetService("Players")
-    local TextChatService = game:GetService("TextChatService")
-    
-    local success = false
-    pcall(function()
-        local event = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if event then
-            local sayMessage = event:FindFirstChild("SayMessageRequest")
-            if sayMessage then
-                sayMessage:FireServer(msg, "All")
-                success = true
-            end
-        end
-    end)
-    
-    if not success then
-        pcall(function()
-            local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-            if channel and channel:FindFirstChild("SendAsync") then
-                channel:SendAsync(msg)
-                success = true
-            end
-        end)
-    end
-    
-    if not success then
-        pcall(function()
-            Players.LocalPlayer:Chat(msg)
-        end)
+local Confirmed = false
+local gradientColors = {
+    "rgb(255, 230, 235)",
+    "rgb(255, 210, 220)",
+    "rgb(255, 190, 205)",
+    "rgb(255, 170, 190)",
+    "rgb(255, 150, 175)",
+    "rgb(245, 140, 180)",
+    "rgb(235, 130, 185)",
+    "rgb(225, 120, 190)",
+    "rgb(215, 110, 195)",
+    "rgb(205, 100, 200)"
+}
+local username = game:GetService("Players").LocalPlayer.Name
+local coloredUsername = ""
+local gradientColors = {
+    "#4169E1", 
+    "#6A5ACD",  
+    "#9370DB",  
+    "#8A2BE2", 
+    "#4B0082"   
+}
+local goldColor = "#FFD700"
+for i = 1, #username do
+    local char = username:sub(i, i)
+    if char:match("[A-Za-z0-9]") then
+        local colorIndex = (i - 1) % #gradientColors + 1
+        coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. char .. '</font>'
+    else
+        coloredUsername = coloredUsername .. '<font color="' .. goldColor .. '">' .. char .. '</font>'
     end
 end
 
--- 主弹窗
 WindUI:Popup({
     Title = 'wdfex-HUB',
     IconThemed = true,
     Icon = "crown",
-    Content = "是否在聊天框发送消息",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-HUB\n你的支持是我们更新的动力\n91",
     Buttons = {
         {
-            Title = "发送",
-            Icon = "send",
-            Callback = function() 
-                SendChatMessage("我妈死了")
-            end,
-            Variant = "Primary",
+            Title = "取消",
+            Callback = function() end,
+            Variant = "Secondary",
         },
         {
-            Title = "不发送",
-            Icon = "x",
+            Title = "执行",
+            Icon = "arrow-right",
             Callback = function() 
-                print("已取消发送")
+                Confirmed = true
+                createUI()
             end,
-            Variant = "Secondary",
+            Variant = "Primary",
         }
     }
 })
@@ -494,79 +489,6 @@ function createUI()
         
         return result
     end
-
-    -- ===== 公告Tab =====
-    local Tab_Notice = Window:Tab({
-        ["Locked"] = false,
-        ["Title"] = "公告",
-        ["Icon"] = "",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "本脚本严禁外传发现永久拉黑无法使用此脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者: wdfex",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "如果有什么需要的功能可以向作者提出建议",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者快手名字: wdfex",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者QQ: 1687426335",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
 
     -- ===== 通用Tab =====
     local Tab_General = Window:Tab({
@@ -932,7 +854,7 @@ function createUI()
         end
     })
 
-    -- ===== 透视Tab =====
+    -- ===== 透视Tab（实时刷新 + 黑色背景已删除） =====
     local Tab_ESP = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "透视",
@@ -1217,17 +1139,20 @@ function createUI()
                         end
                     end)
                 end
+                -- 玩家加入时刷新
                 Players.PlayerAdded:Connect(function()
                     if espMasterEnabled then
                         task.wait(0.5)
                         UpdateESP()
                     end
                 end)
+                -- 玩家离开时刷新
                 Players.PlayerRemoving:Connect(function()
                     if espMasterEnabled then
                         UpdateESP()
                     end
                 end)
+                -- 玩家重生时刷新
                 for _, player in ipairs(Players:GetPlayers()) do
                     player.CharacterAdded:Connect(function()
                         if espMasterEnabled then
