@@ -357,7 +357,7 @@ WindUI:Popup({
     Title = 'wdfex-HUB',
     IconThemed = true,
     Icon = "crown",
-    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-HUB\n你的支持是我们更新的动力\n91",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-HUB\n当前脚本支持的服务器\n圣奥里",
     Buttons = {
         {
             Title = "取消",
@@ -854,7 +854,7 @@ function createUI()
         end
     })
 
-    -- ===== 透视Tab（已删除黑色背景框） =====
+    -- ===== 透视Tab（实时刷新 + 黑色背景已删除） =====
     local Tab_ESP = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "透视",
@@ -1134,18 +1134,31 @@ function createUI()
                 UpdateESP()
                 if not espRenderConnection then
                     espRenderConnection = RunService.Heartbeat:Connect(function()
-                        if espMasterEnabled then UpdateESP() end
+                        if espMasterEnabled then
+                            UpdateESP()
+                        end
                     end)
                 end
+                -- 玩家加入时刷新
                 Players.PlayerAdded:Connect(function()
-                    if espMasterEnabled then UpdateESP() end
+                    if espMasterEnabled then
+                        task.wait(0.5)
+                        UpdateESP()
+                    end
                 end)
+                -- 玩家离开时刷新
                 Players.PlayerRemoving:Connect(function()
-                    if espMasterEnabled then UpdateESP() end
+                    if espMasterEnabled then
+                        UpdateESP()
+                    end
                 end)
+                -- 玩家重生时刷新
                 for _, player in ipairs(Players:GetPlayers()) do
                     player.CharacterAdded:Connect(function()
-                        if espMasterEnabled then UpdateESP() end
+                        if espMasterEnabled then
+                            task.wait(0.5)
+                            UpdateESP()
+                        end
                     end)
                 end
             else
