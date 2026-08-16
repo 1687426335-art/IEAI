@@ -490,84 +490,11 @@ function createUI()
         return result
     end
 
-    -- ===== 公告Tab =====
-    local Tab_Notice = Window:Tab({
-        ["Locked"] = false,
-        ["Title"] = "公告",
-        ["Icon"] = "rbxassetid://115466270141583",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "本脚本严禁外传发现永久拉黑无法使用此脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "如何使用没有防的脚本不被踢：执行此脚本之后点进出租车里面然后点接出租车刷钱然后出来悬浮窗之后点击启动然后退出游戏（速度一定要快）然后等1分钟要是被封了两个小时就是成功了，然后等解开了就不会再被封了（除非被挂到DG）",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者: wdfex",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "如果有什么需要的功能可以向作者提出建议",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "此脚本无防封需要先执行皮脚本再执行此脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者快手名字: wdfex",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "作者QQ: 1687426335",
-        TextXAlignment = "Left",
-    })
-
-    Tab_Notice:Section({
-        TextSize = 17,
-        ["Title"] = "━━━━━━━━━━━━━━━━━━━━",
-        TextXAlignment = "Left",
-    })
-
     -- ===== 通用Tab =====
     local Tab_General = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "通用",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_General:Section({
@@ -789,7 +716,7 @@ function createUI()
     local Tab_LocationTeleport = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "地点传送",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_LocationTeleport:Section({
@@ -851,7 +778,7 @@ function createUI()
     local Tab_Vending = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "售货机传送区",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Vending:Section({
@@ -881,7 +808,7 @@ function createUI()
     local Tab_Delivery = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "外卖员",
-        ["Icon"] = "rbxassetid://15440802720",
+        ["Icon"] = "",
     })
 
     Tab_Delivery:Section({
@@ -910,7 +837,7 @@ function createUI()
     local Tab_Taxi = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "出租车",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Taxi:Section({
@@ -931,7 +858,7 @@ function createUI()
     local Tab_ESP = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "透视",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_ESP:Section({
@@ -1320,157 +1247,11 @@ function createUI()
         end
     })
 
-    -- ===== 标点传送Tab =====
-    local Tab_Waypoint = Window:Tab({
-        ["Locked"] = false,
-        ["Title"] = "标点传送",
-        ["Icon"] = "rbxassetid://18520370419",
-    })
-
-    Tab_Waypoint:Section({
-        TextSize = 17,
-        ["Title"] = "地图标点传送",
-        TextXAlignment = "Left",
-    })
-
-    local function GetWaypointPosition()
-        local LocalPlayer = game:GetService("Players").LocalPlayer
-        local Workspace = game:GetService("Workspace")
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-        
-        local closest = nil
-        local closestDist = 9999
-        
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position then
-                local name = obj.Name:lower()
-                local keywords = {"waypoint", "marker", "标点", "导航", "nav", "目标", "target", "destination", "pin", "flag", "point", "位置", "location", "way", "route", "指引", "标记", "gps", "map"}
-                local match = false
-                for _, kw in ipairs(keywords) do
-                    if name:find(kw) then
-                        match = true
-                        break
-                    end
-                end
-                if match then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < closestDist and dist > 2 then
-                        closestDist = dist
-                        closest = obj.Position
-                    end
-                end
-                if obj.Color then
-                    local c = obj.Color
-                    if c.r > 0.8 and c.g > 0.8 and c.b < 0.3 then
-                        local dist = (hrp.Position - obj.Position).Magnitude
-                        if dist < closestDist and dist > 2 then
-                            closestDist = dist
-                            closest = obj.Position
-                        end
-                    end
-                end
-                if obj.Material == Enum.Material.Neon then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < closestDist and dist > 2 then
-                        closestDist = dist
-                        closest = obj.Position
-                    end
-                end
-                if obj:FindFirstChild("BillboardGui") or obj:FindFirstChild("SelectionBox") then
-                    local dist = (hrp.Position - obj.Position).Magnitude
-                    if dist < closestDist and dist > 2 then
-                        closestDist = dist
-                        closest = obj.Position
-                    end
-                end
-            end
-            if obj:IsA("Model") then
-                local name = obj.Name:lower()
-                local keywords = {"waypoint", "marker", "标点", "导航", "nav", "目标", "target", "destination", "pin", "flag", "point", "位置", "指引", "标记", "gps"}
-                local match = false
-                for _, kw in ipairs(keywords) do
-                    if name:find(kw) then
-                        match = true
-                        break
-                    end
-                end
-                if match then
-                    local primary = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("PrimaryPart")
-                    if primary and primary:IsA("BasePart") then
-                        local dist = (hrp.Position - primary.Position).Magnitude
-                        if dist < closestDist and dist > 2 then
-                            closestDist = dist
-                            closest = primary.Position
-                        end
-                    end
-                end
-            end
-        end
-        
-        return closest
-    end
-
-    Tab_Waypoint:Button({
-        ["Title"] = "传送到地图标点",
-        ["Desc"] = "自动检测地图上的标点并传送",
-        ["Callback"] = function()
-            local target = GetWaypointPosition()
-            if target then
-                TeleportTo(target)
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "标点传送",
-                    Text = "已传送到标点位置",
-                    Duration = 2,
-                })
-            else
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "标点传送",
-                    Text = "未找到地图标点，请先在地图上标点",
-                    Duration = 2,
-                })
-            end
-        end
-    })
-
-    local autoWaypointEnabled = false
-    local autoWaypointConnection = nil
-
-    local function AutoWaypoint()
-        if not autoWaypointEnabled then return end
-        local target = GetWaypointPosition()
-        if target then
-            TeleportTo(target)
-        end
-    end
-
-    Tab_Waypoint:Toggle({
-        ["Title"] = "自动传送标点",
-        ["Desc"] = "自动检测标点并传送",
-        ["Default"] = false,
-        ["Callback"] = function(bool)
-            autoWaypointEnabled = bool
-            if bool then
-                if autoWaypointConnection then autoWaypointConnection:Disconnect() end
-                autoWaypointConnection = RunService.Heartbeat:Connect(function()
-                    if autoWaypointEnabled then
-                        AutoWaypoint()
-                    end
-                end)
-            else
-                if autoWaypointConnection then
-                    autoWaypointConnection:Disconnect()
-                    autoWaypointConnection = nil
-                end
-            end
-        end
-    })
-
     -- ===== 甩飞Tab =====
     local Tab_Fling = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "甩飞",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Fling:Section({
@@ -1562,7 +1343,7 @@ function createUI()
     local Tab_Range = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "范围",
-        ["Icon"] = "rbxassetid://87107069659024",
+        ["Icon"] = "",
     })
 
     Tab_Range:Section({
@@ -1624,7 +1405,7 @@ function createUI()
     local Tab_Vehicle = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "车辆功能",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Vehicle:Section({
@@ -1692,7 +1473,7 @@ function createUI()
     local Tab_Weapon = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "枪械功能",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Weapon:Section({
@@ -1709,32 +1490,11 @@ function createUI()
         end
     })
 
-    -- ===== 杀戮光环Tab =====
-    local Tab_KillAura = Window:Tab({
-        ["Locked"] = false,
-        ["Title"] = "杀戮光环",
-        ["Icon"] = "rbxassetid://18520370419",
-    })
-
-    Tab_KillAura:Section({
-        TextSize = 17,
-        ["Title"] = "杀戮光环",
-        TextXAlignment = "Left",
-    })
-
-    Tab_KillAura:Button({
-        ["Title"] = "开启杀戮光环",
-        ["Desc"] = "点击执行杀戮光环脚本",
-        ["Callback"] = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/yahzlq.lua"))()
-        end
-    })
-
     -- ===== 警察显示Tab =====
     local Tab_Police = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "警察显示",
-        ["Icon"] = "rbxassetid://18520370419",
+        ["Icon"] = "",
     })
 
     Tab_Police:Section({
@@ -1874,7 +1634,7 @@ function createUI()
     local Tab_Settings = Window:Tab({
         ["Locked"] = false,
         ["Title"] = "设置",
-        ["Icon"] = "rbxassetid://14895392107",
+        ["Icon"] = "",
     })
 
     Tab_Settings:Section({
@@ -1889,7 +1649,6 @@ function createUI()
         ["Callback"] = function()
             getgenv().EasterEgg = false
             antiFlingEnabled = false
-            autoWaypointEnabled = false
             vehicleSpinEnabled = false
             policeDisplayEnabled = false
             if policeDisplayConnection then
@@ -1904,10 +1663,6 @@ function createUI()
             if vehicleSpinConnection then
                 vehicleSpinConnection:Disconnect()
                 vehicleSpinConnection = nil
-            end
-            if autoWaypointConnection then
-                autoWaypointConnection:Disconnect()
-                autoWaypointConnection = nil
             end
             if antiFlingConnection then
                 antiFlingConnection:Disconnect()
@@ -2037,7 +1792,7 @@ function createUI()
         end
     })
 
-    -- ===== UI设置Tab（WindUI自带） =====
+    -- ===== UI设置Tab =====
     local Settings = Window:Tab({Title = "ui设置", Icon = "palette"})
     Settings:Paragraph({
         Title = "ui设置",
