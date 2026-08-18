@@ -1,736 +1,518 @@
--- 加载 WindUI 库
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-WindUI.TransparencyValue = 0.2
-WindUI:SetTheme("Dark")
+-- 祖国人飞行系统 v21.4 落地动画3倍速版
+-- 修复：玩家/坐标模式的落地动画改为3倍速，贴地稳定不飘
 
-local rainbowBorderAnimation
-local currentBorderColorScheme = "彩虹颜色"
-local currentFontColorScheme = "彩虹颜色"
-local borderInitialized = false
-local animationSpeed = 2
-local borderEnabled = true
-local fontColorEnabled = false
-local uiScale = 1
-local blurEnabled = false
-local soundEnabled = true
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Debris = game:GetService("Debris")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
-local FONT_STYLES = {
-    "SourceSansBold","SourceSansItalic","SourceSansLight","SourceSans",
-    "GothamSSm","GothamSSm-Bold","GothamSSm-Medium","GothamSSm-Light",
-    "GothamSSm-Black","GothamSSm-Book","GothamSSm-XLight","GothamSSm-Thin",
-    "GothamSSm-Ultra","GothamSSm-SemiBold","GothamSSm-ExtraLight","GothamSSm-Heavy",
-    "GothamSSm-ExtraBold","GothamSSm-Regular","Gotham","GothamBold",
-    "GothamMedium","GothamBlack","GothamLight","Arial","ArialBold",
-    "Code","CodeLight","CodeBold","Highway","HighwayBold","HighwayLight",
-    "SciFi","SciFiBold","SciFiItalic","Cartoon","CartoonBold","Handwritten"
+local function create(className, props)
+    local obj = Instance.new(className)
+    for k, v in pairs(props) do obj[k] = v end
+    return obj
+end
+
+-- 动作ID
+local ANIMS = {
+    TAKEOFF = "rbxassetid://134974990345233",
+    FLYING_FAST = "rbxassetid://137006704296145",
+    FLYING_SLOW = "rbxassetid://126046533185038",
+    MOON = "rbxassetid://82731245433251",
+    LANDING = "rbxassetid://79698004825744",
+}
+-- 待机动作列表
+local IDLE_ANIMS = {
+    "rbxassetid://118327551669637",
+    "rbxassetid://116874847956719",
+    "rbxassetid://96251694399659",
+    "rbxassetid://70950173927129",
 }
 
-local FONT_DESCRIPTIONS = {
-    ["SourceSansBold"] = "标准粗体",["SourceSansItalic"] = "斜体",["SourceSansLight"] = "细体",
-    ["SourceSans"] = "标准体",["GothamSSm"] = "哥特标准",["GothamSSm-Bold"] = "哥特粗体",
-    ["GothamSSm-Medium"] = "哥特中等",["GothamSSm-Light"] = "哥特细体",["GothamSSm-Black"] = "哥特黑体",
-    ["GothamSSm-Book"] = "哥特书本体",["GothamSSm-XLight"] = "哥特超细体",["GothamSSm-Thin"] = "哥特极细体",
-    ["GothamSSm-Ultra"] = "哥特超黑体",["GothamSSm-SemiBold"] = "哥特半粗体",["GothamSSm-ExtraLight"] = "哥特特细体",
-    ["GothamSSm-Heavy"] = "哥特粗重体",["GothamSSm-ExtraBold"] = "哥特特粗体",["GothamSSm-Regular"] = "哥特常规体",
-    ["Gotham"] = "经典哥特体",["GothamBold"] = "经典哥特粗体",["GothamMedium"] = "经典哥特中等",
-    ["GothamBlack"] = "经典哥特黑体",["GothamLight"] = "经典哥特细体",["Arial"] = "标准Arial体",
-    ["ArialBold"] = "Arial粗体",["Code"] = "代码字体",["CodeLight"] = "代码细体",
-    ["CodeBold"] = "代码粗体",["Highway"] = "高速公路体",["HighwayBold"] = "高速公路粗体",
-    ["HighwayLight"] = "高速公路细体",["SciFi"] = "科幻字体",["SciFiBold"] = "科幻粗体",
-    ["SciFiItalic"] = "科幻斜体",["Cartoon"] = "卡通字体",["CartoonBold"] = "卡通粗体",
-    ["Handwritten"] = "手写体"
-}
+local flying = false
+local landing = false
+local bg, bv
+local nowe = false
+local tpwalking = false
+local tpwalkingConnections = {}
+local speeds = 1
+local idleTrack, flyTrack, currentActionTrack
+local moonTrack = nil
+local moonActive = false
+local isRising = false
+local speedMode = "fast"
+local currentIdleIndex = 1
 
-local currentFontStyle = "SourceSansBold"
+-- 激光眼相关
+local laserActive = false
+local laserBeam1
 
-local COLOR_SCHEMES = {
-    ["彩虹颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF0000")),ColorSequenceKeypoint.new(0.16, Color3.fromHex("FFA500")),ColorSequenceKeypoint.new(0.33, Color3.fromHex("FFFF00")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("00FF00")),ColorSequenceKeypoint.new(0.66, Color3.fromHex("0000FF")),ColorSequenceKeypoint.new(0.83, Color3.fromHex("4B0082")),ColorSequenceKeypoint.new(1, Color3.fromHex("EE82EE"))}),"palette"},
-    ["黑红颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("000000")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF0000")),ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))}),"alert-triangle"},
-    ["蓝白颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FFFFFF")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("1E90FF")),ColorSequenceKeypoint.new(1, Color3.fromHex("FFFFFF"))}),"droplet"},
-    ["紫金颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FFD700")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("8A2BE2")),ColorSequenceKeypoint.new(1, Color3.fromHex("FFD700"))}),"crown"},
-    ["蓝黑颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("000000")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("0000FF")),ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))}),"moon"},
-    ["绿紫颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("00FF00")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("800080")),ColorSequenceKeypoint.new(1, Color3.fromHex("00FF00"))}),"zap"},
-    ["粉蓝颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF69B4")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("00BFFF")),ColorSequenceKeypoint.new(1, Color3.fromHex("FF69B4"))}),"heart"},
-    ["橙青颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF4500")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("00CED1")),ColorSequenceKeypoint.new(1, Color3.fromHex("FF4500"))}),"sun"},
-    ["红金颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF0000")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FFD700")),ColorSequenceKeypoint.new(1, Color3.fromHex("FF0000"))}),"award"},
-    ["银蓝颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("C0C0C0")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("4682B4")),ColorSequenceKeypoint.new(1, Color3.fromHex("C0C0C0"))}),"star"},
-    ["霓虹颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF00FF")),ColorSequenceKeypoint.new(0.25, Color3.fromHex("00FFFF")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FFFF00")),ColorSequenceKeypoint.new(0.75, Color3.fromHex("FF00FF")),ColorSequenceKeypoint.new(1, Color3.fromHex("00FFFF"))}),"sparkles"},
-    ["森林颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("228B22")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("32CD32")),ColorSequenceKeypoint.new(1, Color3.fromHex("228B22"))}),"tree"},
-    ["火焰颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF4500")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF0000")),ColorSequenceKeypoint.new(1, Color3.fromHex("FF8C00"))}),"flame"},
-    ["海洋颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("000080")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("1E90FF")),ColorSequenceKeypoint.new(1, Color3.fromHex("00BFFF"))}),"waves"},
-    ["日落颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF4500")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF8C00")),ColorSequenceKeypoint.new(1, Color3.fromHex("FFD700"))}),"sunset"},
-    ["银河颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("4B0082")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("8A2BE2")),ColorSequenceKeypoint.new(1, Color3.fromHex("9370DB"))}),"galaxy"},
-    ["糖果颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("FF69B4")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF1493")),ColorSequenceKeypoint.new(1, Color3.fromHex("FFB6C1"))}),"candy"},
-    ["金属颜色"] = {ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("C0C0C0")),ColorSequenceKeypoint.new(0.5, Color3.fromHex("A9A9A9")),ColorSequenceKeypoint.new(1, Color3.fromHex("696969"))}),"shield"}
-}
+-- 防甩飞相关
+local antiStiffConn = nil
+local antiStiffActive = false
 
-local fontColorAnimations = {}
+-- 玩家/坐标模式相关
+local teleportActive = false
 
-local function applyFontColorGradient(textElement, colorScheme)
-    if not textElement or not textElement:IsA("TextLabel") and not textElement:IsA("TextButton") and not textElement:IsA("TextBox") then
-        return
+local SLOW_SPEEDS = 1
+local fastSpeeds = 8
+
+-- 角色工具
+local function getChar() return player.Character end
+local function getHum() local c = getChar() return c and c:FindFirstChildOfClass("Humanoid") end
+local function getAnimator() local h = getHum() return h and h:FindFirstChildOfClass("Animator") end
+
+local function stopAllAnimTracks()
+    if idleTrack then idleTrack:Stop(0.2); idleTrack = nil end
+    if flyTrack then flyTrack:Stop(0.2); flyTrack = nil end
+    if currentActionTrack then currentActionTrack:Stop(0.2); currentActionTrack = nil end
+    if moonTrack then moonTrack:Stop(0.2); moonTrack = nil end
+end
+
+local function playAnim(id, loop, speedMul)
+    local animator = getAnimator()
+    if not animator then return nil end
+    local anim = Instance.new("Animation")
+    anim.AnimationId = id
+    local track = animator:LoadAnimation(anim)
+    track.Looped = loop or false
+    track:Play(0.2)
+    if speedMul then track:AdjustSpeed(speedMul) end
+    return track
+end
+
+local function getCurrentIdleAnimID()
+    return IDLE_ANIMS[currentIdleIndex]
+end
+
+-- 飞行物理
+local function stopTranslateBy()
+    tpwalking = false
+    for _, conn in ipairs(tpwalkingConnections) do conn:Disconnect() end
+    tpwalkingConnections = {}
+end
+
+local function startTranslateBy()
+    stopTranslateBy()
+    local currentSpeeds = (speedMode == "slow") and SLOW_SPEEDS or fastSpeeds
+    for i = 1, currentSpeeds do
+        local conn = RunService.RenderStepped:Connect(function()
+            if not tpwalking or not nowe then conn:Disconnect(); return end
+            local chr = player.Character
+            local h = chr and chr:FindFirstChildOfClass("Humanoid")
+            if h and h.MoveDirection.Magnitude > 0 then
+                chr:TranslateBy(h.MoveDirection)
+            end
+        end)
+        table.insert(tpwalkingConnections, conn)
     end
-    
-    local existingGradient = textElement:FindFirstChild("FontColorGradient")
-    if existingGradient then
-        existingGradient:Destroy()
-    end
-    
-    if fontColorAnimations[textElement] then
-        fontColorAnimations[textElement]:Disconnect()
-        fontColorAnimations[textElement] = nil
-    end
-    
-    if not fontColorEnabled then
-        textElement.TextColor3 = Color3.new(1, 1, 1)
-        return
-    end
-    
-    local schemeData = COLOR_SCHEMES[colorScheme or currentFontColorScheme]
-    if not schemeData then return end
-    
-    local fontGradient = Instance.new("UIGradient")
-    fontGradient.Name = "FontColorGradient"
-    fontGradient.Color = schemeData[1]
-    fontGradient.Rotation = 0
-    fontGradient.Parent = textElement
-    
-    textElement.TextColor3 = Color3.new(1, 1, 1)
-    
-    local animation
-    animation = game:GetService("RunService").Heartbeat:Connect(function()
-        if not textElement or textElement.Parent == nil then
-            animation:Disconnect()
-            fontColorAnimations[textElement] = nil
-            return
+    tpwalking = true
+end
+
+-- 移除自身碰撞箱
+local function removeCollision()
+    local char = getChar()
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
         end
-        
-        if not fontGradient or fontGradient.Parent == nil then
-            animation:Disconnect()
-            fontColorAnimations[textElement] = nil
-            return
+    end
+end
+
+-- 恢复自身碰撞箱
+local function restoreCollision()
+    local char = getChar()
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
         end
-        
-        local time = tick()
-        fontGradient.Rotation = (time * animationSpeed * 30) % 360
+    end
+end
+
+local function startFlight()
+    local char = getChar()
+    local hum = getHum()
+    if not char or not hum then return end
+    for _, state in ipairs(Enum.HumanoidStateType:GetEnumItems()) do hum:SetStateEnabled(state, false) end
+    hum:ChangeState(Enum.HumanoidStateType.Swimming)
+    local attachPart = hum.RigType == Enum.HumanoidRigType.R6 and char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    if not attachPart then return end
+    bg = Instance.new("BodyGyro")
+    bg.P = 9e4; bg.MaxTorque = Vector3.new(9e9,9e9,9e9); bg.CFrame = attachPart.CFrame; bg.Parent = attachPart
+    bv = Instance.new("BodyVelocity")
+    bv.Velocity = Vector3.new(0,0.1,0); bv.MaxForce = Vector3.new(9e9,9e9,9e9); bv.Parent = attachPart
+    hum.PlatformStand = true; char.Animate.Disabled = true
+    local animator = hum:FindFirstChildOfClass("Animator")
+    if animator then for _, t in pairs(animator:GetPlayingAnimationTracks()) do t:Stop(0) end end
+    startTranslateBy()
+    removeCollision()
+end
+
+local function stopFlight()
+    nowe = false; stopTranslateBy()
+    if bg then bg:Destroy(); bg = nil end
+    if bv then bv:Destroy(); bv = nil end
+    local char = getChar(); local hum = getHum()
+    if hum then hum.PlatformStand = false; for _, s in ipairs(Enum.HumanoidStateType:GetEnumItems()) do hum:SetStateEnabled(s, true) end end
+    if char then char.Animate.Disabled = false end
+    restoreCollision()
+end
+
+local function getFlyingAnimID()
+    return speedMode == "slow" and ANIMS.FLYING_SLOW or ANIMS.FLYING_FAST
+end
+
+local function getCameraPitch()
+    return math.asin(camera.CFrame.LookVector.Y)
+end
+
+-- 防甩飞
+local function startAntiStiff()
+    if antiStiffConn then antiStiffConn:Disconnect() end
+    antiStiffActive = true
+    antiStiffConn = RunService.Stepped:Connect(function()
+        if not antiStiffActive then return end
+        local char = getChar(); local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            hum.PlatformStand = false; hum.Sit = false; hum.AutoRotate = true
+            local state = hum:GetState()
+            if state == Enum.HumanoidStateType.Physics or state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.Ragdoll then
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+        end
     end)
-    
-    fontColorAnimations[textElement] = animation
 end
 
-local function applyFontStyleToWindow(fontStyle)
-    if not Window or not Window.UIElements then 
-        wait(0.5)
-        if not Window or not Window.UIElements then
-            return false
-        end
-    end
-    
-    local successCount = 0
-    local totalCount = 0
-    
-    local function processElement(element)
-        for _, child in ipairs(element:GetDescendants()) do
-            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
-                totalCount = totalCount + 1
-                pcall(function()
-                    child.Font = Enum.Font[fontStyle]
-                    successCount = successCount + 1
-                end)
-            end
-        end
-    end
-    
-    processElement(Window.UIElements.Main)
-    
-    return successCount, totalCount
+local function stopAntiStiff()
+    antiStiffActive = false
+    if antiStiffConn then antiStiffConn:Disconnect(); antiStiffConn = nil end
 end
 
-local function applyFontColorsToWindow(colorScheme)
-    if not Window or not Window.UIElements then return end
-    
-    local function processElement(element)
-        for _, child in ipairs(element:GetDescendants()) do
-            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
-                applyFontColorGradient(child, colorScheme)
-            end
-        end
-    end
-    
-    processElement(Window.UIElements.Main)
+-- 冲击波特效
+local function spawnShockwave()
+    local char = getChar(); if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart"); if not root then return end
+    local wave = create("Part", { Shape = Enum.PartType.Ball, Size = Vector3.new(2,2,2), Position = root.Position - Vector3.new(0,3,0), Material = Enum.Material.ForceField, Color = Color3.fromRGB(255,255,255), Transparency = 0.2, Anchored = true, CanCollide = false, Parent = workspace })
+    local light = create("PointLight", { Color = Color3.fromRGB(100,200,255), Range = 20, Brightness = 4, Parent = wave })
+    task.spawn(function() for i=1,8 do wave.Size += Vector3.new(3,3,3); wave.Transparency += 0.1; light.Brightness -= 0.5; task.wait(0.04) end wave:Destroy() end)
 end
 
-local function createRainbowBorder(window, colorScheme, speed)
-    if not window or not window.UIElements then
-        wait(1)
-        if not window or not window.UIElements then
-            return nil, nil
-        end
-    end
-    
-    local mainFrame = window.UIElements.Main
-    if not mainFrame then
-        return nil, nil
-    end
-    
-    local existingStroke = mainFrame:FindFirstChild("RainbowStroke")
-    if existingStroke then
-        local glowEffect = existingStroke:FindFirstChild("GlowEffect")
-        if glowEffect then
-            local schemeData = COLOR_SCHEMES[colorScheme or currentBorderColorScheme]
-            if schemeData then
-                glowEffect.Color = schemeData[1]
+-- 激光眼
+local function fireLaser()
+    local char = getChar()
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+    local eyeOffset = Vector3.new(0.3, 0.2, 0.5)
+    local leftEye = head.CFrame * CFrame.new(-eyeOffset.X, eyeOffset.Y, -eyeOffset.Z)
+    local rightEye = head.CFrame * CFrame.new(eyeOffset.X, eyeOffset.Y, -eyeOffset.Z)
+    local function createBeam(origin)
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(0.2, 0.2, 50)
+        part.CFrame = origin * CFrame.new(0, 0, -25)
+        part.Material = Enum.Material.Neon
+        part.Color = Color3.fromRGB(255, 0, 0)
+        part.Transparency = 0.5
+        part.Anchored = true
+        part.CanCollide = false
+        part.Parent = workspace
+        local rayOrigin = origin.Position
+        local rayDir = origin.LookVector * 50
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+        rayParams.FilterDescendantsInstances = {char}
+        local result = workspace:Raycast(rayOrigin, rayDir, rayParams)
+        if result then
+            part.Size = Vector3.new(0.2, 0.2, (result.Position - rayOrigin).Magnitude)
+            part.CFrame = CFrame.lookAt(rayOrigin, result.Position) * CFrame.new(0, 0, -part.Size.Z / 2)
+            if result.Instance then
+                local em = Instance.new("ParticleEmitter")
+                em.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+                em.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+                em.Size = NumberSequence.new(0.3)
+                em.Lifetime = NumberRange.new(0.5)
+                em.Rate = 50
+                em.Parent = result.Instance
+                Debris:AddItem(em, 0.5)
             end
+        else
+            part.CFrame = origin * CFrame.new(0, 0, -25)
         end
-        return existingStroke, rainbowBorderAnimation
+        Debris:AddItem(part, 0.1)
     end
-    
-    if not mainFrame:FindFirstChildOfClass("UICorner") then
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 16)
-        corner.Parent = mainFrame
-    end
-    
-    local rainbowStroke = Instance.new("UIStroke")
-    rainbowStroke.Name = "RainbowStroke"
-    rainbowStroke.Thickness = 1.5
-    rainbowStroke.Color = Color3.new(1, 1, 1)
-    rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    rainbowStroke.LineJoinMode = Enum.LineJoinMode.Round
-    rainbowStroke.Enabled = borderEnabled
-    rainbowStroke.Parent = mainFrame
-    
-    local glowEffect = Instance.new("UIGradient")
-    glowEffect.Name = "GlowEffect"
-    
-    local schemeData = COLOR_SCHEMES[colorScheme or currentBorderColorScheme]
-    if schemeData then
-        glowEffect.Color = schemeData[1]
+    createBeam(leftEye)
+    createBeam(rightEye)
+end
+
+local function stopLaser()
+    laserActive = false
+    if laserBeam1 then laserBeam1:Disconnect(); laserBeam1 = nil end
+end
+
+local function restoreNormalAnim()
+    if not nowe then return end
+    local hum = getHum()
+    local isMoving = hum and hum.MoveDirection.Magnitude > 0.1 and not isRising
+    if isMoving then
+        if idleTrack then idleTrack:Stop(0.2); idleTrack = nil end
+        if not flyTrack or not flyTrack.IsPlaying then flyTrack = playAnim(getFlyingAnimID(), true) end
     else
-        glowEffect.Color = COLOR_SCHEMES["彩虹颜色"][1]
-    end
-    
-    glowEffect.Rotation = 0
-    glowEffect.Parent = rainbowStroke
-    
-    return rainbowStroke, nil
-end
-
-local function startBorderAnimation(window, speed)
-    if not window or not window.UIElements then
-        return nil
-    end
-    
-    local mainFrame = window.UIElements.Main
-    if not mainFrame then
-        return nil
-    end
-    
-    local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-    if not rainbowStroke or not rainbowStroke.Enabled then
-        return nil
-    end
-    
-    local glowEffect = rainbowStroke:FindFirstChild("GlowEffect")
-    if not glowEffect then
-        return nil
-    end
-    
-    if rainbowBorderAnimation then
-        rainbowBorderAnimation:Disconnect()
-        rainbowBorderAnimation = nil
-    end
-    
-    local animation
-    animation = game:GetService("RunService").Heartbeat:Connect(function()
-        if not rainbowStroke or rainbowStroke.Parent == nil or not rainbowStroke.Enabled then
-            animation:Disconnect()
-            return
-        end
-        
-        local time = tick()
-        glowEffect.Rotation = (time * speed * 60) % 360
-    end)
-    
-    rainbowBorderAnimation = animation
-    return animation
-end
-
-local function initializeRainbowBorder(scheme, speed)
-    speed = speed or animationSpeed
-    
-    local rainbowStroke, _ = createRainbowBorder(Window, scheme, speed)
-    if rainbowStroke then
-        if borderEnabled then
-            startBorderAnimation(Window, speed)
-        end
-        borderInitialized = true
-        return true
-    end
-    return false
-end
-
-local function gradient(text, startColor, endColor)
-    local result = ""
-    for i = 1, #text do
-        local t = (i - 1) / (#text - 1)
-        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
-        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
-        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
-        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
-    end
-    return result
-end
-
-local function playSound()
-    if soundEnabled then
-        pcall(function()
-            local sound = Instance.new("Sound")
-            sound.SoundId = "rbxassetid://9047002353"
-            sound.Volume = 0.3
-            sound.Parent = game:GetService("SoundService")
-            sound:Play()
-            game:GetService("Debris"):AddItem(sound, 2)
-        end)
+        if flyTrack then flyTrack:Stop(0.2); flyTrack = nil end
+        if not idleTrack or not idleTrack.IsPlaying then idleTrack = playAnim(getCurrentIdleAnimID(), true) end
     end
 end
 
-local function applyBlurEffect(enabled)
-    if enabled then
-        pcall(function()
-            local blur = Instance.new("BlurEffect")
-            blur.Size = 8
-            blur.Name = "UIwdfex HUBBlur"
-            blur.Parent = game:GetService("Lighting")
-        end)
-    else
-        pcall(function()
-            local existingBlur = game:GetService("Lighting"):FindFirstChild("UIwdfex HUBBlur")
-            if existingBlur then
-                existingBlur:Destroy()
-            end
-        end)
-    end
-end
-
-local function applyUIScale(scale)
-    if Window and Window.UIElements and Window.UIElements.Main then
-        local mainFrame = Window.UIElements.Main
-        mainFrame.Size = UDim2.new(0, 600 * scale, 0, 400 * scale)
-    end
-end
-
-local Confirmed = false
-local gradientColors = {
-    "rgb(255, 230, 235)",
-    "rgb(255, 210, 220)",
-    "rgb(255, 190, 205)",
-    "rgb(255, 170, 190)",
-    "rgb(255, 150, 175)",
-    "rgb(245, 140, 180)",
-    "rgb(235, 130, 185)",
-    "rgb(225, 120, 190)",
-    "rgb(215, 110, 195)",
-    "rgb(205, 100, 200)"
-}
-local username = game:GetService("Players").LocalPlayer.Name
-local coloredUsername = ""
-local gradientColors = {
-    "#4169E1", 
-    "#6A5ACD",  
-    "#9370DB",  
-    "#8A2BE2", 
-    "#4B0082"   
-}
-local goldColor = "#FFD700"
-for i = 1, #username do
-    local char = username:sub(i, i)
-    if char:match("[A-Za-z0-9]") then
-        local colorIndex = (i - 1) % #gradientColors + 1
-        coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. char .. '</font>'
-    else
-        coloredUsername = coloredUsername .. '<font color="' .. goldColor .. '">' .. char .. '</font>'
-    end
-end
-
-WindUI:Popup({
-    Title = 'wdfex-HUB',
-    IconThemed = true,
-    Icon = "crown",
-    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-HUB\n你的支持是我们更新的动力\n91",
-    Buttons = {
-        {
-            Title = "取消",
-            Callback = function() end,
-            Variant = "Secondary",
-        },
-        {
-            Title = "执行",
-            Icon = "arrow-right",
-            Callback = function() 
-                Confirmed = true
-                createUI()
-            end,
-            Variant = "Primary",
-        }
-    }
-})
-
-function createUI()
-    -- ===== 创建窗口 =====
-    local Window = WindUI:CreateWindow({
-        Title = 'wdfex-HUB',
-        Icon = "crown",
-        IconThemed = true,
-        Author = "当前版本：v2.0 作者：wdfex",
-        Folder = "CloudHub",
-        Size = UDim2.fromOffset(300, 200),
-        Transparent = true,
-        Theme = "Dark",
-        HideSearchBar = false,
-        ScrollBarEnabled = true,
-        Resizable = true,
-        Background = "https://raw.githubusercontent.com/SQ182/y/c713ef1eeed1dc6b50e547dcbfee45034c385bf9/image_download_1768053890832.jpg",
-        BackgroundImageTransparency = 0.5,
-        User = {
-            Enabled = true,
-            Callback = function()
-                WindUI:Notify({
-                    Title = "点击了自己",
-                    Content = "没什么", 
-                    Duration = 1,
-                    Icon = "4483362748"
-                })
-            end,
-            Anonymous = false
-        },
-        SideBarWidth = 250,
-        Search = {
-            Enabled = true,
-            Placeholder = "搜索...",
-            Callback = function(searchText)
-                print("搜索内容:", searchText)
-            end
-        },
-        SidePanel = {
-            Enabled = true,
-            Content = {
-                {
-                    Type = "Button", 
-                    Text = "",
-                    Style = "Subtle", 
-                    Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
-                }
-            }
-        }
-    })
-
-    Window:EditOpenButton({
-        Title = "wdfex-HUB",
-        Icon = "crown",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 4,
-        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
-        Draggable = true,
-    })
-    
-    Window:Tag({
-        Title = "正在寻求",
-        Color = Color3.fromHex("#00008B") 
-    })
-    
-    Window:Tag({
-        Title = "3.0.1",
-        Color = Color3.fromHex("#32CD32")
-    })
-    
-    spawn(function()
-        while true do
-            for hue = 0, 1, 0.01 do  
-                local color = Color3.fromHSV(hue, 0.8, 1)  
-                Window:EditOpenButton({
-                    Color = ColorSequence.new(color)
-                })
-                wait(0.04)  
-            end
-        end
-    end)
-    
-    if not borderInitialized then
-        spawn(function()
-            wait(0.5)
-            initializeRainbowBorder("彩虹颜色", animationSpeed)
-            wait(1)
-            applyFontStyleToWindow(currentFontStyle)
-        end)
-    end
-
-    local windowOpen = true
-
-    Window:OnClose(function()
-        windowOpen = false
-        if rainbowBorderAnimation then
-            rainbowBorderAnimation:Disconnect()
-            rainbowBorderAnimation = nil
-        end
-    end)
-
-    local originalOpenFunction = Window.Open
-    Window.Open = function(...)
-        windowOpen = true
-        local result = originalOpenFunction(...)
-        
-        if borderInitialized and borderEnabled and not rainbowBorderAnimation then
-            wait(0.1)
-            startBorderAnimation(Window, animationSpeed)
-        end
-        
-        return result
-    end
-
-    -- ===== 通用Tab =====
-    local Tab_General = Window:Tab({
-        ["Locked"] = false,
-        ["Title"] = "通用",
-        ["Icon"] = "",
-    })
-
-    Tab_General:Section({
-        TextSize = 17,
-        ["Title"] = "通用功能",
-        TextXAlignment = "Left",
-    })
-
-    Tab_General:Button({
-        ["Title"] = "反挂机",
-        ["Desc"] = "防止被踢出",
-        ["Callback"] = function()
-            print("反挂机已开启")
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            local VirtualUser = game:GetService("VirtualUser")
-            local CurrentCamera = workspace.CurrentCamera
-            LocalPlayer.Idled:Connect(function()
-                VirtualUser:Button2Down(Vector2.new(0, 0), CurrentCamera.CFrame)
-                task.wait(1)
-                VirtualUser:Button2Up(Vector2.new(0, 0), CurrentCamera.CFrame)
-            end)
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "反挂机",
-                Text = "已开启",
-                Duration = 3,
-            })
-        end
-    })
-
-    Tab_General:Slider({
-        ["Title"] = "速度设置",
-        ["Step"] = 1,
-        ["Value"] = { Min = 16, Default = 16, Max = 1000 },
-        ["Callback"] = function(Value)
-            local speed = type(Value) == "table" and Value[1] or Value
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.WalkSpeed = speed
-            end
-        end
-    })
-
-    Tab_General:Slider({
-        ["Title"] = "跳跃设置",
-        ["Step"] = 1,
-        ["Value"] = { Min = 50, Default = 50, Max = 200 },
-        ["Callback"] = function(Value)
-            local jump = type(Value) == "table" and Value[1] or Value
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.JumpPower = jump
-            end
-        end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "帧率显示",
-        ["Desc"] = "显示FPS",
-        ["Callback"] = function()
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            if LocalPlayer.PlayerGui:FindFirstChild("FPSGui") then return end
-            
-            local ScreenGui = Instance.new("ScreenGui")
-            ScreenGui.Name = "FPSGui"
-            ScreenGui.ResetOnSpawn = false
-            ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            
-            local TextLabel = Instance.new("TextLabel")
-            TextLabel.Name = "FPSLabel"
-            TextLabel.Size = UDim2.new(0, 100, 0, 50)
-            TextLabel.Position = UDim2.new(0, 10, 0, 10)
-            TextLabel.BackgroundTransparency = 1
-            TextLabel.Font = Enum.Font.SourceSansBold
-            TextLabel.Text = "FPS: 0"
-            TextLabel.TextSize = 20
-            TextLabel.TextColor3 = Color3.new(1, 1, 1)
-            TextLabel.Parent = ScreenGui
-            
-            ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-            
-            local RunService = game:GetService("RunService")
-            RunService.RenderStepped:Connect(function()
-                local fps = math.floor(1 / RunService.RenderStepped:Wait())
-                TextLabel.Text = "FPS: " .. fps
-            end)
-        end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "时间显示",
-        ["Desc"] = "显示北京时间",
-        ["Callback"] = function()
-            local CoreGui = game:GetService("CoreGui")
-            if CoreGui:FindFirstChild("LBLG") then return end
-
-            local ScreenGui = Instance.new("ScreenGui")
-            ScreenGui.Name = "LBLG"
-            ScreenGui.Parent = CoreGui
-            ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            
-            local TextLabel = Instance.new("TextLabel")
-            TextLabel.Name = "LBL"
-            TextLabel.Parent = ScreenGui
-            TextLabel.BackgroundColor3 = Color3.new(1, 1, 1)
-            TextLabel.BackgroundTransparency = 1
-            TextLabel.BorderColor3 = Color3.new(0, 0, 0)
-            TextLabel.Position = UDim2.new(0.75, 0, 0.01, 0)
-            TextLabel.Size = UDim2.new(0, 133, 0, 30)
-            TextLabel.Font = Enum.Font.GothamSemibold
-            TextLabel.TextColor3 = Color3.new(1, 1, 1)
-            TextLabel.TextScaled = true
-            TextLabel.TextSize = 14
-            TextLabel.TextWrapped = true
-            
-            local RunService = game:GetService("RunService")
-            RunService.Heartbeat:Connect(function()
-                local currentTime = os.date("%H时%M分%S秒")
-                TextLabel.Text = "北京时间:" .. currentTime
-            end)
-        end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "重开",
-        ["Desc"] = "重新开始",
-        ["Callback"] = function()
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.Health = 0
-            end
-        end
-    })
-
-    Tab_General:Toggle({
-        ["Title"] = "防摔",
-        ["Desc"] = "从高处掉落时一下快一下慢",
-        ["Default"] = false,
-        ["Callback"] = function(bool)
-            local LocalPlayer = game:GetService("Players").LocalPlayer
-            local RunService = game:GetService("RunService")
-            if bool then
-                local function onCharacterAdded(char)
-                    local hrp = char:WaitForChild("HumanoidRootPart")
-                    local humanoid = char:WaitForChild("Humanoid")
-                    
-                    local falling = false
-                    local timer = 0
-                    
-                    local connection
-                    connection = RunService.Heartbeat:Connect(function()
-                        if not bool then
-                            connection:Disconnect()
-                            return
-                        end
-                        if not hrp or not hrp.Parent then return end
-                        
-                        local velocity = hrp.AssemblyLinearVelocity
-                        
-                        if velocity.Y < -5 and humanoid:GetState() ~= Enum.HumanoidStateType.Climbing and humanoid:GetState() ~= Enum.HumanoidStateType.Swimming then
-                            falling = true
-                        else
-                            falling = false
-                            timer = 0
-                        end
-                        
-                        if falling then
-                            timer = timer + 1
-                            local speed
-                            if timer % 6 < 3 then
-                                speed = -25
-                            else
-                                speed = -5
-                            end
-                            local newVel = Vector3.new(velocity.X, speed, velocity.Z)
-                            hrp.AssemblyLinearVelocity = newVel
-                        end
-                    end)
-                end
-                
-                if LocalPlayer.Character then
-                    onCharacterAdded(LocalPlayer.Character)
-                end
-                LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+local function takeOff()
+    if flying or landing then return end
+    flying = true; stopAllAnimTracks(); moonActive = false
+    startAntiStiff()
+    local char = getChar(); local root = char and char:FindFirstChild("HumanoidRootPart")
+    if root then root.Anchored = true end
+    local track = playAnim(ANIMS.TAKEOFF, false, 4)
+    if track then track.Stopped:Wait() end
+    currentActionTrack = nil
+    if root then root.Anchored = false end
+    if not flying then return end
+    nowe = true; startFlight()
+    spawnShockwave()
+    isRising = true; if bv then bv.Velocity = Vector3.new(0, 12, 0) end
+    task.wait(0.4); isRising = false; if bv then bv.Velocity = Vector3.new(0, 0.1, 0) end
+    idleTrack = playAnim(getCurrentIdleAnimID(), true)
+    -- 姿态
+    task.spawn(function()
+        while nowe do
+            RunService.RenderStepped:Wait()
+            if not nowe or not bg or not bg.Parent then break end
+            local hum = getHum(); if not hum then break end
+            local isMoving = hum.MoveDirection.Magnitude > 0.1 and not isRising
+            if isMoving then
+                local flatDir = Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z)
+                if flatDir.Magnitude < 0.01 then flatDir = Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit end
+                flatDir = flatDir.Unit
+                if speedMode == "fast" then
+                    local pitch = getCameraPitch(); local tilt = -math.pi/2 + pitch * 0.5
+                    tilt = math.clamp(tilt, -math.pi/2 - 1, -math.pi/2 + 1)
+                    bg.CFrame = CFrame.lookAt(Vector3.zero, flatDir) * CFrame.Angles(tilt, 0, 0)
+                else bg.CFrame = CFrame.lookAt(Vector3.zero, flatDir) end
             else
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = LocalPlayer.Character.HumanoidRootPart
-                    local vel = hrp.AssemblyLinearVelocity
-                    hrp.AssemblyLinearVelocity = Vector3.new(vel.X, vel.Y, vel.Z)
-                end
+                local flatCf = Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit
+                bg.CFrame = CFrame.lookAt(Vector3.zero, flatCf)
             end
         end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "飞天",
-        ["Desc"] = "点击开启皮脚本飞行",
-        ["Callback"] = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/07cdd3eeaf4d4928.txt_2024-08-09_090317.OTed.lua"))()
-        end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "飞车",
-        ["Desc"] = "点击开启皮脚本飞车",
-        ["Callback"] = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/Pi-feiche.lua"))()
-        end
-    })
-
-    Tab_General:Button({
-        ["Title"] = "断麦",
-        ["Desc"] = "强制断开所有人语音",
-        ["Callback"] = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Rootleak/Stalkie-2.0/refs/heads/main/vc.lua"))()
-        end
-    })
-
-    -- ===== 过反作弊检测1 =====
-    Tab_General:Button({
-        ["Title"] = "过反作弊检测1",
-        ["Desc"] = "点击开启过反作弊检测",
-        ["Callback"] = function()
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            
-            -- 拦截Network上报
-            local Network = ReplicatedStorage:FindFirstChild("Shared") and ReplicatedStorage.Shared:FindFirstChild("Core") and ReplicatedStorage.Shared.Core:FindFirstChild("Network")
-            if Network then
-                local OriginalFire = Network.FireServer
-                Network.FireServer = function(self, event, ...)
-                    local eventName = tostring(event):lower()
-                    if eventName:find("report") or eventName:find("anti") or eventName:find("cheat") or eventName:find("检测") or eventName:find("ban") or eventName:find("踢") or eventName:find("hit") then
-                        return nil
-                    end
-                    return OriginalFire(self, event, ...)
+    end)
+    -- 动画
+    task.spawn(function()
+        while nowe do
+            local hum = getHum(); local isMoving = hum and hum.MoveDirection.Magnitude > 0.1
+            if not moonActive then
+                if isMoving and not isRising then
+                    if idleTrack then idleTrack:Stop(0.2); idleTrack = nil end
+                    if not flyTrack or not flyTrack.IsPlaying then flyTrack = playAnim(getFlyingAnimID(), true) end
+                else
+                    if flyTrack then flyTrack:Stop(0.2); flyTrack = nil end
+                    if not idleTrack or not idleTrack.IsPlaying then idleTrack = playAnim(getCurrentIdleAnimID(), true) end
                 end
             end
-            
-            -- 拦截所有带检测关键词的RemoteEvent
-            for _, remote in ipairs(ReplicatedStorage:GetDesc
+            RunService.Heartbeat:Wait()
+        end
+    end)
+end
+
+local function land()
+    if not flying or landing then return end
+    landing = true; flying = false; moonActive = false
+    stopAntiStiff()
+    stopFlight(); stopAllAnimTracks()
+    local char = getChar(); local hum = getHum()
+    if hum then hum.PlatformStand = false; for _, s in ipairs(Enum.HumanoidStateType:GetEnumItems()) do hum:SetStateEnabled(s, true) end end
+    if char then char.Animate.Disabled = false end
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if root and root.Position.Y < -20 then
+        root.CFrame = CFrame.new(root.Position.X, 50, root.Position.Z)
+    end
+    landing = false; stopAllAnimTracks()
+end
+
+-- ★ 玩家/坐标模式：落地动画3倍速，使用BodyPosition固定地面
+local function startTeleportSequence(targetPlayer)
+    if teleportActive then return end
+    teleportActive = true
+
+    -- 关闭超人飞行（如果正在飞行），直接停止不做位置修正
+    if nowe then
+        stopFlight()
+        stopAllAnimTracks()
+        local char = getChar()
+        local hum = getHum()
+        if hum then
+            hum.PlatformStand = false
+            for _, s in ipairs(Enum.HumanoidStateType:GetEnumItems()) do
+                hum:SetStateEnabled(s, true)
+            end
+        end
+        if char then char.Animate.Disabled = false end
+        flying = false
+        nowe = false
+        moonActive = false
+        stopAntiStiff()
+    end
+
+    local char = player.Character
+    if not char then teleportActive = false; return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then teleportActive = false; return end
+
+    -- 1. 在原地播放起飞动画（4倍速）
+    root.Anchored = true
+    stopAllAnimTracks()
+    local track = playAnim(ANIMS.TAKEOFF, false, 4)
+    if track then track.Stopped:Wait() end
+    root.Anchored = false
+
+    -- 2. 快速向上移动一小段
+    local bvUp = Instance.new("BodyVelocity")
+    bvUp.Velocity = Vector3.new(0, 200, 0)
+    bvUp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bvUp.Parent = root
+    task.wait(0.3)
+    bvUp:Destroy()
+
+    -- 3. 瞬移到目标玩家旁边
+    local targetChar = targetPlayer.Character
+    if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
+        teleportActive = false
+        return
+    end
+    local targetRoot = targetChar.HumanoidRootPart
+    local targetPos = targetRoot.CFrame * CFrame.new(3, 0, 0) -- 目标右侧3 studs
+
+    -- 4. 精准贴地：射线检测找到地面高度
+    local function findGround(pos)
+        local rayOrigin = pos + Vector3.new(0, 10, 0)
+        local rayDir = Vector3.new(0, -50, 0)
+        local result = workspace:Raycast(rayOrigin, rayDir)
+        if result then
+            return result.Position.Y + 3  -- 加上角色身高偏移
+        else
+            return pos.Y
+        end
+    end
+    local groundY = findGround(targetPos.Position)
+    root.CFrame = CFrame.new(targetPos.Position.X, groundY, targetPos.Position.Z)
+
+    -- 5. ★ 使用BodyPosition轻柔固定在地面，而不是锚定
+    local bodyPos = Instance.new("BodyPosition")
+    bodyPos.Position = root.Position
+    bodyPos.MaxForce = Vector3.new(100000, 100000, 100000)
+    bodyPos.P = 10000
+    bodyPos.D = 500
+    bodyPos.Parent = root
+
+    -- 6. 播放落地动画（3倍速）
+    stopAllAnimTracks()
+    local landTrack = playAnim(ANIMS.LANDING, false, 3)  -- ★ 3倍速
+    if landTrack then
+        landTrack.Stopped:Connect(function()
+            -- 动画结束后移除BodyPosition，角色自然站立
+            if bodyPos then
+                bodyPos:Destroy()
+            end
+            teleportActive = false
+        end)
+    else
+        -- 如果动画加载失败，直接清理
+        if bodyPos then bodyPos:Destroy() end
+        teleportActive = false
+    end
+end
+
+-- ==================== UI ====================
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "FlyMinUI"; screenGui.ResetOnSpawn = false
+
+-- 使按钮可拖动的函数
+local function makeDraggable(btn)
+    btn.Active = true
+    local dragInput, dragStart, startPos
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input; dragStart = input.Position; startPos = btn.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragInput = nil end end)
+        end
+    end)
+    btn.InputChanged:Connect(function(input)
+        if dragInput and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- 超人模式按钮
+local flyBtn = Instance.new("TextButton", screenGui)
+flyBtn.Size = UDim2.new(0, 120, 0, 40); flyBtn.Position = UDim2.new(0.05, 0, 0.4, 0)
+flyBtn.Text = "超人模式"; flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 16; flyBtn.TextColor3 = Color3.new(1, 1, 1)
+flyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 200); flyBtn.BackgroundTransparency = 0.3; flyBtn.BorderSizePixel = 0; flyBtn.AutoButtonColor = false
+Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 12)
+makeDraggable(flyBtn)
+
+-- 玩家/坐标模式按钮
+local teleBtn = Instance.new("TextButton", screenGui)
+teleBtn.Size = UDim2.new(0, 130, 0, 40); teleBtn.Position = UDim2.new(0.05, 130, 0.4, 0)
+teleBtn.Text = "玩家/坐标模式"; teleBtn.Font = Enum.Font.GothamBold; teleBtn.TextSize = 13; teleBtn.TextColor3 = Color3.new(1, 1, 1)
+teleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 100); teleBtn.BackgroundTransparency = 0.3; teleBtn.BorderSizePixel = 0; teleBtn.AutoButtonColor = false
+Instance.new("UICorner", teleBtn).CornerRadius = UDim.new(0, 8)
+makeDraggable(teleBtn)
+
+-- 玩家列表
+local playerListFrame = Instance.new("Frame", screenGui)
+playerListFrame.Size = UDim2.new(0, 150, 0, 200)
+playerListFrame.Position = UDim2.new(0.8, -75, 0.5, -100)
+playerListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+playerListFrame.BackgroundTransparency = 0.2
+playerListFrame.BorderSizePixel = 0
+playerListFrame.Visible = false
+Instance.new("UICorner", playerListFrame).CornerRadius = UDim.new(0, 8)
+
+local scrollFrame = Instance.new("ScrollingFrame", playerListFrame)
+scrollFrame.Size = UDim2.new(1, -10, 1, -10)
+scrollFrame.Position = UDim2.new(0, 5, 0, 5)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.ScrollBarThickness = 4
+
+local listLayout = Instance.new("UIListLayout", scrollFrame)
+listLayout.Padding = UDim.new(0, 4)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+teleBtn.MouseButton1Click:Connect(function()
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            local btn = Instance.new("TextButton", scrollFrame)
+            btn.Size = UDim2.new(1, 0, 0, 28)
+            btn.Text = p.Name
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 12
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            btn.BackgroundTransparency = 0.3
+            btn.BorderSizePixel = 0
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.MouseButton1Click:Connect(function()
+                playerListFrame.Visible = false
+                startTeleportSequence(p)
+            end)
+        end
+    end
+    playerListFrame.Visible = not playerListFrame.Visible
+end)
+
+-- 功能按钮容器
