@@ -1492,7 +1492,11 @@ kaGroup:AddToggle("KAPoliceOnly", {
         KAPoliceOnly = value
         if value then
             KACivilianOnly = false
-            Toggles.KACivilianOnly:Set(false)
+            pcall(function()
+                if Toggles.KACivilianOnly then
+                    Toggles.KACivilianOnly:Set(false)
+                end
+            end)
             Library:Notify({ Title = "杀戮光环", Description = "已切换至只攻击警察", Time = 2 })
         end
     end
@@ -1505,7 +1509,11 @@ kaGroup:AddToggle("KACivilianOnly", {
         KACivilianOnly = value
         if value then
             KAPoliceOnly = false
-            Toggles.KAPoliceOnly:Set(false)
+            pcall(function()
+                if Toggles.KAPoliceOnly then
+                    Toggles.KAPoliceOnly:Set(false)
+                end
+            end)
             Library:Notify({ Title = "杀戮光环", Description = "已切换至只攻击平民", Time = 2 })
         end
     end
