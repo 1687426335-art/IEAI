@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "圣奥里", Footer = "wdfex 制作", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械修改", "target"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("1") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('已为您开启反作弊请勿执行其他脚本否则将被踢出服务器')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "wdfex 制作", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械修改", "target"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
 
 local Settings = {
     HoldTime = 0,
@@ -987,9 +987,9 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-local weaponGroup = Tabs.Gun:AddLeftGroupbox("武器强化")
+local weaponGroup = Tabs.Gun:AddLeftGroupbox("枪械功能")
 weaponGroup:AddToggle("FastFire", {
-    Text = "无限射速（伤害拉满）",
+    Text = "超快射速",
     Default = false,
     Callback = function(value)
         if not value then return end
@@ -1028,9 +1028,9 @@ weaponGroup:AddToggle("InfAmmo", {
     end
 })
 
-local mainLeftGroup = Tabs.Player:AddRightGroupbox("交互设置")
+local mainLeftGroup = Tabs.Player:AddRightGroupbox("快速互动")
 mainLeftGroup:AddToggle("InteractToggle", {
-    Text = "启用交互修改",
+    Text = "启用互动修改",
     Default = false,
     Callback = function(value)
         interactEnabled = value
