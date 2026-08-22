@@ -1081,7 +1081,7 @@ godGroup:AddToggle("GodToggle", {
         godOn = value
     end
 })
-godGroup:AddLabel("免疫可对玩家造成伤害的物体不免疫子弹你们牢幕是了，")
+godGroup:AddLabel("不知道有没有用反正能免疫一些伤害🤓，")
 
 local espGroup = Tabs.Gun:AddRightGroupbox("透视")
 espGroup:AddToggle("ESPEnabled", {
