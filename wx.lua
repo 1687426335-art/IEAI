@@ -1,3235 +1,1498 @@
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-local Window = WindUI:CreateWindow({
-    Title = "WX<font color='#00FF00'>脚本</font>",
-    Icon = "rbxassetid://81944629903864",
-    IconTransparency = 5,
-    IconThemed = true,
-    Author = "欢迎您使用",
-    Folder = "CloudHub",
-    Size = UDim2.fromOffset(400, 300),
-    Transparent = true,
-    Theme = "Dark",
-    User = {
-        Enabled = true,
-        Callback = function() print("clicked") end,
-        Anonymous = false
-    },
-    SideBarWidth = 200,
-    ScrollBarEnabled = true,
-    Background = "rbxassetid://"
-})
+-- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "圣奥里", Footer = "wdfex 制作", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：3999698324\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械修改", "target"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
 
-Window:EditOpenButton({
-    Title = "WX脚本",
-    Icon = "monitor",
-    CornerRadius = UDim.new(0, 8),
-    StrokeThickness = 1,
-    Draggable = true,
-})
-Window:Tag({
-    Title = "正式版V1.5",
-    Color = Color3.fromHex("#30ff6a")
-})
-Window:Tag({
-    Title = "永久免费",
-    Color = Color3.fromHex("#315dff")
-})
-Window:ToggleTransparency(true)
-
-local TimeTag = Window:Tag({
-    Title = "00:00",
-    Color = Color3.fromHex("#000000")
-})
-
-local hue = 0
-task.spawn(function()
-    while true do
-        local now = os.date("*t")
-        local hours = string.format("%02d", now.hour)
-        local minutes = string.format("%02d", now.min)
-        
-        hue = (hue + 0.01) % 1
-        local rainbowColor = Color3.fromHSV(hue, 1, 1)
-        
-        TimeTag:SetTitle(hours .. ":" .. minutes)
-        TimeTag:SetColor(rainbowColor)
-
-        task.wait(0.06)
-    end
-end)
-
-local TabHandles = {
-    WX1 = Window:Tab({ Title = "公告", Icon = "layout-grid" }),
-    WX2 = Window:Tab({ Title = "通用类", Icon = "layout-grid" }),
-    WX3 = Window:Tab({ Title = "自瞄类", Icon = "crosshair" }),
-    WX4 = Window:Tab({ Title = "甩飞类", Icon = "wind" }),
-    WX5 = Window:Tab({ Title = "FE", Icon = "circle" }),
-    WX6 = Window:Tab({ Title = "其他脚本", Icon = "server" }),
-    WX7 = Window:Tab({ Title = "脚本中心", Icon = "code" }),
-    WX8 = Window:Tab({ Title = "UI设色", Icon = "brush" }),
-    WX9 = Window:Tab({ Title = "锻造", Icon = "zap" })
+local Settings = {
+    HoldTime = 0,
+    Distance = 25,
+    HitboxEnabled = false,
+    HitboxSize = 10,
+    WhitelistEnabled = false,
+    TeleportEnabled = false,
+    NoclipEnabled = false,
+    ESPEnabled = false,
+    ESPShowName = true,
+    ESPShowJob = true,
+    OutlineESPEnabled = false,
 }
 
--- ==================== 情云同款自瞄系统 ====================
-local CloudAimEnabled = false
-local CloudAimFOV = 100
-local CloudAimSmoothness = 10
-local CloudAimPrediction = 5
-local CloudAimFOVring = nil
-local CloudAimRunService = game:GetService("RunService")
-local CloudAimUserInputService = game:GetService("UserInputService")
-local CloudAimPlayers = game:GetService("Players")
-local CloudAimCam = workspace.CurrentCamera
-local CloudAimConnection = nil
+local Whitelist = {}
+local affectedHeads = {}
+local frameCount = 0
+local isDestroyed = false
+local connections = {}
+local noclipConnections = {}
 
--- 创建FOV圈
-local function CreateFOVCircle()
-    if CloudAimFOVring then
-        CloudAimFOVring:Remove()
+local JobColors = {
+    ["警察"] = Color3.fromRGB(0, 100, 255),
+    ["医生"] = Color3.fromRGB(0, 200, 0),
+    ["消防员"] = Color3.fromRGB(255, 50, 0),
+    ["军人"] = Color3.fromRGB(50, 150, 50),
+    ["黑帮"] = Color3.fromRGB(150, 0, 150),
+    ["平民"] = Color3.fromRGB(200, 200, 200),
+    ["圣奥里公民"] = Color3.fromRGB(200, 200, 200),
+    ["银行家"] = Color3.fromRGB(0, 200, 200),
+    ["市长"] = Color3.fromRGB(255, 200, 0),
+    ["记者"] = Color3.fromRGB(255, 150, 0),
+    ["律师"] = Color3.fromRGB(150, 100, 200),
+    ["囚犯"] = Color3.fromRGB(255, 150, 0),
+    ["狱警"] = Color3.fromRGB(0, 150, 255),
+    ["司机"] = Color3.fromRGB(100, 200, 255),
+    ["厨师"] = Color3.fromRGB(255, 100, 0),
+    ["建筑工"] = Color3.fromRGB(255, 200, 50),
+    ["农民"] = Color3.fromRGB(50, 200, 50),
+    ["矿工"] = Color3.fromRGB(200, 150, 100),
+    ["渔夫"] = Color3.fromRGB(0, 150, 200),
+    ["商人"] = Color3.fromRGB(255, 150, 200),
+    ["学生"] = Color3.fromRGB(100, 100, 255),
+    ["老师"] = Color3.fromRGB(200, 100, 50),
+    ["工程师"] = Color3.fromRGB(255, 100, 100),
+    ["科学家"] = Color3.fromRGB(0, 255, 150),
+    ["飞行员"] = Color3.fromRGB(50, 200, 255),
+    ["快递员"] = Color3.fromRGB(255, 180, 0),
+    ["公交车司机"] = Color3.fromRGB(0, 180, 255),
+    ["送货"] = Color3.fromRGB(255, 100, 50),
+    ["转运"] = Color3.fromRGB(0, 200, 150),
+    ["货物"] = Color3.fromRGB(150, 100, 0),
+    ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
+}
+
+local espBillboards = {}
+local espConnections = {}
+
+local outlineESPData = {}
+local outlineESPConnections = {}
+
+local function GetPlayerTeamColor(p)
+    local team = p.Team
+    if team then
+        return team.TeamColor.Color
     end
-    
-    CloudAimFOVring = Drawing.new("Circle")
-    CloudAimFOVring.Visible = CloudAimEnabled
-    CloudAimFOVring.Thickness = 2
-    CloudAimFOVring.Color = Color3.fromRGB(0, 255, 0)
-    CloudAimFOVring.Filled = false
-    CloudAimFOVring.Radius = CloudAimFOV
-    CloudAimFOVring.Position = CloudAimCam.ViewportSize / 2
+    return Color3.fromRGB(255, 255, 255)
 end
 
--- 更新FOV圈
-local function UpdateFOVCircle()
-    if CloudAimFOVring then
-        CloudAimFOVring.Position = CloudAimCam.ViewportSize / 2
-        CloudAimFOVring.Radius = CloudAimFOV
+local function GetPlayerJob(p)
+    if p.Team then
+        return p.Team.Name
+    end
+    return "平民"
+end
+
+local function GetJobColor(jobName)
+    return JobColors[jobName] or Color3.fromRGB(200, 200, 200)
+end
+
+local function RemoveESP(userId)
+    local data = espBillboards[userId]
+    if data then
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+        espBillboards[userId] = nil
     end
 end
 
--- 获取FOV内最近玩家
-local function GetClosestPlayerInFOV()
-    local nearest = nil
-    local lastDistance = math.huge
-    local playerMousePos = CloudAimCam.ViewportSize / 2
-    
-    for _, player in ipairs(CloudAimPlayers:GetPlayers()) do
-        if player ~= CloudAimPlayers.LocalPlayer then
-            local character = player.Character
-            if character then
-                local head = character:FindFirstChild("Head")
-                if head then
-                    local screenPos, isVisible = CloudAimCam:WorldToViewportPoint(head.Position)
-                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - playerMousePos).Magnitude
-                    
-                    if distance < lastDistance and isVisible and distance < CloudAimFOV then
-                        lastDistance = distance
-                        nearest = player
-                    end
+local function CreateESP(p)
+    if isDestroyed then return end
+    if not p.Character then return end
+    if p == player then return end
+    local head = p.Character:FindFirstChild("Head")
+    if not head then return end
+    if espBillboards[p.UserId] then return end
+    local name = p.Name
+    local job = GetPlayerJob(p)
+    local teamColor = GetPlayerTeamColor(p)
+    local jobColor = GetJobColor(job)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_" .. p.UserId
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 300, 0, 60)
+    billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+    billboard.MaxDistance = 500
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 1
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.Parent = billboard
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 26)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = name
+    nameLabel.TextColor3 = teamColor
+    nameLabel.TextSize = 18
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+    nameLabel.Parent = frame
+    local jobLabel = Instance.new("TextLabel")
+    jobLabel.Size = UDim2.new(1, 0, 0, 22)
+    jobLabel.Position = UDim2.new(0, 0, 0, 28)
+    jobLabel.BackgroundTransparency = 1
+    jobLabel.Text = job
+    jobLabel.TextColor3 = jobColor
+    jobLabel.TextSize = 16
+    jobLabel.Font = Enum.Font.GothamBold
+    jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+    jobLabel.TextYAlignment = Enum.TextYAlignment.Center
+    jobLabel.Parent = frame
+    espBillboards[p.UserId] = {
+        Billboard = billboard,
+        Frame = frame,
+        NameLabel = nameLabel,
+        JobLabel = jobLabel,
+    }
+    local con
+    con = p.AncestryChanged:Connect(function()
+        if not p.Parent or not p.Character then
+            RemoveESP(p.UserId)
+            if con then
+                con:Disconnect()
+            end
+        end
+    end)
+    table.insert(espConnections, con)
+end
+
+local function UpdateESPVisibility()
+    for userId, data in pairs(espBillboards) do
+        if data.NameLabel then
+            data.NameLabel.Visible = Settings.ESPShowName
+        end
+        if data.JobLabel then
+            data.JobLabel.Visible = Settings.ESPShowJob
+        end
+        if data.Billboard then
+            data.Billboard.Enabled = Settings.ESPEnabled
+        end
+    end
+end
+
+local function UpdateAllESP()
+    if not Settings.ESPEnabled then
+        for userId, data in pairs(espBillboards) do
+            if data.Billboard then
+                data.Billboard.Enabled = false
+            end
+        end
+        return
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            if not espBillboards[p.UserId] then
+                CreateESP(p)
+            else
+                local data = espBillboards[p.UserId]
+                local job = GetPlayerJob(p)
+                if data.NameLabel then
+                    data.NameLabel.Text = p.Name
+                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
+                end
+                if data.JobLabel then
+                    data.JobLabel.Text = job
+                    data.JobLabel.TextColor3 = GetJobColor(job)
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
                 end
             end
         end
     end
-    
-    return nearest
 end
 
--- 主自瞄循环
-local function CloudAimLoop()
-    UpdateFOVCircle()
-    
-    local closestPlayer = GetClosestPlayerInFOV()
-    
-    if closestPlayer and closestPlayer.Character then
-        local targetCharacter = closestPlayer.Character
-        local targetHead = targetCharacter:FindFirstChild("Head")
-        local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
-        
-        if targetHead then
-            local isMoving = targetRootPart and targetRootPart.Velocity.Magnitude > 0.1
-            local targetPosition
-            
-            if isMoving then
-                targetPosition = targetHead.Position + (targetHead.CFrame.LookVector * CloudAimPrediction)
-            else
-                targetPosition = targetHead.Position
+local function RemoveOutlineESP(userId)
+    local data = outlineESPData[userId]
+    if data then
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+        outlineESPData[userId] = nil
+    end
+end
+
+local function ClearAllOutlineESP()
+    for userId, _ in pairs(outlineESPData) do
+        RemoveOutlineESP(userId)
+    end
+end
+
+local function CreateOutlineESP(p)
+    if isDestroyed then return end
+    if p == player then return end
+    local char = p.Character
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+    if outlineESPData[p.UserId] then
+        local data = outlineESPData[p.UserId]
+        if data.Highlight then data.Highlight.Enabled = true end
+        if data.Billboard then data.Billboard.Enabled = true end
+        return
+    end
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "OutlineESP_" .. p.UserId
+    highlight.Adornee = char
+    highlight.FillColor = Color3.fromRGB(255, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+    highlight.FillTransparency = 0.6
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = char
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "OutlineESPGui_" .. p.UserId
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 1000
+    billboard.Parent = head
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.TextSize = 15
+    label.Font = Enum.Font.GothamBold
+    label.TextStrokeTransparency = 0
+    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    label.Text = p.Name
+    label.Parent = billboard
+    outlineESPData[p.UserId] = {
+        Player = p,
+        Highlight = highlight,
+        Billboard = billboard,
+        Label = label,
+    }
+end
+
+local function UpdateOutlineESP()
+    if not Settings.OutlineESPEnabled or isDestroyed then return end
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            if not outlineESPData[p.UserId] then
+                CreateOutlineESP(p)
             end
-            
-            local targetCFrame = CFrame.new(CloudAimCam.CFrame.Position, targetPosition)
-            CloudAimCam.CFrame = CloudAimCam.CFrame:Lerp(targetCFrame, 1 / CloudAimSmoothness)
+            local data = outlineESPData[p.UserId]
+            if data and data.Label then
+                local targetHead = p.Character:FindFirstChild("Head")
+                if targetHead and root then
+                    local dist = (targetHead.Position - root.Position).Magnitude
+                    data.Label.Text = p.Name .. "\n[" .. math.floor(dist) .. "]"
+                else
+                    data.Label.Text = p.Name
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
+                end
+                if data.Highlight then
+                    data.Highlight.Enabled = true
+                end
+            end
+        elseif p ~= player then
+            RemoveOutlineESP(p.UserId)
         end
     end
 end
 
--- 切换情云自瞄
-local function ToggleCloudAim(enabled)
-    CloudAimEnabled = enabled
-    
-    if enabled then
-        CreateFOVCircle()
-        CloudAimFOVring.Visible = true
-        
-        if CloudAimConnection then
-            CloudAimConnection:Disconnect()
-        end
-        
-        CloudAimConnection = CloudAimRunService.RenderStepped:Connect(CloudAimLoop)
-        
-        WindUI:Notify({
-            Title = "情云自瞄",
-            Content = "情云同款自瞄已开启\n按Delete键关闭",
-            Icon = "crosshair",
-            Duration = 3
-        })
-        
-        -- 监听Delete键关闭
-        local deleteConnection = CloudAimUserInputService.InputBegan:Connect(function(input)
-            if input.KeyCode == Enum.KeyCode.Delete then
-                ToggleCloudAim(false)
-                deleteConnection:Disconnect()
-            end
-        end)
+local function ToggleOutlineESP(state)
+    Settings.OutlineESPEnabled = state
+    if state then
+        UpdateOutlineESP()
     else
-        if CloudAimFOVring then
-            CloudAimFOVring.Visible = false
-            CloudAimFOVring:Remove()
-            CloudAimFOVring = nil
-        end
-        
-        if CloudAimConnection then
-            CloudAimConnection:Disconnect()
-            CloudAimConnection = nil
-        end
-        
-        WindUI:Notify({
-            Title = "情云自瞄",
-            Content = "情云同款自瞄已关闭",
-            Icon = "x",
-            Duration = 3
-        })
+        ClearAllOutlineESP()
     end
 end
 
--- 在自瞄标签页添加情云自瞄部分
-local CloudAimSection = TabHandles.WX3:Section({Title = "情云同款自瞄"})
+local function GetTeleportData()
+    return {
+        {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594), region = "圣奥里"},
+        {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344), region = "圣奥里"},
+        {n = "警察局", p = Vector3.new(3364.273193359375, 3.9188079834, -394.7233581542969), region = "圣奥里"},
+        {n = "圣奥里修车店", p = Vector3.new(2782.46875, 2.630995750427246, -418.59930419921875), region = "圣奥里"},
+        {n = "圣奥里银行", p = Vector3.new(3134.05419921875, 6.116048336029053, -171.36976623535156), region = "圣奥里"},
+        {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594), region = "圣奥里"},
+        {n = "圣奥里平民重生", p = Vector3.new(3741.114990234375, 3.720573663711548, -438.1059875488281), region = "圣奥里"},
+        {n = "圣奥里码头", p = Vector3.new(4527.65625, -23.968238830566406, -280.59356689453125), region = "圣奥里"},
+        {n = "圣奥里餐饮店", p = Vector3.new(3182.416748046875, 3.01859188079834, 426.5179138183594), region = "圣奥里"},
+        {n = "消防部门", p = Vector3.new(3578.676025390625, 8.408823013305664, 579.6567993164062), region = "圣奥里"},
+        {n = "宠物店", p = Vector3.new(3678.237305, 3.017920, 693.114624), region = "圣奥里"},
+        {n = "圣奥里大码头", p = Vector3.new(2736.307617, 2.630299, -1120.333008), region = "圣奥里"},
+        {n = "圣奥里海滩桥下(消星点)", p = Vector3.new(3964.504395, -25.068211, -854.057251), region = "圣奥里"},
+        {n = "大景超市", p = Vector3.new(3936.582764, 3.038293, 1136.326416), region = "大景"},
+        {n = "转镜中心", p = Vector3.new(4152.919922, 2.631675, 941.446045), region = "大景"},
+        {n = "道路服务", p = Vector3.new(4271.332520, 2.628108, 1200.086914), region = "大景"},
+        {n = "大景餐饮店", p = Vector3.new(4476.997559, 3.037825, 906.802979), region = "大景"},
+        {n = "送货中心", p = Vector3.new(4399.419434, 3.038999, 1609.455933), region = "大景"},
+        {n = "大景卖车店", p = Vector3.new(3434.377441, 42.931786, 2687.997070), region = "大景"},
+        {n = "莱斯维尔餐饮店", p = Vector3.new(753.757812, 3.039824, 998.132996), region = "莱斯维尔"},
+        {n = "莱斯维尔服装店", p = Vector3.new(820.745117, 2.766988, 1047.445679), region = "莱斯维尔"},
+        {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771), region = "莱斯维尔"},
+        {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693), region = "莱斯维尔"},
+        {n = "米尔顿左上加油站", p = Vector3.new(1145.635742, 2.630916, -864.273682), region = "米尔顿"},
+        {n = "米尔顿右下加油站", p = Vector3.new(-1646.802734, 2.630164, 1812.894653), region = "米尔顿"},
+        {n = "米尔顿上方加油站", p = Vector3.new(-900.701660, 2.630927, 1124.683105), region = "米尔顿"},
+        {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689), region = "米尔顿"},
+        {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839), region = "约克镇"},
+        {n = "约克镇修车厂", p = Vector3.new(-407.163025, 3.076807, -6.098211), region = "约克镇"},
+        {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670), region = "约克镇"},
+        {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433), region = "约克镇"},
+        {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529), region = "约克镇"},
+        {n = "约克镇卫星车", p = Vector3.new(-302.093567, 3.037825, -167.621017), region = "约克镇"},
+        {n = "约克镇中心点", p = Vector3.new(-275.995209, 2.630996, -139.985352), region = "约克镇"},
+        {n = "黑市", p = Vector3.new(1038.969849, -22.732950, 895.430237), region = "其他"},
+        {n = "渔夫码头", p = Vector3.new(-50.147552, -24.555279, 1462.145996), region = "其他"},
+        {n = "农场", p = Vector3.new(-1268.339233, 2.572412, 2560.060303), region = "其他"},
+        {n = "监狱门口", p = Vector3.new(-1697.931885, 2.630666, 1284.567383), region = "其他"},
+        {n = "监狱广场", p = Vector3.new(-1600.602417, 2.631028, 1268.060059), region = "其他"},
+        {n = "代尔山", p = Vector3.new(847.062988, 194.115753, -326.212708), region = "其他"},
+        {n = "瀑布洞穴(消星点)", p = Vector3.new(3040.956055, 109.688538, 2711.069336), region = "其他"},
+        {n = "大桥", p = Vector3.new(949.014954, 25.215754, 2897.654785), region = "其他"},
+        {n = "地图右下(消星点)", p = Vector3.new(-1651.385010, 2.414712, 3225.278320), region = "其他"},
+        {n = "下部加油站", p = Vector3.new(2270.378174, 2.630927, 154.161484), region = "其他"},
+        {n = "游戏厅", p = Vector3.new(2934.893799, 2.956458, 1693.660034), region = "其他"},
+        {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300), region = "其他"},
+        {n = "修船厂", p = Vector3.new(4096.405273, -30.401447, 2865.045166), region = "其他"},
+    }
+end
+local FIXED_TELEPORTS = GetTeleportData()
 
--- 情云自瞄开关
-TabHandles.WX3:Toggle({
-    Title = "情云自瞄开关",
-    Desc = "开启/关闭情云同款自瞄",
-    Value = false,
-    Callback = function(value)
-        ToggleCloudAim(value)
-    end
-})
-
--- 自瞄范围滑块
-TabHandles.WX3:Slider({
-    Title = "自瞄范围 (FOV)",
-    Desc = "调整自瞄识别范围大小",
-    Value = {
-        Min = 10,
-        Max = 500,
-        Default = CloudAimFOV
-    },
-    Step = 1,
-    Callback = function(value)
-        CloudAimFOV = value
-        if CloudAimFOVring then
-            CloudAimFOVring.Radius = CloudAimFOV
-        end
-    end
-})
-
--- 平滑度滑块
-TabHandles.WX3:Slider({
-    Title = "自瞄平滑度",
-    Desc = "值越大越平滑，值越小越灵敏",
-    Value = {
-        Min = 1,
-        Max = 100,
-        Default = CloudAimSmoothness
-    },
-    Step = 1,
-    Callback = function(value)
-        CloudAimSmoothness = value
-    end
-})
-
--- 预判距离滑块
-TabHandles.WX3:Slider({
-    Title = "自瞄预判距离",
-    Desc = "调整自瞄预判距离",
-    Value = {
-        Min = 0,
-        Max = 50,
-        Default = CloudAimPrediction
-    },
-    Step = 1,
-    Callback = function(value)
-        CloudAimPrediction = value
-    end
-})
-
--- FOV圈颜色选择
-local FOVColors = {
-    ["绿色"] = Color3.fromRGB(0, 255, 0),
-    ["红色"] = Color3.fromRGB(255, 0, 0),
-    ["蓝色"] = Color3.fromRGB(0, 0, 255),
-    ["黄色"] = Color3.fromRGB(255, 255, 0),
-    ["紫色"] = Color3.fromRGB(128, 0, 128),
-    ["白色"] = Color3.fromRGB(255, 255, 255)
-}
-
-TabHandles.WX3:Dropdown({
-    Title = "FOV圈颜色",
-    Desc = "选择自瞄范围圈的颜色",
-    Values = {"绿色", "红色", "蓝色", "黄色", "紫色", "白色"},
-    Value = "绿色",
-    Callback = function(selected)
-        if CloudAimFOVring then
-            CloudAimFOVring.Color = FOVColors[selected]
-        end
-    end
-})
-
--- FOV圈线宽滑块
-TabHandles.WX3:Slider({
-    Title = "FOV圈线宽",
-    Desc = "调整自瞄范围圈线条粗细",
-    Value = {
-        Min = 1,
-        Max = 10,
-        Default = 2
-    },
-    Step = 1,
-    Callback = function(value)
-        if CloudAimFOVring then
-            CloudAimFOVring.Thickness = value
-        end
-    end
-})
-
--- 快速设置按钮
-TabHandles.WX3:Button({
-    Title = "快速设置：精准",
-    Desc = "FOV:50 平滑:20 预判:3",
-    Callback = function()
-        CloudAimFOV = 50
-        CloudAimSmoothness = 20
-        CloudAimPrediction = 3
-        
-        if CloudAimFOVring then
-            CloudAimFOVring.Radius = CloudAimFOV
-        end
-        
-        WindUI:Notify({
-            Title = "情云自瞄",
-            Content = "已应用精准设置",
-            Icon = "target",
-            Duration = 2
-        })
-    end
-})
-
-TabHandles.WX3:Button({
-    Title = "快速设置：广泛",
-    Desc = "FOV:150 平滑:30 预判:8",
-    Callback = function()
-        CloudAimFOV = 150
-        CloudAimSmoothness = 30
-        CloudAimPrediction = 8
-        
-        if CloudAimFOVring then
-            CloudAimFOVring.Radius = CloudAimFOV
-        end
-        
-        WindUI:Notify({
-            Title = "情云自瞄",
-            Content = "已应用广泛设置",
-            Icon = "maximize",
-            Duration = 2
-        })
-    end
-})
-
-TabHandles.WX3:Divider()
-
--- 说明文本
-TabHandles.WX3:Paragraph({
-    Title = "使用说明",
-    Desc = "开启后会在屏幕上显示绿色FOV圈\n圈内会自动瞄准最近的玩家\n按Delete键可快速关闭自瞄",
-    Image = "info",
-    ImageSize = 20
-})
-
--- ==================== 原有自瞄系统保持不变 ====================
--- 注意：您原有的自瞄系统代码保持不变，我将其放在了情云自瞄的后面
--- 这样两个自瞄系统可以共存，用户可以选择使用哪一个
-
--- ==================== 自瞄系统变量初始化 ====================
-local IsAimEnabled = false          -- 自瞄开关状态
-local UsePrediction = false         -- 是否使用预测
-local TargetLowestHealth = false    -- 是否瞄准最低血量
-local AimRadius = 50                -- 自瞄半径
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local RunService = game:GetService("RunService")
-local PlayersService = game:GetService("Players")
-local Camera = workspace.CurrentCamera
-local AimPart = "Head"              -- 默认瞄准部位
-local IgnoreTeam = false            -- 忽略队友
-local CheckAlive = false            -- 检查存活状态
-local PredictionScale = 1.2         -- 预测系数
-local WallCheck = false             -- 墙体检查
-
--- 创建瞄准圈
-local AimCircle = Drawing.new("Circle")
-AimCircle.Visible = false
-AimCircle.Thickness = 2
-AimCircle.Color = Color3.fromRGB(0, 255, 0)  -- 绿色
-AimCircle.Filled = false
-AimCircle.Radius = AimRadius
-AimCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
--- ==================== 自瞄系统核心函数 ====================
-local function UpdateAimCirclePosition()
-    AimCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+local function TeleportTo(pos)
+    if not Settings.TeleportEnabled or isDestroyed then return end
+    local char = player.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    pcall(function()
+        root.CFrame = CFrame.new(pos)
+    end)
 end
 
-local function AimAt(position)
-    local direction = (position - Camera.CFrame.Position).Unit
-    Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
+local function ApplyNoclip()
+    if isDestroyed or not Settings.NoclipEnabled then return end
+    local char = player.Character
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
 end
 
-local function IsTeammate(player)
-    return player.Team == LocalPlayer.Team
+local function ToggleNoclip(state)
+    Settings.NoclipEnabled = state
+    if state then
+        ApplyNoclip()
+    else
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
 end
 
-local function CanSeePlayer(player, maxDistance)
-    if not WallCheck then
-        return true
+local function ApplyHitbox()
+    if isDestroyed or not Settings.HitboxEnabled then return end
+    local players = Players:GetPlayers()
+    local newAffected = {}
+    for i = 1, #players do
+        local p = players[i]
+        if p ~= player and p.Character then
+            if Settings.WhitelistEnabled and Whitelist[p.UserId] then
+            else
+                local char = p.Character
+                local head = char:FindFirstChild("Head")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 and head then
+                    head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                    head.Transparency = 1
+                    head.Color = Color3.fromRGB(255, 215, 0)
+                    head.Material = Enum.Material.Neon
+                    head.CanCollide = false
+                    newAffected[head] = true
+                end
+            end
+        end
     end
-    
-    local localCharacter = LocalPlayer.Character
-    if not localCharacter then
-        return false
+    for head, _ in pairs(affectedHeads) do
+        if not newAffected[head] and head and head.Parent then
+            head.Size = Vector3.new(2, 1, 1)
+            head.Transparency = 0
+            head.CanCollide = true
+            head.Color = Color3.new(1, 1, 1)
+            head.Material = Enum.Material.Plastic
+        end
     end
-    
-    local targetCharacter = player.Character
-    local targetPart = targetCharacter and targetCharacter:FindFirstChild(AimPart)
-    if not targetPart then
-        return false
-    end
-    
-    local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position).Unit * maxDistance)
-    local hitPart, _ = workspace:FindPartOnRayWithIgnoreList(ray, {localCharacter})
-    
-    return not hitPart or not hitPart:IsDescendantOf(player.Character)
+    affectedHeads = newAffected
 end
 
-local function IsAlive(player)
-    local character = player.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            return humanoid.Health > 0
+local function ResetHitbox()
+    for head, _ in pairs(affectedHeads) do
+        if head and head.Parent then
+            head.Size = Vector3.new(2, 1, 1)
+            head.Transparency = 0
+            head.CanCollide = true
+            head.Color = Color3.new(1, 1, 1)
+            head.Material = Enum.Material.Plastic
+        end
+    end
+    affectedHeads = {}
+end
+
+local function UpdateWhitelist()
+    if isDestroyed then return end
+    Whitelist = {}
+    local players = Players:GetPlayers()
+    for i = 1, #players do
+        local p = players[i]
+        if p ~= player then
+            pcall(function()
+                if p:IsFriendsWith(player.UserId) then
+                    Whitelist[p.UserId] = true
+                end
+            end)
+        end
+    end
+end
+
+local UserInputService = game:GetService("UserInputService")
+local FlySpeed = 35
+local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
+local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
+local FlyControl
+task.spawn(function()
+    pcall(function()
+        local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
+        if pm then FlyControl = require(pm):GetControls() end
+    end)
+end)
+
+local function flyRefreshParts()
+    local char = player.Character
+    if not char then
+        flyState.hrp = nil flyState.hum = nil
+        flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil
+        return
+    end
+    flyState.hrp = char:FindFirstChild("HumanoidRootPart")
+    flyState.hum = char:FindFirstChildOfClass("Humanoid")
+    flyAnchor.hrp = flyState.hrp
+    flyAnchor.head = char:FindFirstChild("Head")
+    flyAnchor.hum = flyState.hum
+end
+
+local function flyDetectWall()
+    local hrp = flyAnchor.hrp
+    if not hrp then return false end
+    local pos = hrp.Position
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = { player.Character }
+    for i = 1, flyAnchor.rayCount do
+        local angle = (i / flyAnchor.rayCount) * 2 * math.pi
+        local dx = math.cos(angle)
+        local dz = math.sin(angle)
+        for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
+            local dir = Vector3.new(dx, j * 0.5, dz).Unit
+            local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
+            if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
+                return true
+            end
         end
     end
     return false
 end
 
-local function FindBestTarget()
-    local closestDistance = math.huge
-    local lowestHealth = math.huge
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    
-    local lowestHealthTarget = nil
-    local closestTarget = nil
-    
-    for _, player in ipairs(PlayersService:GetPlayers()) do
-        if player ~= LocalPlayer and not (IgnoreTeam and IsTeammate(player)) then
-            local character = player.Character
-            
-            if character and character:FindFirstChild(AimPart) then
-                if not CheckAlive or IsAlive(player) then
-                    if not WallCheck or CanSeePlayer(player, 100) then
-                        local screenPosition, onScreen = Camera:WorldToViewportPoint(character[AimPart].Position)
-                        if onScreen then
-                            local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - screenCenter).Magnitude
-                            
-                            if distance < closestDistance then
-                                if distance < AimRadius then
-                                    closestTarget = player
-                                end
-                                closestDistance = distance
-                            end
-                            
-                            if TargetLowestHealth then
-                                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                                if humanoid and humanoid.Health > 0 and humanoid.Health < lowestHealth then
-                                    lowestHealth = humanoid.Health
-                                    lowestHealthTarget = player
-                                end
-                            end
-                        end
-                    end
-                end
+local function flyEnterAnchor()
+    if flyAnchor.active then return end
+    if not flyAnchor.head or not flyAnchor.hrp or not flyAnchor.hum then return end
+    flyAnchor.head.Anchored = true
+    flyAnchor.hum.PlatformStand = true
+    flyAnchor.active = true
+end
+
+local function flyExitAnchor()
+    if not flyAnchor.active then return end
+    if flyAnchor.head and flyAnchor.hum then
+        flyAnchor.head.Anchored = false
+        flyAnchor.hum.PlatformStand = false
+    end
+    flyAnchor.active = false
+end
+
+local function flyMicroStepLoop()
+    flyState.targetPos = flyState.hrp.Position
+    flyState.lastTime = tick()
+    while flyState.enabled do
+        local now = tick()
+        local dt = now - flyState.lastTime
+        flyState.lastTime = now
+        if not flyState.hrp or not flyState.hrp.Parent then break end
+        local inWall = flyDetectWall()
+        if inWall and not flyAnchor.active then
+            flyEnterAnchor()
+        elseif not inWall and flyAnchor.active then
+            flyExitAnchor()
+        end
+        local moveDir
+        if FlyControl then
+            local mv = FlyControl:GetMoveVector()
+            local cf = workspace.CurrentCamera.CFrame
+            moveDir = (cf.LookVector * -mv.Z) + (cf.RightVector * mv.X)
+        else
+            moveDir = (flyState.hum and flyState.hum.MoveDirection) or Vector3.zero
+        end
+        local vertical = 0
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            vertical = 1
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            vertical = -1
+        end
+        local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
+        flyState.targetPos = flyState.targetPos + delta
+        local currentPos = flyState.hrp.Position
+        local remaining = flyState.targetPos - currentPos
+        local distance = remaining.Magnitude
+        if distance > 0 then
+            local steps = math.ceil(distance / 10)
+            local stepVec = remaining / steps
+            for i = 1, steps do
+                if not flyState.enabled then break end
+                currentPos = currentPos + stepVec
+                flyState.hrp.CFrame = CFrame.new(currentPos) * flyState.hrp.CFrame.Rotation
+                flyState.hrp.Velocity = Vector3.zero
             end
+        else
+            flyState.hrp.CFrame = CFrame.new(flyState.targetPos) * flyState.hrp.CFrame.Rotation
+            flyState.hrp.Velocity = Vector3.zero
         end
-    end
-    
-    return (TargetLowestHealth and lowestHealthTarget) or closestTarget
-end
-
-local function GetPredictedPosition(player, deltaTime)
-    if not UsePrediction then
-        if player.Character and player.Character:FindFirstChild(AimPart) then
-            return player.Character[AimPart].Position
+        if flyState.hum then
+            flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
         end
-        return nil
-    end
-    
-    local character = player.Character
-    if character and character:FindFirstChild(AimPart) then
-        local aimPart = character[AimPart]
-        local velocity = aimPart.Velocity
-        return aimPart.Position + velocity * deltaTime * PredictionScale
-    end
-    return nil
-end
-
--- ==================== 目标高亮系统 ====================
-local CurrentTarget = nil
-local HighlightedTargets = {}
-
-local function HighlightTarget(player)
-    if HighlightedTargets[player] then
-        return
-    end
-    
-    local character = player.Character
-    if character then
-        local highlight = Instance.new("Highlight")
-        highlight.Adornee = character
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.Parent = character
-        
-        HighlightedTargets[player] = highlight
+        task.wait(0.001)
     end
 end
 
-local function RemoveHighlight(player)
-    if HighlightedTargets[player] then
-        HighlightedTargets[player]:Destroy()
-        HighlightedTargets[player] = nil
-    end
-end
-
-local function ClearAllHighlights()
-    for player, highlight in pairs(HighlightedTargets) do
-        highlight:Destroy()
-        HighlightedTargets[player] = nil
-    end
-end
-
--- ==================== 自瞄主循环 ====================
-local AimLoopConnection = nil
-
-local function ToggleAim(enabled)
-    if enabled then
-        IsAimEnabled = true
-        AimCircle.Visible = true
-        AimCircle.Radius = AimRadius
-        
-        if AimLoopConnection then
-            AimLoopConnection:Disconnect()
+local function flyHealthLockLoop()
+    while flyState.enabled do
+        if flyState.hum and flyState.hum.Health <= 0 then
+            flyState.hum.Health = flyState.hum.MaxHealth
         end
-        
-        AimLoopConnection = RunService.RenderStepped:Connect(function(deltaTime)
-            if IsAimEnabled then
-                UpdateAimCirclePosition()
-                
-                local target = FindBestTarget()
-                if target and target.Character and target.Character:FindFirstChild(AimPart) then
-                    CurrentTarget = target
-                    
-                    local predictedPosition = GetPredictedPosition(target, deltaTime)
-                    if predictedPosition then
-                        AimAt(predictedPosition)
-                    end
-                    
-                    HighlightTarget(target)
-                else
-                    CurrentTarget = nil
-                    ClearAllHighlights()
-                end
-            end
-        end)
-        
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "自瞄系统已开启",
-            Icon = "check",
-            Duration = 2
-        })
-    else
-        IsAimEnabled = false
-        CurrentTarget = nil
-        
-        if AimLoopConnection then
-            AimLoopConnection:Disconnect()
-            AimLoopConnection = nil
+        task.wait(0.1)
+    end
+end
+
+local function startFly()
+    if flyState.enabled then return end
+    flyRefreshParts()
+    if not flyState.hrp or not flyState.hum then return end
+    flyState.enabled = true
+    flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+    flyState.microThread = task.spawn(flyMicroStepLoop)
+    flyState.healthThread = task.spawn(flyHealthLockLoop)
+    flyState.diedConn = flyState.hum.Died:Connect(function()
+        if flyState.hum and flyState.enabled then
+            flyState.hum.Health = flyState.hum.MaxHealth
+            flyState.hum:ChangeState(Enum.HumanoidStateType.Running)
         end
-        
-        AimCircle.Visible = false
-        ClearAllHighlights()
-        
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "自瞄系统已关闭",
-            Icon = "x",
-            Duration = 2
-        })
-    end
-end
-
--- ==================== ESP透视系统 ====================
-local Players = game:GetService("Players")
-local ESPRunService = game:GetService("RunService")
-local AllPlayers = Players:GetPlayers()
-local LocalPlayerESP = Players.LocalPlayer
-
-local ESPEnabled = false
-local ESPColor = Color3.fromRGB(255, 255, 255)
-local RainbowESP = false
-local RainbowLoop = nil
-local ShowHealthbars = false
-
-local ESPHighlights = {}
-local HealthbarGuis = {}
-
-local function CreateESP(player, color)
-    if ESPHighlights[player] then
-        return
-    end
-    
-    local character = player.Character or player.CharacterAdded:Wait()
-    if character then
-        local highlight = Instance.new("Highlight")
-        highlight.Adornee = character
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.FillColor = color or ESPColor
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.Parent = character
-        
-        ESPHighlights[player] = highlight
-    end
-end
-
-local function RemoveESP(player)
-    if ESPHighlights[player] then
-        ESPHighlights[player]:Destroy()
-        ESPHighlights[player] = nil
-    end
-end
-
-local function UpdateAllESP()
-    if ESPEnabled then
-        for _, player in ipairs(AllPlayers) do
-            if player ~= LocalPlayerESP then
-                CreateESP(player, ESPColor)
-            end
-        end
-    else
-        for player, _ in pairs(ESPHighlights) do
-            RemoveESP(player)
-        end
-    end
-end
-
-local function ToggleESP(enabled)
-    ESPEnabled = enabled
-    UpdateAllESP()
-    
-    if enabled then
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "ESP透视已开启",
-            Icon = "eye",
-            Duration = 2
-        })
-    else
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "ESP透视已关闭",
-            Icon = "eye-off",
-            Duration = 2
-        })
-    end
-end
-
-local function SetESPColor(color)
-    ESPColor = color
-    if ESPEnabled then
-        for _, highlight in pairs(ESPHighlights) do
-            highlight.FillColor = ESPColor
-        end
-    end
-end
-
-local function ToggleRainbowESP(enabled)
-    RainbowESP = enabled
-    
-    if RainbowESP then
-        if RainbowLoop then
-            RainbowLoop:Disconnect()
-        end
-        
-        RainbowLoop = ESPRunService.RenderStepped:Connect(function()
-            if ESPEnabled then
-                local hue = tick() % 5 / 5
-                local rainbowColor = Color3.fromHSV(hue, 1, 1)
-                ESPColor = rainbowColor
-                
-                for _, highlight in pairs(ESPHighlights) do
-                    highlight.FillColor = rainbowColor
-                end
-            end
-        end)
-    else
-        if RainbowLoop then
-            RainbowLoop:Disconnect()
-            RainbowLoop = nil
-        end
-        ESPColor = Color3.fromRGB(255, 255, 255)
-    end
-end
-
--- 血条显示系统
-local function CreateHealthbar(player)
-    if HealthbarGuis[player] then
-        return
-    end
-    
-    local character = player.Character or player.CharacterAdded:Wait()
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        local head = character:FindFirstChild("Head")
-        
-        if humanoid and head then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Adornee = head
-            billboard.Size = UDim2.new(0, 200, 0, 50)
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.AlwaysOnTop = true
-            billboard.Parent = character
-            
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(1, 0, 1, 0)
-            frame.BackgroundTransparency = 1
-            frame.Parent = billboard
-            
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            nameLabel.Position = UDim2.new(0, 0, 0, 0)
-            nameLabel.BackgroundTransparency = 1
-            nameLabel.Text = player.Name
-            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            nameLabel.TextScaled = true
-            nameLabel.TextStrokeTransparency = 0.5
-            nameLabel.Parent = frame
-            
-            local healthbarBg = Instance.new("Frame")
-            healthbarBg.Size = UDim2.new(1, 0, 0.3, 0)
-            healthbarBg.Position = UDim2.new(0, 0, 0.6, 0)
-            healthbarBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            healthbarBg.BorderSizePixel = 0
-            healthbarBg.Parent = frame
-            
-            local healthbar = Instance.new("Frame")
-            healthbar.Size = UDim2.new(1, 0, 1, 0)
-            healthbar.Position = UDim2.new(0, 0, 0, 0)
-            healthbar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-            healthbar.BorderSizePixel = 0
-            healthbar.Parent = healthbarBg
-            
-            local healthText = Instance.new("TextLabel")
-            healthText.Size = UDim2.new(1, 0, 1, 0)
-            healthText.Position = UDim2.new(0, 0, 0, 0)
-            healthText.BackgroundTransparency = 1
-            healthText.Text = tostring(math.floor(humanoid.Health)) .. "/" .. tostring(math.floor(humanoid.MaxHealth))
-            healthText.TextColor3 = Color3.fromRGB(255, 255, 255)
-            healthText.TextScaled = true
-            healthText.TextStrokeTransparency = 0.5
-            healthText.Parent = healthbarBg
-            
-            local healthConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-                local healthRatio = humanoid.Health / humanoid.MaxHealth
-                healthbar.Size = UDim2.new(healthRatio, 0, 1, 0)
-                healthText.Text = tostring(math.floor(humanoid.Health)) .. "/" .. tostring(math.floor(humanoid.MaxHealth))
-                
-                if healthRatio > 0.6 then
-                    healthbar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-                elseif healthRatio > 0.3 then
-                    healthbar.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-                else
-                    healthbar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-                end
-            end)
-            
-            HealthbarGuis[player] = {
-                billboard = billboard,
-                healthConnection = healthConnection
-            }
-        end
-    end
-end
-
-local function RemoveHealthbar(player)
-    if HealthbarGuis[player] then
-        HealthbarGuis[player].billboard:Destroy()
-        HealthbarGuis[player].healthConnection:Disconnect()
-        HealthbarGuis[player] = nil
-    end
-end
-
-local function UpdateAllHealthbars()
-    if ShowHealthbars then
-        for _, player in ipairs(AllPlayers) do
-            if player ~= LocalPlayerESP then
-                CreateHealthbar(player)
-            end
-        end
-    else
-        for player, _ in pairs(HealthbarGuis) do
-            RemoveHealthbar(player)
-        end
-    end
-end
-
-local function ToggleHealthbars(enabled)
-    ShowHealthbars = enabled
-    UpdateAllHealthbars()
-    
-    if enabled then
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "血条显示已开启",
-            Icon = "heart",
-            Duration = 2
-        })
-    else
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "血条显示已关闭",
-            Icon = "heart-off",
-            Duration = 2
-        })
-    end
-end
-
--- 玩家连接事件处理
-Players.PlayerAdded:Connect(function(player)
-    table.insert(AllPlayers, player)
-    
-    if ESPEnabled then
-        CreateESP(player, ESPColor)
-    end
-    
-    if ShowHealthbars then
-        CreateHealthbar(player)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    for i, p in ipairs(AllPlayers) do
-        if p == player then
-            table.remove(AllPlayers, i)
-            RemoveESP(player)
-            RemoveHealthbar(player)
-            break
-        end
-    end
-end)
-
--- 初始化已存在的玩家
-for _, player in ipairs(AllPlayers) do
-    if player ~= LocalPlayerESP then
-        player.CharacterAdded:Connect(function()
-            if ESPEnabled then
-                CreateESP(player, ESPColor)
-            end
-            if ShowHealthbars then
-                CreateHealthbar(player)
-            end
-        end)
-        
-        if player.Character then
-            if ESPEnabled then
-                CreateESP(player, ESPColor)
-            end
-            if ShowHealthbars then
-                CreateHealthbar(player)
-            end
-        end
-    end
-end
-
--- ==================== 移动修改系统 ====================
-local SpeedEnabled = false
-local SpeedMultiplier = 1
-local SpeedConnection = nil
-
-local function ToggleSpeed(enabled)
-    if enabled then
-        SpeedEnabled = true
-        SpeedConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            local character = game:GetService("Players").LocalPlayer.Character
-            if character then
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Parent and humanoid.MoveDirection.Magnitude > 0 then
-                    character:TranslateBy(humanoid.MoveDirection * SpeedMultiplier / 10)
-                end
-            end
-        end)
-        
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "速度修改已开启",
-            Icon = "zap",
-            Duration = 2
-        })
-    elseif SpeedConnection then
-        SpeedConnection:Disconnect()
-        SpeedConnection = nil
-        SpeedEnabled = false
-        
-        WindUI:Notify({
-            Title = "WX自瞄",
-            Content = "速度修改已关闭",
-            Icon = "zap-off",
-            Duration = 2
-        })
-    end
-end
-
-local function EnableInfiniteJump()
-    game:GetService("UserInputService").JumpRequest:connect(function()
-        game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end)
-    
-    WindUI:Notify({
-        Title = "WX自瞄",
-        Content = "无限跳跃已启用",
-        Icon = "chevrons-up",
-        Duration = 2
-    })
 end
 
--- ==================== 公告页面 ====================
-TabHandles.WX1:Paragraph({
-    Title = "WX作者:免费汉化，庅韷",
-    Desc = "协助者:ADF(FLOKIV2) ,海底星新、斩过天花板, 沙记",
-    Image = "users",
-    ImageSize = 20
-})
-
-TabHandles.WX1:Paragraph({
-    Title = "WX脚本特别欢迎您使用",
-    Desc = "如果你玩此脚本被封了 或者服务器被封了我们概不负责",
-    Image = "alert-triangle",
-    ImageSize = 20
-})
-
-TabHandles.WX1:Paragraph({
-    Title = "系统更新日志",
-    Desc = "优化流畅度",
-    Image = "package",
-    ImageSize = 20
-})
-
-TabHandles.WX1:Paragraph({
-    Title = "功能更新日志",
-    Desc = "修改错字",
-    Image = "target",
-    ImageSize = 20
-})
-
--- 你的群号
-TabHandles.WX1:Paragraph({
-    Title = "复制主群",
-    Desc = "QQ主群:1071851583",
-    Buttons = {{
-        Title = "复制",
-        Icon = "copy",
-        Variant = "Primary",
-        Callback = function()
-            setclipboard("1071851583")
-            local Sound = Instance.new("Sound", game:GetService("SoundService"))
-            Sound.SoundId = "rbxassetid://138820873376530"
-            Sound:Play()
-            WindUI:Notify({
-                Title = "WX：",
-                Content = "已成功复制！",
-                Icon = "bell",
-                IconThemed = true,
-                Duration = 5
-            })
-        end
-    }}
-})
-
-local Paragraph1 = TabHandles.WX1:Paragraph({
-    Title = "您的注入器: " .. identifyexecutor(),
-    Desc = "欢迎使用WX脚本",
-})
-
-local Paragraph2 = TabHandles.WX1:Paragraph({
-    Title = "您的用户名: " .. game.Players.LocalPlayer.Character.Name,
-    Desc = "欢迎使用WX脚本",
-})
-
-local Paragraph3 = TabHandles.WX1:Paragraph({
-    Title = "您的名称: " .. game.Players.LocalPlayer.DisplayName,
-    Desc = "欢迎使用WX脚本",
-})
-
-local Paragraph4 = TabHandles.WX1:Paragraph({
-    Title = "您当前服务器的ID: " .. game.GameId,
-    Desc = "欢迎使用WX脚本",
-})
-
-local Paragraph5 = TabHandles.WX1:Paragraph({
-    Title = "您的用户ID: " .. game.Players.LocalPlayer.UserId,
-    Desc = "欢迎使用WX脚本",
-})
-
-local Paragraph6 = TabHandles.WX1:Paragraph({
-    Title = "您的客户端ID: " .. game:GetService("RbxAnalyticsService"):GetClientId(),
-    Desc = "欢迎使用WX脚本",
-})
-
--- ==================== FE页面 ====================
-TabHandles.WX5:Paragraph({
-    Title = "FE功能",
-    Desc = "FE (Filtering Enabled) 相关功能",
-    Image = "circle",
-    ImageSize = 20
-})
-
-TabHandles.WX5:Button({
-    Title = "FE穿墙",
-    Desc = "FE兼容的穿墙功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/7p9v2u7s/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "FE穿墙加载成功",
-            Duration = 3,
-            Icon = "circle"
-        })        
-    end
-})
-
-TabHandles.WX5:Button({
-    Title = "FE飞行",
-    Desc = "FE兼容的飞行功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/GcjGkx1H/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "FE飞行加载成功",
-            Duration = 3,
-            Icon = "circle"
-        })        
-    end
-})
-
-TabHandles.WX5:Button({
-    Title = "FE速度",
-    Desc = "FE兼容的速度功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/fjAcz84f/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "FE速度加载成功",
-            Duration = 3,
-            Icon = "circle"
-        })        
-    end
-})
-
--- ==================== 通用功能页面 ====================
-local UserInputService = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
-local JumpEnabled = false
-local jumpConnection
-
-local function getHumanoid()
-    local char = game.Players.LocalPlayer.Character
-    return char and char:FindFirstChildOfClass("Humanoid") or nil
+local function stopFly()
+    flyState.enabled = false
+    flyExitAnchor()
+    if flyState.microThread then task.cancel(flyState.microThread) flyState.microThread = nil end
+    if flyState.healthThread then task.cancel(flyState.healthThread) flyState.healthThread = nil end
+    if flyState.diedConn then flyState.diedConn:Disconnect() flyState.diedConn = nil end
+    if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
 end
 
--- 移动速度滑块
-TabHandles.WX2:Slider({
-    Title = "移动速度",
-    Desc = "调节角色移动速度（1-500）",
-    Value = {
-        Min = 1,
-        Max = 500,
-        Default = getHumanoid() and getHumanoid().WalkSpeed or 16
-    },
-    Step = 1,
-    Callback = function(value)
-        local humanoid = getHumanoid()
-        if humanoid then
-            humanoid.WalkSpeed = tonumber(value)
-        end
+player.CharacterAdded:Connect(function()
+    if flyState.enabled then
+        stopFly()
+        task.wait(0.2)
+        startFly()
     end
-})
+end)
 
--- 跳跃高度滑块
-TabHandles.WX2:Slider({
-    Title = "跳跃高度",
-    Desc = "调节角色跳跃力度（1-500）",
-    Value = {
-        Min = 1,
-        Max = 500,
-        Default = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and game.Players.LocalPlayer.Character.Humanoid.JumpPower or 50
-    },
-    Step = 1,
-    Callback = function(value)
-        local plr = game.Players.LocalPlayer
-        local char = plr.Character or plr.CharacterAdded:Wait()
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.JumpPower = tonumber(value)
-            humanoid.UseJumpPower = true
-        end
+
+local interactEnabled = false
+local ScanPrompts
+
+local speedBypassOn = false
+local speedBypassValue = 20
+RunService.Heartbeat:Connect(function(dt)
+    if not speedBypassOn then return end
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if hum and root and hum.MoveDirection.Magnitude > 0 then
+        root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
     end
-})
+end)
 
--- 重力设置滑块
-TabHandles.WX2:Slider({
-    Title = "重力设置",
-    Desc = "调节世界重力大小（1-500）",
-    Value = {
-        Min = 1,
-        Max = 500,
-        Default = Workspace.Gravity
-    },
-    Step = 1,
-    Callback = function(value)
-        Workspace.Gravity = tonumber(value)
-    end
-})
-
--- 无限跳跃开关
-TabHandles.WX2:Toggle({
-    Title = "启用无限跳跃",
-    Desc = "开启后可空中连续跳跃",
-    Value = false,
-    Callback = function(state)
-        JumpEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "功能已启用",
-                Content = "无限跳跃已开启",
-                Icon = "check-circle",
-                Color = Color3.fromHex("#30ff6a"),
-                Duration = 2
-            })
-        else
-            WindUI:Notify({
-                Title = "功能已关闭",
-                Content = "无限跳跃已禁用",
-                Icon = "x-circle",
-                Color = Color3.fromHex("#ff3030"),
-                Duration = 2
-            })
+local staminaOn = false
+local godOn = false
+local StaminaEvent
+pcall(function()
+    StaminaEvent = ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("PlayerEvent", 5)
+end)
+if StaminaEvent then
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        if self == StaminaEvent and method == "FireServer" then
+            if args[1] == "setStaminaOrFood" and args[2] == "stamina" and staminaOn then
+                args[3] = 100
+                return oldNamecall(self, unpack(args))
+            end
+            if args[1] == "takeDamage" and godOn then
+                return
+            end
         end
-        if jumpConnection then jumpConnection:Disconnect() end
-        if state then
-            jumpConnection = UserInputService.JumpRequest:Connect(function()
-                local success, humanoid = pcall(getHumanoid)
-                if success and humanoid and humanoid.Health > 0 then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
+        return oldNamecall(self, ...)
+    end)
+end
+task.spawn(function()
+    while not isDestroyed do
+        if staminaOn and StaminaEvent then
+            pcall(function()
+                StaminaEvent:FireServer("setStaminaOrFood", "stamina", 100)
             end)
         end
+        task.wait(0.3)
     end
-})
+end)
 
--- 夜视功能开关
-TabHandles.WX2:Toggle({
-    Title = "夜视功能", 
-    Value = false, 
-    Callback = function(Value)
-        if Value then
-            game.Lighting.Ambient = Color3.new(1, 1, 1)
-        else
-            game.Lighting.Ambient = Color3.new(0, 0, 0)
+local teamEspOn = false
+local teamTracked = {}
+local function teamClearAll()
+    for plr, data in pairs(teamTracked) do
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+end
+local function teamApply(plr)
+    if plr == player then return end
+    local char = plr.Character
+    if not char then return end
+    local old = teamTracked[plr]
+    if old then
+        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
+        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
+    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.FillTransparency = 0.5
+    hl.OutlineTransparency = 0
+    hl.FillColor = color
+    hl.OutlineColor = color
+    hl.Parent = char
+    local bb
+    local head = char:FindFirstChild("Head")
+    if head then
+        bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 100, 0, 22)
+        bb.StudsOffset = Vector3.new(0, 3.2, 0)
+        bb.AlwaysOnTop = true
+        bb.Adornee = head
+        local tl = Instance.new("TextLabel")
+        tl.Size = UDim2.new(1, 0, 1, 0)
+        tl.BackgroundTransparency = 1
+        tl.Text = isTeam and "队友" or "敌人"
+        tl.TextColor3 = color
+        tl.TextStrokeTransparency = 0
+        tl.Font = Enum.Font.GothamBold
+        tl.TextSize = 14
+        tl.Parent = bb
+        bb.Parent = head
+    end
+    teamTracked[plr] = { Highlight = hl, Billboard = bb }
+end
+task.spawn(function()
+    while not isDestroyed do
+        if teamEspOn then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                teamApply(plr)
+            end
         end
-        WindUI:Notify({
-            Title = "WX",
-            Content = Value and "已开启" or "已关闭",
-            Duration = 3,
-            Icon = "layout-grid",
-        })
+        task.wait(2)
     end
-})
-
--- 飞行功能
-TabHandles.WX2:Button({
-    Title = "飞行",
-    Desc = "飞行功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/tvJQcwGt/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
+end)
+Players.PlayerRemoving:Connect(function(plr)
+    local data = teamTracked[plr]
+    if data then
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
     end
-})
+end)
 
--- 穿墙功能
-TabHandles.WX2:Toggle({
-    Title = "穿墙(可用)",
-    Desc = "开启后可无视碰撞穿过物体",
-    Value = false,
-    Callback = function(NC)
-        local Workspace = game:GetService("Workspace")
-        local Players = game:GetService("Players")
-        local Clipon = NC and true or false
-        local Stepped = game:GetService("RunService").Stepped:Connect(function()
-            if Clipon then
-                for a, b in pairs(Workspace:GetChildren()) do
-                    if b.Name == Players.LocalPlayer.Name then
-                        for i, v in pairs(Workspace[Players.LocalPlayer.Name]:GetChildren()) do
-                            if v:IsA("BasePart") then
-                                v.CanCollide = false
+local zzEnabled = false
+local zzDistance = 40
+local zzAffected = nil
+local function zzRestore()
+    if zzAffected and zzAffected.Parent then
+        pcall(function()
+            zzAffected.Size = Vector3.new(2, 1, 1)
+            zzAffected.Transparency = 0
+        end)
+    end
+    zzAffected = nil
+end
+task.spawn(function()
+    while not isDestroyed do
+        if zzEnabled then
+            local char = player.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            local best, bestDist = nil, zzDistance
+            if root then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local head = p.Character:FindFirstChild("Head")
+                        if hum and hum.Health > 0 and head then
+                            local d = (head.Position - root.Position).Magnitude
+                            if d < bestDist then
+                                bestDist = d
+                                best = head
                             end
                         end
                     end
                 end
-            else
-                Stepped:Disconnect()
             end
-        end)
-    end
-})
-
--- 踏空行走功能
-TabHandles.WX2:Button({
-    Title = "踏空行走",
-    Desc = "在空中行走的功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/k5N6kXs8/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "踏空行走加载成功",
-            Duration = 3,
-            Icon = "layout-grid"
-        })        
-    end
-})
-
--- 继续其他通用功能按钮...
-TabHandles.WX2:Button({
-    Title = "无头加断腿美化",
-    Desc = "",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Permanent-Headless-And-korblox-Script-4140"))()
-        WindUI:Notify({
-            Title = "正在加载WX美化",
-            Content = "加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "飞车",
-    Desc = "飞车功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/0dZzBUiL/raw"))()
-        WindUI:Notify({
-            Title = "正在加载WX飞车",
-            Content = "加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "最高画质",
-    Desc = "启用最高画质功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/jHBfJYmS"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "最高画质功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "光影v4",
-    Desc = "启用光影v4功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/MZEEN2424/Graphics/main/Graphics.xml"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "光影v4功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "RTX高仿",
-    Desc = "启用RTX高仿功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet('https://pastebin.com/raw/Bkf0BJb3'))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "RTX高仿功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "光影深",
-    Desc = "启用光影深功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/MZEEN2424/Graphics/main/Graphics.xml"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "光影深功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "光影浅",
-    Desc = "启用光影浅功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/jHBfJYmS"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "光影浅功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "旋转甩飞",
-    Desc = "启用旋转甩飞功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/dingding123hhh/tt/main/%E6%97%8B%E8%BD%AC.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "旋转甩飞功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "零件破坏者v2",
-    Desc = "启用零件破坏者v2功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/cytj777i/-/main/零件破坏者v2"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "零件破坏者v2功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "黑洞v5",
-    Desc = "启用黑洞v5功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/DN0upqNm"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "黑洞v5功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "黑洞v6",
-    Desc = "启用黑洞v6功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/chesslovers69/Super-ring-parts-v6/refs/heads/main/Bylukaslol"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "黑洞v6功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "黑洞v7",
-    Desc = "启用黑洞v7功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/QYUALL7N"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "黑洞v7功能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "人物螺旋上天",
-    Desc = "启用人物螺旋上天功能",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/xV1T3PAi/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "人物螺旋上天能加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX2:Button({
-    Title = "无敌少侠飞行",
-    Desc = "仅支持R15体型，非R15体型无法使用",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Invinicible-Flight-R15-45414"))() 
-        WindUI:Notify({
-            Title = "WX",
-            Content = "无敌少侠飞行加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
--- ==================== 其余脚本中心页面 ====================
-TabHandles.WX7:Button({
-    Title = "XK HUB",
-    Desc = "史上最好用的免费脚本",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet(('https://github.com/devslopo/DVES/raw/main/XK%20Hub')))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "XK HUB加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX7:Button({
-    Title = "皮脚本",
-    Desc = "免费脚本",
-    Locked = false,
-    Callback = function()
-        getgenv().XiaoPi="皮脚本QQ群1002100032" loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/QQ1002100032-Roblox-Pi-script.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "皮脚本加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX7:Button({
-    Title = "沙脚本",
-    Desc = "很好用的免费脚本，沙记制作",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/114514lzkill/ShaHUB/refs/heads/main/ShaHUB"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "沙脚本加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX7:Button({
-    Title = "脚与本",
-    Desc = "卡密jyb",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastebin.com/raw/FnYpMeAk"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "卡密jyb",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX7:Button({
-    Title = "WU脚本破解版",
-    Desc = "无需卡密，破解版",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/WUSCRIPT/WU-Script/d32b223a23ad84ef7c295656bff860e134eb8a90/77-obfuscated.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "WU脚本加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
--- ==================== 其他服务器脚本页面 ====================
-
-TabHandles.WX6:Button({
-    Title = "死铁轨脚本",
-    Desc = "未测试可否使用",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/e1cfd93b113a79773d93251b61af1e2f.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "死铁轨脚本加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "死亡铁轨刷债券",
-    Desc = "全自动",
-    Locked = false,
-    Callback = function()
-        getgenv().AutoExecute = true(loadstring or load)(game:HttpGet("https://raw.githubusercontent.com/hungquan99/HungHUB/main/loader.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "死亡铁轨刷债卷加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "最坚强的战场垃圾桶角色",
-    Desc = "任意角色即可执行，死亡后需重新执行",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/yes1nt/yes/refs/heads/main/Trashcan%20Man", true))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "最坚强的战场垃圾桶加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "最坚强的战场火车头",
-    Desc = "需饿狼角色执行",
-    Locked = false,
-    Callback = function()
-        getgenv().settings = {
-            ["morph"] = {
-                ["enabled"] = false,
-                ["dontchangeskincolor"] = false,
-            },
-            ["ult_forcewalkspeed"] = true,
-            ["ult_walkspeed"] = 64,
-            ["tp_duration"] = 0.15
-        } 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/skibiditoiletfan2007/ATrainSounds/refs/heads/main/ATrain.lua"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "最坚强的战场火车头加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "最坚强的战场动作脚本",
-    Desc = "别人看不见，纯自己装帅用",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/HellishAgem/HellishMovesetCutscene/refs/heads/main/Protected_6748082827088148.txt"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "最坚强的战场动作加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "俄亥俄州XA",
-    Desc = "能不能用不确定",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/XingFork/Scripts/refs/heads/main/Ohio"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "XA俄亥俄州加载成功",
-            Duration = 3,
-            Icon = "layout-grid",
-        })        
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "偷走脑红",
-    Desc = "加载慢",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/UrFSwAvs/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "偷走脑红钓鱼",
-    Desc = "好用",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/somepath/somefile.lua"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "偷走脑红",
-    Desc = "汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/ULdWe37N/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "植物VS大脑机器人",
-    Desc = "已汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/2EoYqTfl/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "99夜",
-    Desc = "已汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/2EoYqTfl/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "99夜",
-    Desc = "虚空",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/ke9460394-dot/ugik/refs/heads/main/99%E5%A4%9C%E8%99%9A%E7%A9%BA.txt"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "99夜",
-    Desc = "走马观花",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/Axg37JP7/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "99夜",
-    Desc = "已汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/Axg37JP7/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "自动翻译",
-    Desc = "TK",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/JsYb666/Item/refs/heads/main/Auto-language"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "伐木大亨",
-    Desc = "作者思绪",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/oAqe0jak/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "种植花园",
-    Desc = "没汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/s9wO0IAp/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "种植花园",
-    Desc = "好用",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/MoziIOnTop/MoziIHub/refs/heads/main/GrowaGarden"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "极速传奇",
-    Desc = "不会用问我",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/DhttNHdb/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "饲养宠物",
-    Desc = "过几天汉化",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xwwwwwwwwwwwwwwwwwwwqd/loader/main/GamesData/RaiseAnimals.lua"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "伐木大亨",
-    Desc = "好用",
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/oRaDTAPK/raw"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "战争大亨",
-    Desc = "还行",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/ke9460394-dot/ugik/refs/heads/main/%E6%88%98%E4%BA%89%E5%A4%A7%E4%BA%A8.txt"))()
-    end
-})
-
-TabHandles.WX6:Button({
-    Title = "战争大亨",
-    Desc = "XK中心",
-    Callback = function()
-        loadstring(game:HttpGet(('https://github.com/devslopo/DVES/raw/main/XK%20Hub')))()
-    end
-})
--- ==================== 锻造页面 ====================
-TabHandles.WX9:Paragraph({
-    Title = "锻造功能",
-    Desc = "锻造加载卡，不要在意",
-    Image = "zap",
-    ImageSize = 20
-})
-
-TabHandles.WX9:Button({
-    Title = "锻造1",
-    Desc = "wx汉化",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/hpo8mrBS/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "锻造加载成功",
-            Duration = 3,
-            Icon = "zap"
-        })        
-    end
-})
-
-TabHandles.WX9:Button({
-    Title = "锻造2",
-    Desc = "wx汉化",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/cqpwBBvX/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "锻造加载成功",
-            Duration = 3,
-            Icon = "zap"
-        })        
-    end
-})
-
-TabHandles.WX9:Button({
-    Title = "锻造3",
-    Desc = "wx汉化",
-    Locked = false,
-    Callback = function()
-        loadstring(game:HttpGet("https://pastefy.app/eEgLJA4f/raw"))()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "锻造加载成功",
-            Duration = 3,
-            Icon = "zap"
-        })        
-    end
-})
-
--- ==================== UI设色页面 ====================
-TabHandles.WX8:Button({
-    Title = "自定义界面",
-    Desc = "个性化您的体验",
-    Image = "palette",
-    ImageSize = 20
-})
-
-local themes = {}
-for themeName, _ in pairs(WindUI:GetThemes()) do
-    table.insert(themes, themeName)
-end
-table.sort(themes)
-local themeDropdown = TabHandles.WX8:Dropdown({
-    Title = "主题选择",
-    Values = themes,
-    Value = "Midnight",
-    Callback = function(theme)
-        WindUI:SetTheme(theme)
-        WindUI:Notify({
-            Title = "WX",
-            Content = "已应用"..theme.."主题",
-            Icon = "palette",
-            Duration = 2
-        })
-    end
-})
-
-local transparencySlider = TabHandles.WX8:Slider({
-    Title = "界面透明度",
-    Value = { 
-        Min = 0,
-        Max = 1,
-        Default = 0.2,
-    },
-    Step = 0.1,
-    Callback = function(value)
-        Window:ToggleTransparency(value > 0)
-        WindUI.TransparencyValue = value
-    end
-})
-
-TabHandles.WX8:Toggle({
-    Title = "启用白色主题",
-    Desc = "使用白色调主题方案",
-    Value = true,
-    Callback = function(state)
-        WindUI:SetTheme(state and "Light" or "Dark")
-        themeDropdown:Select(state and "Light" or "Dark")
-        WindUI:Notify({
-            Title = "WX",
-            Content = state and "已启用白色主题" or "已启用黑色主题",
-            Duration = 2,
-            Icon = "palette"
-        })
-    end
-})
-
-TabHandles.WX8:Button({
-    Title = "创建新主题",
-    Icon = "plus",
-    Callback = function()
-        Window:Dialog({
-            Title = "创建主题",
-            Content = "此功能很快就会推出",
-            Buttons = {
-                {
-                    Title = "确认",
-                    Variant = "Primary"
-                }
-            }
-        })
-    end
-})
-
-TabHandles.WX8:Paragraph({
-    Title = "配置管理",
-    Desc = "保存你的设置",
-    Image = "save",
-    ImageSize = 20
-})
-
--- ==================== 自瞄系统页面 ====================
--- 自瞄设置区域
-local AimSection1 = TabHandles.WX3:Section({Title = "自瞄设置"})
-
-AimSection1:Toggle({
-    Title = "自瞄开关",
-    Desc = "开启/关闭自瞄功能",
-    Value = false,
-    Callback = function(value)
-        ToggleAim(value)
-    end
-})
-
-AimSection1:Toggle({
-    Title = "预测自瞄",
-    Desc = "根据目标移动预测瞄准位置",
-    Value = false,
-    Callback = function(value)
-        UsePrediction = value
-    end
-})
-
-AimSection1:Toggle({
-    Title = "优先最低血量",
-    Desc = "优先瞄准血量最低的玩家",
-    Value = false,
-    Callback = function(value)
-        TargetLowestHealth = value
-    end
-})
-
-AimSection1:Slider({
-    Title = "自瞄圈大小",
-    Desc = "调整自瞄识别范围",
-    Value = {
-        Min = 1,
-        Max = 600,
-        Default = 50,
-    },
-    Step = 1,
-    Callback = function(value)
-        AimRadius = value
-        if IsAimEnabled then
-            AimCircle.Radius = AimRadius
-        end
-    end
-})
-
-AimSection1:Slider({
-    Title = "自瞄圈线宽",
-    Desc = "调整自瞄圈线条粗细",
-    Value = {
-        Min = 1,
-        Max = 10,
-        Default = 2,
-    },
-    Step = 1,
-    Callback = function(value)
-        AimCircle.Thickness = value
-    end
-})
-
--- 瞄准部位选择
-local AimPartOptions = {
-    ["头部"] = "Head",
-    ["躯干"] = "UpperTorso",
-    ["左手"] = "LeftHand",
-    ["右手"] = "RightHand",
-    ["左脚"] = "LeftFoot",
-    ["右脚"] = "RightFoot"
-}
-
-AimSection1:Dropdown({
-    Title = "瞄准部位",
-    Desc = "选择自瞄瞄准的身体部位",
-    Values = {"头部", "躯干", "左手", "右手", "左脚", "右脚"},
-    Value = "头部",
-    Callback = function(selected)
-        AimPart = AimPartOptions[selected]
-    end
-})
-
--- 瞄准圈颜色选择
-local AimCircleColors = {
-    ["红色"] = Color3.fromRGB(255, 0, 0),
-    ["黄色"] = Color3.fromRGB(255, 255, 0),
-    ["绿色"] = Color3.fromRGB(0, 255, 0),
-    ["蓝色"] = Color3.fromRGB(0, 0, 255),
-    ["紫色"] = Color3.fromRGB(128, 0, 128),
-    ["橙色"] = Color3.fromRGB(255, 165, 0),
-    ["白色"] = Color3.fromRGB(255, 255, 255)
-}
-
-AimSection1:Dropdown({
-    Title = "自瞄圈颜色",
-    Desc = "选择自瞄圈显示颜色",
-    Values = {"红色", "黄色", "绿色", "蓝色", "紫色", "橙色", "白色"},
-    Value = "绿色",
-    Callback = function(selected)
-        AimCircle.Color = AimCircleColors[selected]
-    end
-})
-
-AimSection1:Divider()
-
-AimSection1:Toggle({
-    Title = "忽略队友",
-    Desc = "不瞄准同一队伍的玩家",
-    Value = false,
-    Callback = function(value)
-        IgnoreTeam = value
-    end
-})
-
-AimSection1:Toggle({
-    Title = "存活检查",
-    Desc = "只瞄准存活的玩家",
-    Value = false,
-    Callback = function(value)
-        CheckAlive = value
-    end
-})
-
-AimSection1:Slider({
-    Title = "预测系数",
-    Desc = "调整自瞄预测的强度",
-    Value = {
-        Min = 1,
-        Max = 30,
-        Default = 12,
-    },
-    Step = 1,
-    Callback = function(value)
-        PredictionScale = value / 10
-    end
-})
-
-AimSection1:Toggle({
-    Title = "墙体检查",
-    Desc = "只瞄准可见的玩家",
-    Value = false,
-    Callback = function(value)
-        WallCheck = value
-    end
-})
-
--- ESP透视系统区域
-local AimSection2 = TabHandles.WX3:Section({Title = "透视设置"})
-
-local ESPColors = {
-    ["白色"] = Color3.fromRGB(255, 255, 255),
-    ["青色"] = Color3.fromRGB(0, 255, 255),
-    ["蓝色"] = Color3.fromRGB(0, 0, 255),
-    ["紫色"] = Color3.fromRGB(128, 0, 128),
-    ["黄色"] = Color3.fromRGB(255, 255, 0),
-    ["绿色"] = Color3.fromRGB(0, 255, 0),
-    ["红色"] = Color3.fromRGB(255, 0, 0)
-}
-
-AimSection2:Toggle({
-    Title = "透视所有玩家",
-    Desc = "显示所有玩家的轮廓",
-    Value = false,
-    Callback = function(value)
-        ToggleESP(value)
-    end
-})
-
-AimSection2:Dropdown({
-    Title = "透视颜色",
-    Desc = "选择透视显示颜色",
-    Values = {"白色", "青色", "蓝色", "紫色", "黄色", "绿色", "红色"},
-    Value = "白色",
-    Callback = function(selected)
-        if not RainbowESP then
-            SetESPColor(ESPColors[selected])
-        end
-    end
-})
-
-AimSection2:Toggle({
-    Title = "彩虹色透视",
-    Desc = "启用七彩闪烁透视效果",
-    Value = false,
-    Callback = function(value)
-        ToggleRainbowESP(value)
-    end
-})
-
-AimSection2:Toggle({
-    Title = "显示玩家血条",
-    Desc = "显示玩家名字和血量信息",
-    Value = false,
-    Callback = function(value)
-        ToggleHealthbars(value)
-    end
-})
-
--- 移动修改系统区域
-local AimSection3 = TabHandles.WX3:Section({Title = "移动设置"})
-
-AimSection3:Toggle({
-    Title = "速度修改",
-    Desc = "修改角色移动速度",
-    Value = false,
-    Callback = function(value)
-        ToggleSpeed(value)
-    end
-})
-
-AimSection3:Slider({
-    Title = "速度倍数",
-    Desc = "设置移动速度的倍率",
-    Value = {
-        Min = 1,
-        Max = 1000,
-        Default = 1,
-    },
-    Step = 1,
-    Callback = function(value)
-        SpeedMultiplier = value
-    end
-})
-
-AimSection3:Button({
-    Title = "启用无限跳跃",
-    Desc = "启用无限跳跃功能",
-    Callback = function()
-        EnableInfiniteJump()
-    end
-})
-
--- 初始化ESP和血条
-UpdateAllESP()
-UpdateAllHealthbars()
-
--- ==================== 甩飞系统页面 ====================
-local RunService = game:GetService("RunService")
-local selectedPlayer = nil
-local playerList = {}
-local playerDropdown
-
-TabHandles.WX4:Paragraph({
-    Title = "甩飞页面",
-    Desc = "🤓🤓甩飞他们",
-    Image = "users",
-    ImageSize = 20
-})
-
-local playerSelectionParagraph = TabHandles.WX4:Paragraph({
-    Title = "玩家选择",
-    Desc = "选择要操作的目标玩家"
-})
-
-local function refreshPlayers()
-    table.clear(playerList)
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer then
-            table.insert(playerList, player.Name)
-        end
-    end
-    if playerDropdown then
-        playerDropdown = TabHandles.WX4:Dropdown({
-            Title = "选择玩家的名称",
-            Values = playerList,
-            Value = playerList[1] or "",
-            Callback = function(selected)
-                selectedPlayer = game.Players:FindFirstChild(selected)
-                if selectedPlayer then
-                    WindUI:Notify({
-                        Title = "WX",
-                        Content = "已选择玩家: " .. selectedPlayer.Name,
-                        Duration = 3,
-                        Icon = "user"
-                    })
+            if best ~= zzAffected then
+                zzRestore()
+                if best then
+                    zzAffected = best
+                    pcall(function()
+                        best.Size = Vector3.new(500, 500, 500)
+                        best.Transparency = 1
+                        best.CanCollide = false
+                    end)
                 end
             end
-        })
+        else
+            zzRestore()
+        end
+        task.wait(0.2)
+    end
+end)
+
+local aimOn = false
+local aimFOV = 150
+local aimNoTeam = true
+local aimWall = true
+local aimGui, aimCircle
+local function aimEnsureCircle()
+    if aimGui then return end
+    aimGui = Instance.new("ScreenGui")
+    aimGui.Name = "SA_AimFOV"
+    aimGui.ResetOnSpawn = false
+    aimGui.IgnoreGuiInset = true
+    aimGui.Parent = player:WaitForChild("PlayerGui")
+    aimCircle = Instance.new("Frame")
+    aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+    aimCircle.Position = UDim2.fromScale(0.5, 0.5)
+    aimCircle.BackgroundTransparency = 1
+    aimCircle.Parent = aimGui
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.4
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = aimCircle
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = aimCircle
+end
+RunService.RenderStepped:Connect(function()
+    if not aimOn then
+        if aimGui then aimGui.Enabled = false end
+        return
+    end
+    aimEnsureCircle()
+    aimGui.Enabled = true
+    aimCircle.Size = UDim2.fromOffset(aimFOV * 2, aimFOV * 2)
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local best, bestDist = nil, aimFOV
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            local head = p.Character:FindFirstChild("Head")
+            if hum and hum.Health > 0 and head then
+                local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
+                if not skip then
+                    local sp, onScreen = camera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                        if d < bestDist then
+                            local visible = true
+                            if aimWall then
+                                local rp = RaycastParams.new()
+                                rp.FilterType = Enum.RaycastFilterType.Exclude
+                                rp.FilterDescendantsInstances = { player.Character }
+                                local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
+                                visible = (not res) or res.Instance:IsDescendantOf(p.Character)
+                            end
+                            if visible then
+                                bestDist = d
+                                best = head
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if best then
+        camera.CFrame = CFrame.lookAt(camera.CFrame.Position, best.Position)
+    end
+end)
+
+local infAmmoEnabled = false
+task.spawn(function()
+    while not isDestroyed do
+        if infAmmoEnabled then
+            local characterFolder = Workspace:FindFirstChild("Characters") and Workspace.Characters:FindFirstChild(player.Name)
+            if characterFolder then
+                for _, gun in ipairs(characterFolder:GetChildren()) do
+                    local config = gun:FindFirstChild("Config")
+                    if config then
+                        local ammo = config:FindFirstChild("Ammo")
+                        local totalAmmo = config:FindFirstChild("TotalAmmo")
+                        if ammo then ammo.Value = math.huge end
+                        if totalAmmo then totalAmmo.Value = math.huge end
+                    end
+                end
+            end
+        end
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+local KA_MAX_DISTANCE = 300
+local KA_WALL_CHECK = true
+local kaEnabled = false
+local kaStatusLabel = nil
+
+local function kaIsVisible(targetHead)
+    local char = player.Character
+    if not char then return false end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return false end
+    local direction = targetHead.Position - myHead.Position
+    local distance = direction.Magnitude
+    if distance < 0.1 then return true end
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
+end
+
+local function kaGetNearestEnemy()
+    local char = player.Character
+    if not char then return nil end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return nil end
+    local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
+                    end
+                end
+            end
+        end
+    end
+    return bestPlayer
+end
+
+local function kaSetStatus(text)
+    if kaStatusLabel then
+        pcall(function() kaStatusLabel:SetText(text) end)
     end
 end
 
-playerDropdown = TabHandles.WX4:Dropdown({
-    Title = "选择玩家的名称",
-    Values = playerList,
-    Value = "",
-    Callback = function(selected)
-        selectedPlayer = game.Players:FindFirstChild(selected)
-        if selectedPlayer then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "已选择玩家: " .. selectedPlayer.Name,
-                Duration = 3,
-                Icon = "user"
-            })
-        end
-    end
-})
-
-TabHandles.WX4:Button({
-    Title = "刷新玩家列表",
-    Desc = "刷新当前所有在线玩家",
-    Icon = "refresh-cw",
-    Callback = function()
-        refreshPlayers()
-        WindUI:Notify({
-            Title = "WX",
-            Content = "玩家列表已刷新",
-            Duration = 3,
-            Icon = "check"
-        })
-    end
-})
-
-TabHandles.WX4:Button({
-    Title = "查看选中玩家",
-    Desc = "将视角切换到选中的玩家",
-    Icon = "eye",
-    Callback = function()
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Humanoid") then
-            game.Workspace.CurrentCamera.CameraSubject = selectedPlayer.Character.Humanoid
-            WindUI:Notify({
-                Title = "WX",
-                Content = "正在查看: " .. selectedPlayer.Name,
-                Duration = 3,
-                Icon = "eye"
-            })
-        else
-            WindUI:Notify({
-                Title = "WX",
-                Content = "请先选择一个有效玩家",
-                Duration = 3,
-                Icon = "alert-triangle"
-            })
-        end
-    end
-})
-
-TabHandles.WX4:Button({
-    Title = "停止查看",
-    Desc = "将视角切回自己的角色",
-    Icon = "eye-off",
-    Callback = function()
-        local localPlayer = game.Players.LocalPlayer
-        if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-            game.Workspace.CurrentCamera.CameraSubject = localPlayer.Character.Humanoid
-            WindUI:Notify({
-                Title = "WX",
-                Content = "已切回自己的视角",
-                Duration = 3,
-                Icon = "eye-off"
-            })
-        end
-    end
-})
-
-TabHandles.WX4:Paragraph({
-    Title = "传送功能",
-    Desc = "传送相关功能",
-    Image = "move",
-    ImageSize = 20
-})
-
-TabHandles.WX4:Button({
-    Title = "传送到玩家旁边",
-    Desc = "传送到选中玩家的旁边",
-    Icon = "navigation",
-    Callback = function()
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(3, 0, 3))
-            WindUI:Notify({
-                Title = "WX",
-                Content = "已传送到 " .. selectedPlayer.Name .. " 旁边",
-                Duration = 3,
-                Icon = "navigation"
-            })
-        else
-            WindUI:Notify({
-                Title = "WX",
-                Content = "请先选择一个有效玩家",
-                Duration = 3,
-                Icon = "alert-triangle"
-            })
-        end
-    end
-})
-
-local lockTPConnection = nil
-local lockTPEnabled = false
-TabHandles.WX4:Toggle({
-    Title = "锁定传送",
-    Desc = "持续传送到选中玩家的旁边",
-    Value = false,
-    Callback = function(state)
-        lockTPEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "锁定传送已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if lockTPConnection then
-                lockTPConnection:Disconnect()
-            end
-            
-            lockTPConnection = RunService.Heartbeat:Connect(function()
-                if not lockTPEnabled or not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if lockTPConnection then
-                        lockTPConnection:Disconnect()
-                        lockTPConnection = nil
+RunService.Heartbeat:Connect(function()
+    if not isDestroyed then
+        if kaEnabled then
+            do
+                local target = kaGetNearestEnemy()
+                local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
+                if targetHead then
+                    local myHead = player.Character and player.Character:FindFirstChild("Head")
+                    if myHead then
+                        local origin = myHead.Position
+                        local hitPos = targetHead.Position
+                        local direction = (hitPos - origin).Unit
+                        pcall(function()
+                            ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                                bodyParts = { { "Head", 100 } },
+                                shotCode = { origin, direction },
+                                target = target,
+                                pos = hitPos
+                            })
+                        end)
+                        pcall(function()
+                            local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                            handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                            if handleShots then
+                                handleShots:FireServer("2", "Shoot")
+                            end
+                        end)
+                        kaSetStatus("状态：已锁定 " .. target.Name .. "，攻击已发送")
+                    else
+                        kaSetStatus("状态：等待角色头部加载")
                     end
-                    return
+                else
+                    kaSetStatus("状态：范围内未找到敌人")
                 end
-                local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-                if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(3, 0, 3))
-                end
-            end)
-        else
-            if lockTPConnection then
-                lockTPConnection:Disconnect()
-                lockTPConnection = nil
             end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "锁定传送已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
         end
     end
-})
+end)
 
-TabHandles.WX4:Button({
-    Title = "把玩家传送过来",
-    Desc = "将选中玩家传送到自己旁边",
-    Icon = "user-plus",
-    Callback = function()
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local myChar = game.Players.LocalPlayer.Character
-            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                local myPos = myChar.HumanoidRootPart.Position
-                selectedPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(myPos + Vector3.new(3, 0, 3))
-                WindUI:Notify({
-                    Title = "WX",
-                    Content = "已将 " .. selectedPlayer.Name .. " 传送到你旁边",
-                    Duration = 3,
-                    Icon = "user-plus"
-                })
-            end
-        else
-            WindUI:Notify({
-                Title = "WX",
-                Content = "请先选择一个有效玩家",
-                Duration = 3,
-                Icon = "alert-triangle"
-            })
-        end
-    end
-})
-
-local loopTPConnection = nil
-local loopTPEnabled = false
-TabHandles.WX4:Toggle({
-    Title = "循环把玩家传送过来",
-    Desc = "持续将选中玩家传送到自己旁边",
-    Value = false,
-    Callback = function(state)
-        loopTPEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "循环传送已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if loopTPConnection then
-                loopTPConnection:Disconnect()
-            end
-            
-            loopTPConnection = RunService.Heartbeat:Connect(function()
-                if not loopTPEnabled or not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if loopTPConnection then
-                        loopTPConnection:Disconnect()
-                        loopTPConnection = nil
+local weaponGroup = Tabs.Gun:AddLeftGroupbox("武器强化")
+weaponGroup:AddToggle("FastFire", {
+    Text = "无限射速（伤害拉满）",
+    Default = false,
+    Callback = function(value)
+        if not value then return end
+        local function ModifyWeaponStats()
+            local garbage = getgc(true)
+            for _, tbl in pairs(garbage) do
+                if type(tbl) == "table" then
+                    if rawget(tbl, "SHOOT_MODE") then
+                        rawset(tbl, "SHOOT_MODE", 2)
                     end
-                    return
+                    if rawget(tbl, "RPM") then
+                        rawset(tbl, "RPM", math.huge)
+                    end
+                    if rawget(tbl, "DAMAGE") then
+                        rawset(tbl, "DAMAGE", math.huge)
+                    end
                 end
-                local myChar = game.Players.LocalPlayer.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    local myPos = myChar.HumanoidRootPart.Position
-                    selectedPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(myPos + Vector3.new(3, 0, 3))
-                end
-            end)
-        else
-            if loopTPConnection then
-                loopTPConnection:Disconnect()
-                loopTPConnection = nil
             end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "循环传送已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
+        end
+        ModifyWeaponStats()
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(ModifyWeaponStats)
+            end
+        end
+        Library:Notify({ Title = "武器强化", Description = "无限射速已生效，死亡后自动重新生效", Time = 3 })
+    end
+})
+weaponGroup:AddToggle("InfAmmo", {
+    Text = "无限子弹",
+    Default = false,
+    Callback = function(value)
+        infAmmoEnabled = value
+    end
+})
+
+local mainLeftGroup = Tabs.Player:AddRightGroupbox("交互设置")
+mainLeftGroup:AddToggle("InteractToggle", {
+    Text = "启用交互修改",
+    Default = false,
+    Callback = function(value)
+        interactEnabled = value
+        if value and ScanPrompts then ScanPrompts() end
+    end
+})
+mainLeftGroup:AddDivider()
+mainLeftGroup:AddSlider("HoldTime", {
+    Text = "按住时间",
+    Default = 0,
+    Min = 0,
+    Max = 10,
+    Rounding = 0,
+    Suffix = "秒",
+    Callback = function(value)
+        Settings.HoldTime = value
+        if not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = value
+            end
+        end
+    end
+})
+mainLeftGroup:AddSlider("Distance", {
+    Text = "触发距离",
+    Default = 25,
+    Min = 5,
+    Max = 150,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        Settings.Distance = value
+        if not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.MaxActivationDistance = value
+            end
         end
     end
 })
 
-TabHandles.WX4:Paragraph({
-    Title = "高级甩飞功能",
-    Desc = "吸人、甩飞等高级功能",
-    Image = "wind",
-    ImageSize = 20
+local godGroup = Tabs.Player:AddRightGroupbox("伤害免疫")
+godGroup:AddToggle("GodToggle", {
+    Text = "免疫部分伤害",
+    Default = false,
+    Callback = function(value)
+        godOn = value
+    end
+})
+godGroup:AddLabel("免疫火焰/激光/火车/车祸，不免疫玩家枪械")
+
+local espGroup = Tabs.Gun:AddRightGroupbox("透视")
+espGroup:AddToggle("ESPEnabled", {
+    Text = "启用透视",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPEnabled = value
+        if value then
+            UpdateAllESP()
+        else
+            for userId, data in pairs(espBillboards) do
+                if data.Billboard then
+                    data.Billboard.Enabled = false
+                end
+            end
+        end
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("ESPShowName", {
+    Text = "显示名字（队伍颜色）",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowName = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowJob", {
+    Text = "显示职业（职业颜色）",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowJob = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("OutlineESPEnabled", {
+    Text = "人物描边透视",
+    Default = false,
+    Callback = function(value)
+        ToggleOutlineESP(value)
+    end
 })
 
-TabHandles.WX4:Button({
-    Title = "甩飞选中玩家",
-    Desc = "甩飞一次选中的玩家",
-    Icon = "wind",
-    Callback = function()
-        local Player = game:GetService("Players").LocalPlayer
-        local TargetPlayer = selectedPlayer
-        if not TargetPlayer or TargetPlayer == Player then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "无玩家可甩飞",
-                Duration = 3,
-                Icon = "alert-triangle"
-            })
+local mainRightGroup = Tabs.Gun:AddLeftGroupbox("碰撞箱扩展")
+mainRightGroup:AddToggle("HitboxToggle", {
+    Text = "启用头部碰撞箱",
+    Default = false,
+    Callback = function(value)
+        Settings.HitboxEnabled = value
+        if value then ApplyHitbox() else ResetHitbox() end
+    end
+})
+mainRightGroup:AddSlider("HitboxSize", {
+    Text = "头部大小",
+    Default = 10,
+    Min = 5,
+    Max = 400,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        Settings.HitboxSize = value
+        if Settings.HitboxEnabled then ApplyHitbox() end
+    end
+})
+mainRightGroup:AddToggle("WhitelistToggle", {
+    Text = "好友检测 (白名单)",
+    Default = false,
+    Callback = function(value)
+        Settings.WhitelistEnabled = value
+        if value then UpdateWhitelist() end
+    end
+})
+
+
+local flyGroup = Tabs.Player:AddLeftGroupbox("角色修改")
+flyGroup:AddToggle("FlyToggle", {
+    Text = "飞行（绕过）",
+    Default = false,
+    Callback = function(value)
+        if value then startFly() else stopFly() end
+    end
+})
+flyGroup:AddSlider("FlySpeed", {
+    Text = "飞行速度",
+    Default = 35,
+    Min = 10,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(value)
+        FlySpeed = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("NoclipToggle", {
+    Text = "启用人物穿墙",
+    Default = false,
+    Callback = function(value)
+        ToggleNoclip(value)
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("SpeedBypassToggle", {
+    Text = "修改移速（绕过）",
+    Default = false,
+    Callback = function(value)
+        speedBypassOn = value
+    end
+})
+flyGroup:AddSlider("SpeedBypassValue", {
+    Text = "移速",
+    Default = 20,
+    Min = 5,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(value)
+        speedBypassValue = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("StaminaToggle", {
+    Text = "无限体力",
+    Default = false,
+    Callback = function(value)
+        staminaOn = value
+    end
+})
+
+local kaGroup = Tabs.Gun:AddLeftGroupbox("杀戮光环")
+kaGroup:AddLabel("注意：需要自己装备枪械武器才有伤害")
+kaGroup:AddToggle("KAToggle", {
+    Text = "启用杀戮光环",
+    Default = false,
+    Callback = function(value)
+        kaEnabled = value
+        if value then
+            Library:Notify({ Title = "杀戮光环", Description = "已开启，正在搜索敌人", Time = 3 })
+            kaSetStatus("状态：已开启，正在搜索敌人")
+        else
+            kaSetStatus("状态：已关闭")
+        end
+    end
+})
+kaGroup:AddSlider("KADistance", {
+    Text = "攻击距离",
+    Default = 300,
+    Min = 50,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        KA_MAX_DISTANCE = value
+    end
+})
+kaGroup:AddToggle("KAWallCheck", {
+    Text = "墙体检测",
+    Default = true,
+    Callback = function(value)
+        KA_WALL_CHECK = value
+    end
+})
+kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+
+local zzGroup = Tabs.Gun:AddLeftGroupbox("子追")
+zzGroup:AddToggle("ZZToggle", {
+    Text = "启用子追",
+    Default = false,
+    Callback = function(value)
+        zzEnabled = value
+        if not value then zzRestore() end
+    end
+})
+zzGroup:AddSlider("ZZDistance", {
+    Text = "判定距离",
+    Default = 40,
+    Min = 0,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        zzDistance = value
+    end
+})
+
+local aimGroup = Tabs.Gun:AddRightGroupbox("自瞄")
+aimGroup:AddToggle("AimToggle", {
+    Text = "自瞄",
+    Default = false,
+    Callback = function(value)
+        aimOn = value
+    end
+})
+aimGroup:AddSlider("AimFOVSize", {
+    Text = "FOV圈大小",
+    Default = 150,
+    Min = 30,
+    Max = 400,
+    Rounding = 0,
+    Callback = function(value)
+        aimFOV = value
+    end
+})
+aimGroup:AddToggle("AimNoTeam", {
+    Text = "不瞄准队友",
+    Default = true,
+    Callback = function(value)
+        aimNoTeam = value
+    end
+})
+aimGroup:AddToggle("AimWallCheck", {
+    Text = "墙壁检测",
+    Default = true,
+    Callback = function(value)
+        aimWall = value
+    end
+})
+
+local teamEspGroup = Tabs.Gun:AddRightGroupbox("敌我透视")
+teamEspGroup:AddLabel("红色标注敌人，绿色标注队友")
+teamEspGroup:AddToggle("TeamESP", {
+    Text = "透视敌人和队友",
+    Default = false,
+    Callback = function(value)
+        teamEspOn = value
+        if not value then teamClearAll() end
+    end
+})
+
+task.spawn(function()
+    while not isDestroyed do
+        if Settings.OutlineESPEnabled then
+            UpdateOutlineESP()
+        end
+        task.wait(0.1)
+    end
+end)
+
+local teleTab = Tabs.Teleports
+local teleLeftGroup = teleTab:AddLeftGroupbox("传送控制")
+teleLeftGroup:AddToggle("TeleportToggle", {
+    Text = "启用传送",
+    Default = false,
+    Callback = function(value)
+        Settings.TeleportEnabled = value
+    end
+})
+
+local teleNames = {}
+for _, data in ipairs(FIXED_TELEPORTS) do
+    table.insert(teleNames, data.n)
+end
+
+teleLeftGroup:AddDropdown("TeleportSelect", {
+    Values = teleNames,
+    Default = 1,
+    Multi = false,
+    Text = "选定传送地点",
+    Callback = function(value) end,
+})
+
+teleLeftGroup:AddButton({
+    Text = "传送到选定地点",
+    Func = function()
+        if not Settings.TeleportEnabled then
+            Library:Notify({ Title = "传送", Description = "你还没有开启传送开关，请先开启", Time = 3 })
             return
         end
-
-        local Message = function(_Title, _Text, Time)
-            WindUI:Notify({
-                Title = _Title,
-                Content = _Text,
-                Duration = Time,
-                Icon = "bell"
-            })
-        end
-
-        local pid = game.PlaceId
-        if pid == 189707 then
-            local rs = game:GetService("RunService")
-            local hb = rs.Heartbeat
-            local rsd = rs.RenderStepped
-            local lp = game.Players.LocalPlayer
-            local z = Vector3.zero
-            local function f(c)
-                local r = c:WaitForChild("HumanoidRootPart")
-                if r then
-                    local con
-                    con = hb:Connect(function()
-                        if not r.Parent then
-                            con:Disconnect()
-                        end
-                        local v = r.AssemblyLinearVelocity
-                        r.AssemblyLinearVelocity = z
-                        rsd:Wait()
-                        r.AssemblyLinearVelocity = v
-                    end)
-                end
-            end
-            f(lp.Character)
-            lp.CharacterAdded:Connect(f)
-        end
-
-        local SkidFling = function(Target)
-            local Character = Player.Character
-            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-            local RootPart = Humanoid and Humanoid.RootPart
-            local TCharacter = Target.Character
-            local THumanoid = TCharacter and TCharacter:FindFirstChildOfClass("Humanoid")
-            local TRootPart = THumanoid and THumanoid.RootPart
-            local THead = TCharacter and TCharacter:FindFirstChild("Head")
-            local Accessory = TCharacter and TCharacter:FindFirstChildOfClass("Accessory")
-            local Handle = Accessory and Accessory:FindFirstChild("Handle")
-
-            if not (Character and Humanoid and RootPart and TCharacter and THumanoid) then
-                return Message("WX", "玩家已趋势", 2)
-            end
-            if THumanoid.Sit then return Message("WX", "目标处于坐姿", 2) end
-            if not TCharacter:FindFirstChildWhichIsA("BasePart") then return Message("WX", "玩家已趋势", 2) end
-
-            if THead then
-                workspace.CurrentCamera.CameraSubject = THead
-            elseif Handle then
-                workspace.CurrentCamera.CameraSubject = Handle
-            else
-                workspace.CurrentCamera.CameraSubject = THumanoid
-            end
-
-            if RootPart.Velocity.Magnitude < 50 then
-                getgenv().OldPos = RootPart.CFrame
-            end
-
-            local FPos = function(BasePart, Pos, Ang)
-                RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
-                Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
-                RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-            end
-
-            local SFBasePart = function(BasePart)
-                local TimeToWait = 2
-                local Time = tick()
-                local Angle = 0
-                repeat
-                    if RootPart and THumanoid then
-                        if BasePart.Velocity.Magnitude < 50 then
-                            Angle = Angle + 100
-                            FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle),0 ,0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(2.25, 1.5, -2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(-2.25, -1.5, 2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                            task.wait()
-                        else
-                            FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                            task.wait()
-                            
-                            FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, -TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(0, 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5 ,0), CFrame.Angles(math.rad(-90), 0, 0))
-                            task.wait()
-                            FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                            task.wait()
-                        end
-                    else
-                        break
-                    end
-                until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= Target.Character or Target.Parent ~= game:GetService("Players") or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
-            end
-
-            workspace.FallenPartsDestroyHeight = 0/0
-            local BV = Instance.new("BodyVelocity")
-            BV.Name = "EpixVel"
-            BV.Parent = RootPart
-            BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
-            BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-
-            if TRootPart and THead then
-                SFBasePart((TRootPart.CFrame.p - THead.CFrame.p).Magnitude > 5 and THead or TRootPart)
-            elseif TRootPart then
-                SFBasePart(TRootPart)
-            elseif THead then
-                SFBasePart(THead)
-            elseif Handle then
-                SFBasePart(Handle)
-            else
-                return Message("WX", "玩家已趋势", 2)
-            end
-
-            BV:Destroy()
-            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-            workspace.CurrentCamera.CameraSubject = Humanoid
-            getgenv().FPDH = getgenv().FPDH or workspace.FallenPartsDestroyHeight
-
-            repeat
-                RootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
-                Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
-                Humanoid:ChangeState("GettingUp")
-                table.foreach(Character:GetChildren(), function(_, x)
-                    if x:IsA("BasePart") then x.Velocity, x.RotVelocity = Vector3.new(), Vector3.new() end
-                end)
-                task.wait()
-            until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
-            workspace.FallenPartsDestroyHeight = getgenv().FPDH
-            Message("WX", "已甩飞选中玩家", 2)
-        end
-
-        if TargetPlayer.UserId ~= 1414978355 then
-            SkidFling(TargetPlayer)
-        else
-            Message("WX", "该玩家存在甩飞名单", 2)
-        end
-    end
-})
-
-local loopFlingEnabled = false
-local loopFlingConnection = nil
-TabHandles.WX4:Toggle({
-    Title = "锁定甩飞选中玩家",
-    Desc = "持续甩飞选中的玩家",
-    Value = false,
-    Callback = function(state)
-        loopFlingEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "锁定甩飞已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if loopFlingConnection then
-                loopFlingConnection:Disconnect()
-            end
-            
-            local function performFling()
-                if not loopFlingEnabled or not selectedPlayer or selectedPlayer == game.Players.LocalPlayer then
-                    return
-                end
-                
-                local Player = game.Players.LocalPlayer
-                local Target = selectedPlayer
-                local Character = Player.Character
-                local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-                local RootPart = Humanoid and Humanoid.RootPart
-                local TCharacter = Target.Character
-                local THumanoid = TCharacter and TCharacter:FindFirstChildOfClass("Humanoid")
-                local TRootPart = THumanoid and THumanoid.RootPart
-                local THead = TCharacter and TCharacter:FindFirstChild("Head")
-                local Accessory = TCharacter and TCharacter:FindFirstChildOfClass("Accessory")
-                local Handle = Accessory and Accessory:FindFirstChild("Handle")
-                
-                if not (Character and Humanoid and RootPart and TCharacter and THumanoid) then
-                    WindUI:Notify({
-                        Title = "WX",
-                        Content = "无玩家可甩飞",
-                        Duration = 3,
-                        Icon = "alert-triangle"
-                    })
-                    return
-                end
-                if THumanoid.Sit then
-                    WindUI:Notify({
-                        Title = "WX",
-                        Content = "目标处于坐姿",
-                        Duration = 3,
-                        Icon = "alert-triangle"
-                    })
-                    return
-                end
-                if not TCharacter:FindFirstChildWhichIsA("BasePart") then
-                    WindUI:Notify({
-                        Title = "WX",
-                        Content = "玩家已趋势",
-                        Duration = 3,
-                        Icon = "alert-triangle"
-                    })
-                    return
-                end
-                
-                if THead then
-                    workspace.CurrentCamera.CameraSubject = THead
-                elseif Handle then
-                    workspace.CurrentCamera.CameraSubject = Handle
-                else
-                    workspace.CurrentCamera.CameraSubject = THumanoid
-                end
-                
-                if RootPart.Velocity.Magnitude < 50 then
-                    getgenv().OldPos = RootPart.CFrame
-                end
-                
-                local FPos = function(BasePart, Pos, Ang)
-                    RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
-                    Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
-                    RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                    RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                end
-                
-                local SFBasePart = function(BasePart)
-                    local TimeToWait = 2
-                    local Time = tick()
-                    local Angle = 0
-                    repeat
-                        if RootPart and THumanoid then
-                            if BasePart.Velocity.Magnitude < 50 then
-                                Angle = Angle + 100
-                                FPos(BasePart, CFrame.new(0, 1.2, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle),0 ,0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(2.25, 1.5, -2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(-2.25, -1.5, 2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                            else
-                                FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                
-                                FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, -TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5 ,0), CFrame.Angles(math.rad(-90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                            end
-                        else
-                            break
-                        end
-                    until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= Target.Character or Target.Parent ~= game:GetService("Players") or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
-                end
-                
-                workspace.FallenPartsDestroyHeight = 0/0
-                local BV = Instance.new("BodyVelocity")
-                BV.Name = "EpixVel"
-                BV.Parent = RootPart
-                BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
-                BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-                
-                if TRootPart and THead then
-                    SFBasePart((TRootPart.CFrame.p - THead.CFrame.p).Magnitude > 5 and THead or TRootPart)
-                elseif TRootPart then
-                    SFBasePart(TRootPart)
-                elseif THead then
-                    SFBasePart(THead)
-                elseif Handle then
-                    SFBasePart(Handle)
-                end
-                
-                BV:Destroy()
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                workspace.CurrentCamera.CameraSubject = Humanoid
-                getgenv().FPDH = getgenv().FPDH or workspace.FallenPartsDestroyHeight
-                
-                repeat
-                    RootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
-                    Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
-                    Humanoid:ChangeState("GettingUp")
-                    table.foreach(Character:GetChildren(), function(_, x)
-                        if x:IsA("BasePart") then x.Velocity, x.RotVelocity = Vector3.new(), Vector3.new() end
-                    end)
-                    task.wait()
-                until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
-                workspace.FallenPartsDestroyHeight = getgenv().FPDH
-            end
-            
-            loopFlingConnection = RunService.Heartbeat:Connect(function()
-                if loopFlingEnabled and selectedPlayer then
-                    performFling()
-                end
-            end)
-        else
-            if loopFlingConnection then
-                loopFlingConnection:Disconnect()
-                loopFlingConnection = nil
-            end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "锁定甩飞已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
-        end
-    end
-})
-
-TabHandles.WX4:Button({
-    Title = "甩飞所有人",
-    Desc = "甩飞所有在线玩家",
-    Icon = "users",
-    Callback = function()
-        local Targets = {"All"}
-        local Players = game:GetService("Players")
-        local Player = Players.LocalPlayer
-        local AllBool = false
-        local GetPlayer = function(Name)
-            Name = Name:lower()
-            if Name == "all" or Name == "others" then
-                AllBool = true
-                return
-            elseif Name == "random" then
-                local GetPlayers = Players:GetPlayers()
-                if table.find(GetPlayers,Player) then table.remove(GetPlayers,table.find(GetPlayers,Player)) end
-                return GetPlayers[math.random(#GetPlayers)]
-            elseif Name ~= "random" and Name ~= "all" and Name ~= "others" then
-                for _,x in next, Players:GetPlayers() do
-                    if x ~= Player then
-                        if x.Name:lower():match("^"..Name) then
-                            return x;
-                        elseif x.DisplayName:lower():match("^"..Name) then
-                            return x;
-                        end
-                    end
-                end
-            else
+        local selected = Options.TeleportSelect.Value
+        for _, data in ipairs(FIXED_TELEPORTS) do
+            if data.n == selected then
+                TeleportTo(data.p)
+                Library:Notify({
+                    Title = "传送",
+                    Description = "正在传送至: " .. data.n,
+                    Time = 2,
+                })
                 return
             end
         end
-        
-        local Message = function(_Title, _Text, Time)
-            WindUI:Notify({
-                Title = _Title,
-                Content = _Text,
-                Duration = Time,
-                Icon = "bell"
-            })
+        Library:Notify({ Title = "传送", Description = "未找到该地点", Time = 2 })
+    end,
+})
+
+
+
+local function onPlayerAdded(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.ESPEnabled and p ~= player then
+            CreateESP(p)
+            UpdateESPVisibility()
         end
-        
-        local SkidFling = function(TargetPlayer)
-            local Character = Player.Character
-            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-            local RootPart = Humanoid and Humanoid.RootPart
-            local TCharacter = TargetPlayer.Character
-            local THumanoid
-            local TRootPart
-            local THead
-            local Accessory
-            local Handle
-            if TCharacter:FindFirstChildOfClass("Humanoid") then
-                THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
+        if Settings.OutlineESPEnabled and p ~= player then
+            RemoveOutlineESP(p.UserId)
+            CreateOutlineESP(p)
+        end
+        if Settings.HitboxEnabled and not isDestroyed then
+            task.wait(0.5)
+            ApplyHitbox()
+        end
+        if Settings.NoclipEnabled and not isDestroyed then
+            task.wait(0.1)
+            ApplyNoclip()
+        end
+    end)
+    if Settings.WhitelistEnabled and not isDestroyed then
+        UpdateWhitelist()
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(p)
+end
+local playerAddedCon = Players.PlayerAdded:Connect(onPlayerAdded)
+table.insert(connections, playerAddedCon)
+local playerRemovedCon = Players.PlayerRemoving:Connect(function(p)
+    RemoveESP(p.UserId)
+    RemoveOutlineESP(p.UserId)
+end)
+table.insert(connections, playerRemovedCon)
+
+local renderCon = RunService.RenderStepped:Connect(function()
+    if isDestroyed then return end
+    if Settings.HitboxEnabled then
+        frameCount = frameCount + 1
+        if frameCount % 3 == 0 then
+            ApplyHitbox()
+        end
+    end
+    if Settings.NoclipEnabled then
+        ApplyNoclip()
+    end
+    if Settings.ESPEnabled then
+        for userId, data in pairs(espBillboards) do
+            local p = Players:FindFirstChild(tostring(userId))
+            if p and p.Character then
+                local job = GetPlayerJob(p)
+                if data.NameLabel then
+                    data.NameLabel.Text = p.Name
+                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
+                end
+                if data.JobLabel then
+                    data.JobLabel.Text = job
+                    data.JobLabel.TextColor3 = GetJobColor(job)
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
+                end
             end
-            if THumanoid and THumanoid.RootPart then
-                TRootPart = THumanoid.RootPart
-            end
-            if TCharacter:FindFirstChild("Head") then
-                THead = TCharacter.Head
-            end
-            if TCharacter:FindFirstChildOfClass("Accessory") then
-                Accessory = TCharacter:FindFirstChildOfClass("Accessory")
-            end
-            if Accessory and Accessory:FindFirstChild("Handle") then
-                Handle = Accessory.Handle
-            end
-            if Character and Humanoid and RootPart then
-                if RootPart.Velocity.Magnitude < 50 then
-                    getgenv().OldPos = RootPart.CFrame
-                end
-                if THumanoid and THumanoid.Sit and not AllBool then
-                    return Message("WX", "目标处于坐姿", 2)
-                end
-                if THead then
-                    workspace.CurrentCamera.CameraSubject = THead
-                elseif not THead and Handle then
-                    workspace.CurrentCamera.CameraSubject = Handle
-                elseif THumanoid and TRootPart then
-                    workspace.CurrentCamera.CameraSubject = THumanoid
-                end
-                if not TCharacter:FindFirstChildWhichIsA("BasePart") then
-                    return
-                end
-                
-                local FPos = function(BasePart, Pos, Ang)
-                    RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
-                    Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
-                    RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
-                    RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                end
-                
-                local SFBasePart = function(BasePart)
-                    local TimeToWait = 2
-                    local Time = tick()
-                    local Angle = 0
-                    repeat
-                        if RootPart and THumanoid then
-                            if BasePart.Velocity.Magnitude < 50 then
-                                Angle = Angle + 100
-                                FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle),0 ,0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(2.25, 1.5, -2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(-2.25, -1.5, 2.25) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 0.95, CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection,CFrame.Angles(math.rad(Angle), 0, 0))
-                                task.wait()
-                            else
-                                FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                
-                                FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, -TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, 1.5, TRootPart.Velocity.Magnitude / 0.95), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5 ,0), CFrame.Angles(math.rad(-90), 0, 0))
-                                task.wait()
-                                FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                task.wait()
-                            end
-                        else
-                            break
-                        end
-                    until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or TargetPlayer.Parent ~= Players or not TargetPlayer.Character == TCharacter or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
-                end
-                
-                workspace.FallenPartsDestroyHeight = 0/0
-                
-                local BV = Instance.new("BodyVelocity")
-                BV.Name = "EpixVel"
-                BV.Parent = RootPart
-                BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
-                BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-                
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-                
-                if TRootPart and THead then
-                    if (TRootPart.CFrame.p - THead.CFrame.p).Magnitude > 5 then
-                        SFBasePart(THead)
-                    else
-                        SFBasePart(TRootPart)
+        end
+    end
+end)
+table.insert(connections, renderCon)
+
+task.spawn(function()
+    while not isDestroyed do
+        task.wait(10)
+        if Settings.WhitelistEnabled and not isDestroyed then
+            UpdateWhitelist()
+        end
+        if Settings.ESPEnabled then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    if not espBillboards[p.UserId] then
+                        CreateESP(p)
+                        UpdateESPVisibility()
                     end
-                elseif TRootPart and not THead then
-                    SFBasePart(TRootPart)
-                elseif not TRootPart and THead then
-                    SFBasePart(THead)
-                elseif not TRootPart and not THead and Accessory and Handle then
-                    SFBasePart(Handle)
-                else
-                    return Message("WX", "玩家已趋势", 2)
-                end
-                
-                BV:Destroy()
-                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                workspace.CurrentCamera.CameraSubject = Humanoid
-                
-                repeat
-                    RootPart.CFrame = getgenv().OldPos * CFrame.new(0, .5, 0)
-                    Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, .5, 0))
-                    Humanoid:ChangeState("GettingUp")
-                    table.foreach(Character:GetChildren(), function(_, x)
-                        if x:IsA("BasePart") then
-                            x.Velocity, x.RotVelocity = Vector3.new(), Vector3.new()
-                        end
-                    end)
-                    task.wait()
-                until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
-                workspace.FallenPartsDestroyHeight = getgenv().FPDH
-            else
-                return Message("WX", "随机错误", 2)
-            end
-        end
-        
-        local hasPlayers = false
-        for _,x in next, Players:GetPlayers() do
-            if x ~= Player then
-                hasPlayers = true
-                break
-            end
-        end
-        if not hasPlayers then
-            return Message("WX", "无玩家可以甩飞", 2)
-        end
-        
-        if Targets[1] then for _,x in next, Targets do GetPlayer(x) end else return end
-        if AllBool then
-            for _,x in next, Players:GetPlayers() do
-                if x ~= Player then
-                    SkidFling(x)
                 end
             end
         end
-        
-        Message("WX", "正在甩飞所有玩家...", 3)
     end
-})
+end)
 
-TabHandles.WX4:Paragraph({
-    Title = "精确位置传送",
-    Desc = "传送到玩家的前后方、头顶等精确位置",
-    Image = "target",
-    ImageSize = 20
-})
-
-local frontDistance = 3
-TabHandles.WX4:Slider({
-    Title = "传送前方的距离",
-    Desc = "设置传送到玩家前方的距离",
-    Value = {
-        Min = 1,
-        Max = 50,
-        Default = frontDistance
-    },
-    Step = 1,
-    Callback = function(value)
-        frontDistance = tonumber(value)
-        WindUI:Notify({
-            Title = "WX",
-            Content = "前方距离设置为: " .. frontDistance,
-            Duration = 3,
-            Icon = "ruler"
-        })
-    end
-})
-
-local loopFrontTPConnection = nil
-local loopFrontTPEnabled = false
-TabHandles.WX4:Toggle({
-    Title = "循环传送至玩家前方",
-    Desc = "持续传送到选中玩家的前方",
-    Value = false,
-    Callback = function(state)
-        loopFrontTPEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "前方传送已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if loopFrontTPConnection then
-                loopFrontTPConnection:Disconnect()
-            end
-            
-            loopFrontTPConnection = RunService.Heartbeat:Connect(function()
-                if not loopFrontTPEnabled or not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if loopFrontTPConnection then
-                        loopFrontTPConnection:Disconnect()
-                        loopFrontTPConnection = nil
-                    end
-                    return
-                end
-                local targetCF = selectedPlayer.Character.HumanoidRootPart.CFrame
-                local frontPos = targetCF.Position + targetCF.LookVector * frontDistance
-                if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(frontPos)
-                end
-            end)
-        else
-            if loopFrontTPConnection then
-                loopFrontTPConnection:Disconnect()
-                loopFrontTPConnection = nil
-            end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "前方传送已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
+ScanPrompts = function()
+    if isDestroyed or not interactEnabled then return end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
         end
     end
-})
-
-local headDistance = 4
-TabHandles.WX4:Slider({
-    Title = "传送头顶的距离",
-    Desc = "设置传送到玩家头顶的距离",
-    Value = {
-        Min = 1,
-        Max = 50,
-        Default = headDistance
-    },
-    Step = 1,
-    Callback = function(value)
-        headDistance = tonumber(value)
-        WindUI:Notify({
-            Title = "WX",
-            Content = "头顶距离设置为: " .. headDistance,
-            Duration = 3,
-            Icon = "ruler"
-        })
+end
+local descendantCon = workspace.DescendantAdded:Connect(function(obj)
+    if isDestroyed then return end
+    task.wait(0.1)
+    if obj:IsA("ProximityPrompt") and interactEnabled then
+        obj.HoldDuration = Settings.HoldTime
+        obj.MaxActivationDistance = Settings.Distance
     end
-})
+end)
+table.insert(connections, descendantCon)
 
-local loopHeadHeightConnection = nil
-local loopHeadHeightEnabled = false
-TabHandles.WX4:Toggle({
-    Title = "循环传送至玩家头顶",
-    Desc = "持续传送到选中玩家的头顶",
-    Value = false,
-    Callback = function(state)
-        loopHeadHeightEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "头顶传送已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if loopHeadHeightConnection then
-                loopHeadHeightConnection:Disconnect()
-            end
-            
-            loopHeadHeightConnection = RunService.Heartbeat:Connect(function()
-                if not loopHeadHeightEnabled or not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if loopHeadHeightConnection then
-                        loopHeadHeightConnection:Disconnect()
-                        loopHeadHeightConnection = nil
-                    end
-                    return
-                end
-                local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-                if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos.X, targetPos.Y + headDistance, targetPos.Z)
-                end
-            end)
-        else
-            if loopHeadHeightConnection then
-                loopHeadHeightConnection:Disconnect()
-                loopHeadHeightConnection = nil
-            end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "头顶传送已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
+Library:OnUnload(function()
+    if isDestroyed then return end
+    isDestroyed = true
+    stopFly()
+    teamClearAll()
+    zzRestore()
+    if aimGui then aimGui:Destroy() end
+    ResetHitbox()
+    if Settings.NoclipEnabled then
+        ToggleNoclip(false)
+    end
+    if Settings.OutlineESPEnabled then
+        ToggleOutlineESP(false)
+    end
+    ClearAllOutlineESP()
+    for userId, data in pairs(espBillboards) do
+        if data.Billboard then
+            data.Billboard:Destroy()
         end
     end
-})
-
-local backDistance = 2
-TabHandles.WX4:Slider({
-    Title = "传送后面的距离",
-    Desc = "设置传送到玩家后面的距离",
-    Value = {
-        Min = 1,
-        Max = 50,
-        Default = backDistance
-    },
-    Step = 1,
-    Callback = function(value)
-        backDistance = tonumber(value)
-        WindUI:Notify({
-            Title = "WX",
-            Content = "后面距离设置为: " .. backDistance,
-            Duration = 3,
-            Icon = "ruler"
-        })
+    espBillboards = {}
+    for _, conn in ipairs(espConnections) do
+        pcall(function() conn:Disconnect() end)
     end
-})
-
-local loopBackTPConnection = nil
-local loopBackTPEnabled = false
-TabHandles.WX4:Toggle({
-    Title = "循环传送至玩家后面",
-    Desc = "持续传送到选中玩家的后面",
-    Value = false,
-    Callback = function(state)
-        loopBackTPEnabled = state
-        if state then
-            WindUI:Notify({
-                Title = "WX",
-                Content = "后面传送已开启",
-                Duration = 3,
-                Icon = "check"
-            })
-            
-            if loopBackTPConnection then
-                loopBackTPConnection:Disconnect()
-            end
-            
-            loopBackTPConnection = RunService.Heartbeat:Connect(function()
-                if not loopBackTPEnabled or not selectedPlayer or not selectedPlayer.Character or not selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if loopBackTPConnection then
-                        loopBackTPConnection:Disconnect()
-                        loopBackTPConnection = nil
-                    end
-                    return
-                end
-                local targetCF = selectedPlayer.Character.HumanoidRootPart.CFrame
-                local backPos = targetCF.Position - targetCF.LookVector * backDistance
-                if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(backPos)
-                end
-            end)
-        else
-            if loopBackTPConnection then
-                loopBackTPConnection:Disconnect()
-                loopBackTPConnection = nil
-            end
-            WindUI:Notify({
-                Title = "WX",
-                Content = "后面传送已关闭",
-                Duration = 3,
-                Icon = "x"
-            })
-        end
+    espConnections = {}
+    for _, conn in ipairs(connections) do
+        pcall(function() conn:Disconnect() end)
     end
-})
+    for _, conn in ipairs(noclipConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+end)
 
--- 初始化玩家列表
-refreshPlayers()
-
--- 脚本加载完成通知
-WindUI:Notify({
-    Title = "WX脚本已加载",
-    Content = "欢迎使用WX脚本！\n祝您游戏愉快！",
-    Icon = "check-circle",
-    Duration = 5
-})
-
-Window:Open()
+local UnloadGroup = Tabs.Settings:AddLeftGroupbox("脚本管理") UnloadGroup:AddButton("卸载脚本", function() Library:Unload() end) if ThemeManager then ThemeManager:SetLibrary(Library) ThemeManager:SetFolder("MyScriptTheme") ThemeManager:ApplyToTab(Tabs.Settings) end if SaveManager then SaveManager:SetLibrary(Library) SaveManager:IgnoreThemeSettings() SaveManager:SetFolder("MyScriptConfig") SaveManager:BuildConfigSection(Tabs.Settings) end
