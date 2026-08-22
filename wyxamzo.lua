@@ -1030,7 +1030,7 @@ weaponGroup:AddToggle("InfAmmo", {
 
 local mainLeftGroup = Tabs.Player:AddRightGroupbox("快速互动")
 mainLeftGroup:AddToggle("InteractToggle", {
-    Text = "启用互动修改",
+    Text = "启用快速互动（开启后不要动下面的那些默认0就行了）",
     Default = false,
     Callback = function(value)
         interactEnabled = value
