@@ -12,6 +12,9 @@ local Settings = {
     ESPEnabled = false,
     ESPShowName = true,
     ESPShowJob = true,
+    ESPShowDistance = false,
+    ESPShowHealth = false,
+    ESPShowTeam = false,
     OutlineESPEnabled = false,
 }
 
@@ -98,51 +101,128 @@ local function CreateESP(p)
     local head = p.Character:FindFirstChild("Head")
     if not head then return end
     if espBillboards[p.UserId] then return end
+    
     local name = p.Name
     local job = GetPlayerJob(p)
     local teamColor = GetPlayerTeamColor(p)
     local jobColor = GetJobColor(job)
+    
+    local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
+    local health = humanoid and math.floor(humanoid.Health) or 0
+    local maxHealth = humanoid and math.floor(humanoid.MaxHealth) or 100
+    
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local distance = root and head and math.floor((root.Position - head.Position).Magnitude) or 0
+    
+    local teamName = GetPlayerJob(p)
+    
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_" .. p.UserId
     billboard.Adornee = head
-    billboard.Size = UDim2.new(0, 300, 0, 60)
-    billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+    billboard.Size = UDim2.new(0, 300, 0, 120)
+    billboard.StudsOffset = Vector3.new(0, 3.2, 0)
     billboard.MaxDistance = 500
     billboard.AlwaysOnTop = true
     billboard.Parent = head
+    
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
     frame.BackgroundTransparency = 1
     frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     frame.Parent = billboard
+    
+    local yOffset = 0
+    
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 26)
-    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = name
     nameLabel.TextColor3 = teamColor
-    nameLabel.TextSize = 18
+    nameLabel.TextSize = 16
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
     nameLabel.Parent = frame
+    yOffset = yOffset + 22
+    
     local jobLabel = Instance.new("TextLabel")
-    jobLabel.Size = UDim2.new(1, 0, 0, 22)
-    jobLabel.Position = UDim2.new(0, 0, 0, 28)
+    jobLabel.Size = UDim2.new(1, 0, 0, 18)
+    jobLabel.Position = UDim2.new(0, 0, 0, yOffset)
     jobLabel.BackgroundTransparency = 1
     jobLabel.Text = job
     jobLabel.TextColor3 = jobColor
-    jobLabel.TextSize = 16
+    jobLabel.TextSize = 14
     jobLabel.Font = Enum.Font.GothamBold
     jobLabel.TextXAlignment = Enum.TextXAlignment.Center
-    jobLabel.TextYAlignment = Enum.TextYAlignment.Center
     jobLabel.Parent = frame
+    yOffset = yOffset + 20
+    
+    if Settings.ESPShowTeam then
+        local teamLabel = Instance.new("TextLabel")
+        teamLabel.Size = UDim2.new(1, 0, 0, 18)
+        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        teamLabel.BackgroundTransparency = 1
+        teamLabel.Text = "队伍: " .. teamName
+        teamLabel.TextColor3 = teamColor
+        teamLabel.TextSize = 14
+        teamLabel.Font = Enum.Font.GothamBold
+        teamLabel.TextXAlignment = Enum.TextXAlignment.Center
+        teamLabel.Parent = frame
+        yOffset = yOffset + 20
+    end
+    
+    if Settings.ESPShowHealth then
+        local healthBg = Instance.new("Frame")
+        healthBg.Size = UDim2.new(0.8, 0, 0, 6)
+        healthBg.Position = UDim2.new(0.1, 0, 0, yOffset)
+        healthBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        healthBg.BorderSizePixel = 1
+        healthBg.BorderColor3 = Color3.fromRGB(60, 60, 60)
+        healthBg.Parent = frame
+        
+        local healthPercent = math.clamp(health / maxHealth, 0, 1)
+        local healthBar = Instance.new("Frame")
+        healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
+        healthBar.BackgroundColor3 = healthPercent > 0.5 and Color3.fromRGB(0, 255, 100) or 
+                                     healthPercent > 0.25 and Color3.fromRGB(255, 200, 0) or 
+                                     Color3.fromRGB(255, 50, 50)
+        healthBar.BorderSizePixel = 0
+        healthBar.Parent = healthBg
+        
+        local healthLabel = Instance.new("TextLabel")
+        healthLabel.Size = UDim2.new(1, 0, 0, 14)
+        healthLabel.Position = UDim2.new(0, 0, 0, yOffset + 8)
+        healthLabel.BackgroundTransparency = 1
+        healthLabel.Text = health .. "/" .. maxHealth
+        healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        healthLabel.TextSize = 11
+        healthLabel.Font = Enum.Font.Gotham
+        healthLabel.TextXAlignment = Enum.TextXAlignment.Center
+        healthLabel.Parent = frame
+        yOffset = yOffset + 26
+    end
+    
+    if Settings.ESPShowDistance and p ~= player then
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, 0, 0, 16)
+        distLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        distLabel.BackgroundTransparency = 1
+        distLabel.Text = distance .. "m"
+        distLabel.TextColor3 = Color3.fromRGB(180, 180, 255)
+        distLabel.TextSize = 12
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextXAlignment = Enum.TextXAlignment.Center
+        distLabel.Parent = frame
+        yOffset = yOffset + 18
+    end
+    
     espBillboards[p.UserId] = {
         Billboard = billboard,
         Frame = frame,
         NameLabel = nameLabel,
         JobLabel = jobLabel,
     }
+    
     local con
     con = p.AncestryChanged:Connect(function()
         if not p.Parent or not p.Character then
@@ -166,6 +246,10 @@ local function UpdateESPVisibility()
         if data.Billboard then
             data.Billboard.Enabled = Settings.ESPEnabled
         end
+    end
+    -- 重新创建ESP以更新新增的显示项
+    if Settings.ESPEnabled then
+        UpdateAllESP()
     end
 end
 
@@ -1081,9 +1165,9 @@ godGroup:AddToggle("GodToggle", {
         godOn = value
     end
 })
-godGroup:AddLabel("免疫火焰和车爆炸时候的伤害🤓")
+godGroup:AddLabel("免疫火焰和车爆炸时候的伤害")
 
-local espGroup = Tabs.Gun:AddRightGroupbox("透视")
+local espGroup = Tabs.Gun:AddLeftGroupbox("玩家透视")
 espGroup:AddToggle("ESPEnabled", {
     Text = "启用透视",
     Default = false,
@@ -1102,7 +1186,7 @@ espGroup:AddToggle("ESPEnabled", {
 })
 espGroup:AddDivider()
 espGroup:AddToggle("ESPShowName", {
-    Text = "显示名字（队伍颜色）",
+    Text = "显示名字",
     Default = true,
     Callback = function(value)
         Settings.ESPShowName = value
@@ -1110,7 +1194,7 @@ espGroup:AddToggle("ESPShowName", {
     end
 })
 espGroup:AddToggle("ESPShowJob", {
-    Text = "显示职业（职业颜色）",
+    Text = "显示职业",
     Default = true,
     Callback = function(value)
         Settings.ESPShowJob = value
@@ -1118,8 +1202,33 @@ espGroup:AddToggle("ESPShowJob", {
     end
 })
 espGroup:AddDivider()
+espGroup:AddToggle("ESPShowDistance", {
+    Text = "显示距离",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPShowDistance = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowHealth", {
+    Text = "显示血量",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPShowHealth = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowTeam", {
+    Text = "显示队伍",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPShowTeam = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddDivider()
 espGroup:AddToggle("OutlineESPEnabled", {
-    Text = "人物描边透视（如开启感到卡顿请关闭此功能）",
+    Text = "人物描边透视",
     Default = false,
     Callback = function(value)
         ToggleOutlineESP(value)
