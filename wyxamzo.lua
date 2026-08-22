@@ -1128,7 +1128,7 @@ espGroup:AddToggle("OutlineESPEnabled", {
 
 local mainRightGroup = Tabs.Gun:AddLeftGroupbox("碰撞箱扩展")
 mainRightGroup:AddToggle("HitboxToggle", {
-    Text = "启用头部碰撞箱",
+    Text = "启用头部碰撞箱（推荐20-25）",
     Default = false,
     Callback = function(value)
         Settings.HitboxEnabled = value
@@ -1185,7 +1185,7 @@ flyGroup:AddToggle("NoclipToggle", {
 })
 flyGroup:AddDivider()
 flyGroup:AddToggle("SpeedBypassToggle", {
-    Text = "修改移速（绕过）",
+    Text = "修改移速（绕过）（速度推荐80-90）",
     Default = false,
     Callback = function(value)
         speedBypassOn = value
@@ -1211,7 +1211,7 @@ flyGroup:AddToggle("StaminaToggle", {
 })
 
 local kaGroup = Tabs.Gun:AddLeftGroupbox("杀戮光环")
-kaGroup:AddLabel("注意：需要自己装备枪械武器才有伤害")
+kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
 kaGroup:AddToggle("KAToggle", {
     Text = "启用杀戮光环",
     Default = false,
