@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "圣奥里", Footer = "wdfex 制作", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械修改", "target"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "圣奥里", Footer = "wdfex 制作", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功", Time = 5, }) Library:Notify({ Title = "圣奥里", Description = "已为您开启防挂机与反作弊", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械修改", "target"), ESP = Window:AddTab("透视", "eye"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
 
 local Settings = {
     HoldTime = 0,
@@ -9,6 +9,12 @@ local Settings = {
     WhitelistEnabled = false,
     TeleportEnabled = false,
     NoclipEnabled = false,
+    ESPEnabled = false,
+    ESPShowName = true,
+    ESPShowJob = true,
+    ESPShowDistance = false,
+    ESPShowHealth = false,
+    OutlineESPEnabled = false,
 }
 
 local Whitelist = {}
@@ -18,8 +24,440 @@ local isDestroyed = false
 local connections = {}
 local noclipConnections = {}
 
+local JobColors = {
+    ["警察"] = Color3.fromRGB(0, 100, 255),
+    ["医生"] = Color3.fromRGB(0, 200, 0),
+    ["消防员"] = Color3.fromRGB(255, 50, 0),
+    ["军人"] = Color3.fromRGB(50, 150, 50),
+    ["黑帮"] = Color3.fromRGB(150, 0, 150),
+    ["平民"] = Color3.fromRGB(200, 200, 200),
+    ["圣奥里公民"] = Color3.fromRGB(200, 200, 200),
+    ["银行家"] = Color3.fromRGB(0, 200, 200),
+    ["市长"] = Color3.fromRGB(255, 200, 0),
+    ["记者"] = Color3.fromRGB(255, 150, 0),
+    ["律师"] = Color3.fromRGB(150, 100, 200),
+    ["囚犯"] = Color3.fromRGB(255, 150, 0),
+    ["狱警"] = Color3.fromRGB(0, 150, 255),
+    ["司机"] = Color3.fromRGB(100, 200, 255),
+    ["厨师"] = Color3.fromRGB(255, 100, 0),
+    ["建筑工"] = Color3.fromRGB(255, 200, 50),
+    ["农民"] = Color3.fromRGB(50, 200, 50),
+    ["矿工"] = Color3.fromRGB(200, 150, 100),
+    ["渔夫"] = Color3.fromRGB(0, 150, 200),
+    ["商人"] = Color3.fromRGB(255, 150, 200),
+    ["学生"] = Color3.fromRGB(100, 100, 255),
+    ["老师"] = Color3.fromRGB(200, 100, 50),
+    ["工程师"] = Color3.fromRGB(255, 100, 100),
+    ["科学家"] = Color3.fromRGB(0, 255, 150),
+    ["飞行员"] = Color3.fromRGB(50, 200, 255),
+    ["快递员"] = Color3.fromRGB(255, 180, 0),
+    ["公交车司机"] = Color3.fromRGB(0, 180, 255),
+    ["送货"] = Color3.fromRGB(255, 100, 50),
+    ["转运"] = Color3.fromRGB(0, 200, 150),
+    ["货物"] = Color3.fromRGB(150, 100, 0),
+    ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
+    ["道路服务"] = Color3.fromRGB(255, 200, 0),
+}
+
+local ESP_TARGET_TEAMS = {
+    "警察", "医生", "消防员", "送货", "转运", "道路服务", "囚犯", "平民"
+}
+
+local function IsTargetJob(jobName)
+    for _, team in ipairs(ESP_TARGET_TEAMS) do
+        if jobName == team then
+            return true
+        end
+    end
+    return false
+end
+
 local espBillboards = {}
 local espConnections = {}
+
+local outlineESPData = {}
+local outlineESPConnections = {}
+
+local function GetPlayerTeamColor(p)
+    local team = p.Team
+    if team then
+        return team.TeamColor.Color
+    end
+    return Color3.fromRGB(255, 255, 255)
+end
+
+local function GetPlayerJob(p)
+    if p.Team then
+        return p.Team.Name
+    end
+    return "平民"
+end
+
+local function GetJobColor(jobName)
+    return JobColors[jobName] or Color3.fromRGB(200, 200, 200)
+end
+
+local function RemoveESP(userId)
+    local data = espBillboards[userId]
+    if data then
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+        espBillboards[userId] = nil
+    end
+end
+
+local function CreateESP(p)
+    if isDestroyed then return end
+    if not p.Character then return end
+    if p == player then return end
+    local head = p.Character:FindFirstChild("Head")
+    if not head then return end
+    if espBillboards[p.UserId] then return end
+    
+    local job = GetPlayerJob(p)
+    if not IsTargetJob(job) then
+        return
+    end
+    
+    local name = p.Name
+    local teamColor = GetPlayerTeamColor(p)
+    local jobColor = GetJobColor(job)
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_" .. p.UserId
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 300, 0, 80)
+    billboard.StudsOffset = Vector3.new(0, 3.0, 0)
+    billboard.MaxDistance = 500
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 1
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.Parent = billboard
+    
+    local yPos = 0
+    local lineHeight = 22
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, lineHeight)
+    nameLabel.Position = UDim2.new(0, 0, 0, yPos)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = name
+    nameLabel.TextColor3 = teamColor
+    nameLabel.TextSize = 18
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+    nameLabel.Parent = frame
+    yPos = yPos + lineHeight
+    
+    local jobLabel = Instance.new("TextLabel")
+    jobLabel.Size = UDim2.new(1, 0, 0, lineHeight)
+    jobLabel.Position = UDim2.new(0, 0, 0, yPos)
+    jobLabel.BackgroundTransparency = 1
+    jobLabel.Text = job
+    jobLabel.TextColor3 = jobColor
+    jobLabel.TextSize = 16
+    jobLabel.Font = Enum.Font.GothamBold
+    jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+    jobLabel.TextYAlignment = Enum.TextYAlignment.Center
+    jobLabel.Parent = frame
+    yPos = yPos + lineHeight
+    
+    local healthLabel = Instance.new("TextLabel")
+    healthLabel.Size = UDim2.new(1, 0, 0, lineHeight)
+    healthLabel.Position = UDim2.new(0, 0, 0, yPos)
+    healthLabel.BackgroundTransparency = 1
+    healthLabel.Text = "血量: 100/100"
+    healthLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    healthLabel.TextSize = 14
+    healthLabel.Font = Enum.Font.GothamBold
+    healthLabel.TextXAlignment = Enum.TextXAlignment.Center
+    healthLabel.TextYAlignment = Enum.TextYAlignment.Center
+    healthLabel.Parent = frame
+    healthLabel.Visible = Settings.ESPShowHealth
+    yPos = yPos + lineHeight
+    
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0, lineHeight)
+    distLabel.Position = UDim2.new(0, 0, 0, yPos)
+    distLabel.BackgroundTransparency = 1
+    distLabel.Text = "距离: 0m"
+    distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    distLabel.TextSize = 13
+    distLabel.Font = Enum.Font.GothamBold
+    distLabel.TextXAlignment = Enum.TextXAlignment.Center
+    distLabel.TextYAlignment = Enum.TextYAlignment.Center
+    distLabel.Parent = frame
+    distLabel.Visible = Settings.ESPShowDistance
+    
+    espBillboards[p.UserId] = {
+        Billboard = billboard,
+        Frame = frame,
+        NameLabel = nameLabel,
+        JobLabel = jobLabel,
+        HealthLabel = healthLabel,
+        DistLabel = distLabel,
+    }
+    
+    local con
+    con = p.AncestryChanged:Connect(function()
+        if not p.Parent or not p.Character then
+            RemoveESP(p.UserId)
+            if con then
+                con:Disconnect()
+            end
+        end
+    end)
+    table.insert(espConnections, con)
+end
+
+local function UpdateESPVisibility()
+    for userId, data in pairs(espBillboards) do
+        if data.NameLabel then
+            data.NameLabel.Visible = Settings.ESPShowName
+        end
+        if data.JobLabel then
+            data.JobLabel.Visible = Settings.ESPShowJob
+        end
+        if data.HealthLabel then
+            data.HealthLabel.Visible = Settings.ESPShowHealth
+        end
+        if data.DistLabel then
+            data.DistLabel.Visible = Settings.ESPShowDistance
+        end
+        if data.Billboard then
+            data.Billboard.Enabled = Settings.ESPEnabled
+        end
+    end
+end
+
+local function UpdateAllESP()
+    if not Settings.ESPEnabled then
+        for userId, data in pairs(espBillboards) do
+            if data.Billboard then
+                data.Billboard.Enabled = false
+            end
+        end
+        return
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local job = GetPlayerJob(p)
+            if not IsTargetJob(job) then
+                if espBillboards[p.UserId] then
+                    RemoveESP(p.UserId)
+                end
+            else
+                if not espBillboards[p.UserId] then
+                    CreateESP(p)
+                else
+                    local data = espBillboards[p.UserId]
+                    if data.NameLabel then
+                        data.NameLabel.Text = p.Name
+                        data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
+                    end
+                    if data.JobLabel then
+                        data.JobLabel.Text = job
+                        data.JobLabel.TextColor3 = GetJobColor(job)
+                    end
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                    if data.HealthLabel and hum then
+                        local health = math.floor(hum.Health)
+                        local maxHealth = hum.MaxHealth
+                        data.HealthLabel.Text = "血量: " .. health .. "/" .. maxHealth
+                    end
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                    if data.DistLabel and root and targetRoot then
+                        local dist = math.floor((root.Position - targetRoot.Position).Magnitude)
+                        data.DistLabel.Text = "距离: " .. dist .. "m"
+                    end
+                    if data.Billboard then
+                        data.Billboard.Enabled = true
+                    end
+                end
+            end
+        end
+    end
+end
+
+local espGroup = Tabs.ESP:AddLeftGroupbox("透视设置")
+espGroup:AddToggle("ESPEnabled", {
+    Text = "启用透视",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPEnabled = value
+        if value then
+            UpdateAllESP()
+        else
+            for userId, data in pairs(espBillboards) do
+                if data.Billboard then
+                    data.Billboard.Enabled = false
+                end
+            end
+        end
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("ESPShowName", {
+    Text = "显示名字",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowName = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowJob", {
+    Text = "显示职业",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowJob = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowHealth", {
+    Text = "显示血量",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPShowHealth = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowDistance", {
+    Text = "显示距离",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPShowDistance = value
+        UpdateESPVisibility()
+    end
+})
+
+local outlineGroup = Tabs.ESP:AddRightGroupbox("人物描边")
+outlineGroup:AddToggle("OutlineESPEnabled", {
+    Text = "启用描边透视",
+    Default = false,
+    Callback = function(value)
+        Settings.OutlineESPEnabled = value
+        if value then
+            UpdateOutlineESP()
+        else
+            ClearAllOutlineESP()
+        end
+    end
+})
+
+local function RemoveOutlineESP(userId)
+    local data = outlineESPData[userId]
+    if data then
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+        outlineESPData[userId] = nil
+    end
+end
+
+local function ClearAllOutlineESP()
+    for userId, _ in pairs(outlineESPData) do
+        RemoveOutlineESP(userId)
+    end
+end
+
+local function CreateOutlineESP(p)
+    if isDestroyed then return end
+    if p == player then return end
+    local char = p.Character
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+    if outlineESPData[p.UserId] then
+        local data = outlineESPData[p.UserId]
+        if data.Highlight then data.Highlight.Enabled = true end
+        if data.Billboard then data.Billboard.Enabled = true end
+        return
+    end
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "OutlineESP_" .. p.UserId
+    highlight.Adornee = char
+    highlight.FillColor = Color3.fromRGB(255, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+    highlight.FillTransparency = 0.6
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = char
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "OutlineESPGui_" .. p.UserId
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 1000
+    billboard.Parent = head
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.TextSize = 15
+    label.Font = Enum.Font.GothamBold
+    label.TextStrokeTransparency = 0
+    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    label.Text = p.Name
+    label.Parent = billboard
+    outlineESPData[p.UserId] = {
+        Player = p,
+        Highlight = highlight,
+        Billboard = billboard,
+        Label = label,
+    }
+end
+
+local function UpdateOutlineESP()
+    if not Settings.OutlineESPEnabled or isDestroyed then return end
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            if not outlineESPData[p.UserId] then
+                CreateOutlineESP(p)
+            end
+            local data = outlineESPData[p.UserId]
+            if data and data.Label then
+                local targetHead = p.Character:FindFirstChild("Head")
+                if targetHead and root then
+                    local dist = math.floor((targetHead.Position - root.Position).Magnitude)
+                    data.Label.Text = p.Name .. " [" .. dist .. "]"
+                else
+                    data.Label.Text = p.Name
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
+                end
+                if data.Highlight then
+                    data.Highlight.Enabled = true
+                end
+            end
+        elseif p ~= player then
+            RemoveOutlineESP(p.UserId)
+        end
+    end
+end
+
+local function ToggleOutlineESP(state)
+    Settings.OutlineESPEnabled = state
+    if state then
+        UpdateOutlineESP()
+    else
+        ClearAllOutlineESP()
+    end
+end
 
 local function GetTeleportData()
     return {
@@ -177,7 +615,7 @@ local function UpdateWhitelist()
 end
 
 local UserInputService = game:GetService("UserInputService")
-local FlySpeed = 0
+local FlySpeed = 35
 local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
 local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
 local FlyControl
@@ -336,6 +774,7 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+
 local interactEnabled = false
 local ScanPrompts
 
@@ -382,6 +821,75 @@ task.spawn(function()
             end)
         end
         task.wait(0.3)
+    end
+end)
+
+local teamEspOn = false
+local teamTracked = {}
+local function teamClearAll()
+    for plr, data in pairs(teamTracked) do
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+end
+local function teamApply(plr)
+    if plr == player then return end
+    local char = plr.Character
+    if not char then return end
+    local old = teamTracked[plr]
+    if old then
+        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
+        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
+    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.FillTransparency = 0.5
+    hl.OutlineTransparency = 0
+    hl.FillColor = color
+    hl.OutlineColor = color
+    hl.Parent = char
+    local bb
+    local head = char:FindFirstChild("Head")
+    if head then
+        bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 100, 0, 22)
+        bb.StudsOffset = Vector3.new(0, 3.2, 0)
+        bb.AlwaysOnTop = true
+        bb.Adornee = head
+        local tl = Instance.new("TextLabel")
+        tl.Size = UDim2.new(1, 0, 1, 0)
+        tl.BackgroundTransparency = 1
+        tl.Text = isTeam and "队友" or "敌人"
+        tl.TextColor3 = color
+        tl.TextStrokeTransparency = 0
+        tl.Font = Enum.Font.GothamBold
+        tl.TextSize = 14
+        tl.Parent = bb
+        bb.Parent = head
+    end
+    teamTracked[plr] = { Highlight = hl, Billboard = bb }
+end
+task.spawn(function()
+    while not isDestroyed do
+        if teamEspOn then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                teamApply(plr)
+            end
+        end
+        task.wait(2)
+    end
+end)
+Players.PlayerRemoving:Connect(function(plr)
+    local data = teamTracked[plr]
+    if data then
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
     end
 end)
 
@@ -432,7 +940,7 @@ task.spawn(function()
         else
             zzRestore()
         end
-        task.wait(0.1)
+        task.wait(0.2)
     end
 end)
 
@@ -714,345 +1222,398 @@ godGroup:AddToggle("GodToggle", {
 })
 godGroup:AddLabel("免疫火焰/激光/火车/车祸，不免疫玩家枪械")
 
--- ===== 新透视系统 =====
-local espGroup = Tabs.Gun:AddRightGroupbox("透视")
-local espEnabled = false
-local espShowName = false
-local espShowDistance = false
-local espShowHealth = false
-local espShowJob = false
-local espShowWanted = false
-local espDetectFly = false
-local espObjects = {}
-local espRenderConnection = nil
-local espUpdateTimer = 0
-local flyWarnActive = false
-local flyWarnGui = nil
-
-local jobColors = {
-    ["警察"] = Color3.fromRGB(0, 100, 255),
-    ["平民"] = Color3.fromRGB(200, 200, 200),
-    ["火焰"] = Color3.fromRGB(255, 150, 0),
-    ["医生"] = Color3.fromRGB(0, 200, 0),
-    ["送货"] = Color3.fromRGB(255, 100, 50),
-    ["转运"] = Color3.fromRGB(0, 200, 150),
-}
-
-local function GetPlayerJobNew(p)
-    if p.Team then
-        return p.Team.Name
+local mainRightGroup = Tabs.Gun:AddLeftGroupbox("碰撞箱扩展")
+mainRightGroup:AddToggle("HitboxToggle", {
+    Text = "启用头部碰撞箱",
+    Default = false,
+    Callback = function(value)
+        Settings.HitboxEnabled = value
+        if value then ApplyHitbox() else ResetHitbox() end
     end
-    return "平民"
+})
+mainRightGroup:AddSlider("HitboxSize", {
+    Text = "头部大小",
+    Default = 10,
+    Min = 5,
+    Max = 400,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        Settings.HitboxSize = value
+        if Settings.HitboxEnabled then ApplyHitbox() end
+    end
+})
+mainRightGroup:AddToggle("WhitelistToggle", {
+    Text = "好友检测 (白名单)",
+    Default = false,
+    Callback = function(value)
+        Settings.WhitelistEnabled = value
+        if value then UpdateWhitelist() end
+    end
+})
+
+
+local flyGroup = Tabs.Player:AddLeftGroupbox("角色修改")
+flyGroup:AddToggle("FlyToggle", {
+    Text = "飞行（绕过）",
+    Default = false,
+    Callback = function(value)
+        if value then startFly() else stopFly() end
+    end
+})
+flyGroup:AddSlider("FlySpeed", {
+    Text = "飞行速度",
+    Default = 35,
+    Min = 10,
+    Max = 1000,
+    Rounding = 0,
+    Callback = function(value)
+        FlySpeed = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("NoclipToggle", {
+    Text = "启用人物穿墙",
+    Default = false,
+    Callback = function(value)
+        ToggleNoclip(value)
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("SpeedBypassToggle", {
+    Text = "修改移速（绕过）",
+    Default = false,
+    Callback = function(value)
+        speedBypassOn = value
+    end
+})
+flyGroup:AddSlider("SpeedBypassValue", {
+    Text = "移速",
+    Default = 20,
+    Min = 5,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(value)
+        speedBypassValue = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("StaminaToggle", {
+    Text = "无限体力",
+    Default = false,
+    Callback = function(value)
+        staminaOn = value
+    end
+})
+
+local kaGroup = Tabs.Gun:AddLeftGroupbox("杀戮光环")
+kaGroup:AddLabel("注意：需要自己装备枪械武器才有伤害")
+kaGroup:AddToggle("KAToggle", {
+    Text = "启用杀戮光环",
+    Default = false,
+    Callback = function(value)
+        kaEnabled = value
+        if value then
+            Library:Notify({ Title = "杀戮光环", Description = "已开启，正在搜索敌人", Time = 3 })
+            kaSetStatus("状态：已开启，正在搜索敌人")
+        else
+            kaSetStatus("状态：已关闭")
+        end
+    end
+})
+kaGroup:AddSlider("KADistance", {
+    Text = "攻击距离",
+    Default = 300,
+    Min = 50,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        KA_MAX_DISTANCE = value
+    end
+})
+kaGroup:AddToggle("KAWallCheck", {
+    Text = "墙体检测",
+    Default = true,
+    Callback = function(value)
+        KA_WALL_CHECK = value
+    end
+})
+kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+
+local zzGroup = Tabs.Gun:AddLeftGroupbox("子追")
+zzGroup:AddToggle("ZZToggle", {
+    Text = "启用子追",
+    Default = false,
+    Callback = function(value)
+        zzEnabled = value
+        if not value then zzRestore() end
+    end
+})
+zzGroup:AddSlider("ZZDistance", {
+    Text = "判定距离",
+    Default = 40,
+    Min = 0,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        zzDistance = value
+    end
+})
+
+local aimGroup = Tabs.Gun:AddRightGroupbox("自瞄")
+aimGroup:AddToggle("AimToggle", {
+    Text = "自瞄",
+    Default = false,
+    Callback = function(value)
+        aimOn = value
+    end
+})
+aimGroup:AddSlider("AimFOVSize", {
+    Text = "FOV圈大小",
+    Default = 150,
+    Min = 30,
+    Max = 400,
+    Rounding = 0,
+    Callback = function(value)
+        aimFOV = value
+    end
+})
+aimGroup:AddToggle("AimNoTeam", {
+    Text = "不瞄准队友",
+    Default = true,
+    Callback = function(value)
+        aimNoTeam = value
+    end
+})
+aimGroup:AddToggle("AimWallCheck", {
+    Text = "墙壁检测",
+    Default = true,
+    Callback = function(value)
+        aimWall = value
+    end
+})
+
+local teamEspGroup = Tabs.Gun:AddRightGroupbox("敌我透视")
+teamEspGroup:AddLabel("红色标注敌人，绿色标注队友")
+teamEspGroup:AddToggle("TeamESP", {
+    Text = "透视敌人和队友",
+    Default = false,
+    Callback = function(value)
+        teamEspOn = value
+        if not value then teamClearAll() end
+    end
+})
+
+task.spawn(function()
+    while not isDestroyed do
+        if Settings.OutlineESPEnabled then
+            UpdateOutlineESP()
+        end
+        task.wait(0.1)
+    end
+end)
+
+local teleTab = Tabs.Teleports
+local teleLeftGroup = teleTab:AddLeftGroupbox("传送控制")
+teleLeftGroup:AddToggle("TeleportToggle", {
+    Text = "启用传送",
+    Default = false,
+    Callback = function(value)
+        Settings.TeleportEnabled = value
+    end
+})
+
+local teleNames = {}
+for _, data in ipairs(FIXED_TELEPORTS) do
+    table.insert(teleNames, data.n)
 end
 
-local function GetJobColorNew(job)
-    return jobColors[job] or Color3.fromRGB(200, 200, 200)
-end
+teleLeftGroup:AddDropdown("TeleportSelect", {
+    Values = teleNames,
+    Default = 1,
+    Multi = false,
+    Text = "选定传送地点",
+    Callback = function(value) end,
+})
 
-local function ClearESPNew()
-    for _, obj in ipairs(espObjects) do
-        pcall(function() obj:Destroy() end)
-    end
-    espObjects = {}
-    if espRenderConnection then
-        espRenderConnection:Disconnect()
-        espRenderConnection = nil
-    end
-end
-
-local function GetWantedLevel(player)
-    local char = player.Character
-    if not char then return 0 end
-    for _, child in ipairs(char:GetDescendants()) do
-        if child:IsA("IntValue") or child:IsA("NumberValue") then
-            local name = child.Name:lower()
-            if name:find("wanted") or name:find("star") or name:find("通缉") then
-                local val = tonumber(child.Value)
-                if val then return val end
+teleLeftGroup:AddButton({
+    Text = "传送到选定地点",
+    Func = function()
+        if not Settings.TeleportEnabled then
+            Library:Notify({ Title = "传送", Description = "你还没有开启传送开关，请先开启", Time = 3 })
+            return
+        end
+        local selected = Options.TeleportSelect.Value
+        for _, data in ipairs(FIXED_TELEPORTS) do
+            if data.n == selected then
+                TeleportTo(data.p)
+                Library:Notify({
+                    Title = "传送",
+                    Description = "正在传送至: " .. data.n,
+                    Time = 2,
+                })
+                return
             end
         end
-        if child:IsA("StringValue") then
-            local name = child.Name:lower()
-            if name:find("wanted") or name:find("star") or name:find("通缉") then
-                local val = child.Value
-                if val:match("%d+") then
-                    return tonumber(val:match("%d+")) or 0
+        Library:Notify({ Title = "传送", Description = "未找到该地点", Time = 2 })
+    end,
+})
+
+
+
+local function onPlayerAdded(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.ESPEnabled and p ~= player then
+            CreateESP(p)
+            UpdateESPVisibility()
+        end
+        if Settings.OutlineESPEnabled and p ~= player then
+            RemoveOutlineESP(p.UserId)
+            CreateOutlineESP(p)
+        end
+        if Settings.HitboxEnabled and not isDestroyed then
+            task.wait(0.5)
+            ApplyHitbox()
+        end
+        if Settings.NoclipEnabled and not isDestroyed then
+            task.wait(0.1)
+            ApplyNoclip()
+        end
+    end)
+    if Settings.WhitelistEnabled and not isDestroyed then
+        UpdateWhitelist()
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(p)
+end
+local playerAddedCon = Players.PlayerAdded:Connect(onPlayerAdded)
+table.insert(connections, playerAddedCon)
+local playerRemovedCon = Players.PlayerRemoving:Connect(function(p)
+    RemoveESP(p.UserId)
+    RemoveOutlineESP(p.UserId)
+end)
+table.insert(connections, playerRemovedCon)
+
+local renderCon = RunService.RenderStepped:Connect(function()
+    if isDestroyed then return end
+    if Settings.HitboxEnabled then
+        frameCount = frameCount + 1
+        if frameCount % 3 == 0 then
+            ApplyHitbox()
+        end
+    end
+    if Settings.NoclipEnabled then
+        ApplyNoclip()
+    end
+    if Settings.ESPEnabled then
+        for userId, data in pairs(espBillboards) do
+            local p = Players:FindFirstChild(tostring(userId))
+            if p and p.Character then
+                local job = GetPlayerJob(p)
+                if data.NameLabel then
+                    data.NameLabel.Text = p.Name
+                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
+                end
+                if data.JobLabel then
+                    data.JobLabel.Text = job
+                    data.JobLabel.TextColor3 = GetJobColor(job)
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
+                end
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if data.HealthLabel and hum then
+                    local health = math.floor(hum.Health)
+                    local maxHealth = hum.MaxHealth
+                    data.HealthLabel.Text = "血量: " .. health .. "/" .. maxHealth
+                end
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                if data.DistLabel and root and targetRoot then
+                    local dist = math.floor((root.Position - targetRoot.Position).Magnitude)
+                    data.DistLabel.Text = "距离: " .. dist .. "m"
                 end
             end
         end
     end
-    return 0
-end
+end)
+table.insert(connections, renderCon)
 
-local function IsPlayerFlying(player)
-    local char = player.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return false end
-    local vel = hrp.AssemblyLinearVelocity
-    if vel.Y > 15 and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
-        return true
-    end
-    return false
-end
-
-local function CreateESPForPlayer(player)
-    local char = player.Character
-    if not char then return end
-    local rootPart = char:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    local health = humanoid and math.floor(humanoid.Health) or 0
-    local maxHealth = humanoid and math.floor(humanoid.MaxHealth) or 100
-    
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local distance = hrp and math.floor((hrp.Position - rootPart.Position).Magnitude) or 0
-    
-    local job = GetPlayerJobNew(player)
-    local jobColor = GetJobColorNew(job)
-    local wantedLevel = GetWantedLevel(player)
-    local isFlying = IsPlayerFlying(player)
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 220, 0, 120)
-    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = rootPart
-    table.insert(espObjects, billboard)
-    
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.new(1, 0, 1, 0)
-    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    bg.BackgroundTransparency = 0.4
-    bg.BorderSizePixel = 1
-    bg.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    bg.Parent = billboard
-    table.insert(espObjects, bg)
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = bg
-    
-    local yOffset = 5
-    
-    if espShowName then
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -10, 0, 18)
-        nameLabel.Position = UDim2.new(0, 5, 0, yOffset)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = player == LocalPlayer and (player.Name .. " (你)") or player.Name
-        nameLabel.TextColor3 = player == LocalPlayer and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255)
-        nameLabel.TextSize = 13
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 0.2
-        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nameLabel.Parent = billboard
-        table.insert(espObjects, nameLabel)
-        yOffset = yOffset + 20
-    end
-    
-    if espShowJob then
-        local jobLabel = Instance.new("TextLabel")
-        jobLabel.Size = UDim2.new(1, -10, 0, 16)
-        jobLabel.Position = UDim2.new(0, 5, 0, yOffset)
-        jobLabel.BackgroundTransparency = 1
-        jobLabel.Text = job
-        jobLabel.TextColor3 = jobColor
-        jobLabel.TextSize = 12
-        jobLabel.Font = Enum.Font.GothamBold
-        jobLabel.TextStrokeTransparency = 0.2
-        jobLabel.Parent = billboard
-        table.insert(espObjects, jobLabel)
-        yOffset = yOffset + 18
-    end
-    
-    if espShowHealth then
-        local healthBg = Instance.new("Frame")
-        healthBg.Size = UDim2.new(0.7, 0, 0, 6)
-        healthBg.Position = UDim2.new(0.15, 0, 0, yOffset)
-        healthBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        healthBg.BorderSizePixel = 1
-        healthBg.BorderColor3 = Color3.fromRGB(60, 60, 60)
-        healthBg.Parent = billboard
-        table.insert(espObjects, healthBg)
-        
-        local healthPercent = math.clamp(health / maxHealth, 0, 1)
-        local healthBar = Instance.new("Frame")
-        healthBar.Size = UDim2.new(healthPercent, 0, 1, 0)
-        healthBar.BackgroundColor3 = healthPercent > 0.5 and Color3.fromRGB(0, 255, 100) or 
-                                     healthPercent > 0.25 and Color3.fromRGB(255, 200, 0) or 
-                                     Color3.fromRGB(255, 50, 50)
-        healthBar.BorderSizePixel = 0
-        healthBar.Parent = healthBg
-        table.insert(espObjects, healthBar)
-        
-        local healthLabel = Instance.new("TextLabel")
-        healthLabel.Size = UDim2.new(1, -10, 0, 14)
-        healthLabel.Position = UDim2.new(0, 5, 0, yOffset + 8)
-        healthLabel.BackgroundTransparency = 1
-        healthLabel.Text = health .. "/" .. maxHealth
-        healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        healthLabel.TextSize = 10
-        healthLabel.Font = Enum.Font.Gotham
-        healthLabel.TextStrokeTransparency = 0.2
-        healthLabel.Parent = billboard
-        table.insert(espObjects, healthLabel)
-        yOffset = yOffset + 26
-    end
-    
-    if espShowDistance and player ~= LocalPlayer then
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Size = UDim2.new(1, -10, 0, 14)
-        distLabel.Position = UDim2.new(0, 5, 0, yOffset)
-        distLabel.BackgroundTransparency = 1
-        distLabel.Text = distance .. "m"
-        distLabel.TextColor3 = Color3.fromRGB(180, 180, 255)
-        distLabel.TextSize = 11
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.TextStrokeTransparency = 0.2
-        distLabel.Parent = billboard
-        table.insert(espObjects, distLabel)
-        yOffset = yOffset + 16
-    end
-    
-    if espShowWanted and wantedLevel > 0 then
-        local wantedLabel = Instance.new("TextLabel")
-        wantedLabel.Size = UDim2.new(1, -10, 0, 16)
-        wantedLabel.Position = UDim2.new(0, 5, 0, yOffset)
-        wantedLabel.BackgroundTransparency = 1
-        wantedLabel.Text = "通缉 " .. string.rep("⭐", wantedLevel)
-        wantedLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-        wantedLabel.TextSize = 12
-        wantedLabel.Font = Enum.Font.GothamBold
-        wantedLabel.TextStrokeTransparency = 0.2
-        wantedLabel.Parent = billboard
-        table.insert(espObjects, wantedLabel)
-    end
-    
-    if espDetectFly and isFlying and player ~= LocalPlayer then
-        local flyLabel = Instance.new("TextLabel")
-        flyLabel.Size = UDim2.new(1, -10, 0, 14)
-        flyLabel.Position = UDim2.new(0, 5, 0, yOffset + 16)
-        flyLabel.BackgroundTransparency = 1
-        flyLabel.Text = "✈ 飞行中"
-        flyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-        flyLabel.TextSize = 11
-        flyLabel.Font = Enum.Font.GothamBold
-        flyLabel.TextStrokeTransparency = 0.2
-        flyLabel.Parent = billboard
-        table.insert(espObjects, flyLabel)
-    end
-end
-
-local function UpdateESPNew()
-    ClearESPNew()
-    if not espEnabled then return end
-    
-    local flyers = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then
-            CreateESPForPlayer(player)
-        else
-            CreateESPForPlayer(player)
-            if espDetectFly and IsPlayerFlying(player) then
-                table.insert(flyers, player.Name)
-            end
+task.spawn(function()
+    while not isDestroyed do
+        task.wait(10)
+        if Settings.WhitelistEnabled and not isDestroyed then
+            UpdateWhitelist()
         end
-    end
-    
-    -- 飞行警告
-    if espDetectFly and #flyers > 0 then
-        if not flyWarnActive then
-            flyWarnActive = true
-            pcall(function()
-                if flyWarnGui then flyWarnGui:Destroy() end
-                flyWarnGui = Instance.new("ScreenGui")
-                flyWarnGui.Name = "FlyWarnGui"
-                flyWarnGui.ResetOnSpawn = false
-                flyWarnGui.Parent = CoreGui
-                
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(0, 350, 0, 40)
-                frame.Position = UDim2.new(0.5, -175, 0, 20)
-                frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-                frame.BackgroundTransparency = 0.15
-                frame.BorderSizePixel = 2
-                frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-                frame.Parent = flyWarnGui
-                
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 8)
-                corner.Parent = frame
-                
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = "检测到其他脚本玩家飞行中，建议更换服务器"
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 14
-                label.Font = Enum.Font.GothamBold
-                label.Parent = frame
-            end)
-        end
-    else
-        if flyWarnActive then
-            flyWarnActive = false
-            if flyWarnGui then
-                flyWarnGui:Destroy()
-                flyWarnGui = nil
-            end
-        end
-    end
-end
-
-espGroup:AddToggle("ESPEnabled", {
-    Text = "启用透视",
-    Default = false,
-    Callback = function(value)
-        espEnabled = value
-        if value then
-            UpdateESPNew()
-            if not espRenderConnection then
-                espRenderConnection = RunService.Heartbeat:Connect(function()
-                    espUpdateTimer = espUpdateTimer + 1
-                    if espUpdateTimer >= 5 then
-                        espUpdateTimer = 0
-                        if espEnabled then UpdateESPNew() end
+        if Settings.ESPEnabled then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    if not espBillboards[p.UserId] then
+                        CreateESP(p)
+                        UpdateESPVisibility()
                     end
-                end)
+                end
             end
-            Players.PlayerAdded:Connect(function()
-                if espEnabled then UpdateESPNew() end
-            end)
-            Players.PlayerRemoving:Connect(function()
-                if espEnabled then UpdateESPNew() end
-            end)
-            for _, player in ipairs(Players:GetPlayers()) do
-                player.CharacterAdded:Connect(function()
-                    if espEnabled then UpdateESPNew() end
-                end)
-            end
-        else
-            ClearESPNew()
         end
     end
-})
+end)
 
-espGroup:AddDivider()
-
-espGroup:AddToggle("ESPShowName", {
-    Text = "显示名字",
-    Default = false,
-    Callback = function(value)
-        espShowName = value
-        if espEnabled then UpdateESPNew() end
+ScanPrompts = function()
+    if isDestroyed or not interactEnabled then return end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
+        end
     end
-})
+end
+local descendantCon = workspace.DescendantAdded:Connect(function(obj)
+    if isDestroyed then return end
+    task.wait(0.1)
+    if obj:IsA("ProximityPrompt") and interactEnabled then
+        obj.HoldDuration = Settings.HoldTime
+        obj.MaxActivationDistance = Settings.Distance
+    end
+end)
+table.insert(connections, descendantCon)
 
-espGroup:AddToggle("ESPShowDistance", {
-    Text = "显示距离",
-    Default = false,
-    Callback = function(value)
+Library:OnUnload(function()
+    if isDestroyed then return end
+    isDestroyed = true
+    stopFly()
+    teamClearAll()
+    zzRestore()
+    if aimGui then aimGui:Destroy() end
+    ResetHitbox()
+    if Settings.NoclipEnabled then
+        ToggleNoclip(false)
+    end
+    if Settings.OutlineESPEnabled then
+        ToggleOutlineESP(false)
+    end
+    ClearAllOutlineESP()
+    for userId, data in pairs(espBillboards) do
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+    end
+    espBillboards = {}
+    for _, conn in ipairs(espConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    espConnections = {}
+    for _, conn in ipairs(connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    for _, conn in ipairs(noclipConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+end)
+
+local UnloadGroup = Tabs.Settings:AddLeftGroupbox("脚本管理") UnloadGroup:AddButton("卸载脚本", function() Library:Unload() end) if ThemeManager then ThemeManager:SetLibrary(Library) ThemeManager:SetFolder("MyScriptTheme") ThemeManager:ApplyToTab(Tabs.Settings) end if SaveManager then SaveManager:SetLibrary(Library) SaveManager:IgnoreThemeSettings() SaveManager:SetFolder("MyScriptConfig") SaveManager:BuildConfigSection(Tabs.Settings) end
