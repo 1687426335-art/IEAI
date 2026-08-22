@@ -1,57 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, })
-
--- ===== 滚动欢迎文字 =====
-local function CreateRollingText()
-    if CoreGui:FindFirstChild("RollingTextGui") then
-        CoreGui.RollingTextGui:Destroy()
-    end
-    
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "RollingTextGui"
-    gui.ResetOnSpawn = false
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = CoreGui
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 500, 0, 50)
-    label.Position = UDim2.new(0, -500, 0, 10)
-    label.BackgroundTransparency = 1
-    label.Text = "欢迎使用wdfex脚本祝你天天开心"
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 24
-    label.Font = Enum.Font.GothamBold
-    label.TextStrokeTransparency = 0.3
-    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    label.Parent = gui
-    
-    local screenSize = game:GetService("GuiService"):GetScreenSize()
-    local textWidth = 500
-    local speed = 120
-    
-    task.spawn(function()
-        local pos = -textWidth
-        while gui and gui.Parent do
-            pos = pos + speed * 0.03
-            if pos > screenSize.X + 50 then
-                pos = -textWidth
-            end
-            label.Position = UDim2.new(0, pos, 0, 10)
-            task.wait(0.03)
-        end
-    end)
-end
-
-CreateRollingText()
-
-local Tabs = {
-    Notice = Window:AddTab("通知", "info"),
-    Player = Window:AddTab("玩家修改", "user"),
-    Gun = Window:AddTab("枪械功能", "target"),
-    KA = Window:AddTab("杀戮光环", "skull"),
-    Teleports = Window:AddTab("传送点", "map-pin"),
-    Settings = Window:AddTab("设置", "settings"),
-} local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
 
 local Settings = {
     HoldTime = 0,
@@ -743,7 +691,8 @@ RunService.Heartbeat:Connect(function(dt)
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if hum and root and hum.MoveDirection.Magnitude > 0 then
-        root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt    end
+        root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
+    end
 end)
 
 local staminaOn = false
@@ -1014,14 +963,6 @@ local function kaGetNearestEnemy()
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
-    
-    -- 如果开启了优先最近目标，限定10米内
-    if KANearestOnly then
-        KA_MAX_DISTANCE = 10
-    else
-        KA_MAX_DISTANCE = 300
-    end
-    
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -1029,15 +970,22 @@ local function kaGetNearestEnemy()
                 local head = p.Character:FindFirstChild("Head")
                 if head then
                     local dist = (head.Position - myHead.Position).Magnitude
-                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                        bestDist = dist
-                        bestPlayer = p
+                    -- 如果开启了优先攻击最近目标，只搜索10米内的
+                    if KANearestOnly then
+                        if dist <= 10 and dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
+                    else
+                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
                     end
                 end
             end
         end
     end
-    
     return bestPlayer
 end
 
@@ -1496,14 +1444,12 @@ kaGroup:AddSlider("KADamage", {
 kaGroup:AddDivider()
 kaGroup:AddToggle("KANearestOnly", {
     Text = "优先攻击最近目标",
-    Desc = "开启后只攻击10米内的敌人，10米内无人则不攻击",
+    Desc = "开启后只攻击距离10米内的最近敌人",
     Default = false,
     Callback = function(value)
         KANearestOnly = value
         if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至优先攻击最近目标（10米内）", Time = 2 })
-        else
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至正常攻击距离", Time = 2 })
+            Library:Notify({ Title = "杀戮光环", Description = "已切换至10米内优先攻击", Time = 2 })
         end
     end
 })
