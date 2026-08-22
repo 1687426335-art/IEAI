@@ -941,6 +941,7 @@ local KA_WALL_CHECK = true
 local kaEnabled = false
 local kaDamageMultiplier = 1
 local KANearestOnly = false
+local KA_NEAREST_DISTANCE = 25
 local kaStatusLabel = nil
 
 local function kaIsVisible(targetHead)
@@ -963,6 +964,43 @@ local function kaGetNearestEnemy()
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+    
+    -- 先找25米内的最近敌人
+    if KANearestOnly then
+        local nearestInRange = nil
+        local nearestDistInRange = 9999
+        local anyEnemy = nil
+        local anyDist = 9999
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            anyDist = dist
+                            anyEnemy = p
+                        end
+                        if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            nearestDistInRange = dist
+                            nearestInRange = p
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
+        if nearestInRange then
+            return nearestInRange
+        else
+            return anyEnemy
+        end
+    end
+    
+    -- 没开启优先攻击最近目标，正常找最近的
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -970,17 +1008,9 @@ local function kaGetNearestEnemy()
                 local head = p.Character:FindFirstChild("Head")
                 if head then
                     local dist = (head.Position - myHead.Position).Magnitude
-                    -- 如果开启了优先攻击最近目标，只搜索10米内的
-                    if KANearestOnly then
-                        if dist <= 10 and dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
-                    else
-                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
                     end
                 end
             end
@@ -1443,14 +1473,26 @@ kaGroup:AddSlider("KADamage", {
 })
 kaGroup:AddDivider()
 kaGroup:AddToggle("KANearestOnly", {
-    Text = "优先攻击最近目标",
-    Desc = "开启后只攻击距离10米内的最近敌人",
+    Text = "优先攻击25米内目标",
+    Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
     Default = false,
     Callback = function(value)
         KANearestOnly = value
         if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至10米内优先攻击", Time = 2 })
+            Library:Notify({ Title = "杀戮光环", Description = "已切换至25米内优先攻击", Time = 2 })
         end
+    end
+})
+kaGroup:AddSlider("KANearestDistance", {
+    Text = "优先攻击距离",
+    Default = 25,
+    Min = 5,
+    Max = 100,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        KA_NEAREST_DISTANCE = value
+        Library:Notify({ Title = "杀戮光环", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
     end
 })
 kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
@@ -1649,8 +1691,7 @@ table.insert(connections, renderCon)
 task.spawn(function()
     while not isDestroyed do
         task.wait(10)
-        if Settings.WhitelistEnabled and not isDestroyed then
-            UpdateWhitelist()
+        if Settings.WhitelistEnabled and not isDestroyed then            UpdateWhitelist()
         end
         if Settings.ESPEnabled then
             for _, p in ipairs(Players:GetPlayers()) do
