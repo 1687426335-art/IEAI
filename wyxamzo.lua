@@ -940,8 +940,7 @@ local KA_MAX_DISTANCE = 300
 local KA_WALL_CHECK = true
 local kaEnabled = false
 local kaDamageMultiplier = 1
-local KAPoliceOnly = false
-local KACivilianOnly = false
+local KANearestOnly = false
 local kaStatusLabel = nil
 
 local function kaIsVisible(targetHead)
@@ -966,54 +965,6 @@ local function kaGetNearestEnemy()
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            -- 仅攻击警察过滤
-            if KAPoliceOnly then
-                local isPolice = false
-                if p.Team then
-                    local teamName = p.Team.Name or ""
-                    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
-                        isPolice = true
-                    end
-                end
-                if not isPolice then
-                    for _, child in ipairs(p.Character:GetDescendants()) do
-                        if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                            local name = child.Name:lower()
-                            if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
-                                isPolice = true
-                                break
-                            end
-                        end
-                    end
-                end
-                if not isPolice then
-                    goto continue
-                end
-            end
-            -- 仅攻击平民过滤
-            if KACivilianOnly then
-                local isPolice = false
-                if p.Team then
-                    local teamName = p.Team.Name or ""
-                    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
-                        isPolice = true
-                    end
-                end
-                if not isPolice then
-                    for _, child in ipairs(p.Character:GetDescendants()) do
-                        if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                            local name = child.Name:lower()
-                            if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
-                                isPolice = true
-                                break
-                            end
-                        end
-                    end
-                end
-                if isPolice then
-                    goto continue
-                end
-            end
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
             if hum and hum.Health > 0 then
                 local head = p.Character:FindFirstChild("Head")
@@ -1026,7 +977,6 @@ local function kaGetNearestEnemy()
                 end
             end
         end
-        ::continue::
     end
     return bestPlayer
 end
@@ -1484,37 +1434,14 @@ kaGroup:AddSlider("KADamage", {
     end
 })
 kaGroup:AddDivider()
-kaGroup:AddToggle("KAPoliceOnly", {
-    Text = "仅攻击警察",
-    Desc = "开启后杀戮光环只攻击警察队伍",
+kaGroup:AddToggle("KANearestOnly", {
+    Text = "优先攻击最近目标",
+    Desc = "开启后优先攻击距离最近的敌人",
     Default = false,
     Callback = function(value)
-        KAPoliceOnly = value
+        KANearestOnly = value
         if value then
-            KACivilianOnly = false
-            pcall(function()
-                if Toggles.KACivilianOnly then
-                    Toggles.KACivilianOnly:Set(false)
-                end
-            end)
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至只攻击警察", Time = 2 })
-        end
-    end
-})
-kaGroup:AddToggle("KACivilianOnly", {
-    Text = "仅攻击平民",
-    Desc = "开启后杀戮光环只攻击平民队伍（非警察）",
-    Default = false,
-    Callback = function(value)
-        KACivilianOnly = value
-        if value then
-            KAPoliceOnly = false
-            pcall(function()
-                if Toggles.KAPoliceOnly then
-                    Toggles.KAPoliceOnly:Set(false)
-                end
-            end)
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至只攻击平民", Time = 2 })
+            Library:Notify({ Title = "杀戮光环", Description = "已切换至优先攻击最近目标", Time = 2 })
         end
     end
 })
