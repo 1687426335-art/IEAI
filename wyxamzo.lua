@@ -133,29 +133,33 @@ local function CreateESP(p)
     
     local yOffset = 0
     
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 20)
-    nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = name
-    nameLabel.TextColor3 = teamColor
-    nameLabel.TextSize = 16
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-    nameLabel.Parent = frame
-    yOffset = yOffset + 22
+    if Settings.ESPShowName then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0, 20)
+        nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = name
+        nameLabel.TextColor3 = teamColor
+        nameLabel.TextSize = 16
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        nameLabel.Parent = frame
+        yOffset = yOffset + 22
+    end
     
-    local jobLabel = Instance.new("TextLabel")
-    jobLabel.Size = UDim2.new(1, 0, 0, 18)
-    jobLabel.Position = UDim2.new(0, 0, 0, yOffset)
-    jobLabel.BackgroundTransparency = 1
-    jobLabel.Text = job
-    jobLabel.TextColor3 = jobColor
-    jobLabel.TextSize = 14
-    jobLabel.Font = Enum.Font.GothamBold
-    jobLabel.TextXAlignment = Enum.TextXAlignment.Center
-    jobLabel.Parent = frame
-    yOffset = yOffset + 20
+    if Settings.ESPShowJob then
+        local jobLabel = Instance.new("TextLabel")
+        jobLabel.Size = UDim2.new(1, 0, 0, 18)
+        jobLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        jobLabel.BackgroundTransparency = 1
+        jobLabel.Text = job
+        jobLabel.TextColor3 = jobColor
+        jobLabel.TextSize = 14
+        jobLabel.Font = Enum.Font.GothamBold
+        jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+        jobLabel.Parent = frame
+        yOffset = yOffset + 20
+    end
     
     if Settings.ESPShowTeam then
         local teamLabel = Instance.new("TextLabel")
@@ -219,8 +223,6 @@ local function CreateESP(p)
     espBillboards[p.UserId] = {
         Billboard = billboard,
         Frame = frame,
-        NameLabel = nameLabel,
-        JobLabel = jobLabel,
     }
     
     local con
@@ -237,17 +239,10 @@ end
 
 local function UpdateESPVisibility()
     for userId, data in pairs(espBillboards) do
-        if data.NameLabel then
-            data.NameLabel.Visible = Settings.ESPShowName
-        end
-        if data.JobLabel then
-            data.JobLabel.Visible = Settings.ESPShowJob
-        end
         if data.Billboard then
             data.Billboard.Enabled = Settings.ESPEnabled
         end
     end
-    -- 重新创建ESP以更新新增的显示项
     if Settings.ESPEnabled then
         UpdateAllESP()
     end
@@ -268,15 +263,6 @@ local function UpdateAllESP()
                 CreateESP(p)
             else
                 local data = espBillboards[p.UserId]
-                local job = GetPlayerJob(p)
-                if data.NameLabel then
-                    data.NameLabel.Text = p.Name
-                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
-                end
-                if data.JobLabel then
-                    data.JobLabel.Text = job
-                    data.JobLabel.TextColor3 = GetJobColor(job)
-                end
                 if data.Billboard then
                     data.Billboard.Enabled = true
                 end
@@ -1539,14 +1525,6 @@ local renderCon = RunService.RenderStepped:Connect(function()
             local p = Players:FindFirstChild(tostring(userId))
             if p and p.Character then
                 local job = GetPlayerJob(p)
-                if data.NameLabel then
-                    data.NameLabel.Text = p.Name
-                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
-                end
-                if data.JobLabel then
-                    data.JobLabel.Text = job
-                    data.JobLabel.TextColor3 = GetJobColor(job)
-                end
                 if data.Billboard then
                     data.Billboard.Enabled = true
                 end
