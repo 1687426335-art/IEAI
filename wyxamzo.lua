@@ -313,6 +313,9 @@ local function CreateOutlineESP(p)
     }
 end
 
+-- 人物描边透视（优化版，减少CPU占用）
+local outlineUpdateTimer = 0
+
 local function UpdateOutlineESP()
     if not Settings.OutlineESPEnabled or isDestroyed then return end
     local char = player.Character
@@ -322,7 +325,6 @@ local function UpdateOutlineESP()
             if not outlineESPData[p.UserId] then
                 CreateOutlineESP(p)
             else
-                -- 更新颜色
                 local data = outlineESPData[p.UserId]
                 local isPolice = IsPolice(p)
                 local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
@@ -1496,12 +1498,13 @@ teamEspGroup:AddToggle("TeamESP", {
     end
 })
 
+-- 这里改成0.5秒更新一次，减轻CPU负担
 task.spawn(function()
     while not isDestroyed do
         if Settings.OutlineESPEnabled then
             UpdateOutlineESP()
         end
-        task.wait(0.1)
+        task.wait(0.5)
     end
 end)
 
