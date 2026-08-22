@@ -940,8 +940,8 @@ local KA_MAX_DISTANCE = 300
 local KA_WALL_CHECK = true
 local kaEnabled = false
 local kaDamageMultiplier = 1
-local KA_PRIORITY_RADIUS = 10
-local KAPoliceOnly = false
+local KANearestOnly = false
+local KATeamCheck = false
 local kaStatusLabel = nil
 
 local function kaIsVisible(targetHead)
@@ -964,32 +964,13 @@ local function kaGetNearestEnemy()
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
-    local nearestInRange = nil
-    local nearestDist = KA_PRIORITY_RADIUS
+    local myTeam = player.Team
     
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            -- 仅攻击警察过滤
-            if KAPoliceOnly then
-                local isPolice = false
-                if p.Team then
-                    local teamName = p.Team.Name or ""
-                    if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
-                        isPolice = true
-                    end
-                end
-                if not isPolice then
-                    for _, child in ipairs(p.Character:GetDescendants()) do
-                        if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                            local name = child.Name:lower()
-                            if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
-                                isPolice = true
-                                break
-                            end
-                        end
-                    end
-                end
-                if not isPolice then
+            -- 队伍检测：不攻击同队
+            if KATeamCheck then
+                if myTeam and p.Team and myTeam == p.Team then
                     goto continue
                 end
             end
@@ -998,28 +979,25 @@ local function kaGetNearestEnemy()
                 local head = p.Character:FindFirstChild("Head")
                 if head then
                     local dist = (head.Position - myHead.Position).Magnitude
-                    -- 先找10米内的优先目标
-                    if dist < nearestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                        nearestDist = dist
-                        nearestInRange = p
-                    end
-                    -- 同时记录最近的目标（作为备选）
-                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                        bestDist = dist
-                        bestPlayer = p
+                    -- 优先攻击最近目标：10米内才生效
+                    if KANearestOnly then
+                        if dist <= 10 then
+                            if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                                bestDist = dist
+                                bestPlayer = p
+                            end
+                        end
+                    else
+                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
                     end
                 end
             end
         end
         ::continue::
     end
-    
-    -- 如果10米内有敌人，优先返回
-    if nearestInRange then
-        return nearestInRange
-    end
-    
-    -- 否则返回最近的目标
     return bestPlayer
 end
 
@@ -1062,7 +1040,11 @@ RunService.Heartbeat:Connect(function()
                         kaSetStatus("状态：等待角色头部加载")
                     end
                 else
-                    kaSetStatus("状态：范围内未找到敌人")
+                    if KANearestOnly then
+                        kaSetStatus("状态：10米内未找到敌人")
+                    else
+                        kaSetStatus("状态：范围内未找到敌人")
+                    end
                 end
             end
         end
@@ -1476,14 +1458,25 @@ kaGroup:AddSlider("KADamage", {
     end
 })
 kaGroup:AddDivider()
-kaGroup:AddToggle("KAPoliceOnly", {
-    Text = "仅攻击警察",
-    Desc = "开启后杀戮光环只攻击警察队伍",
+kaGroup:AddToggle("KANearestOnly", {
+    Text = "优先攻击最近目标",
+    Desc = "开启后优先攻击距离最近的敌人（10米内）",
     Default = false,
     Callback = function(value)
-        KAPoliceOnly = value
+        KANearestOnly = value
         if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至只攻击警察", Time = 2 })
+            Library:Notify({ Title = "杀戮光环", Description = "已切换至优先攻击最近目标", Time = 2 })
+        end
+    end
+})
+kaGroup:AddToggle("KATeamCheck", {
+    Text = "队伍检测",
+    Desc = "自动检测队伍，不攻击同队玩家",
+    Default = false,
+    Callback = function(value)
+        KATeamCheck = value
+        if value then
+            Library:Notify({ Title = "杀戮光环", Description = "已开启队伍检测", Time = 2 })
         end
     end
 })
