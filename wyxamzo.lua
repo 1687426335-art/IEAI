@@ -81,6 +81,26 @@ local function GetJobColor(jobName)
     return JobColors[jobName] or Color3.fromRGB(200, 200, 200)
 end
 
+local function IsPolice(p)
+    if p.Team then
+        local teamName = p.Team.Name or ""
+        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
+            return true
+        end
+    end
+    if p.Character then
+        for _, child in ipairs(p.Character:GetDescendants()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 local function RemoveESP(userId)
     local data = espBillboards[userId]
     if data then
@@ -251,11 +271,18 @@ local function CreateOutlineESP(p)
         if data.Billboard then data.Billboard.Enabled = true end
         return
     end
+    
+    -- 检测是否为警察
+    local isPolice = IsPolice(p)
+    
+    -- 设置颜色：警察蓝色，平民白色
+    local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
+    
     local highlight = Instance.new("Highlight")
     highlight.Name = "OutlineESP_" .. p.UserId
     highlight.Adornee = char
-    highlight.FillColor = Color3.fromRGB(255, 255, 0)
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+    highlight.FillColor = outlineColor
+    highlight.OutlineColor = outlineColor
     highlight.FillTransparency = 0.6
     highlight.OutlineTransparency = 0
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -271,7 +298,7 @@ local function CreateOutlineESP(p)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.TextColor3 = outlineColor
     label.TextSize = 15
     label.Font = Enum.Font.GothamBold
     label.TextStrokeTransparency = 0
@@ -294,15 +321,24 @@ local function UpdateOutlineESP()
         if p ~= player and p.Character then
             if not outlineESPData[p.UserId] then
                 CreateOutlineESP(p)
-            end
-            local data = outlineESPData[p.UserId]
-            if data and data.Label then
-                local targetHead = p.Character:FindFirstChild("Head")
-                if targetHead and root then
-                    local dist = (targetHead.Position - root.Position).Magnitude
-                    data.Label.Text = p.Name .. "\n[" .. math.floor(dist) .. "]"
-                else
-                    data.Label.Text = p.Name
+            else
+                -- 更新颜色
+                local data = outlineESPData[p.UserId]
+                local isPolice = IsPolice(p)
+                local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
+                if data.Highlight then
+                    data.Highlight.FillColor = outlineColor
+                    data.Highlight.OutlineColor = outlineColor
+                end
+                if data.Label then
+                    data.Label.TextColor3 = outlineColor
+                    local targetHead = p.Character:FindFirstChild("Head")
+                    if targetHead and root then
+                        local dist = (targetHead.Position - root.Position).Magnitude
+                        data.Label.Text = p.Name .. "\n[" .. math.floor(dist) .. "]"
+                    else
+                        data.Label.Text = p.Name
+                    end
                 end
                 if data.Billboard then
                     data.Billboard.Enabled = true
@@ -1082,7 +1118,7 @@ godGroup:AddToggle("GodToggle", {
         godOn = value
     end
 })
-godGroup:AddLabel("免疫火焰和车爆炸时候的伤害🤓")
+godGroup:AddLabel("免疫火焰和车爆炸时候的伤害")
 
 local espGroup = Tabs.Gun:AddRightGroupbox("透视")
 espGroup:AddToggle("ESPEnabled", {
@@ -1120,7 +1156,7 @@ espGroup:AddToggle("ESPShowJob", {
 })
 espGroup:AddDivider()
 espGroup:AddToggle("OutlineESPEnabled", {
-    Text = "人物描边透视（如开启感到卡顿请关闭此功能）",
+    Text = "人物描边透视（警察蓝色/平民白色）",
     Default = false,
     Callback = function(value)
         ToggleOutlineESP(value)
