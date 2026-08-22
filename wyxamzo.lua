@@ -1,6 +1,79 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
 local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
 
+-- ===== 欢迎文字（彩色循环移动） =====
+local function CreateWelcomeText()
+    pcall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "WelcomeTextGui"
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = player:WaitForChild("PlayerGui")
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0, 500, 0, 40)
+        label.Position = UDim2.new(0, -500, 0, 10)
+        label.BackgroundTransparency = 1
+        label.Text = "欢迎使用wdfex脚本祝你天天开心"
+        label.TextSize = 28
+        label.Font = Enum.Font.GothamBold
+        label.TextStrokeTransparency = 0.3
+        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        label.Parent = gui
+        
+        local colors = {
+            Color3.fromRGB(255, 50, 50),
+            Color3.fromRGB(255, 200, 50),
+            Color3.fromRGB(50, 255, 50),
+            Color3.fromRGB(50, 150, 255),
+            Color3.fromRGB(255, 50, 255),
+            Color3.fromRGB(255, 100, 200),
+        }
+        
+        local colorIndex = 1
+        local charCount = string.len(label.Text)
+        local textWidth = 500
+        local speed = 80
+        
+        -- 彩色文字效果
+        task.spawn(function()
+            while gui and gui.Parent do
+                local newText = ""
+                for i = 1, charCount do
+                    local char = string.sub(label.Text, i, i)
+                    if char ~= " " then
+                        local color = colors[(i + colorIndex) % #colors + 1]
+                        newText = newText .. '<font color="rgb(' .. math.floor(color.R*255) .. ',' .. math.floor(color.G*255) .. ',' .. math.floor(color.B*255) .. ')">' .. char .. '</font>'
+                    else
+                        newText = newText .. " "
+                    end
+                end
+                label.RichText = true
+                label.Text = newText
+                colorIndex = colorIndex + 1
+                task.wait(0.15)
+            end
+        end)
+        
+        -- 移动动画
+        local screenSize = player:WaitForChild("PlayerGui").AbsoluteSize.X or 800
+        local pos = -textWidth
+        
+        task.spawn(function()
+            while gui and gui.Parent do
+                screenSize = player:WaitForChild("PlayerGui").AbsoluteSize.X or 800
+                pos = pos + speed * task.wait(0.016)
+                if pos > screenSize then
+                    pos = -textWidth
+                end
+                label.Position = UDim2.new(0, pos, 0, 10)
+            end
+        end)
+    end)
+end
+
+CreateWelcomeText()
+
 local Settings = {
     HoldTime = 0,
     Distance = 25,
@@ -941,7 +1014,6 @@ local KA_WALL_CHECK = true
 local kaEnabled = false
 local kaDamageMultiplier = 1
 local KANearestOnly = false
-local KATeamCheck = false
 local kaStatusLabel = nil
 
 local function kaIsVisible(targetHead)
@@ -964,39 +1036,20 @@ local function kaGetNearestEnemy()
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
-    local myTeam = player.Team
-    
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            -- 队伍检测：不攻击同队
-            if KATeamCheck then
-                if myTeam and p.Team and myTeam == p.Team then
-                    goto continue
-                end
-            end
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
             if hum and hum.Health > 0 then
                 local head = p.Character:FindFirstChild("Head")
                 if head then
                     local dist = (head.Position - myHead.Position).Magnitude
-                    -- 优先攻击最近目标：10米内才生效
-                    if KANearestOnly then
-                        if dist <= 10 then
-                            if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                                bestDist = dist
-                                bestPlayer = p
-                            end
-                        end
-                    else
-                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
                     end
                 end
             end
         end
-        ::continue::
     end
     return bestPlayer
 end
@@ -1040,11 +1093,7 @@ RunService.Heartbeat:Connect(function()
                         kaSetStatus("状态：等待角色头部加载")
                     end
                 else
-                    if KANearestOnly then
-                        kaSetStatus("状态：10米内未找到敌人")
-                    else
-                        kaSetStatus("状态：范围内未找到敌人")
-                    end
+                    kaSetStatus("状态：范围内未找到敌人")
                 end
             end
         end
@@ -1469,18 +1518,45 @@ kaGroup:AddToggle("KANearestOnly", {
         end
     end
 })
-kaGroup:AddToggle("KATeamCheck", {
-    Text = "队伍检测",
-    Desc = "自动检测队伍，不攻击同队玩家",
-    Default = false,
-    Callback = function(value)
-        KATeamCheck = value
-        if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已开启队伍检测", Time = 2 })
+kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+
+-- 修改 kaGetNearestEnemy 函数（优先攻击10米内最近的敌人）
+local function kaGetNearestEnemy()
+    local char = player.Character
+    if not char then return nil end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return nil end
+    local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+    
+    -- 先找最近的敌人（不限制距离）
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
+                    end
+                end
+            end
         end
     end
-})
-kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+    
+    -- 如果开启了"优先攻击最近目标"，且最近目标在10米内
+    if KANearestOnly then
+        if bestPlayer and bestDist <= 10 then
+            return bestPlayer
+        else
+            -- 10米内没有敌人，不攻击
+            return nil
+        end
+    end
+    
+    return bestPlayer
+end
 
 local zzGroup = Tabs.Gun:AddLeftGroupbox("子追")
 zzGroup:AddToggle("ZZToggle", {
