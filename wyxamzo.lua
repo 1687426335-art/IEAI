@@ -1081,7 +1081,7 @@ godGroup:AddToggle("GodToggle", {
         godOn = value
     end
 })
-godGroup:AddLabel("不知道有没有用反正能免疫一些伤害🤓，")
+godGroup:AddLabel("免疫火焰和车爆炸时候的伤害🤓")
 
 local espGroup = Tabs.Gun:AddRightGroupbox("透视")
 espGroup:AddToggle("ESPEnabled", {
