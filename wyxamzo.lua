@@ -52,13 +52,17 @@ local JobColors = {
     ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
 }
 
--- ==================== 全新透视（完全重写） ====================
-local ESP_ON = false
-local ESP_NAME = true
-local ESP_TEAM = true
-local ESP_HEALTH = true
-local ESP_DIST = true
+-- ==================== 透视功能（实时刷新+自动修复） ====================
+local ESP_ENABLED = false
+local ESP_SHOW_NAME = true
+local ESP_SHOW_TEAM = true
+local ESP_SHOW_HEALTH = true
+local ESP_SHOW_DIST = true
+local ESP_SHOW_POLICE_COUNT = true
 local ESP_LIST = {}
+local ESP_REFRESH_COUNT = 0
+local PoliceCountGui = nil
+local PoliceCountLabel = nil
 
 local function GetTeam(p)
     if p.Team then return p.Team.Name end
@@ -90,6 +94,26 @@ local function GetDist(p)
     return math.floor((mr.Position - tr.Position).Magnitude)
 end
 
+local function IsPolice(p)
+    if p.Team then
+        local teamName = p.Team.Name or ""
+        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
+            return true
+        end
+    end
+    if p.Character then
+        for _, child in ipairs(p.Character:GetDescendants()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 local function RemoveESP(id)
     local d = ESP_LIST[id]
     if d then
@@ -102,7 +126,12 @@ local function BuildESP(p)
     if not p.Character or p == player then return end
     local head = p.Character:FindFirstChild("Head")
     if not head then return end
-    if ESP_LIST[p.UserId] then return end
+    if ESP_LIST[p.UserId] then
+        if ESP_LIST[p.UserId].Billboard then
+            ESP_LIST[p.UserId].Billboard.Enabled = true
+        end
+        return
+    end
 
     local bb = Instance.new("BillboardGui")
     bb.Size = UDim2.new(0, 200, 0, 100)
@@ -119,13 +148,70 @@ local function BuildESP(p)
     ESP_LIST[p.UserId] = {Billboard = bb, Frame = f}
 end
 
-local function RefreshESP()
-    if not ESP_ON then
-        for _, d in pairs(ESP_LIST) do
-            if d.Billboard then d.Billboard.Enabled = false end
+local function UpdatePoliceCount()
+    if not ESP_SHOW_POLICE_COUNT then
+        if PoliceCountGui then
+            PoliceCountGui.Enabled = false
         end
         return
     end
+    
+    if not PoliceCountGui then
+        PoliceCountGui = Instance.new("ScreenGui")
+        PoliceCountGui.Name = "PoliceCountDisplay"
+        PoliceCountGui.ResetOnSpawn = false
+        PoliceCountGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        PoliceCountGui.Parent = player:WaitForChild("PlayerGui")
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 140, 0, 30)
+        frame.Position = UDim2.new(0, 10, 0, 10)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BackgroundTransparency = 0.4
+        frame.BorderSizePixel = 1
+        frame.BorderColor3 = Color3.fromRGB(0, 100, 255)
+        frame.Parent = PoliceCountGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = frame
+        
+        PoliceCountLabel = Instance.new("TextLabel")
+        PoliceCountLabel.Size = UDim2.new(1, 0, 1, 0)
+        PoliceCountLabel.BackgroundTransparency = 1
+        PoliceCountLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+        PoliceCountLabel.TextSize = 16
+        PoliceCountLabel.Font = Enum.Font.GothamBold
+        PoliceCountLabel.TextXAlignment = Enum.TextXAlignment.Center
+        PoliceCountLabel.Parent = frame
+    end
+    
+    PoliceCountGui.Enabled = true
+    
+    local count = 0
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and IsPolice(p) then
+            count = count + 1
+        end
+    end
+    
+    if PoliceCountLabel then
+        PoliceCountLabel.Text = "👮 警察: " .. count
+    end
+end
+
+local function RefreshESP()
+    if not ESP_ENABLED then
+        for _, d in pairs(ESP_LIST) do
+            if d.Billboard then d.Billboard.Enabled = false end
+        end
+        if PoliceCountGui then
+            PoliceCountGui.Enabled = false
+        end
+        return
+    end
+
+    ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
 
     for _, p in ipairs(Players:GetPlayers()) do
         if p == player then continue end
@@ -133,11 +219,20 @@ local function RefreshESP()
             RemoveESP(p.UserId)
             continue
         end
+        if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
+            RemoveESP(p.UserId)
+        end
         if not ESP_LIST[p.UserId] then
             BuildESP(p)
         end
         local d = ESP_LIST[p.UserId]
         if not d then continue end
+        if not d.Billboard or not d.Billboard.Parent then
+            ESP_LIST[p.UserId] = nil
+            BuildESP(p)
+            d = ESP_LIST[p.UserId]
+            if not d then continue end
+        end
         d.Billboard.Enabled = true
 
         local f = d.Frame
@@ -150,7 +245,7 @@ local function RefreshESP()
         local hp = GetHealth(p)
         local dist = GetDist(p)
 
-        if ESP_NAME then
+        if ESP_SHOW_NAME then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 20)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -167,7 +262,7 @@ local function RefreshESP()
             lines = lines + 1
         end
 
-        if ESP_TEAM then
+        if ESP_SHOW_TEAM then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -184,7 +279,7 @@ local function RefreshESP()
             lines = lines + 1
         end
 
-        if ESP_HEALTH then
+        if ESP_SHOW_HEALTH then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -202,7 +297,7 @@ local function RefreshESP()
             lines = lines + 1
         end
 
-        if ESP_DIST then
+        if ESP_SHOW_DIST then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -221,6 +316,8 @@ local function RefreshESP()
 
         d.Billboard.Size = UDim2.new(0, 200, 0, lines * 20 + 10)
     end
+    
+    UpdatePoliceCount()
 end
 
 -- ==================== 透视Tab ====================
@@ -231,8 +328,8 @@ espGroup:AddToggle("ESPEnabled", {
     Text = "透视总开关",
     Default = false,
     Callback = function(v)
-        ESP_ON = v
-        RefreshESP()
+        ESP_ENABLED = v
+        if v then RefreshESP() end
     end
 })
 
@@ -242,8 +339,8 @@ espGroup:AddToggle("ESPShowName", {
     Text = "显示名字",
     Default = true,
     Callback = function(v)
-        ESP_NAME = v
-        if ESP_ON then RefreshESP() end
+        ESP_SHOW_NAME = v
+        if ESP_ENABLED then RefreshESP() end
     end
 })
 
@@ -251,8 +348,8 @@ espGroup:AddToggle("ESPShowTeam", {
     Text = "显示队伍",
     Default = true,
     Callback = function(v)
-        ESP_TEAM = v
-        if ESP_ON then RefreshESP() end
+        ESP_SHOW_TEAM = v
+        if ESP_ENABLED then RefreshESP() end
     end
 })
 
@@ -260,8 +357,8 @@ espGroup:AddToggle("ESPShowHealth", {
     Text = "显示血量",
     Default = true,
     Callback = function(v)
-        ESP_HEALTH = v
-        if ESP_ON then RefreshESP() end
+        ESP_SHOW_HEALTH = v
+        if ESP_ENABLED then RefreshESP() end
     end
 })
 
@@ -269,25 +366,45 @@ espGroup:AddToggle("ESPShowDist", {
     Text = "显示距离",
     Default = true,
     Callback = function(v)
-        ESP_DIST = v
-        if ESP_ON then RefreshESP() end
+        ESP_SHOW_DIST = v
+        if ESP_ENABLED then RefreshESP() end
     end
 })
 
--- 透视刷新循环
+espGroup:AddDivider()
+
+espGroup:AddToggle("ESPShowPoliceCount", {
+    Text = "显示警察数量",
+    Default = true,
+    Callback = function(v)
+        ESP_SHOW_POLICE_COUNT = v
+        if ESP_ENABLED then RefreshESP() else UpdatePoliceCount() end
+    end
+})
+
+-- 透视实时刷新循环（0.15秒刷新一次，确保实时）
 task.spawn(function()
     while not isDestroyed do
-        task.wait(0.3)
-        if ESP_ON then RefreshESP() end
+        task.wait(0.15)
+        if ESP_ENABLED then
+            RefreshESP()
+        end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(p) RemoveESP(p.UserId) end)
+-- 玩家加入时自动添加透视
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if ESP_ON then RefreshESP() end
+        task.wait(0.3)
+        if ESP_ENABLED then
+            RefreshESP()
+        end
     end)
+end)
+
+-- 玩家离开时清理
+Players.PlayerRemoving:Connect(function(p)
+    RemoveESP(p.UserId)
 end)
 
 -- ==================== 原功能 ====================
@@ -1416,8 +1533,8 @@ local function onPlayerAdded(p)
             task.wait(0.1)
             ApplyNoclip()
         end
-        if ESP_ON and p ~= player then
-            task.wait(0.5)
+        if ESP_ENABLED and p ~= player then
+            task.wait(0.3)
             RefreshESP()
         end
     end)
@@ -1456,7 +1573,7 @@ task.spawn(function()
         if Settings.WhitelistEnabled and not isDestroyed then
             UpdateWhitelist()
         end
-        if ESP_ON then
+        if ESP_ENABLED then
             RefreshESP()
         end
     end
@@ -1492,6 +1609,10 @@ Library:OnUnload(function()
     ResetHitbox()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
+    end
+    if PoliceCountGui then
+        PoliceCountGui:Destroy()
+        PoliceCountGui = nil
     end
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
