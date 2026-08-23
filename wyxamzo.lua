@@ -323,14 +323,16 @@ local VehicleGroup = VehicleTab:AddLeftGroupbox("飞车功能")
 getgenv().FlyCarSpeed = 50
 getgenv().FlyCarControllerRunning = false
 getgenv().FlyCarController = nil
-local vnoclipParts = {}
 
-VehicleGroup:AddTextbox("FlyCarSpeed", {
-    Text = "飞行速度",
-    Placeholder = "输入数字",
-    Default = "50",
+VehicleGroup:AddSlider("FlyCarSpeedSlider", {
+    Text = "飞车速度",
+    Default = 50,
+    Min = 1,
+    Max = 139,
+    Rounding = 0,
+    Suffix = "速度",
     Callback = function(v)
-        getgenv().FlyCarSpeed = tonumber(v) or 50
+        getgenv().FlyCarSpeed = v
     end
 })
 
@@ -387,41 +389,6 @@ VehicleGroup:AddToggle("FlyCarToggle", {
                 local bg = hrp:FindFirstChildOfClass("BodyGyro")
                 if bg then bg:Destroy() end
             end
-        end
-    end
-})
-
-VehicleGroup:AddToggle("FlyCarNoclip", {
-    Text = "飞车穿墙",
-    Default = false,
-    Callback = function(v)
-        local lp = player
-        local char = lp and lp.Character
-        if not char then return end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-        local seatPart = hum.SeatPart
-        if not seatPart then return end
-        local vehicle = seatPart.Parent
-        while vehicle and vehicle.ClassName ~= "Model" do
-            vehicle = vehicle.Parent
-        end
-        if not vehicle then return end
-        
-        if v then
-            for _, part in pairs(vehicle:GetDescendants()) do
-                if part:IsA("BasePart") and part.CanCollide then
-                    table.insert(vnoclipParts, part)
-                    part.CanCollide = false
-                end
-            end
-        else
-            for _, part in pairs(vnoclipParts) do
-                pcall(function()
-                    part.CanCollide = true
-                end)
-            end
-            vnoclipParts = {}
         end
     end
 })
@@ -1635,10 +1602,6 @@ Library:OnUnload(function()
         task.cancel(getgenv().FlyCarController)
         getgenv().FlyCarController = nil
     end
-    for _, part in pairs(vnoclipParts) do
-        pcall(function() part.CanCollide = true end)
-    end
-    vnoclipParts = {}
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
             data.Billboard:Destroy()
