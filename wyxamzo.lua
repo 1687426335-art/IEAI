@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能杀戮光环的优先攻击最近目标如果选择距离内没有人那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -942,7 +942,6 @@ local kaEnabled = false
 local kaDamageMultiplier = 1
 local KANearestOnly = false
 local KA_NEAREST_DISTANCE = 25
-local KAIgnoreDowned = false
 local kaStatusLabel = nil
 
 local function kaIsVisible(targetHead)
@@ -965,41 +964,36 @@ local function kaGetNearestEnemy()
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
-
-    -- 先找25米内的最近敌人
+    
+    -- 如果开启了优先攻击最近目标
     if KANearestOnly then
         local nearestInRange = nil
         local nearestDistInRange = 9999
         local anyEnemy = nil
         local anyDist = 9999
-
+        
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player and p.Character then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    -- 如果开启不攻击倒地敌人，跳过血量为0的
-                    if KAIgnoreDowned and hum.Health <= 0 then
-                        goto continue
-                    end
-                    if hum.Health > 0 then
-                        local head = p.Character:FindFirstChild("Head")
-                        if head then
-                            local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                                anyDist = dist
-                                anyEnemy = p
-                            end
-                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                                nearestDistInRange = dist
-                                nearestInRange = p
-                            end
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        -- 记录最近的任意敌人
+                        if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            anyDist = dist
+                            anyEnemy = p
+                        end
+                        -- 记录范围内的最近敌人
+                        if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            nearestDistInRange = dist
+                            nearestInRange = p
                         end
                     end
                 end
             end
-            ::continue::
         end
-
+        
         -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
         if nearestInRange then
             return nearestInRange
@@ -1007,28 +1001,22 @@ local function kaGetNearestEnemy()
             return anyEnemy
         end
     end
-
+    
     -- 没开启优先攻击最近目标，正常找最近的
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                if KAIgnoreDowned and hum.Health <= 0 then
-                    goto continue
-                end
-                if hum.Health > 0 then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head then
-                        local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
+            if hum and hum.Health > 0 then
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
                     end
                 end
             end
         end
-        ::continue::
     end
     return bestPlayer
 end
@@ -1507,20 +1495,6 @@ kaGroup:AddSlider("KANearestDistance", {
     Callback = function(value)
         KA_NEAREST_DISTANCE = value
         Library:Notify({ Title = "杀戮光环", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
-    end
-})
-kaGroup:AddDivider()
-kaGroup:AddToggle("KAIgnoreDowned", {
-    Text = "不攻击倒地敌人",
-    Desc = "开启后不会攻击血量为0的倒地敌人，复活后可正常攻击",
-    Default = false,
-    Callback = function(value)
-        KAIgnoreDowned = value
-        if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已开启不攻击倒地敌人", Time = 2 })
-        else
-            Library:Notify({ Title = "杀戮光环", Description = "已关闭不攻击倒地敌人", Time = 2 })
-        end
     end
 })
 kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
