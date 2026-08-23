@@ -1139,7 +1139,7 @@ mainLeftGroup:AddSlider("Distance", {
     Min = 5,
     Max = 150,
     Rounding = 0,
-    Suffix = "单位",
+    Suffix = "米",
     Callback = function(value)
         Settings.Distance = value
         if not interactEnabled then return end
