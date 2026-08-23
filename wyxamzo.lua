@@ -53,15 +53,15 @@ local JobColors = {
 }
 
 -- ==================== 透视功能 ====================
-local espBillboards = {}
-local espConnections = {}
 local espEnabled = false
 local espShowName = true
+local espShowTeam = true
 local espShowHealth = true
 local espShowDist = true
-local espShowTeam = true
+local espList = {}
+local espConnections = {}
 
-local function GetPlayerTeamName(p)
+local function GetPlayerTeam(p)
     if p.Team then
         return p.Team.Name
     end
@@ -69,14 +69,13 @@ local function GetPlayerTeamName(p)
 end
 
 local function GetPlayerTeamColor(p)
-    local team = p.Team
-    if team then
-        return team.TeamColor.Color
+    if p.Team then
+        return p.Team.TeamColor.Color
     end
     return Color3.fromRGB(200, 200, 200)
 end
 
-local function GetPlayerHealth(p)
+local function GetPlayerHealthNum(p)
     local char = p.Character
     if not char then return 0 end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -84,7 +83,7 @@ local function GetPlayerHealth(p)
     return math.floor(hum.Health)
 end
 
-local function GetPlayerDistance(p)
+local function GetPlayerDistanceNum(p)
     local myChar = player.Character
     if not myChar then return 0 end
     local myRoot = myChar:FindFirstChild("HumanoidRootPart")
@@ -96,7 +95,7 @@ local function GetPlayerDistance(p)
     return math.floor((myRoot.Position - targetRoot.Position).Magnitude)
 end
 
-local function GetCharacterSize(char)
+local function GetCharSize(char)
     local root = char:FindFirstChild("HumanoidRootPart")
     if root then
         return root.Size
@@ -105,12 +104,12 @@ local function GetCharacterSize(char)
 end
 
 local function RemoveESP(userId)
-    local data = espBillboards[userId]
+    local data = espList[userId]
     if data then
         if data.Billboard then
             data.Billboard:Destroy()
         end
-        espBillboards[userId] = nil
+        espList[userId] = nil
     end
 end
 
@@ -120,23 +119,22 @@ local function CreateESP(p)
     if p == player then return end
     local head = p.Character:FindFirstChild("Head")
     if not head then return end
-    if espBillboards[p.UserId] then return end
+    if espList[p.UserId] then return end
     
-    local charSize = GetCharacterSize(p.Character)
-    local health = GetPlayerHealth(p)
-    local distance = GetPlayerDistance(p)
-    local teamName = GetPlayerTeamName(p)
+    local charSize = GetCharSize(p.Character)
+    local health = GetPlayerHealthNum(p)
+    local distance = GetPlayerDistanceNum(p)
+    local teamName = GetPlayerTeam(p)
     local teamColor = GetPlayerTeamColor(p)
     
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_" .. p.UserId
     billboard.Adornee = head
-    billboard.Size = UDim2.new(0, 250, 0, 120)
+    billboard.Size = UDim2.new(0, 200, 0, 100)
     billboard.StudsOffset = Vector3.new(0, charSize.Y / 2 + 2.5, 0)
     billboard.MaxDistance = 500
     billboard.AlwaysOnTop = true
     billboard.Parent = head
-    table.insert(espConnections, billboard)
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
@@ -144,12 +142,11 @@ local function CreateESP(p)
     frame.Parent = billboard
     
     local yOffset = 0
-    local lines = 0
+    local lineCount = 0
     
-    -- 名字
     if espShowName then
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0, 22)
+        nameLabel.Size = UDim2.new(1, 0, 0, 20)
         nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = p.Name
@@ -160,11 +157,10 @@ local function CreateESP(p)
         nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         nameLabel.TextXAlignment = Enum.TextXAlignment.Center
         nameLabel.Parent = frame
-        yOffset = yOffset + 24
-        lines = lines + 1
+        yOffset = yOffset + 22
+        lineCount = lineCount + 1
     end
     
-    -- 队伍
     if espShowTeam then
         local teamLabel = Instance.new("TextLabel")
         teamLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -179,18 +175,17 @@ local function CreateESP(p)
         teamLabel.TextXAlignment = Enum.TextXAlignment.Center
         teamLabel.Parent = frame
         yOffset = yOffset + 20
-        lines = lines + 1
+        lineCount = lineCount + 1
     end
     
-    -- 血量
     if espShowHealth then
         local healthLabel = Instance.new("TextLabel")
         healthLabel.Size = UDim2.new(1, 0, 0, 18)
         healthLabel.Position = UDim2.new(0, 0, 0, yOffset)
         healthLabel.BackgroundTransparency = 1
-        local healthColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
-        healthLabel.Text = "❤ " .. health .. "HP"
-        healthLabel.TextColor3 = healthColor
+        local hColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+        healthLabel.Text = health .. "HP"
+        healthLabel.TextColor3 = hColor
         healthLabel.TextSize = 13
         healthLabel.Font = Enum.Font.GothamBold
         healthLabel.TextStrokeTransparency = 0.3
@@ -198,10 +193,9 @@ local function CreateESP(p)
         healthLabel.TextXAlignment = Enum.TextXAlignment.Center
         healthLabel.Parent = frame
         yOffset = yOffset + 20
-        lines = lines + 1
+        lineCount = lineCount + 1
     end
     
-    -- 距离
     if espShowDist then
         local distLabel = Instance.new("TextLabel")
         distLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -216,21 +210,21 @@ local function CreateESP(p)
         distLabel.TextXAlignment = Enum.TextXAlignment.Center
         distLabel.Parent = frame
         yOffset = yOffset + 20
-        lines = lines + 1
+        lineCount = lineCount + 1
     end
     
-    -- 根据行数调整高度
-    billboard.Size = UDim2.new(0, 250, 0, lines * 20 + 10)
+    billboard.Size = UDim2.new(0, 200, 0, lineCount * 20 + 10)
     
-    espBillboards[p.UserId] = {
+    espList[p.UserId] = {
         Billboard = billboard,
         Frame = frame,
+        Player = p,
     }
 end
 
 local function UpdateESP()
     if not espEnabled then
-        for userId, data in pairs(espBillboards) do
+        for userId, data in pairs(espList) do
             if data.Billboard then
                 data.Billboard.Enabled = false
             end
@@ -241,30 +235,27 @@ local function UpdateESP()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player then
             if p.Character then
-                if not espBillboards[p.UserId] then
+                if not espList[p.UserId] then
                     CreateESP(p)
                 else
-                    -- 更新数据
-                    local data = espBillboards[p.UserId]
+                    local data = espList[p.UserId]
                     if data.Billboard then
                         data.Billboard.Enabled = true
-                        -- 重建标签更新数据
                         local frame = data.Frame
                         if frame then
                             for _, child in ipairs(frame:GetChildren()) do
                                 child:Destroy()
                             end
                             local yOffset = 0
-                            local lines = 0
-                            
-                            local health = GetPlayerHealth(p)
-                            local distance = GetPlayerDistance(p)
-                            local teamName = GetPlayerTeamName(p)
+                            local lineCount = 0
+                            local health = GetPlayerHealthNum(p)
+                            local distance = GetPlayerDistanceNum(p)
+                            local teamName = GetPlayerTeam(p)
                             local teamColor = GetPlayerTeamColor(p)
                             
                             if espShowName then
                                 local nameLabel = Instance.new("TextLabel")
-                                nameLabel.Size = UDim2.new(1, 0, 0, 22)
+                                nameLabel.Size = UDim2.new(1, 0, 0, 20)
                                 nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
                                 nameLabel.BackgroundTransparency = 1
                                 nameLabel.Text = p.Name
@@ -275,8 +266,8 @@ local function UpdateESP()
                                 nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                                 nameLabel.TextXAlignment = Enum.TextXAlignment.Center
                                 nameLabel.Parent = frame
-                                yOffset = yOffset + 24
-                                lines = lines + 1
+                                yOffset = yOffset + 22
+                                lineCount = lineCount + 1
                             end
                             
                             if espShowTeam then
@@ -293,7 +284,7 @@ local function UpdateESP()
                                 teamLabel.TextXAlignment = Enum.TextXAlignment.Center
                                 teamLabel.Parent = frame
                                 yOffset = yOffset + 20
-                                lines = lines + 1
+                                lineCount = lineCount + 1
                             end
                             
                             if espShowHealth then
@@ -301,9 +292,9 @@ local function UpdateESP()
                                 healthLabel.Size = UDim2.new(1, 0, 0, 18)
                                 healthLabel.Position = UDim2.new(0, 0, 0, yOffset)
                                 healthLabel.BackgroundTransparency = 1
-                                local healthColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
-                                healthLabel.Text = "❤ " .. health .. "HP"
-                                healthLabel.TextColor3 = healthColor
+                                local hColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+                                healthLabel.Text = health .. "HP"
+                                healthLabel.TextColor3 = hColor
                                 healthLabel.TextSize = 13
                                 healthLabel.Font = Enum.Font.GothamBold
                                 healthLabel.TextStrokeTransparency = 0.3
@@ -311,7 +302,7 @@ local function UpdateESP()
                                 healthLabel.TextXAlignment = Enum.TextXAlignment.Center
                                 healthLabel.Parent = frame
                                 yOffset = yOffset + 20
-                                lines = lines + 1
+                                lineCount = lineCount + 1
                             end
                             
                             if espShowDist then
@@ -328,10 +319,10 @@ local function UpdateESP()
                                 distLabel.TextXAlignment = Enum.TextXAlignment.Center
                                 distLabel.Parent = frame
                                 yOffset = yOffset + 20
-                                lines = lines + 1
+                                lineCount = lineCount + 1
                             end
                             
-                            data.Billboard.Size = UDim2.new(0, 250, 0, lines * 20 + 10)
+                            data.Billboard.Size = UDim2.new(0, 200, 0, lineCount * 20 + 10)
                         end
                     end
                 end
@@ -354,7 +345,7 @@ espGroup:AddToggle("ESPEnabled", {
         if value then
             UpdateESP()
         else
-            for userId, data in pairs(espBillboards) do
+            for userId, data in pairs(espList) do
                 if data.Billboard then
                     data.Billboard.Enabled = false
                 end
@@ -1627,12 +1618,12 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    for userId, data in pairs(espBillboards) do
+    for userId, data in pairs(espList) do
         if data.Billboard then
             data.Billboard:Destroy()
         end
     end
-    espBillboards = {}
+    espList = {}
     for _, conn in ipairs(espConnections) do
         pcall(function() conn:Disconnect() end)
     end
