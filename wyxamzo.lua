@@ -1475,7 +1475,7 @@ kaGroup:AddSlider("KADamage", {
 })
 kaGroup:AddDivider()
 kaGroup:AddToggle("KANearestOnly", {
-    Text = "优先攻击25米内目标",
+    Text = "优先攻击最近目标",
     Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
     Default = false,
     Callback = function(value)
