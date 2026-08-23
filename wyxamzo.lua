@@ -992,7 +992,7 @@ local function kaGetNearestEnemy()
             end
         end
         
-        -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
+        -- 选择优先攻击多少米的敌人
         if nearestInRange then
             return nearestInRange
         else
@@ -1000,7 +1000,7 @@ local function kaGetNearestEnemy()
         end
     end
     
-    -- 没开启优先攻击最近目标，正常找最近的
+    -- 如果选择距离内无敌人攻击最近敌人就不生效
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
