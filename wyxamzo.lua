@@ -588,7 +588,7 @@ local function flyDetectWall()
         local dx = math.cos(angle)
         local dz = math.sin(angle)
         for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
-            local dir = Vector3.new(dx, j * 0.5, dz).Unit
+            local dir = (Vector3.new(dx, j * 0.5, dz)).Unit
             local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
             if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
                 return true
