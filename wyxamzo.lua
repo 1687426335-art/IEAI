@@ -668,4 +668,1099 @@ local function stopFly()
     if flyState.microThread then task.cancel(flyState.microThread) flyState.microThread = nil end
     if flyState.healthThread then task.cancel(flyState.healthThread) flyState.healthThread = nil end
     if flyState.diedConn then flyState.diedConn:Disconnect() flyState.diedConn = nil end
-    if flyState.hum then flyState.hum:ChangeState(Enum.H
+    if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
+end
+
+player.CharacterAdded:Connect(function()
+    if flyState.enabled then
+        stopFly()
+        task.wait(0.2)
+        startFly()
+    end
+end)
+
+
+local interactEnabled = false
+local ScanPrompts
+
+local speedBypassOn = false
+local speedBypassValue = 20
+RunService.Heartbeat:Connect(function(dt)
+    if not speedBypassOn then return end
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if hum and root and hum.MoveDirection.Magnitude > 0 then
+        root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
+    end
+end)
+
+local staminaOn = false
+local godOn = false
+local StaminaEvent
+pcall(function()
+    StaminaEvent = ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("PlayerEvent", 5)
+end)
+if StaminaEvent then
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        if self == StaminaEvent and method == "FireServer" then
+            if args[1] == "setStaminaOrFood" and args[2] == "stamina" and staminaOn then
+                args[3] = 100
+                return oldNamecall(self, unpack(args))
+            end
+            if args[1] == "takeDamage" and godOn then
+                return
+            end
+        end
+        return oldNamecall(self, ...)
+    end)
+end
+task.spawn(function()
+    while not isDestroyed do
+        if staminaOn and StaminaEvent then
+            pcall(function()
+                StaminaEvent:FireServer("setStaminaOrFood", "stamina", 100)
+            end)
+        end
+        task.wait(0.3)
+    end
+end)
+
+local teamEspOn = false
+local teamTracked = {}
+local function teamClearAll()
+    for plr, data in pairs(teamTracked) do
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+end
+local function teamApply(plr)
+    if plr == player then return end
+    local char = plr.Character
+    if not char then return end
+    local old = teamTracked[plr]
+    if old then
+        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
+        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
+    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.FillTransparency = 0.5
+    hl.OutlineTransparency = 0
+    hl.FillColor = color
+    hl.OutlineColor = color
+    hl.Parent = char
+    local bb
+    local head = char:FindFirstChild("Head")
+    if head then
+        bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 100, 0, 22)
+        bb.StudsOffset = Vector3.new(0, 3.2, 0)
+        bb.AlwaysOnTop = true
+        bb.Adornee = head
+        local tl = Instance.new("TextLabel")
+        tl.Size = UDim2.new(1, 0, 1, 0)
+        tl.BackgroundTransparency = 1
+        tl.Text = isTeam and "队友" or "敌人"
+        tl.TextColor3 = color
+        tl.TextStrokeTransparency = 0
+        tl.Font = Enum.Font.GothamBold
+        tl.TextSize = 14
+        tl.Parent = bb
+        bb.Parent = head
+    end
+    teamTracked[plr] = { Highlight = hl, Billboard = bb }
+end
+
+-- teamEsp 实时刷新已包含在上面的全局循环中
+
+Players.PlayerRemoving:Connect(function(plr)
+    local data = teamTracked[plr]
+    if data then
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+end)
+
+local zzEnabled = false
+local zzDistance = 40
+local zzAffected = nil
+local function zzRestore()
+    if zzAffected and zzAffected.Parent then
+        pcall(function()
+            zzAffected.Size = Vector3.new(2, 1, 1)
+            zzAffected.Transparency = 0
+        end)
+    end
+    zzAffected = nil
+end
+task.spawn(function()
+    while not isDestroyed do
+        if zzEnabled then
+            local char = player.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            local best, bestDist = nil, zzDistance
+            if root then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local head = p.Character:FindFirstChild("Head")
+                        if hum and hum.Health > 0 and head then
+                            local d = (head.Position - root.Position).Magnitude
+                            if d < bestDist then
+                                bestDist = d
+                                best = head
+                            end
+                        end
+                    end
+                end
+            end
+            if best ~= zzAffected then
+                zzRestore()
+                if best then
+                    zzAffected = best
+                    pcall(function()
+                        best.Size = Vector3.new(500, 500, 500)
+                        best.Transparency = 1
+                        best.CanCollide = false
+                    end)
+                end
+            end
+        else
+            zzRestore()
+        end
+        task.wait(0.2)
+    end
+end)
+
+local aimOn = false
+local aimFOV = 150
+local aimNoTeam = true
+local aimWall = true
+local aimGui, aimCircle
+local function aimEnsureCircle()
+    if aimGui then return end
+    aimGui = Instance.new("ScreenGui")
+    aimGui.Name = "SA_AimFOV"
+    aimGui.ResetOnSpawn = false
+    aimGui.IgnoreGuiInset = true
+    aimGui.Parent = player:WaitForChild("PlayerGui")
+    aimCircle = Instance.new("Frame")
+    aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+    aimCircle.Position = UDim2.fromScale(0.5, 0.5)
+    aimCircle.BackgroundTransparency = 1
+    aimCircle.Parent = aimGui
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.4
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = aimCircle
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = aimCircle
+end
+RunService.RenderStepped:Connect(function()
+    if not aimOn then
+        if aimGui then aimGui.Enabled = false end
+        return
+    end
+    aimEnsureCircle()
+    aimGui.Enabled = true
+    aimCircle.Size = UDim2.fromOffset(aimFOV * 2, aimFOV * 2)
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local best, bestDist = nil, aimFOV
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            local head = p.Character:FindFirstChild("Head")
+            if hum and hum.Health > 0 and head then
+                local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
+                if not skip then
+                    local sp, onScreen = camera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                        if d < bestDist then
+                            local visible = true
+                            if aimWall then
+                                local rp = RaycastParams.new()
+                                rp.FilterType = Enum.RaycastFilterType.Exclude
+                                rp.FilterDescendantsInstances = { player.Character }
+                                local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
+                                visible = (not res) or res.Instance:IsDescendantOf(p.Character)
+                            end
+                            if visible then
+                                bestDist = d
+                                best = head
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if best then
+        camera.CFrame = CFrame.lookAt(camera.CFrame.Position, best.Position)
+    end
+end)
+
+local infAmmoEnabled = false
+task.spawn(function()
+    while not isDestroyed do
+        if infAmmoEnabled then
+            local characterFolder = Workspace:FindFirstChild("Characters") and Workspace.Characters:FindFirstChild(player.Name)
+            if characterFolder then
+                for _, gun in ipairs(characterFolder:GetChildren()) do
+                    local config = gun:FindFirstChild("Config")
+                    if config then
+                        local ammo = config:FindFirstChild("Ammo")
+                        local totalAmmo = config:FindFirstChild("TotalAmmo")
+                        if ammo then ammo.Value = math.huge end
+                        if totalAmmo then totalAmmo.Value = math.huge end
+                    end
+                end
+            end
+        end
+        RunService.Heartbeat:Wait()
+    end
+end)
+
+local KA_MAX_DISTANCE = 300
+local KA_WALL_CHECK = true
+local kaEnabled = false
+local kaDamageMultiplier = 1
+local KANearestOnly = false
+local KA_NEAREST_DISTANCE = 25
+local kaStatusLabel = nil
+
+local function kaIsVisible(targetHead)
+    local char = player.Character
+    if not char then return false end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return false end
+    local direction = targetHead.Position - myHead.Position
+    local distance = direction.Magnitude
+    if distance < 0.1 then return true end
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
+end
+
+local function kaGetNearestEnemy()
+    local char = player.Character
+    if not char then return nil end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return nil end
+    local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+    
+    -- 如果开启了优先攻击最近目标
+    if KANearestOnly then
+        local nearestInRange = nil
+        local nearestDistInRange = 9999
+        local anyEnemy = nil
+        local anyDist = 9999
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        -- 记录最近的任意敌人
+                        if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            anyDist = dist
+                            anyEnemy = p
+                        end
+                        -- 记录范围内的最近敌人
+                        if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            nearestDistInRange = dist
+                            nearestInRange = p
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
+        if nearestInRange then
+            return nearestInRange
+        else
+            return anyEnemy
+        end
+    end
+    
+    -- 没开启优先攻击最近目标，正常找最近的
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
+                    end
+                end
+            end
+        end
+    end
+    return bestPlayer
+end
+
+local function kaSetStatus(text)
+    if kaStatusLabel then
+        pcall(function() kaStatusLabel:SetText(text) end)
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not isDestroyed then
+        if kaEnabled then
+            do
+                local target = kaGetNearestEnemy()
+                local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
+                if targetHead then
+                    local myHead = player.Character and player.Character:FindFirstChild("Head")
+                    if myHead then
+                        local origin = myHead.Position
+                        local hitPos = targetHead.Position
+                        local direction = (hitPos - origin).Unit
+                        local damage = 100 * kaDamageMultiplier
+                        pcall(function()
+                            ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                                bodyParts = { { "Head", damage } },
+                                shotCode = { origin, direction },
+                                target = target,
+                                pos = hitPos
+                            })
+                        end)
+                        pcall(function()
+                            local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                            handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                            if handleShots then
+                                handleShots:FireServer("2", "Shoot")
+                            end
+                        end)
+                        kaSetStatus("状态：已锁定 " .. target.Name .. "，攻击已发送")
+                    else
+                        kaSetStatus("状态：等待角色头部加载")
+                    end
+                else
+                    kaSetStatus("状态：范围内未找到敌人")
+                end
+            end
+        end
+    end
+end)
+
+local weaponGroup = Tabs.Gun:AddLeftGroupbox("枪械功能")
+weaponGroup:AddToggle("FastFire", {
+    Text = "超快射速",
+    Default = false,
+    Callback = function(value)
+        if not value then return end
+        local function ModifyWeaponStats()
+            local garbage = getgc(true)
+            for _, tbl in pairs(garbage) do
+                if type(tbl) == "table" then
+                    if rawget(tbl, "SHOOT_MODE") then
+                        rawset(tbl, "SHOOT_MODE", 2)
+                    end
+                    if rawget(tbl, "RPM") then
+                        rawset(tbl, "RPM", math.huge)
+                    end
+                    if rawget(tbl, "DAMAGE") then
+                        rawset(tbl, "DAMAGE", math.huge)
+                    end
+                end
+            end
+        end
+        ModifyWeaponStats()
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(ModifyWeaponStats)
+            end
+        end
+        Library:Notify({ Title = "武器强化", Description = "无限射速已生效，死亡后自动重新生效", Time = 3 })
+    end
+})
+weaponGroup:AddToggle("InfAmmo", {
+    Text = "无限子弹",
+    Default = false,
+    Callback = function(value)
+        infAmmoEnabled = value
+    end
+})
+
+local mainLeftGroup = Tabs.Player:AddRightGroupbox("快速互动")
+mainLeftGroup:AddToggle("InteractToggle", {
+    Text = "启用快速互动",
+    Default = false,
+    Callback = function(value)
+        interactEnabled = value
+        if value and ScanPrompts then ScanPrompts() end
+    end
+})
+mainLeftGroup:AddDivider()
+mainLeftGroup:AddSlider("HoldTime", {
+    Text = "按住时间",
+    Default = 0,
+    Min = 0,
+    Max = 10,
+    Rounding = 0,
+    Suffix = "秒",
+    Callback = function(value)
+        Settings.HoldTime = value
+        if not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = value
+            end
+        end
+    end
+})
+mainLeftGroup:AddSlider("Distance", {
+    Text = "触发距离",
+    Default = 25,
+    Min = 5,
+    Max = 150,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        Settings.Distance = value
+        if not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.MaxActivationDistance = value
+            end
+        end
+    end
+})
+
+local godGroup = Tabs.Player:AddRightGroupbox("伤害免疫")
+godGroup:AddToggle("GodToggle", {
+    Text = "免疫部分伤害",
+    Default = false,
+    Callback = function(value)
+        godOn = value
+    end
+})
+godGroup:AddLabel("免疫火焰和车爆炸时候的伤害")
+
+local espGroup = Tabs.Gun:AddRightGroupbox("透视")
+espGroup:AddToggle("ESPEnabled", {
+    Text = "启用透视",
+    Default = false,
+    Callback = function(value)
+        Settings.ESPEnabled = value
+        if value then
+            UpdateAllESP()
+        else
+            for userId, data in pairs(espBillboards) do
+                if data.Billboard then
+                    data.Billboard.Enabled = false
+                end
+            end
+        end
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("ESPShowName", {
+    Text = "显示名字（队伍颜色）",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowName = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowJob", {
+    Text = "显示职业（职业颜色）",
+    Default = true,
+    Callback = function(value)
+        Settings.ESPShowJob = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("OutlineESPEnabled", {
+    Text = "人物描边透视（警察蓝色/平民白色）",
+    Default = false,
+    Callback = function(value)
+        ToggleOutlineESP(value)
+    end
+})
+
+local mainRightGroup = Tabs.Gun:AddLeftGroupbox("碰撞箱扩展")
+mainRightGroup:AddToggle("HitboxToggle", {
+    Text = "启用头部碰撞箱（推荐20-25）",
+    Default = false,
+    Callback = function(value)
+        Settings.HitboxEnabled = value
+        if value then ApplyHitbox() else ResetHitbox() end
+    end
+})
+mainRightGroup:AddSlider("HitboxSize", {
+    Text = "头部大小",
+    Default = 10,
+    Min = 5,
+    Max = 400,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        Settings.HitboxSize = value
+        if Settings.HitboxEnabled then ApplyHitbox() end
+    end
+})
+mainRightGroup:AddToggle("WhitelistToggle", {
+    Text = "好友检测 (白名单)",
+    Default = false,
+    Callback = function(value)
+        Settings.WhitelistEnabled = value
+        if value then UpdateWhitelist() end
+    end
+})
+
+
+local flyGroup = Tabs.Player:AddLeftGroupbox("角色修改")
+flyGroup:AddToggle("FlyToggle", {
+    Text = "飞行（绕过）",
+    Default = false,
+    Callback = function(value)
+        if value then startFly() else stopFly() end
+    end
+})
+flyGroup:AddSlider("FlySpeed", {
+    Text = "飞行速度",
+    Default = 35,
+    Min = 10,
+    Max = 620,
+    Rounding = 0,
+    Callback = function(value)
+        FlySpeed = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("NoclipToggle", {
+    Text = "启用人物穿墙",
+    Default = false,
+    Callback = function(value)
+        ToggleNoclip(value)
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("SpeedBypassToggle", {
+    Text = "修改移速（绕过）（速度推荐80-90）",
+    Default = false,
+    Callback = function(value)
+        speedBypassOn = value
+    end
+})
+flyGroup:AddSlider("SpeedBypassValue", {
+    Text = "移速",
+    Default = 20,
+    Min = 5,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(value)
+        speedBypassValue = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("StaminaToggle", {
+    Text = "无限体力",
+    Default = false,
+    Callback = function(value)
+        staminaOn = value
+    end
+})
+
+-- 飞天快捷开关
+local flyQuickToggle = false
+local flyQuickButton = nil
+local flyQuickScreenGui = nil
+local flyQuickStatusLabel = nil
+local flyQuickDragging = false
+local flyQuickDragStart = nil
+local flyQuickDragOffset = nil
+
+local function DestroyFlyQuickToggle()
+    if flyQuickScreenGui then
+        flyQuickScreenGui:Destroy()
+        flyQuickScreenGui = nil
+        flyQuickButton = nil
+        flyQuickStatusLabel = nil
+    end
+end
+
+local function CreateFlyQuickToggle()
+    if flyQuickButton then return end
+    
+    flyQuickScreenGui = Instance.new("ScreenGui")
+    flyQuickScreenGui.Name = "FlyQuickToggle"
+    flyQuickScreenGui.ResetOnSpawn = false
+    flyQuickScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
+    
+    local button = Instance.new("ImageButton")
+    button.Size = UDim2.new(0, 60, 0, 60)
+    button.Position = UDim2.new(0.5, -30, 0.15, 0)
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    button.BackgroundTransparency = 0.15
+    button.BorderSizePixel = 2
+    button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+    button.Image = "rbxassetid://7734068321"
+    button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+    button.ScaleType = Enum.ScaleType.Fit
+    button.Parent = flyQuickScreenGui
+    flyQuickButton = button
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
+    
+    -- 状态标签
+    flyQuickStatusLabel = Instance.new("TextLabel")
+    flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+    flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+    flyQuickStatusLabel.BackgroundTransparency = 1
+    flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    flyQuickStatusLabel.TextSize = 12
+    flyQuickStatusLabel.Font = Enum.Font.GothamBold
+    flyQuickStatusLabel.TextStrokeTransparency = 0.3
+    flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    flyQuickStatusLabel.Text = "飞行: 关"
+    flyQuickStatusLabel.Parent = button
+    
+    -- 更新状态
+    local function updateFlyStatus()
+        if flyQuickStatusLabel then
+            flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+            if flyQuickButton then
+                flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+            end
+        end
+    end
+    
+    -- 按钮点击切换飞行
+    button.MouseButton1Click:Connect(function()
+        if flyState.enabled then
+            stopFly()
+        else
+            startFly()
+        end
+        updateFlyStatus()
+    end)
+    
+    -- 拖动功能
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local time = tick()
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+        end
+    end)
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            local newPos = UDim2.new(
+                startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
+                startPos.Y.Offset + delta.Y
+            )
+            button.Position = newPos
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    -- 初始更新状态
+    updateFlyStatus()
+    
+    -- 监听飞行状态变化
+    local statusConn = RunService.Heartbeat:Connect(function()
+        if flyQuickToggle and flyQuickStatusLabel then
+            updateFlyStatus()
+        end
+    end)
+    table.insert(connections, statusConn)
+end
+
+flyGroup:AddDivider()
+flyGroup:AddToggle("FlyQuickToggle", {
+    Text = "飞天快捷开关",
+    Desc = "开启后在屏幕显示可拖动的飞天开关",
+    Default = false,
+    Callback = function(value)
+        flyQuickToggle = value
+        if value then
+            CreateFlyQuickToggle()
+        else
+            DestroyFlyQuickToggle()
+        end
+    end
+})
+
+-- 杀戮光环独立Tab
+local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环")
+kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
+kaGroup:AddToggle("KAToggle", {
+    Text = "启用杀戮光环",
+    Default = false,
+    Callback = function(value)
+        kaEnabled = value
+        if value then
+            Library:Notify({ Title = "杀戮光环", Description = "已开启，正在搜索敌人", Time = 3 })
+            kaSetStatus("状态：已开启，正在搜索敌人")
+        else
+            kaSetStatus("状态：已关闭")
+        end
+    end
+})
+kaGroup:AddSlider("KADistance", {
+    Text = "攻击距离",
+    Default = 300,
+    Min = 50,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "单位",
+    Callback = function(value)
+        KA_MAX_DISTANCE = value
+    end
+})
+kaGroup:AddToggle("KAWallCheck", {
+    Text = "墙体检测",
+    Default = true,
+    Callback = function(value)
+        KA_WALL_CHECK = value
+    end
+})
+kaGroup:AddSlider("KADamage", {
+    Text = "伤害倍率",
+    Default = 1,
+    Min = 1,
+    Max = 100,
+    Rounding = 0,
+    Suffix = "倍",
+    Callback = function(value)
+        kaDamageMultiplier = value
+    end
+})
+kaGroup:AddDivider()
+kaGroup:AddToggle("KANearestOnly", {
+    Text = "优先攻击25米内目标",
+    Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
+    Default = false,
+    Callback = function(value)
+        KANearestOnly = value
+        if value then
+            Library:Notify({ Title = "杀戮光环", Description = "已切换至25米内优先攻击", Time = 2 })
+        end
+    end
+})
+kaGroup:AddSlider("KANearestDistance", {
+    Text = "优先攻击距离",
+    Default = 25,
+    Min = 5,
+    Max = 100,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        KA_NEAREST_DISTANCE = value
+        Library:Notify({ Title = "杀戮光环", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
+    end
+})
+kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+
+local zzGroup = Tabs.Gun:AddLeftGroupbox("子追")
+zzGroup:AddToggle("ZZToggle", {
+    Text = "启用子追",
+    Default = false,
+    Callback = function(value)
+        zzEnabled = value
+        if not value then zzRestore() end
+    end
+})
+zzGroup:AddSlider("ZZDistance", {
+    Text = "判定距离",
+    Default = 40,
+    Min = 0,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        zzDistance = value
+    end
+})
+
+local aimGroup = Tabs.Gun:AddRightGroupbox("自瞄")
+aimGroup:AddToggle("AimToggle", {
+    Text = "自瞄",
+    Default = false,
+    Callback = function(value)
+        aimOn = value
+    end
+})
+aimGroup:AddSlider("AimFOVSize", {
+    Text = "FOV圈大小",
+    Default = 150,
+    Min = 30,
+    Max = 400,
+    Rounding = 0,
+    Callback = function(value)
+        aimFOV = value
+    end
+})
+aimGroup:AddToggle("AimNoTeam", {
+    Text = "不瞄准队友",
+    Default = true,
+    Callback = function(value)
+        aimNoTeam = value
+    end
+})
+aimGroup:AddToggle("AimWallCheck", {
+    Text = "墙壁检测",
+    Default = true,
+    Callback = function(value)
+        aimWall = value
+    end
+})
+
+local teamEspGroup = Tabs.Gun:AddRightGroupbox("敌我透视")
+teamEspGroup:AddLabel("红色标注敌人，绿色标注队友")
+teamEspGroup:AddToggle("TeamESP", {
+    Text = "透视敌人和队友",
+    Default = false,
+    Callback = function(value)
+        teamEspOn = value
+        if not value then teamClearAll() end
+    end
+})
+
+task.spawn(function()
+    while not isDestroyed do
+        if Settings.OutlineESPEnabled then
+            UpdateOutlineESP()
+        end
+        task.wait(0.5)
+    end
+end)
+
+local teleTab = Tabs.Teleports
+local teleLeftGroup = teleTab:AddLeftGroupbox("传送控制")
+teleLeftGroup:AddToggle("TeleportToggle", {
+    Text = "启用传送",
+    Default = false,
+    Callback = function(value)
+        Settings.TeleportEnabled = value
+    end
+})
+
+local teleNames = {}
+for _, data in ipairs(FIXED_TELEPORTS) do
+    table.insert(teleNames, data.n)
+end
+
+teleLeftGroup:AddDropdown("TeleportSelect", {
+    Values = teleNames,
+    Default = 1,
+    Multi = false,
+    Text = "选定传送地点",
+    Callback = function(value) end,
+})
+
+teleLeftGroup:AddButton({
+    Text = "传送到选定地点",
+    Func = function()
+        if not Settings.TeleportEnabled then
+            Library:Notify({ Title = "传送", Description = "你还没有开启传送开关，请先开启", Time = 3 })
+            return
+        end
+        local selected = Options.TeleportSelect.Value
+        for _, data in ipairs(FIXED_TELEPORTS) do
+            if data.n == selected then
+                TeleportTo(data.p)
+                Library:Notify({
+                    Title = "传送",
+                    Description = "正在传送至: " .. data.n,
+                    Time = 2,
+                })
+                return
+            end
+        end
+        Library:Notify({ Title = "传送", Description = "未找到该地点", Time = 2 })
+    end,
+})
+
+
+
+local function onPlayerAdded(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.ESPEnabled and p ~= player then
+            CreateESP(p)
+            UpdateESPVisibility()
+        end
+        if Settings.OutlineESPEnabled and p ~= player then
+            RemoveOutlineESP(p.UserId)
+            CreateOutlineESP(p)
+        end
+        if Settings.HitboxEnabled and not isDestroyed then
+            task.wait(0.5)
+            ApplyHitbox()
+        end
+        if Settings.NoclipEnabled and not isDestroyed then
+            task.wait(0.1)
+            ApplyNoclip()
+        end
+    end)
+    if Settings.WhitelistEnabled and not isDestroyed then
+        UpdateWhitelist()
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(p)
+end
+local playerAddedCon = Players.PlayerAdded:Connect(onPlayerAdded)
+table.insert(connections, playerAddedCon)
+local playerRemovedCon = Players.PlayerRemoving:Connect(function(p)
+    RemoveESP(p.UserId)
+    RemoveOutlineESP(p.UserId)
+end)
+table.insert(connections, playerRemovedCon)
+
+local renderCon = RunService.RenderStepped:Connect(function()
+    if isDestroyed then return end
+    if Settings.HitboxEnabled then
+        frameCount = frameCount + 1
+        if frameCount % 3 == 0 then
+            ApplyHitbox()
+        end
+    end
+    if Settings.NoclipEnabled then
+        ApplyNoclip()
+    end
+    if Settings.ESPEnabled then
+        for userId, data in pairs(espBillboards) do
+            local p = Players:FindFirstChild(tostring(userId))
+            if p and p.Character then
+                local job = GetPlayerJob(p)
+                if data.NameLabel then
+                    data.NameLabel.Text = p.Name
+                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
+                end
+                if data.JobLabel then
+                    data.JobLabel.Text = job
+                    data.JobLabel.TextColor3 = GetJobColor(job)
+                end
+                if data.Billboard then
+                    data.Billboard.Enabled = true
+                end
+            end
+        end
+    end
+end)
+table.insert(connections, renderCon)
+
+task.spawn(function()
+    while not isDestroyed do
+        task.wait(10)
+        if Settings.WhitelistEnabled and not isDestroyed then
+            UpdateWhitelist()
+        end
+        if Settings.ESPEnabled then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    if not espBillboards[p.UserId] then
+                        CreateESP(p)
+                        UpdateESPVisibility()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+ScanPrompts = function()
+    if isDestroyed or not interactEnabled then return end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
+        end
+    end
+end
+local descendantCon = workspace.DescendantAdded:Connect(function(obj)
+    if isDestroyed then return end
+    task.wait(0.1)
+    if obj:IsA("ProximityPrompt") and interactEnabled then
+        obj.HoldDuration = Settings.HoldTime
+        obj.MaxActivationDistance = Settings.Distance
+    end
+end)
+table.insert(connections, descendantCon)
+
+Library:OnUnload(function()
+    if isDestroyed then return end
+    isDestroyed = true
+    stopFly()
+    flyQuickToggle = false
+    DestroyFlyQuickToggle()
+    teamClearAll()
+    zzRestore()
+    if aimGui then aimGui:Destroy() end
+    ResetHitbox()
+    if Settings.NoclipEnabled then
+        ToggleNoclip(false)
+    end
+    if Settings.OutlineESPEnabled then
+        ToggleOutlineESP(false)
+    end
+    ClearAllOutlineESP()
+    for userId, data in pairs(espBillboards) do
+        if data.Billboard then
+            data.Billboard:Destroy()
+        end
+    end
+    espBillboards = {}
+    for _, conn in ipairs(espConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    espConnections = {}
+    for _, conn in ipairs(connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    for _, conn in ipairs(noclipConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+end)
+
+local UnloadGroup = Tabs.Settings:AddLeftGroupbox("脚本管理") UnloadGroup:AddButton("卸载脚本", function() Library:Unload() end) if ThemeManager then ThemeManager:SetLibrary(Library) ThemeManager:SetFolder("MyScriptTheme") ThemeManager:ApplyToTab(Tabs.Settings) end if SaveManager then SaveManager:SetLibrary(Library) SaveManager:IgnoreThemeSettings() SaveManager:SetFolder("MyScriptConfig") SaveManager:BuildConfigSection(Tabs.Settings) end
