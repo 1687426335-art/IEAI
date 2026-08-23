@@ -53,14 +53,14 @@ local JobColors = {
 }
 
 -- ==================== 全新透视（完全重写） ====================
-local espOn = false
-local espName = true
-local espTeam = true
-local espHealth = true
-local espDist = true
-local espList = {}
+local ESP_ON = false
+local ESP_NAME = true
+local ESP_TEAM = true
+local ESP_HEALTH = true
+local ESP_DIST = true
+local ESP_LIST = {}
 
-local function GetTeamName(p)
+local function GetTeam(p)
     if p.Team then return p.Team.Name end
     return "平民"
 end
@@ -78,7 +78,7 @@ local function GetHealth(p)
     return math.floor(h.Health)
 end
 
-local function GetDistance(p)
+local function GetDist(p)
     local mc = player.Character
     if not mc then return 0 end
     local mr = mc:FindFirstChild("HumanoidRootPart")
@@ -90,25 +90,22 @@ local function GetDistance(p)
     return math.floor((mr.Position - tr.Position).Magnitude)
 end
 
-local function RemoveEsp(id)
-    local d = espList[id]
-    if d and d.Billboard then
-        d.Billboard:Destroy()
+local function RemoveESP(id)
+    local d = ESP_LIST[id]
+    if d then
+        if d.Billboard then d.Billboard:Destroy() end
+        ESP_LIST[id] = nil
     end
-    espList[id] = nil
 end
 
-local function BuildEsp(p)
+local function BuildESP(p)
     if not p.Character or p == player then return end
     local head = p.Character:FindFirstChild("Head")
     if not head then return end
-    if espList[p.UserId] then
-        espList[p.UserId].Billboard.Enabled = true
-        return
-    end
+    if ESP_LIST[p.UserId] then return end
 
     local bb = Instance.new("BillboardGui")
-    bb.Size = UDim2.new(0, 180, 0, 90)
+    bb.Size = UDim2.new(0, 200, 0, 100)
     bb.StudsOffset = Vector3.new(0, 3, 0)
     bb.AlwaysOnTop = true
     bb.MaxDistance = 500
@@ -119,12 +116,12 @@ local function BuildEsp(p)
     f.BackgroundTransparency = 1
     f.Parent = bb
 
-    espList[p.UserId] = {Billboard = bb, Frame = f}
+    ESP_LIST[p.UserId] = {Billboard = bb, Frame = f}
 end
 
-local function UpdateEsp()
-    if not espOn then
-        for _, d in pairs(espList) do
+local function RefreshESP()
+    if not ESP_ON then
+        for _, d in pairs(ESP_LIST) do
             if d.Billboard then d.Billboard.Enabled = false end
         end
         return
@@ -133,13 +130,13 @@ local function UpdateEsp()
     for _, p in ipairs(Players:GetPlayers()) do
         if p == player then continue end
         if not p.Character then
-            RemoveEsp(p.UserId)
+            RemoveESP(p.UserId)
             continue
         end
-        if not espList[p.UserId] then
-            BuildEsp(p)
+        if not ESP_LIST[p.UserId] then
+            BuildESP(p)
         end
-        local d = espList[p.UserId]
+        local d = ESP_LIST[p.UserId]
         if not d then continue end
         d.Billboard.Enabled = true
 
@@ -148,12 +145,12 @@ local function UpdateEsp()
 
         local y = 0
         local lines = 0
-        local team = GetTeamName(p)
+        local team = GetTeam(p)
         local color = GetTeamColor(p)
         local hp = GetHealth(p)
-        local dist = GetDistance(p)
+        local dist = GetDist(p)
 
-        if espName then
+        if ESP_NAME then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 20)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -170,7 +167,7 @@ local function UpdateEsp()
             lines = lines + 1
         end
 
-        if espTeam then
+        if ESP_TEAM then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -187,7 +184,7 @@ local function UpdateEsp()
             lines = lines + 1
         end
 
-        if espHealth then
+        if ESP_HEALTH then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -205,7 +202,7 @@ local function UpdateEsp()
             lines = lines + 1
         end
 
-        if espDist then
+        if ESP_DIST then
             local l = Instance.new("TextLabel")
             l.Size = UDim2.new(1, 0, 0, 18)
             l.Position = UDim2.new(0, 0, 0, y)
@@ -222,7 +219,7 @@ local function UpdateEsp()
             lines = lines + 1
         end
 
-        d.Billboard.Size = UDim2.new(0, 180, 0, lines * 20 + 10)
+        d.Billboard.Size = UDim2.new(0, 200, 0, lines * 20 + 10)
     end
 end
 
@@ -234,8 +231,8 @@ espGroup:AddToggle("ESPEnabled", {
     Text = "透视总开关",
     Default = false,
     Callback = function(v)
-        espOn = v
-        if v then UpdateEsp() else UpdateEsp() end
+        ESP_ON = v
+        RefreshESP()
     end
 })
 
@@ -245,8 +242,8 @@ espGroup:AddToggle("ESPShowName", {
     Text = "显示名字",
     Default = true,
     Callback = function(v)
-        espName = v
-        if espOn then UpdateEsp() end
+        ESP_NAME = v
+        if ESP_ON then RefreshESP() end
     end
 })
 
@@ -254,8 +251,8 @@ espGroup:AddToggle("ESPShowTeam", {
     Text = "显示队伍",
     Default = true,
     Callback = function(v)
-        espTeam = v
-        if espOn then UpdateEsp() end
+        ESP_TEAM = v
+        if ESP_ON then RefreshESP() end
     end
 })
 
@@ -263,8 +260,8 @@ espGroup:AddToggle("ESPShowHealth", {
     Text = "显示血量",
     Default = true,
     Callback = function(v)
-        espHealth = v
-        if espOn then UpdateEsp() end
+        ESP_HEALTH = v
+        if ESP_ON then RefreshESP() end
     end
 })
 
@@ -272,8 +269,8 @@ espGroup:AddToggle("ESPShowDist", {
     Text = "显示距离",
     Default = true,
     Callback = function(v)
-        espDist = v
-        if espOn then UpdateEsp() end
+        ESP_DIST = v
+        if ESP_ON then RefreshESP() end
     end
 })
 
@@ -281,15 +278,15 @@ espGroup:AddToggle("ESPShowDist", {
 task.spawn(function()
     while not isDestroyed do
         task.wait(0.3)
-        if espOn then UpdateEsp() end
+        if ESP_ON then RefreshESP() end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(p) RemoveEsp(p.UserId) end)
+Players.PlayerRemoving:Connect(function(p) RemoveESP(p.UserId) end)
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if espOn then UpdateEsp() end
+        if ESP_ON then RefreshESP() end
     end)
 end)
 
@@ -1419,9 +1416,9 @@ local function onPlayerAdded(p)
             task.wait(0.1)
             ApplyNoclip()
         end
-        if espOn and p ~= player then
+        if ESP_ON and p ~= player then
             task.wait(0.5)
-            UpdateEsp()
+            RefreshESP()
         end
     end)
     if Settings.WhitelistEnabled and not isDestroyed then
@@ -1435,7 +1432,7 @@ end
 local playerAddedCon = Players.PlayerAdded:Connect(onPlayerAdded)
 table.insert(connections, playerAddedCon)
 local playerRemovedCon = Players.PlayerRemoving:Connect(function(p)
-    RemoveEsp(p.UserId)
+    RemoveESP(p.UserId)
 end)
 table.insert(connections, playerRemovedCon)
 
@@ -1459,8 +1456,8 @@ task.spawn(function()
         if Settings.WhitelistEnabled and not isDestroyed then
             UpdateWhitelist()
         end
-        if espOn then
-            UpdateEsp()
+        if ESP_ON then
+            RefreshESP()
         end
     end
 end)
@@ -1496,12 +1493,12 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    for userId, data in pairs(espList) do
+    for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
             data.Billboard:Destroy()
         end
     end
-    espList = {}
+    ESP_LIST = {}
     for _, conn in ipairs(connections) do
         pcall(function() conn:Disconnect() end)
     end
