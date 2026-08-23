@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -9,10 +9,6 @@ local Settings = {
     WhitelistEnabled = false,
     TeleportEnabled = false,
     NoclipEnabled = false,
-    ESPEnabled = false,
-    ESPShowName = true,
-    ESPShowJob = true,
-    OutlineESPEnabled = false,
 }
 
 local Whitelist = {}
@@ -56,11 +52,17 @@ local JobColors = {
     ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
 }
 
+-- ==================== 透视功能（独立分类） ====================
 local espBillboards = {}
 local espConnections = {}
-
 local outlineESPData = {}
-local outlineESPConnections = {}
+local teamEspOn = false
+local teamTracked = {}
+local espEnabled = false
+local espShowName = true
+local espShowJob = true
+local outlineESPEnabled = false
+local espRefreshTimer = 0
 
 local function GetPlayerTeamColor(p)
     local team = p.Team
@@ -178,19 +180,19 @@ end
 local function UpdateESPVisibility()
     for userId, data in pairs(espBillboards) do
         if data.NameLabel then
-            data.NameLabel.Visible = Settings.ESPShowName
+            data.NameLabel.Visible = espShowName
         end
         if data.JobLabel then
-            data.JobLabel.Visible = Settings.ESPShowJob
+            data.JobLabel.Visible = espShowJob
         end
         if data.Billboard then
-            data.Billboard.Enabled = Settings.ESPEnabled
+            data.Billboard.Enabled = espEnabled
         end
     end
 end
 
 local function UpdateAllESP()
-    if not Settings.ESPEnabled then
+    if not espEnabled then
         for userId, data in pairs(espBillboards) do
             if data.Billboard then
                 data.Billboard.Enabled = false
@@ -220,24 +222,6 @@ local function UpdateAllESP()
         end
     end
 end
-
--- 透视实时刷新循环（名字+职业+所有透视）
-task.spawn(function()
-    while not isDestroyed do
-        task.wait(0.3)
-        if Settings.ESPEnabled then
-            UpdateAllESP()
-        end
-        if Settings.OutlineESPEnabled then
-            UpdateOutlineESP()
-        end
-        if teamEspOn then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                teamApply(plr)
-            end
-        end
-    end
-end)
 
 local function RemoveOutlineESP(userId)
     local data = outlineESPData[userId]
@@ -271,13 +255,8 @@ local function CreateOutlineESP(p)
         if data.Billboard then data.Billboard.Enabled = true end
         return
     end
-    
-    -- 检测是否为警察
     local isPolice = IsPolice(p)
-    
-    -- 设置颜色：警察蓝色，平民白色
     local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
-    
     local highlight = Instance.new("Highlight")
     highlight.Name = "OutlineESP_" .. p.UserId
     highlight.Adornee = char
@@ -313,11 +292,8 @@ local function CreateOutlineESP(p)
     }
 end
 
--- 人物描边透视（优化版，减少CPU占用）
-local outlineUpdateTimer = 0
-
 local function UpdateOutlineESP()
-    if not Settings.OutlineESPEnabled or isDestroyed then return end
+    if not outlineESPEnabled or isDestroyed then return end
     local char = player.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     for _, p in ipairs(Players:GetPlayers()) do
@@ -356,13 +332,152 @@ local function UpdateOutlineESP()
 end
 
 local function ToggleOutlineESP(state)
-    Settings.OutlineESPEnabled = state
+    outlineESPEnabled = state
     if state then
         UpdateOutlineESP()
     else
         ClearAllOutlineESP()
     end
 end
+
+local function teamClearAll()
+    for plr, data in pairs(teamTracked) do
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+end
+
+local function teamApply(plr)
+    if plr == player then return end
+    local char = plr.Character
+    if not char then return end
+    local old = teamTracked[plr]
+    if old then
+        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
+        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
+    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    local hl = Instance.new("Highlight")
+    hl.Adornee = char
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.FillTransparency = 0.5
+    hl.OutlineTransparency = 0
+    hl.FillColor = color
+    hl.OutlineColor = color
+    hl.Parent = char
+    local bb
+    local head = char:FindFirstChild("Head")
+    if head then
+        bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 100, 0, 22)
+        bb.StudsOffset = Vector3.new(0, 3.2, 0)
+        bb.AlwaysOnTop = true
+        bb.Adornee = head
+        local tl = Instance.new("TextLabel")
+        tl.Size = UDim2.new(1, 0, 1, 0)
+        tl.BackgroundTransparency = 1
+        tl.Text = isTeam and "队友" or "敌人"
+        tl.TextColor3 = color
+        tl.TextStrokeTransparency = 0
+        tl.Font = Enum.Font.GothamBold
+        tl.TextSize = 14
+        tl.Parent = bb
+        bb.Parent = head
+    end
+    teamTracked[plr] = { Highlight = hl, Billboard = bb }
+end
+
+-- ==================== 透视Tab ====================
+local espTab = Tabs.ESP
+local espGroup = espTab:AddLeftGroupbox("透视开关")
+espGroup:AddToggle("ESPEnabled", {
+    Text = "启用透视",
+    Default = false,
+    Callback = function(value)
+        espEnabled = value
+        if value then
+            UpdateAllESP()
+        else
+            for userId, data in pairs(espBillboards) do
+                if data.Billboard then
+                    data.Billboard.Enabled = false
+                end
+            end
+        end
+    end
+})
+espGroup:AddDivider()
+espGroup:AddToggle("ESPShowName", {
+    Text = "显示名字（队伍颜色）",
+    Default = true,
+    Callback = function(value)
+        espShowName = value
+        UpdateESPVisibility()
+    end
+})
+espGroup:AddToggle("ESPShowJob", {
+    Text = "显示职业（职业颜色）",
+    Default = true,
+    Callback = function(value)
+        espShowJob = value
+        UpdateESPVisibility()
+    end
+})
+
+local espOutlineGroup = espTab:AddLeftGroupbox("描边透视")
+espOutlineGroup:AddToggle("OutlineESPEnabled", {
+    Text = "人物描边透视",
+    Desc = "警察蓝色 / 平民白色",
+    Default = false,
+    Callback = function(value)
+        ToggleOutlineESP(value)
+    end
+})
+
+local espTeamGroup = espTab:AddLeftGroupbox("敌我透视")
+espTeamGroup:AddLabel("红色标注敌人，绿色标注队友")
+espTeamGroup:AddToggle("TeamESP", {
+    Text = "透视敌人和队友",
+    Default = false,
+    Callback = function(value)
+        teamEspOn = value
+        if not value then teamClearAll() end
+    end
+})
+
+-- 透视实时刷新循环
+task.spawn(function()
+    while not isDestroyed do
+        task.wait(0.3)
+        if espEnabled then
+            UpdateAllESP()
+        end
+        if outlineESPEnabled then
+            UpdateOutlineESP()
+        end
+        if teamEspOn then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                teamApply(plr)
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    local data = teamTracked[plr]
+    if data then
+        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
+        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
+        teamTracked[plr] = nil
+    end
+    RemoveESP(plr.UserId)
+    RemoveOutlineESP(plr.UserId)
+end)
+
+-- ==================== 原枪械功能（移除透视后） ====================
 
 local function GetTeleportData()
     return {
@@ -679,7 +794,6 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-
 local interactEnabled = false
 local ScanPrompts
 
@@ -726,68 +840,6 @@ task.spawn(function()
             end)
         end
         task.wait(0.3)
-    end
-end)
-
-local teamEspOn = false
-local teamTracked = {}
-local function teamClearAll()
-    for plr, data in pairs(teamTracked) do
-        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
-        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
-    end
-end
-local function teamApply(plr)
-    if plr == player then return end
-    local char = plr.Character
-    if not char then return end
-    local old = teamTracked[plr]
-    if old then
-        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
-        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
-    end
-    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
-    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-    local hl = Instance.new("Highlight")
-    hl.Adornee = char
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0
-    hl.FillColor = color
-    hl.OutlineColor = color
-    hl.Parent = char
-    local bb
-    local head = char:FindFirstChild("Head")
-    if head then
-        bb = Instance.new("BillboardGui")
-        bb.Size = UDim2.new(0, 100, 0, 22)
-        bb.StudsOffset = Vector3.new(0, 3.2, 0)
-        bb.AlwaysOnTop = true
-        bb.Adornee = head
-        local tl = Instance.new("TextLabel")
-        tl.Size = UDim2.new(1, 0, 1, 0)
-        tl.BackgroundTransparency = 1
-        tl.Text = isTeam and "队友" or "敌人"
-        tl.TextColor3 = color
-        tl.TextStrokeTransparency = 0
-        tl.Font = Enum.Font.GothamBold
-        tl.TextSize = 14
-        tl.Parent = bb
-        bb.Parent = head
-    end
-    teamTracked[plr] = { Highlight = hl, Billboard = bb }
-end
-
--- teamEsp 实时刷新已包含在上面的全局循环中
-
-Players.PlayerRemoving:Connect(function(plr)
-    local data = teamTracked[plr]
-    if data then
-        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
-        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
     end
 end)
 
@@ -965,7 +1017,6 @@ local function kaGetNearestEnemy()
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
     
-    -- 如果开启了优先攻击最近目标
     if KANearestOnly then
         local nearestInRange = nil
         local nearestDistInRange = 9999
@@ -979,12 +1030,10 @@ local function kaGetNearestEnemy()
                     local head = p.Character:FindFirstChild("Head")
                     if head then
                         local dist = (head.Position - myHead.Position).Magnitude
-                        -- 记录最近的任意敌人
                         if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
                             anyDist = dist
                             anyEnemy = p
                         end
-                        -- 记录范围内的最近敌人
                         if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
                             nearestDistInRange = dist
                             nearestInRange = p
@@ -994,7 +1043,6 @@ local function kaGetNearestEnemy()
             end
         end
         
-        -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
         if nearestInRange then
             return nearestInRange
         else
@@ -1002,7 +1050,6 @@ local function kaGetNearestEnemy()
         end
     end
     
-    -- 没开启优先攻击最近目标，正常找最近的
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -1163,49 +1210,6 @@ godGroup:AddToggle("GodToggle", {
 })
 godGroup:AddLabel("免疫火焰和车爆炸时候的伤害")
 
-local espGroup = Tabs.Gun:AddRightGroupbox("透视")
-espGroup:AddToggle("ESPEnabled", {
-    Text = "启用透视",
-    Default = false,
-    Callback = function(value)
-        Settings.ESPEnabled = value
-        if value then
-            UpdateAllESP()
-        else
-            for userId, data in pairs(espBillboards) do
-                if data.Billboard then
-                    data.Billboard.Enabled = false
-                end
-            end
-        end
-    end
-})
-espGroup:AddDivider()
-espGroup:AddToggle("ESPShowName", {
-    Text = "显示名字（队伍颜色）",
-    Default = true,
-    Callback = function(value)
-        Settings.ESPShowName = value
-        UpdateESPVisibility()
-    end
-})
-espGroup:AddToggle("ESPShowJob", {
-    Text = "显示职业（职业颜色）",
-    Default = true,
-    Callback = function(value)
-        Settings.ESPShowJob = value
-        UpdateESPVisibility()
-    end
-})
-espGroup:AddDivider()
-espGroup:AddToggle("OutlineESPEnabled", {
-    Text = "人物描边透视（警察蓝色/平民白色）",
-    Default = false,
-    Callback = function(value)
-        ToggleOutlineESP(value)
-    end
-})
-
 local mainRightGroup = Tabs.Gun:AddLeftGroupbox("碰撞箱扩展")
 mainRightGroup:AddToggle("HitboxToggle", {
     Text = "启用头部碰撞箱（推荐20-25）",
@@ -1235,7 +1239,6 @@ mainRightGroup:AddToggle("WhitelistToggle", {
         if value then UpdateWhitelist() end
     end
 })
-
 
 local flyGroup = Tabs.Player:AddLeftGroupbox("角色修改")
 flyGroup:AddToggle("FlyToggle", {
@@ -1295,9 +1298,6 @@ local flyQuickToggle = false
 local flyQuickButton = nil
 local flyQuickScreenGui = nil
 local flyQuickStatusLabel = nil
-local flyQuickDragging = false
-local flyQuickDragStart = nil
-local flyQuickDragOffset = nil
 
 local function DestroyFlyQuickToggle()
     if flyQuickScreenGui then
@@ -1334,7 +1334,6 @@ local function CreateFlyQuickToggle()
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = button
     
-    -- 状态标签
     flyQuickStatusLabel = Instance.new("TextLabel")
     flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
     flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
@@ -1347,7 +1346,6 @@ local function CreateFlyQuickToggle()
     flyQuickStatusLabel.Text = "飞行: 关"
     flyQuickStatusLabel.Parent = button
     
-    -- 更新状态
     local function updateFlyStatus()
         if flyQuickStatusLabel then
             flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
@@ -1358,7 +1356,6 @@ local function CreateFlyQuickToggle()
         end
     end
     
-    -- 按钮点击切换飞行
     button.MouseButton1Click:Connect(function()
         if flyState.enabled then
             stopFly()
@@ -1368,14 +1365,12 @@ local function CreateFlyQuickToggle()
         updateFlyStatus()
     end)
     
-    -- 拖动功能
     local dragging = false
     local dragStart = nil
     local startPos = nil
     
     button.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local time = tick()
             dragging = true
             dragStart = input.Position
             startPos = button.Position
@@ -1401,10 +1396,8 @@ local function CreateFlyQuickToggle()
         end
     end)
     
-    -- 初始更新状态
     updateFlyStatus()
     
-    -- 监听飞行状态变化
     local statusConn = RunService.Heartbeat:Connect(function()
         if flyQuickToggle and flyQuickStatusLabel then
             updateFlyStatus()
@@ -1553,20 +1546,9 @@ aimGroup:AddToggle("AimWallCheck", {
     end
 })
 
-local teamEspGroup = Tabs.Gun:AddRightGroupbox("敌我透视")
-teamEspGroup:AddLabel("红色标注敌人，绿色标注队友")
-teamEspGroup:AddToggle("TeamESP", {
-    Text = "透视敌人和队友",
-    Default = false,
-    Callback = function(value)
-        teamEspOn = value
-        if not value then teamClearAll() end
-    end
-})
-
 task.spawn(function()
     while not isDestroyed do
-        if Settings.OutlineESPEnabled then
+        if outlineESPEnabled then
             UpdateOutlineESP()
         end
         task.wait(0.5)
@@ -1619,16 +1601,14 @@ teleLeftGroup:AddButton({
     end,
 })
 
-
-
 local function onPlayerAdded(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if Settings.ESPEnabled and p ~= player then
+        if espEnabled and p ~= player then
             CreateESP(p)
             UpdateESPVisibility()
         end
-        if Settings.OutlineESPEnabled and p ~= player then
+        if outlineESPEnabled and p ~= player then
             RemoveOutlineESP(p.UserId)
             CreateOutlineESP(p)
         end
@@ -1668,7 +1648,7 @@ local renderCon = RunService.RenderStepped:Connect(function()
     if Settings.NoclipEnabled then
         ApplyNoclip()
     end
-    if Settings.ESPEnabled then
+    if espEnabled then
         for userId, data in pairs(espBillboards) do
             local p = Players:FindFirstChild(tostring(userId))
             if p and p.Character then
@@ -1696,7 +1676,7 @@ task.spawn(function()
         if Settings.WhitelistEnabled and not isDestroyed then
             UpdateWhitelist()
         end
-        if Settings.ESPEnabled then
+        if espEnabled then
             for _, p in ipairs(Players:GetPlayers()) do
                 if p ~= player and p.Character then
                     if not espBillboards[p.UserId] then
@@ -1741,7 +1721,7 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    if Settings.OutlineESPEnabled then
+    if outlineESPEnabled then
         ToggleOutlineESP(false)
     end
     ClearAllOutlineESP()
