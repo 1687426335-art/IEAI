@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("通知", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -965,7 +965,7 @@ local function kaGetNearestEnemy()
     if not myHead then return nil end
     local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
     
-    -- 先找25米内的最近敌人
+    -- 如果开启了优先攻击最近目标
     if KANearestOnly then
         local nearestInRange = nil
         local nearestDistInRange = 9999
@@ -979,10 +979,12 @@ local function kaGetNearestEnemy()
                     local head = p.Character:FindFirstChild("Head")
                     if head then
                         local dist = (head.Position - myHead.Position).Magnitude
+                        -- 记录最近的任意敌人
                         if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
                             anyDist = dist
                             anyEnemy = p
                         end
+                        -- 记录范围内的最近敌人
                         if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
                             nearestDistInRange = dist
                             nearestInRange = p
@@ -992,7 +994,7 @@ local function kaGetNearestEnemy()
             end
         end
         
-        -- 选择优先攻击多少米的敌人
+        -- 如果25米内有敌人，攻击最近的；否则攻击任意距离的敌人
         if nearestInRange then
             return nearestInRange
         else
@@ -1000,7 +1002,7 @@ local function kaGetNearestEnemy()
         end
     end
     
-    -- 如果选择距离内无敌人攻击最近敌人就不生效
+    -- 没开启优先攻击最近目标，正常找最近的
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -1139,7 +1141,7 @@ mainLeftGroup:AddSlider("Distance", {
     Min = 5,
     Max = 150,
     Rounding = 0,
-    Suffix = "米",
+    Suffix = "单位",
     Callback = function(value)
         Settings.Distance = value
         if not interactEnabled then return end
@@ -1428,7 +1430,7 @@ flyGroup:AddToggle("FlyQuickToggle", {
 
 -- 杀戮光环独立Tab
 local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环")
-kaGroup:AddLabel("注意：要装备枪械武器才有伤害")
+kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
 kaGroup:AddToggle("KAToggle", {
     Text = "启用杀戮光环",
     Default = false,
@@ -1448,13 +1450,13 @@ kaGroup:AddSlider("KADistance", {
     Min = 50,
     Max = 1000,
     Rounding = 0,
-    Suffix = "米",
+    Suffix = "单位",
     Callback = function(value)
         KA_MAX_DISTANCE = value
     end
 })
 kaGroup:AddToggle("KAWallCheck", {
-    Text = "墙体检测（建议关闭）",
+    Text = "墙体检测",
     Default = true,
     Callback = function(value)
         KA_WALL_CHECK = value
@@ -1473,8 +1475,8 @@ kaGroup:AddSlider("KADamage", {
 })
 kaGroup:AddDivider()
 kaGroup:AddToggle("KANearestOnly", {
-    Text = "优先攻击距离",
-    Desc = "优先攻击距离选择的距离内如果无敌人优先攻击最近敌人则不生效",
+    Text = "优先攻击25米内目标",
+    Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
     Default = false,
     Callback = function(value)
         KANearestOnly = value
@@ -1484,7 +1486,7 @@ kaGroup:AddToggle("KANearestOnly", {
     end
 })
 kaGroup:AddSlider("KANearestDistance", {
-    Text = "选择的距离内无敌人此选项就不生效",
+    Text = "优先攻击距离",
     Default = 25,
     Min = 5,
     Max = 100,
@@ -1572,7 +1574,7 @@ task.spawn(function()
 end)
 
 local teleTab = Tabs.Teleports
-local teleLeftGroup = teleTab:AddLeftGroupbox("传送")
+local teleLeftGroup = teleTab:AddLeftGroupbox("传送控制")
 teleLeftGroup:AddToggle("TeleportToggle", {
     Text = "启用传送",
     Default = false,
@@ -1691,7 +1693,8 @@ table.insert(connections, renderCon)
 task.spawn(function()
     while not isDestroyed do
         task.wait(10)
-        if Settings.WhitelistEnabled and not isDestroyed then            UpdateWhitelist()
+        if Settings.WhitelistEnabled and not isDestroyed then
+            UpdateWhitelist()
         end
         if Settings.ESPEnabled then
             for _, p in ipairs(Players:GetPlayers()) do
