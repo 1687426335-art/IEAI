@@ -1484,7 +1484,7 @@ kaGroup:AddToggle("KANearestOnly", {
     end
 })
 kaGroup:AddSlider("KANearestDistance", {
-    Text = "优先攻击距离",
+    Text = "选择的距离内无敌人此选项就不生效",
     Default = 25,
     Min = 5,
     Max = 100,
