@@ -1428,7 +1428,7 @@ flyGroup:AddToggle("FlyQuickToggle", {
 
 -- 杀戮光环独立Tab
 local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环")
-kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
+kaGroup:AddLabel("注意：要装备枪械武器才有伤害")
 kaGroup:AddToggle("KAToggle", {
     Text = "启用杀戮光环",
     Default = false,
@@ -1448,13 +1448,13 @@ kaGroup:AddSlider("KADistance", {
     Min = 50,
     Max = 1000,
     Rounding = 0,
-    Suffix = "单位",
+    Suffix = "米",
     Callback = function(value)
         KA_MAX_DISTANCE = value
     end
 })
 kaGroup:AddToggle("KAWallCheck", {
-    Text = "墙体检测",
+    Text = "墙体检测（建议关闭）",
     Default = true,
     Callback = function(value)
         KA_WALL_CHECK = value
@@ -1474,7 +1474,7 @@ kaGroup:AddSlider("KADamage", {
 kaGroup:AddDivider()
 kaGroup:AddToggle("KANearestOnly", {
     Text = "优先攻击25米内目标",
-    Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
+    Desc = "开启后优先攻击25米内的敌人25米内无人则攻击远处目标",
     Default = false,
     Callback = function(value)
         KANearestOnly = value
