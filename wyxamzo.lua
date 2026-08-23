@@ -52,55 +52,56 @@ local JobColors = {
     ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
 }
 
--- ==================== 透视功能（独立分类） ====================
+-- ==================== 透视功能 ====================
 local espBillboards = {}
 local espConnections = {}
-local outlineESPData = {}
-local teamEspOn = false
-local teamTracked = {}
 local espEnabled = false
 local espShowName = true
-local espShowJob = true
-local outlineESPEnabled = false
-local espRefreshTimer = 0
+local espShowHealth = true
+local espShowDist = true
+local espShowTeam = true
 
-local function GetPlayerTeamColor(p)
-    local team = p.Team
-    if team then
-        return team.TeamColor.Color
-    end
-    return Color3.fromRGB(255, 255, 255)
-end
-
-local function GetPlayerJob(p)
+local function GetPlayerTeamName(p)
     if p.Team then
         return p.Team.Name
     end
     return "平民"
 end
 
-local function GetJobColor(jobName)
-    return JobColors[jobName] or Color3.fromRGB(200, 200, 200)
+local function GetPlayerTeamColor(p)
+    local team = p.Team
+    if team then
+        return team.TeamColor.Color
+    end
+    return Color3.fromRGB(200, 200, 200)
 end
 
-local function IsPolice(p)
-    if p.Team then
-        local teamName = p.Team.Name or ""
-        if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") or teamName:find("sheriff") then
-            return true
-        end
+local function GetPlayerHealth(p)
+    local char = p.Character
+    if not char then return 0 end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return 0 end
+    return math.floor(hum.Health)
+end
+
+local function GetPlayerDistance(p)
+    local myChar = player.Character
+    if not myChar then return 0 end
+    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return 0 end
+    local targetChar = p.Character
+    if not targetChar then return 0 end
+    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return 0 end
+    return math.floor((myRoot.Position - targetRoot.Position).Magnitude)
+end
+
+local function GetCharacterSize(char)
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if root then
+        return root.Size
     end
-    if p.Character then
-        for _, child in ipairs(p.Character:GetDescendants()) do
-            if child:IsA("StringValue") or child:IsA("BoolValue") or child:IsA("IntValue") then
-                local name = child.Name:lower()
-                if name:find("police") or name:find("cop") or name:find("警") or name:find("sheriff") then
-                    return true
-                end
-            end
-        end
-    end
-    return false
+    return Vector3.new(3, 5, 1.5)
 end
 
 local function RemoveESP(userId)
@@ -120,78 +121,114 @@ local function CreateESP(p)
     local head = p.Character:FindFirstChild("Head")
     if not head then return end
     if espBillboards[p.UserId] then return end
-    local name = p.Name
-    local job = GetPlayerJob(p)
+    
+    local charSize = GetCharacterSize(p.Character)
+    local health = GetPlayerHealth(p)
+    local distance = GetPlayerDistance(p)
+    local teamName = GetPlayerTeamName(p)
     local teamColor = GetPlayerTeamColor(p)
-    local jobColor = GetJobColor(job)
+    
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_" .. p.UserId
     billboard.Adornee = head
-    billboard.Size = UDim2.new(0, 300, 0, 60)
-    billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+    billboard.Size = UDim2.new(0, 250, 0, 120)
+    billboard.StudsOffset = Vector3.new(0, charSize.Y / 2 + 2.5, 0)
     billboard.MaxDistance = 500
     billboard.AlwaysOnTop = true
     billboard.Parent = head
+    table.insert(espConnections, billboard)
+    
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
     frame.BackgroundTransparency = 1
-    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     frame.Parent = billboard
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0, 26)
-    nameLabel.Position = UDim2.new(0, 0, 0, 0)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = name
-    nameLabel.TextColor3 = teamColor
-    nameLabel.TextSize = 18
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
-    nameLabel.Parent = frame
-    local jobLabel = Instance.new("TextLabel")
-    jobLabel.Size = UDim2.new(1, 0, 0, 22)
-    jobLabel.Position = UDim2.new(0, 0, 0, 28)
-    jobLabel.BackgroundTransparency = 1
-    jobLabel.Text = job
-    jobLabel.TextColor3 = jobColor
-    jobLabel.TextSize = 16
-    jobLabel.Font = Enum.Font.GothamBold
-    jobLabel.TextXAlignment = Enum.TextXAlignment.Center
-    jobLabel.TextYAlignment = Enum.TextYAlignment.Center
-    jobLabel.Parent = frame
+    
+    local yOffset = 0
+    local lines = 0
+    
+    -- 名字
+    if espShowName then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0, 22)
+        nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = p.Name
+        nameLabel.TextColor3 = teamColor
+        nameLabel.TextSize = 16
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.3
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        nameLabel.Parent = frame
+        yOffset = yOffset + 24
+        lines = lines + 1
+    end
+    
+    -- 队伍
+    if espShowTeam then
+        local teamLabel = Instance.new("TextLabel")
+        teamLabel.Size = UDim2.new(1, 0, 0, 18)
+        teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        teamLabel.BackgroundTransparency = 1
+        teamLabel.Text = "[" .. teamName .. "]"
+        teamLabel.TextColor3 = teamColor
+        teamLabel.TextSize = 13
+        teamLabel.Font = Enum.Font.GothamBold
+        teamLabel.TextStrokeTransparency = 0.3
+        teamLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        teamLabel.TextXAlignment = Enum.TextXAlignment.Center
+        teamLabel.Parent = frame
+        yOffset = yOffset + 20
+        lines = lines + 1
+    end
+    
+    -- 血量
+    if espShowHealth then
+        local healthLabel = Instance.new("TextLabel")
+        healthLabel.Size = UDim2.new(1, 0, 0, 18)
+        healthLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        healthLabel.BackgroundTransparency = 1
+        local healthColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+        healthLabel.Text = "❤ " .. health .. "HP"
+        healthLabel.TextColor3 = healthColor
+        healthLabel.TextSize = 13
+        healthLabel.Font = Enum.Font.GothamBold
+        healthLabel.TextStrokeTransparency = 0.3
+        healthLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        healthLabel.TextXAlignment = Enum.TextXAlignment.Center
+        healthLabel.Parent = frame
+        yOffset = yOffset + 20
+        lines = lines + 1
+    end
+    
+    -- 距离
+    if espShowDist then
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size = UDim2.new(1, 0, 0, 18)
+        distLabel.Position = UDim2.new(0, 0, 0, yOffset)
+        distLabel.BackgroundTransparency = 1
+        distLabel.Text = distance .. "m"
+        distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        distLabel.TextSize = 13
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextStrokeTransparency = 0.3
+        distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        distLabel.TextXAlignment = Enum.TextXAlignment.Center
+        distLabel.Parent = frame
+        yOffset = yOffset + 20
+        lines = lines + 1
+    end
+    
+    -- 根据行数调整高度
+    billboard.Size = UDim2.new(0, 250, 0, lines * 20 + 10)
+    
     espBillboards[p.UserId] = {
         Billboard = billboard,
         Frame = frame,
-        NameLabel = nameLabel,
-        JobLabel = jobLabel,
     }
-    local con
-    con = p.AncestryChanged:Connect(function()
-        if not p.Parent or not p.Character then
-            RemoveESP(p.UserId)
-            if con then
-                con:Disconnect()
-            end
-        end
-    end)
-    table.insert(espConnections, con)
 end
 
-local function UpdateESPVisibility()
-    for userId, data in pairs(espBillboards) do
-        if data.NameLabel then
-            data.NameLabel.Visible = espShowName
-        end
-        if data.JobLabel then
-            data.JobLabel.Visible = espShowJob
-        end
-        if data.Billboard then
-            data.Billboard.Enabled = espEnabled
-        end
-    end
-end
-
-local function UpdateAllESP()
+local function UpdateESP()
     if not espEnabled then
         for userId, data in pairs(espBillboards) do
             if data.Billboard then
@@ -200,206 +237,122 @@ local function UpdateAllESP()
         end
         return
     end
+    
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
-            if not espBillboards[p.UserId] then
-                CreateESP(p)
-            else
-                local data = espBillboards[p.UserId]
-                local job = GetPlayerJob(p)
-                if data.NameLabel then
-                    data.NameLabel.Text = p.Name
-                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
-                end
-                if data.JobLabel then
-                    data.JobLabel.Text = job
-                    data.JobLabel.TextColor3 = GetJobColor(job)
-                end
-                if data.Billboard then
-                    data.Billboard.Enabled = true
-                end
-            end
-        end
-    end
-end
-
-local function RemoveOutlineESP(userId)
-    local data = outlineESPData[userId]
-    if data then
-        if data.Highlight then
-            data.Highlight:Destroy()
-        end
-        if data.Billboard then
-            data.Billboard:Destroy()
-        end
-        outlineESPData[userId] = nil
-    end
-end
-
-local function ClearAllOutlineESP()
-    for userId, _ in pairs(outlineESPData) do
-        RemoveOutlineESP(userId)
-    end
-end
-
-local function CreateOutlineESP(p)
-    if isDestroyed then return end
-    if p == player then return end
-    local char = p.Character
-    if not char then return end
-    local head = char:FindFirstChild("Head")
-    if not head then return end
-    if outlineESPData[p.UserId] then
-        local data = outlineESPData[p.UserId]
-        if data.Highlight then data.Highlight.Enabled = true end
-        if data.Billboard then data.Billboard.Enabled = true end
-        return
-    end
-    local isPolice = IsPolice(p)
-    local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "OutlineESP_" .. p.UserId
-    highlight.Adornee = char
-    highlight.FillColor = outlineColor
-    highlight.OutlineColor = outlineColor
-    highlight.FillTransparency = 0.6
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = char
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "OutlineESPGui_" .. p.UserId
-    billboard.Adornee = head
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 1000
-    billboard.Parent = head
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = outlineColor
-    label.TextSize = 15
-    label.Font = Enum.Font.GothamBold
-    label.TextStrokeTransparency = 0
-    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    label.Text = p.Name
-    label.Parent = billboard
-    outlineESPData[p.UserId] = {
-        Player = p,
-        Highlight = highlight,
-        Billboard = billboard,
-        Label = label,
-    }
-end
-
-local function UpdateOutlineESP()
-    if not outlineESPEnabled or isDestroyed then return end
-    local char = player.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
-            if not outlineESPData[p.UserId] then
-                CreateOutlineESP(p)
-            else
-                local data = outlineESPData[p.UserId]
-                local isPolice = IsPolice(p)
-                local outlineColor = isPolice and Color3.fromRGB(0, 100, 255) or Color3.fromRGB(255, 255, 255)
-                if data.Highlight then
-                    data.Highlight.FillColor = outlineColor
-                    data.Highlight.OutlineColor = outlineColor
-                end
-                if data.Label then
-                    data.Label.TextColor3 = outlineColor
-                    local targetHead = p.Character:FindFirstChild("Head")
-                    if targetHead and root then
-                        local dist = (targetHead.Position - root.Position).Magnitude
-                        data.Label.Text = p.Name .. "\n[" .. math.floor(dist) .. "]"
-                    else
-                        data.Label.Text = p.Name
+        if p ~= player then
+            if p.Character then
+                if not espBillboards[p.UserId] then
+                    CreateESP(p)
+                else
+                    -- 更新数据
+                    local data = espBillboards[p.UserId]
+                    if data.Billboard then
+                        data.Billboard.Enabled = true
+                        -- 重建标签更新数据
+                        local frame = data.Frame
+                        if frame then
+                            for _, child in ipairs(frame:GetChildren()) do
+                                child:Destroy()
+                            end
+                            local yOffset = 0
+                            local lines = 0
+                            
+                            local health = GetPlayerHealth(p)
+                            local distance = GetPlayerDistance(p)
+                            local teamName = GetPlayerTeamName(p)
+                            local teamColor = GetPlayerTeamColor(p)
+                            
+                            if espShowName then
+                                local nameLabel = Instance.new("TextLabel")
+                                nameLabel.Size = UDim2.new(1, 0, 0, 22)
+                                nameLabel.Position = UDim2.new(0, 0, 0, yOffset)
+                                nameLabel.BackgroundTransparency = 1
+                                nameLabel.Text = p.Name
+                                nameLabel.TextColor3 = teamColor
+                                nameLabel.TextSize = 16
+                                nameLabel.Font = Enum.Font.GothamBold
+                                nameLabel.TextStrokeTransparency = 0.3
+                                nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+                                nameLabel.Parent = frame
+                                yOffset = yOffset + 24
+                                lines = lines + 1
+                            end
+                            
+                            if espShowTeam then
+                                local teamLabel = Instance.new("TextLabel")
+                                teamLabel.Size = UDim2.new(1, 0, 0, 18)
+                                teamLabel.Position = UDim2.new(0, 0, 0, yOffset)
+                                teamLabel.BackgroundTransparency = 1
+                                teamLabel.Text = "[" .. teamName .. "]"
+                                teamLabel.TextColor3 = teamColor
+                                teamLabel.TextSize = 13
+                                teamLabel.Font = Enum.Font.GothamBold
+                                teamLabel.TextStrokeTransparency = 0.3
+                                teamLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                teamLabel.TextXAlignment = Enum.TextXAlignment.Center
+                                teamLabel.Parent = frame
+                                yOffset = yOffset + 20
+                                lines = lines + 1
+                            end
+                            
+                            if espShowHealth then
+                                local healthLabel = Instance.new("TextLabel")
+                                healthLabel.Size = UDim2.new(1, 0, 0, 18)
+                                healthLabel.Position = UDim2.new(0, 0, 0, yOffset)
+                                healthLabel.BackgroundTransparency = 1
+                                local healthColor = health > 70 and Color3.fromRGB(0, 255, 100) or health > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+                                healthLabel.Text = "❤ " .. health .. "HP"
+                                healthLabel.TextColor3 = healthColor
+                                healthLabel.TextSize = 13
+                                healthLabel.Font = Enum.Font.GothamBold
+                                healthLabel.TextStrokeTransparency = 0.3
+                                healthLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                healthLabel.TextXAlignment = Enum.TextXAlignment.Center
+                                healthLabel.Parent = frame
+                                yOffset = yOffset + 20
+                                lines = lines + 1
+                            end
+                            
+                            if espShowDist then
+                                local distLabel = Instance.new("TextLabel")
+                                distLabel.Size = UDim2.new(1, 0, 0, 18)
+                                distLabel.Position = UDim2.new(0, 0, 0, yOffset)
+                                distLabel.BackgroundTransparency = 1
+                                distLabel.Text = distance .. "m"
+                                distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                                distLabel.TextSize = 13
+                                distLabel.Font = Enum.Font.Gotham
+                                distLabel.TextStrokeTransparency = 0.3
+                                distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                distLabel.TextXAlignment = Enum.TextXAlignment.Center
+                                distLabel.Parent = frame
+                                yOffset = yOffset + 20
+                                lines = lines + 1
+                            end
+                            
+                            data.Billboard.Size = UDim2.new(0, 250, 0, lines * 20 + 10)
+                        end
                     end
                 end
-                if data.Billboard then
-                    data.Billboard.Enabled = true
-                end
-                if data.Highlight then
-                    data.Highlight.Enabled = true
-                end
+            else
+                RemoveESP(p.UserId)
             end
-        elseif p ~= player then
-            RemoveOutlineESP(p.UserId)
         end
     end
-end
-
-local function ToggleOutlineESP(state)
-    outlineESPEnabled = state
-    if state then
-        UpdateOutlineESP()
-    else
-        ClearAllOutlineESP()
-    end
-end
-
-local function teamClearAll()
-    for plr, data in pairs(teamTracked) do
-        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
-        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
-    end
-end
-
-local function teamApply(plr)
-    if plr == player then return end
-    local char = plr.Character
-    if not char then return end
-    local old = teamTracked[plr]
-    if old then
-        pcall(function() if old.Highlight then old.Highlight:Destroy() end end)
-        pcall(function() if old.Billboard then old.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
-    end
-    local isTeam = plr.Team ~= nil and player.Team ~= nil and plr.Team == player.Team
-    local color = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-    local hl = Instance.new("Highlight")
-    hl.Adornee = char
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0
-    hl.FillColor = color
-    hl.OutlineColor = color
-    hl.Parent = char
-    local bb
-    local head = char:FindFirstChild("Head")
-    if head then
-        bb = Instance.new("BillboardGui")
-        bb.Size = UDim2.new(0, 100, 0, 22)
-        bb.StudsOffset = Vector3.new(0, 3.2, 0)
-        bb.AlwaysOnTop = true
-        bb.Adornee = head
-        local tl = Instance.new("TextLabel")
-        tl.Size = UDim2.new(1, 0, 1, 0)
-        tl.BackgroundTransparency = 1
-        tl.Text = isTeam and "队友" or "敌人"
-        tl.TextColor3 = color
-        tl.TextStrokeTransparency = 0
-        tl.Font = Enum.Font.GothamBold
-        tl.TextSize = 14
-        tl.Parent = bb
-        bb.Parent = head
-    end
-    teamTracked[plr] = { Highlight = hl, Billboard = bb }
 end
 
 -- ==================== 透视Tab ====================
 local espTab = Tabs.ESP
-local espGroup = espTab:AddLeftGroupbox("透视开关")
+local espGroup = espTab:AddLeftGroupbox("透视设置")
+
 espGroup:AddToggle("ESPEnabled", {
-    Text = "启用透视",
+    Text = "透视总开关",
     Default = false,
     Callback = function(value)
         espEnabled = value
         if value then
-            UpdateAllESP()
+            UpdateESP()
         else
             for userId, data in pairs(espBillboards) do
                 if data.Billboard then
@@ -409,75 +362,69 @@ espGroup:AddToggle("ESPEnabled", {
         end
     end
 })
+
 espGroup:AddDivider()
+
 espGroup:AddToggle("ESPShowName", {
-    Text = "显示名字（队伍颜色）",
+    Text = "显示名字",
     Default = true,
     Callback = function(value)
         espShowName = value
-        UpdateESPVisibility()
+        if espEnabled then UpdateESP() end
     end
 })
-espGroup:AddToggle("ESPShowJob", {
-    Text = "显示职业（职业颜色）",
+
+espGroup:AddToggle("ESPShowTeam", {
+    Text = "显示队伍",
     Default = true,
     Callback = function(value)
-        espShowJob = value
-        UpdateESPVisibility()
+        espShowTeam = value
+        if espEnabled then UpdateESP() end
     end
 })
 
-local espOutlineGroup = espTab:AddLeftGroupbox("描边透视")
-espOutlineGroup:AddToggle("OutlineESPEnabled", {
-    Text = "人物描边透视",
-    Desc = "警察蓝色 / 平民白色",
-    Default = false,
+espGroup:AddToggle("ESPShowHealth", {
+    Text = "显示血量",
+    Default = true,
     Callback = function(value)
-        ToggleOutlineESP(value)
+        espShowHealth = value
+        if espEnabled then UpdateESP() end
     end
 })
 
-local espTeamGroup = espTab:AddLeftGroupbox("敌我透视")
-espTeamGroup:AddLabel("红色标注敌人，绿色标注队友")
-espTeamGroup:AddToggle("TeamESP", {
-    Text = "透视敌人和队友",
-    Default = false,
+espGroup:AddToggle("ESPShowDist", {
+    Text = "显示距离",
+    Default = true,
     Callback = function(value)
-        teamEspOn = value
-        if not value then teamClearAll() end
+        espShowDist = value
+        if espEnabled then UpdateESP() end
     end
 })
 
--- 透视实时刷新循环
+-- 透视实时刷新
 task.spawn(function()
     while not isDestroyed do
         task.wait(0.3)
         if espEnabled then
-            UpdateAllESP()
-        end
-        if outlineESPEnabled then
-            UpdateOutlineESP()
-        end
-        if teamEspOn then
-            for _, plr in ipairs(Players:GetPlayers()) do
-                teamApply(plr)
-            end
+            UpdateESP()
         end
     end
 end)
 
-Players.PlayerRemoving:Connect(function(plr)
-    local data = teamTracked[plr]
-    if data then
-        pcall(function() if data.Highlight then data.Highlight:Destroy() end end)
-        pcall(function() if data.Billboard then data.Billboard:Destroy() end end)
-        teamTracked[plr] = nil
-    end
-    RemoveESP(plr.UserId)
-    RemoveOutlineESP(plr.UserId)
+Players.PlayerRemoving:Connect(function(p)
+    RemoveESP(p.UserId)
 end)
 
--- ==================== 原枪械功能（移除透视后） ====================
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if espEnabled then
+            UpdateESP()
+        end
+    end)
+end)
+
+-- ==================== 原枪械功能 ====================
 
 local function GetTeleportData()
     return {
@@ -1546,15 +1493,6 @@ aimGroup:AddToggle("AimWallCheck", {
     end
 })
 
-task.spawn(function()
-    while not isDestroyed do
-        if outlineESPEnabled then
-            UpdateOutlineESP()
-        end
-        task.wait(0.5)
-    end
-end)
-
 local teleTab = Tabs.Teleports
 local teleLeftGroup = teleTab:AddLeftGroupbox("传送控制")
 teleLeftGroup:AddToggle("TeleportToggle", {
@@ -1604,14 +1542,6 @@ teleLeftGroup:AddButton({
 local function onPlayerAdded(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if espEnabled and p ~= player then
-            CreateESP(p)
-            UpdateESPVisibility()
-        end
-        if outlineESPEnabled and p ~= player then
-            RemoveOutlineESP(p.UserId)
-            CreateOutlineESP(p)
-        end
         if Settings.HitboxEnabled and not isDestroyed then
             task.wait(0.5)
             ApplyHitbox()
@@ -1619,6 +1549,10 @@ local function onPlayerAdded(p)
         if Settings.NoclipEnabled and not isDestroyed then
             task.wait(0.1)
             ApplyNoclip()
+        end
+        if espEnabled and p ~= player then
+            task.wait(0.5)
+            UpdateESP()
         end
     end)
     if Settings.WhitelistEnabled and not isDestroyed then
@@ -1633,7 +1567,6 @@ local playerAddedCon = Players.PlayerAdded:Connect(onPlayerAdded)
 table.insert(connections, playerAddedCon)
 local playerRemovedCon = Players.PlayerRemoving:Connect(function(p)
     RemoveESP(p.UserId)
-    RemoveOutlineESP(p.UserId)
 end)
 table.insert(connections, playerRemovedCon)
 
@@ -1648,25 +1581,6 @@ local renderCon = RunService.RenderStepped:Connect(function()
     if Settings.NoclipEnabled then
         ApplyNoclip()
     end
-    if espEnabled then
-        for userId, data in pairs(espBillboards) do
-            local p = Players:FindFirstChild(tostring(userId))
-            if p and p.Character then
-                local job = GetPlayerJob(p)
-                if data.NameLabel then
-                    data.NameLabel.Text = p.Name
-                    data.NameLabel.TextColor3 = GetPlayerTeamColor(p)
-                end
-                if data.JobLabel then
-                    data.JobLabel.Text = job
-                    data.JobLabel.TextColor3 = GetJobColor(job)
-                end
-                if data.Billboard then
-                    data.Billboard.Enabled = true
-                end
-            end
-        end
-    end
 end)
 table.insert(connections, renderCon)
 
@@ -1677,14 +1591,7 @@ task.spawn(function()
             UpdateWhitelist()
         end
         if espEnabled then
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then
-                    if not espBillboards[p.UserId] then
-                        CreateESP(p)
-                        UpdateESPVisibility()
-                    end
-                end
-            end
+            UpdateESP()
         end
     end
 end)
@@ -1714,17 +1621,12 @@ Library:OnUnload(function()
     stopFly()
     flyQuickToggle = false
     DestroyFlyQuickToggle()
-    teamClearAll()
     zzRestore()
     if aimGui then aimGui:Destroy() end
     ResetHitbox()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    if outlineESPEnabled then
-        ToggleOutlineESP(false)
-    end
-    ClearAllOutlineESP()
     for userId, data in pairs(espBillboards) do
         if data.Billboard then
             data.Billboard:Destroy()
