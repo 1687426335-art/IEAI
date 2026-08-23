@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Vehicle = Window:AddTab("车辆功能", "car"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -315,83 +315,6 @@ end)
 Players.PlayerRemoving:Connect(function(p)
     RemoveESP(p.UserId)
 end)
-
--- ==================== 车辆功能 ====================
-local VehicleTab = Tabs.Vehicle
-local VehicleGroup = VehicleTab:AddLeftGroupbox("飞车功能")
-
-getgenv().FlyCarSpeed = 50
-getgenv().FlyCarControllerRunning = false
-getgenv().FlyCarController = nil
-
-VehicleGroup:AddSlider("FlyCarSpeedSlider", {
-    Text = "飞车速度",
-    Default = 50,
-    Min = 1,
-    Max = 139,
-    Rounding = 0,
-    Suffix = "速度",
-    Callback = function(v)
-        getgenv().FlyCarSpeed = v
-    end
-})
-
-VehicleGroup:AddToggle("FlyCarToggle", {
-    Text = "开始飞车",
-    Default = false,
-    Callback = function(v)
-        if v then
-            local lp = player
-            local char = lp and lp.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-            
-            if not getgenv().FlyCarControllerRunning then
-                getgenv().FlyCarControllerRunning = true
-                getgenv().FlyCarController = task.spawn(function()
-                    while getgenv().FlyCarControllerRunning do
-                        local lp2 = player
-                        local char2 = lp2 and lp2.Character
-                        local hrp2 = char2 and char2:FindFirstChild("HumanoidRootPart")
-                        if hrp2 then
-                            hrp2.Anchored = false
-                            local oldBV = hrp2:FindFirstChildOfClass("BodyVelocity")
-                            if oldBV then pcall(function() oldBV:Destroy() end) end
-                            local oldBG = hrp2:FindFirstChildOfClass("BodyGyro")
-                            if oldBG then pcall(function() oldBG:Destroy() end) end
-                            local bv = Instance.new("BodyVelocity")
-                            bv.Parent = hrp2
-                            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                            bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * (getgenv().FlyCarSpeed or 50)
-                            local bg = Instance.new("BodyGyro")
-                            bg.Parent = hrp2
-                            bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                            bg.D = 5000
-                            bg.P = 50000
-                            bg.CFrame = workspace.CurrentCamera.CFrame
-                        end
-                        task.wait(0.1)
-                    end
-                end)
-            end
-        else
-            getgenv().FlyCarControllerRunning = false
-            if getgenv().FlyCarController then
-                task.cancel(getgenv().FlyCarController)
-                getgenv().FlyCarController = nil
-            end
-            local lp = player
-            local char = lp and lp.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local bv = hrp:FindFirstChildOfClass("BodyVelocity")
-                if bv then bv:Destroy() end
-                local bg = hrp:FindFirstChildOfClass("BodyGyro")
-                if bg then bg:Destroy() end
-            end
-        end
-    end
-})
 
 -- ==================== 原功能 ====================
 
@@ -1595,12 +1518,6 @@ Library:OnUnload(function()
     ResetHitbox()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
-    end
-    -- 清理飞车
-    getgenv().FlyCarControllerRunning = false
-    if getgenv().FlyCarController then
-        task.cancel(getgenv().FlyCarController)
-        getgenv().FlyCarController = nil
     end
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
