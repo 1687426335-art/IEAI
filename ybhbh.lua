@@ -1,14 +1,16 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/cdnUI/refs/heads/main/Mao%20ui%E4%BF%AE%E5%A4%8Dbug.lua"))()
-local lc = game:GetService("Players").LocalPlayer
-local group = 309474883
-local grouplink = "猫脚本QQ群569036702"
-local creds = "猫脚本"
-if lc:IsInGroup(group) then
-    print("猫脚本验证通过，欢迎使用！")
-else
-local FailWindow = WindUI:CreateWindow({
-    Title = "<font color='#FFC0CB'><b>猫脚本 - 验证失败</b></font>",
-    Author = "<font color='#FFC0CB'><b>请先加入群组</b></font>",
+local VirtualUser = game:GetService("VirtualUser")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+Players.LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+local Window = WindUI:CreateWindow({
+    Title = "<font color='#FFC0CB'><b>猫脚本</b></font>",
+    Author = "<font color='#FFC0CB'><b>猫天帝制作</b></font>",
     Folder = "猫脚本",
     Size = UDim2.fromOffset(390, 460),
     Transparent = false,
@@ -16,306 +18,612 @@ local FailWindow = WindUI:CreateWindow({
     SideBarWidth = 150,
     ScrollBarEnabled = true,
     Background = "rbxassetid://115018839123076",
-    BackgroundlmageTransparency = 0,
+    BackgroundlmageTransparency = 0.5,
     Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 165, 0)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 192, 203))
-        }),
-        User = { Enabled = false },
-    })
-    local FailTab = FailWindow:Tab({ Title = "<font color='#FFC0CB'>验证失败</font>", Icon = "alert-triangle" })
-    FailTab:Paragraph({ Title = "<font color='#FFC0CB'><b>问: 为什么我在这里？</b></font>", Desc = "<font color='#FFC0CB'>答: 因为你没加入猫脚本群组</font>" })
-    FailTab:Paragraph({ Title = "<font color='#FFC0CB'><b>问: 什么是猫脚本群组？</b></font>", Desc = "<font color='#FFC0CB'>答: 是Roblox里的一个名为猫脚本的群组</font>" })
-    FailTab:Paragraph({ Title = "<font color='#FFC0CB'><b>问: 手机怎么加入群组</b></font>", Desc = "<font color='#FFC0CB'>答: Roblox主界面→更多→社区→更多群组→搜索猫脚本→加入</font>" })
-    FailTab:Paragraph({ Title = "<font color='#FFC0CB'><b>问: 电脑怎么加入群组</b></font>", Desc = "<font color='#FFC0CB'>答: Roblox主界面→更多→社区→更多群组→搜索猫脚本→加入</font>" })
-    FailTab:Paragraph({ Title = "<font color='#FFC0CB'><b>问: 我电脑是网页版的怎么办</b></font>", Desc = "<font color='#FFC0CB'>答: 在你Roblox大厅有个叫(群组)的 点进去然后点击(更多群组)然后搜索(猫脚本)加入就行了</font>" })
-    setclipboard(grouplink)
-    wait(999999999)
-end
-local currentPlaceId = game.PlaceId
-local gameName = "未知"
-local scriptUrl = nil
-if currentPlaceId == 3623096087 then
-    gameName = "力量传奇 Muscle Legends"
-    scriptUrl = "https://raw.githubusercontent.com/kitten-maomao/jiaobeng/refs/heads/main/%E5%8A%9B%E9%87%8F%E4%BC%A0%E5%A5%87.lua"
-elseif currentPlaceId == 3956818381 then
-    gameName = "忍者传奇"
-    scriptUrl = "https://raw.githubusercontent.com/kitten-maomao/jiaobeng/refs/heads/main/%E5%BF%8D%E8%80%85%E4%BC%A0%E5%A5%87.lua"
-else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "该服务器还为制作\n若需要请联系作者\n作者QQ:3931554043",
-        Text = "",
-        Duration = 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
-    })
-    return
-end
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Player = game:GetService("Players").LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local Camera = workspace.CurrentCamera
-local function rgb(r, g, b)
-    return Color3.fromRGB(r, g, b)
-end
-local viewportSize = Camera.ViewportSize
-local scale = math.clamp(math.min(viewportSize.X, viewportSize.Y) / 390, 1.0, 1.6)
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CatLoaderV2"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-screenGui.IgnoreGuiInset = true
-screenGui.DisplayOrder = 999
-screenGui.Parent = PlayerGui
-local panelWidth = math.max(math.min(viewportSize.X * 0.82, 540), 400)
-local panelHeight = math.floor(102 * scale)
-local posX = (viewportSize.X - panelWidth) / 2
-local posY = (viewportSize.Y - panelHeight) / 2
-local snowContainer = Instance.new("Frame")
-snowContainer.Size = UDim2.new(1, 0, 1, 0)
-snowContainer.Position = UDim2.new(0, 0, 0, 0)
-snowContainer.BackgroundTransparency = 1
-snowContainer.ZIndex = 1
-snowContainer.Parent = screenGui
-local snowflakes = {}
-local snowflakeCount = 40
-local snowChar = utf8.char(0x2744)
-for i = 1, snowflakeCount do
-    local flake = Instance.new("TextLabel")
-    flake.BackgroundTransparency = 1
-    flake.Text = snowChar
-    flake.TextColor3 = Color3.fromRGB(230, 240, 255)
-    flake.TextTransparency = math.random(5, 35) / 100
-    flake.TextSize = math.random(10, 18) * scale
-    flake.Font = Enum.Font.GothamBold
-    flake.TextXAlignment = Enum.TextXAlignment.Center
-    flake.AnchorPoint = Vector2.new(0.5, 0.5)
-    flake.ZIndex = 1
-    flake.Parent = snowContainer
-    flake.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    table.insert(snowflakes, {
-        label = flake,
-        speed = math.random(20, 60) * scale,
-        drift = math.random(-15, 15) * scale,
-        wobbleAmp = math.random(0.2, 0.8),
-        wobbleSpeed = math.random(1, 3),
-        startTime = tick(),
-    })
-end
-local snowConnection
-snowConnection = RunService.Heartbeat:Connect(function(deltaTime)
-    local now = tick()
-    local vpSize = Camera.ViewportSize
-    for _, flakeData in ipairs(snowflakes) do
-        local flake = flakeData.label
-        local pos = flake.Position
-        local newY = pos.Y.Scale + (flakeData.speed * deltaTime) / vpSize.Y
-        if newY > 1.1 then
-            newY = -0.05
-            flake.Position = UDim2.new(math.random(), 0, newY, 0)
-        else
-            local elapsed = now - flakeData.startTime
-            local wobble = math.sin(elapsed * flakeData.wobbleSpeed) * flakeData.wobbleAmp
-            local newX = pos.X.Scale + (flakeData.drift * deltaTime + wobble * deltaTime * 0.5) / vpSize.X
-            if newX > 1.05 then newX = -0.05
-            elseif newX < -0.05 then newX = 1.05 end
-            flake.Position = UDim2.new(newX, 0, newY, 0)
-        end
-    end
-end)
-screenGui.Destroying:Connect(function()
-    if snowConnection then
-        snowConnection:Disconnect()
-        snowConnection = nil
-    end
-end)
-local mainPanel = Instance.new("Frame")
-mainPanel.Name = "SplashPanel"
-mainPanel.Size = UDim2.new(0, 0, 0, panelHeight)
-mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
-mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
-mainPanel.BackgroundColor3 = rgb(10, 8, 14)
-mainPanel.BackgroundTransparency = 0
-mainPanel.BorderSizePixel = 0
-mainPanel.ZIndex = 10
-mainPanel.ClipsDescendants = true
-mainPanel.Parent = screenGui
-Instance.new("UICorner", mainPanel).CornerRadius = UDim.new(0, 16)
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.5
-stroke.Color = rgb(210, 35, 35)
-stroke.Transparency = 0.35
-stroke.Parent = mainPanel
-local topBar = Instance.new("Frame")
-topBar.Size = UDim2.new(1, -32, 0, math.floor(3 * scale))
-topBar.Position = UDim2.new(0, 16, 0, 0)
-topBar.BackgroundColor3 = rgb(210, 35, 35)
-topBar.BackgroundTransparency = 1
-topBar.BorderSizePixel = 0
-topBar.ZIndex = 13
-topBar.Parent = mainPanel
-Instance.new("UICorner", topBar).CornerRadius = UDim.new(1, 0)
-local iconSize = math.floor(52 * scale)
-local iconFrame = Instance.new("Frame")
-iconFrame.Size = UDim2.new(0, iconSize, 0, iconSize)
-iconFrame.Position = UDim2.new(0, math.floor(16 * scale), 0.5, -iconSize / 2)
-iconFrame.BackgroundColor3 = rgb(8, 6, 12)
-iconFrame.BackgroundTransparency = 0
-iconFrame.BorderSizePixel = 0
-iconFrame.ZIndex = 12
-iconFrame.Parent = mainPanel
-Instance.new("UICorner", iconFrame).CornerRadius = UDim.new(0, 11)
-local iconStroke = Instance.new("UIStroke")
-iconStroke.Thickness = 2
-iconStroke.Color = rgb(210, 35, 35)
-iconStroke.Transparency = 0.3
-iconStroke.Parent = iconFrame
-local icon = Instance.new("ImageLabel")
-icon.Size = UDim2.new(1, -8, 1, -8)
-icon.Position = UDim2.new(0, 4, 0, 4)
-icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://124925027249193"
-icon.ScaleType = Enum.ScaleType.Fit
-icon.ZIndex = 13
-icon.Parent = iconFrame
-local titleX = math.floor(16 * scale) + iconSize + math.floor(14 * scale)
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -(titleX + 18), 0, math.floor(18 * scale))
-title.Position = UDim2.new(0, titleX, 0, math.floor(16 * scale))
-title.BackgroundTransparency = 1
-title.Text = "欢迎使用猫脚本"
-title.TextColor3 = rgb(255, 255, 255)
-title.TextSize = math.floor(13 * scale)
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.TextTransparency = 1
-title.ZIndex = 12
-title.Parent = mainPanel
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -(titleX + 18), 0, math.floor(13 * scale))
-status.Position = UDim2.new(0, titleX, 0, math.floor(37 * scale))
-status.BackgroundTransparency = 1
-status.Text = "Initializing..."
-status.TextColor3 = rgb(140, 132, 158)
-status.TextSize = math.floor(9 * scale)
-status.Font = Enum.Font.Gotham
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.TextTransparency = 1
-status.ZIndex = 12
-status.Parent = mainPanel
-local barX = math.floor(18 * scale)
-local barY = math.floor(56 * scale)
-local percentWidth = math.floor(28 * scale)
-local progressBg = Instance.new("Frame")
-progressBg.Size = UDim2.new(1, -(titleX + barX + percentWidth + math.floor(8 * scale)), 0, math.floor(5 * scale))
-progressBg.Position = UDim2.new(0, titleX, 0, barY)
-progressBg.BackgroundColor3 = rgb(28, 22, 38)
-progressBg.BorderSizePixel = 0
-progressBg.ZIndex = 12
-progressBg.Parent = mainPanel
-Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
-local progressFill = Instance.new("Frame")
-progressFill.Size = UDim2.new(0, 0, 1, 0)
-progressFill.BackgroundColor3 = rgb(210, 35, 35)
-progressFill.BorderSizePixel = 0
-progressFill.ZIndex = 13
-progressFill.Parent = progressBg
-Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
-local fillStroke = Instance.new("UIStroke")
-fillStroke.Thickness = 3
-fillStroke.Color = rgb(210, 35, 35)
-fillStroke.Transparency = 0.6
-fillStroke.Parent = progressFill
-local percentLabel = Instance.new("TextLabel")
-percentLabel.Size = UDim2.new(0, percentWidth, 0, math.floor(13 * scale))
-percentLabel.Position = UDim2.new(1, -(percentWidth + barX), 0, barY - math.floor(3 * scale))
-percentLabel.BackgroundTransparency = 1
-percentLabel.Text = "0%"
-percentLabel.TextColor3 = rgb(50, 255, 50)
-percentLabel.TextSize = math.floor(8 * scale)
-percentLabel.Font = Enum.Font.GothamBold
-percentLabel.TextXAlignment = Enum.TextXAlignment.Right
-percentLabel.TextTransparency = 1
-percentLabel.ZIndex = 12
-percentLabel.Parent = mainPanel
-local version = Instance.new("TextLabel")
-version.Size = UDim2.new(1, 0, 0, math.floor(11 * scale))
-version.Position = UDim2.new(0, 0, 0, math.floor(78 * scale))
-version.BackgroundTransparency = 1
-version.Text = "v2猫脚本加载器"
-version.TextColor3 = rgb(90, 82, 108)
-version.TextSize = math.floor(7 * scale)
-version.Font = Enum.Font.Gotham
-version.TextXAlignment = Enum.TextXAlignment.Center
-version.TextTransparency = 1
-version.ZIndex = 12
-version.Parent = mainPanel
-local tweenInfo = TweenInfo.new
-local scriptSource = nil
-if scriptUrl and scriptUrl ~= "" then
-    task.spawn(function()
-        local success, result = pcall(function()
-            return game:HttpGet(scriptUrl)
-        end)
-        if success then
-            scriptSource = result
+    }),
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Callback = function() end
+    },
+})
+Window:EditOpenButton({
+    Title = "<font color='#FFC0CB'><b>猫脚本</b></font>",
+    CornerRadius = UDim.new(0, 10),
+    StrokeThickness = 2.5,
+    Color = ColorSequence.new(Color3.fromRGB(255, 100, 100)),
+    Draggable = true,
+})
+local GameTag = Window:Tag({
+    Title = "",
+    Color = Color3.fromRGB(255, 255, 0),
+    Radius = 12
+})
+local TimeTag = Window:Tag({
+    Title = os.date("%H:%M"),
+    Color = Color3.fromRGB(0, 255, 0),
+    Radius = 12
+})
+local TimerTag = Window:Tag({
+    Title = "00:00:00",
+    Color = Color3.fromRGB(178, 34, 34),
+    Radius = 12
+})
+local SessionTag = Window:Tag({
+    Title = "00:00:00",
+    Color = Color3.fromRGB(0, 100, 255),
+    Radius = 12
+})
+local saveFolder = "猫脚本"
+local saveFile = saveFolder .. "/total_time.json"
+local function loadTotalTime()
+    pcall(function()
+        if not isfolder(saveFolder) then makefolder(saveFolder) end
+    end)
+    local saved = 0
+    pcall(function()
+        if isfile(saveFile) then
+            local data = readfile(saveFile)
+            saved = tonumber(data) or 0
         end
     end)
+    return saved
+end
+local function saveTotalTime(total)
+    pcall(function()
+        if not isfolder(saveFolder) then makefolder(saveFolder) end
+        writefile(saveFile, tostring(total))
+    end)
+end
+local historyTime = loadTotalTime()
+local sessionStartTime = tick()
+local currentSessionStartTime = tick()
+local function formatTime(seconds)
+    local h = math.floor(seconds / 3600)
+    local m = math.floor((seconds % 3600) / 60)
+    local s = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", h, m, s)
+end
+if TimerTag and TimerTag.SetTitle then
+    TimerTag:SetTitle(formatTime(historyTime))
 end
 task.spawn(function()
-    task.wait(0.02)
-    TweenService:Create(mainPanel, tweenInfo(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        ["Size"] = UDim2.new(0, panelWidth, 0, panelHeight)
-    }):Play()
-    task.wait(0.2)
-    TweenService:Create(title, tweenInfo(0.18), {["TextTransparency"] = 0}):Play()
-    TweenService:Create(status, tweenInfo(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 0.04), {["TextTransparency"] = 0}):Play()
-    TweenService:Create(percentLabel, tweenInfo(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 0.06), {["TextTransparency"] = 0}):Play()
-    TweenService:Create(version, tweenInfo(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 0.08), {["TextTransparency"] = 0}):Play()
-    local progress = 0.01
-    local stepSize = 0.008
-    local stepDelay = 0.025
-    while progress < 1 do
-        progress = math.min(progress + stepSize, 1)
-        progressFill.Size = UDim2.new(progress, 0, 1, 0)
-        percentLabel.Text = math.floor(progress * 100) .. "%"
-        if progress < 0.3 then
-            status.Text = "加载UI中"
-            status.TextColor3 = rgb(140, 132, 158)
-        elseif progress < 0.6 then
-            status.Text = "UI加载成功"
-            status.TextColor3 = rgb(140, 132, 158)
-        elseif progress < 0.85 then
-            status.Text = "脚本功能加载中"
-            status.TextColor3 = rgb(251, 191, 36)
-        else
-            status.Text = "欢迎使用猫脚本"
-            status.TextColor3 = rgb(50, 220, 100)
-            percentLabel.TextColor3 = rgb(50, 220, 100)
+    while TimerTag do
+        task.wait(1)
+        if TimeTag and TimeTag.SetTitle then
+            TimeTag:SetTitle(os.date("%H:%M"))
         end
-        task.wait(stepDelay)
-    end
-    progressFill.Size = UDim2.new(1, 0, 1, 0)
-    percentLabel.Text = "100%"
-    task.wait(0.3)
-    local fadeOutTime = 0.15
-    TweenService:Create(title, tweenInfo(fadeOutTime), {["TextTransparency"] = 1}):Play()
-    TweenService:Create(status, tweenInfo(fadeOutTime), {["TextTransparency"] = 1}):Play()
-    TweenService:Create(percentLabel, tweenInfo(fadeOutTime), {["TextTransparency"] = 1}):Play()
-    TweenService:Create(version, tweenInfo(fadeOutTime), {["TextTransparency"] = 1}):Play()
-    TweenService:Create(icon, tweenInfo(fadeOutTime), {["ImageTransparency"] = 1}):Play()
-    TweenService:Create(iconStroke, tweenInfo(fadeOutTime), {["Transparency"] = 1}):Play()
-    TweenService:Create(iconFrame, tweenInfo(fadeOutTime), {["BackgroundTransparency"] = 1}):Play()
-    TweenService:Create(progressBg, tweenInfo(fadeOutTime), {["BackgroundTransparency"] = 1}):Play()
-    TweenService:Create(progressFill, tweenInfo(fadeOutTime), {["BackgroundTransparency"] = 1}):Play()
-    TweenService:Create(topBar, tweenInfo(fadeOutTime), {["BackgroundTransparency"] = 1}):Play()
-    TweenService:Create(stroke, tweenInfo(fadeOutTime), {["Transparency"] = 1}):Play()
-    TweenService:Create(mainPanel, tweenInfo(fadeOutTime + 0.05), {["BackgroundTransparency"] = 1}):Play()
-    task.wait(fadeOutTime + 0.1)
-    screenGui:Destroy()
-    if scriptSource then
-        pcall(function() loadstring(scriptSource)("猫脚本") end)
-    elseif scriptUrl and scriptUrl ~= "" then
-        pcall(function() loadstring(game:HttpGet(scriptUrl))("猫脚本") end)
+        if TimerTag and TimerTag.SetTitle then
+            local sessionElapsed = tick() - sessionStartTime
+            local totalElapsed = historyTime + sessionElapsed
+            TimerTag:SetTitle(formatTime(totalElapsed))
+            saveTotalTime(totalElapsed)
+        end
+        if SessionTag and SessionTag.SetTitle then
+            local currentSessionElapsed = tick() - currentSessionStartTime
+            SessionTag:SetTitle(formatTime(currentSessionElapsed))
+        end
     end
 end)
+local Tabs = {}
+function Tabs:Create(name, icon)
+    return Window:Tab({ Title = name, Icon = icon })
+end
+Tabs.Announce = Tabs:Create("<font color='#FFC0CB'>公告</font>", "megaphone")
+Tabs.Announce:Paragraph({
+    Title = "<font color='#FFC0CB'><b>猫脚本制作不易勿喷</b></font>",
+    Desc = "",
+    Image = "heart",
+    ImageSize = 26,
+})
+Tabs.Announce:Paragraph({
+    Title = "<font color='#FFC0CB'><b>感谢支持</b></font>",
+    Desc = "",
+    Image = "heart",
+    ImageSize = 26,
+})
+Tabs.Announce:Paragraph({
+    Title = "<font color='#FFC0CB'><b>猫脚本是免费的，可以倒卖，前提是要发脚本，拉他们进猫脚本的群\n猫脚本也支持为各大付费脚本服务，想要源码可以找我来领取源码</b></font>",
+    Desc = "",
+    Image = "heart",
+    ImageSize = 26,
+})
+local announcePara = Tabs.Announce:Paragraph({
+    Title = "<font color='#FFC0CB'><b>猫脚本：569036702\n猫脚本互赞群：1051220818</b></font>",
+    Desc = "",
+    Image = "heart",
+    ImageSize = 26,
+})
+task.spawn(function()
+    task.wait(0.3)
+    pcall(function()
+        local frame = announcePara.Frame or announcePara.Instance or announcePara.Main or announcePara.Container
+        if not frame then
+            for _, v in pairs(announcePara) do
+                if typeof(v) == "Instance" and v:IsA("GuiObject") then
+                    frame = v
+                    break
+                end
+            end
+        end
+        if frame and frame:IsA("GuiObject") then
+            frame.Active = true
+            frame.InputBegan:Connect(function(input, gameProcessed)
+                if gameProcessed then return end
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    pcall(function()
+                        if setclipboard then
+                            setclipboard("猫脚本：569036702 | 猫脚本互赞群：1051220818")
+                        end
+                        game:GetService("StarterGui"):SetCore("SendNotification", {
+                            Title = "猫脚本",
+                            Text = "猫脚本QQ群号与互赞群号已复制到剪贴板！",
+                            Duration = 3
+                        })
+                    end)
+                end
+            end)
+        end
+    end)
+end)
+Tabs.Announce:Button({
+    Title = "<font color='#FFD700'><b>🏆 点击查看赞助榜 🏆</b></font>",
+    Callback = function()
+        local sponsorUrl = "https://raw.githubusercontent.com/kitten-maomao/Master-script/refs/heads/main/sponsor.txt"
+        pcall(function()
+            if setclipboard then
+                setclipboard(sponsorUrl)
+            end
+        end)
+        local ok = pcall(function()
+            game:GetService("GuiService"):OpenBrowserWindow(sponsorUrl)
+        end)
+        if ok then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "猫脚本",
+                Text = "正在打开浏览器查看赞助榜...",
+                Duration = 3
+            })
+        else
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "猫脚本",
+                Text = "链接已复制到剪贴板，请粘贴到浏览器查看",
+                Duration = 5
+            })
+        end
+    end
+})
+local imageUrl = "https://bee-reg-ab.imagency.cn/p/93db9216459b0a0f94072f0ebf159f07.jpg"
+local localAssetId = nil
+task.spawn(function()
+    pcall(function()
+        local folder = "猫脚本"
+        if not isfolder(folder) then makefolder(folder) end
+        local filename = folder .. "/sponsor_img.png"
+        local data = game:HttpGet(imageUrl)
+        writefile(filename, data)
+        local ok, asset = pcall(getcustomasset, filename)
+        if ok then
+            localAssetId = asset
+        end
+    end)
+end)
+local imagePara = Tabs.Announce:Paragraph({
+    Title = "<font color='#FFD700'><b>点击放大</b></font>",
+    Thumbnail = imageUrl,
+    ThumbnailSize = 250,
+})
+local isEnlarged = false
+task.spawn(function()
+    task.wait(0.5)
+    pcall(function()
+        local function waitForAsset()
+            local waited = 0
+            while not localAssetId and waited < 10 do
+                task.wait(0.5)
+                waited = waited + 0.5
+            end
+            return localAssetId
+        end
+        local frame = imagePara.Frame or imagePara.Instance or imagePara.Main or imagePara.Container
+        if not frame then
+            for _, v in pairs(imagePara) do
+                if typeof(v) == "Instance" and v:IsA("GuiObject") then
+                    frame = v
+                    break
+                end
+            end
+        end
+        if frame and frame:IsA("GuiObject") then
+            frame.Active = true
+            frame.InputBegan:Connect(function(input, gameProcessed)
+                if gameProcessed then return end
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    pcall(function()
+                        local asset = waitForAsset()
+                        if not asset then return end
+                        local PlayerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+                        if not PlayerGui then return end
+                        if isEnlarged then
+                            local overlay = PlayerGui:FindFirstChild("CatImageOverlay")
+                            if overlay then
+                                local img = overlay:FindFirstChild("EnlargedImage")
+                                if img then
+                                    local ts = game:GetService("TweenService")
+                                    local ti = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                                    local goal = {Size = UDim2.new(0, 260, 0, 260)}
+                                    local tween = ts:Create(img, ti, goal)
+                                    tween:Play()
+                                    tween.Completed:Connect(function()
+                                        overlay:Destroy()
+                                    end)
+                                end
+                            end
+                            isEnlarged = false
+                            return
+                        end
+                        local overlay = Instance.new("ScreenGui")
+                        overlay.Name = "CatImageOverlay"
+                        overlay.Parent = PlayerGui
+                        local bg = Instance.new("Frame")
+                        bg.Size = UDim2.new(1, 0, 1, 0)
+                        bg.BackgroundTransparency = 1
+                        bg.Active = true
+                        bg.Parent = overlay
+                        local img = Instance.new("ImageLabel")
+                        img.Name = "EnlargedImage"
+                        img.AnchorPoint = Vector2.new(0.5, 0.5)
+                        img.Position = UDim2.new(0.5, 0, 0.5, 0)
+                        img.Size = UDim2.new(0, 260, 0, 260)
+                        img.BackgroundTransparency = 1
+                        img.Image = asset
+                        img.ScaleType = Enum.ScaleType.Fit
+                        img.Parent = overlay
+                        local targetSize = UDim2.new(0, 320, 0, 320)
+                        local ts = game:GetService("TweenService")
+                        local ti = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        local goal = {Size = targetSize}
+                        local tween = ts:Create(img, ti, goal)
+                        tween:Play()
+                        isEnlarged = true
+                        bg.InputBegan:Connect(function(inp, gp)
+                            if gp then return end
+                            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                                local ts2 = game:GetService("TweenService")
+                                local ti2 = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                                local goal2 = {Size = UDim2.new(0, 260, 0, 260)}
+                                local tween2 = ts2:Create(img, ti2, goal2)
+                                tween2:Play()
+                                tween2.Completed:Connect(function()
+                                    overlay:Destroy()
+                                end)
+                                isEnlarged = false
+                            end
+                        end)
+                    end)
+                end
+            end)
+        end
+    end)
+end)
+Tabs.General = Tabs:Create("<font color='#FFC0CB'>通用</font>", "zap")
+do
+    local Tab = Tabs.General
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>猫飞行</b></font>",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E9%A3%9E%E8%A1%8C.lua"))("猫脚本")
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>穿墙</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatNoclip_Enabled = s
+            if s and not _G.CatNoclip_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E7%A9%BF%E5%A2%99.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>隐身</b></font>",
+        Desc = "<font color='#FFC0CB'><i>本功能原作者为蛙QWQ</i></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatInvis_Enabled = s
+            if s and not _G.CatInvis_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E7%8C%AB%E5%A4%A9%E5%B8%9D%E4%BA%8C%E6%94%B9%E9%9A%90%E8%BA%AB.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>透视</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatESP_Enabled = s
+            if s and not _G.CatESP_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E9%80%8F%E8%A7%86.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>无限跳</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatInfJump_Enabled = s
+            if s and not _G.CatInfJump_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E6%97%A0%E9%99%90%E8%B7%B3.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>美化无头</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatHeadless_Enabled = s
+            if s and not _G.CatHeadless_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E7%BE%8E%E5%8C%96%E6%97%A0%E5%A4%B4.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>美化断腿</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatBrokenLeg_Enabled = s
+            if s and not _G.CatBrokenLeg_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E7%BE%8E%E5%8C%96%E6%96%AD%E8%85%BF.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>删除帽子</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatNoHat_Enabled = s
+            if s and not _G.CatNoHat_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E5%88%A0%E9%99%A4%E5%B8%BD%E5%AD%90.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>删除全部衣服</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatNoClothes_Enabled = s
+            if s and not _G.CatNoClothes_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E5%88%A0%E9%99%A4%E5%85%A8%E9%83%A8%E8%A1%A3%E6%9C%8D.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>防甩飞</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatAntiFling_Enabled = s
+            if s and not _G.CatAntiFling_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E9%98%B2%E7%94%A9%E9%A3%9E.lua"))("猫脚本")
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>速度</b></font>",
+        Default = false,
+        Callback = function(s)
+            changeSpeed = s
+            if s then
+                task.spawn(function()
+                    while changeSpeed do
+                        pcall(function()
+                            local char = Players.LocalPlayer.Character
+                            if char and char:FindFirstChild("Humanoid") then
+                                char.Humanoid.WalkSpeed = speedValue
+                            end
+                        end)
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+    Tab:Input({
+        Title = "<font color='#FFC0CB'><b>速度值</b></font>",
+        Placeholder = "默认16",
+        Default = "",
+        Callback = function(v)
+            local num = tonumber(v)
+            if num then speedValue = num end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>重力</b></font>",
+        Default = false,
+        Callback = function(s)
+            changeGravity = s
+            if s then
+                task.spawn(function()
+                    while changeGravity do
+                        pcall(function() workspace.Gravity = gravityValue end)
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+    Tab:Input({
+        Title = "<font color='#FFC0CB'><b>重力值</b></font>",
+        Placeholder = "默认196.2",
+        Default = "",
+        Callback = function(v)
+            local num = tonumber(v)
+            if num then gravityValue = num end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>跳跃</b></font>",
+        Default = false,
+        Callback = function(s)
+            changeJump = s
+            if s then
+                task.spawn(function()
+                    while changeJump do
+                        pcall(function()
+                            local char = Players.LocalPlayer.Character
+                            if char and char:FindFirstChild("Humanoid") then
+                                char.Humanoid.JumpPower = jumpValue
+                            end
+                        end)
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+    Tab:Input({
+        Title = "<font color='#FFC0CB'><b>跳跃值</b></font>",
+        Placeholder = "默认50",
+        Default = "",
+        Callback = function(v)
+            local num = tonumber(v)
+            if num then jumpValue = num end
+        end
+    })
+    local playerDropdown = Tab:Dropdown({
+        Title = "<font color='#FFC0CB'><b>选择玩家</b></font>",
+        Values = {},
+        Default = "",
+        Callback = function(v)
+            selectedPlayer = v
+            _G.CatSelectedPlayer = v
+        end
+    })
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>传送到玩家</b></font>",
+        Callback = function()
+            pcall(function()
+                local char = Players.LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                local target = Players:FindFirstChild(selectedPlayer)
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                end
+            end)
+        end
+    })
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>把玩家传送过来</b></font>",
+        Callback = function()
+            pcall(function()
+                local char = Players.LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                local target = Players:FindFirstChild(selectedPlayer)
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    target.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
+                end
+            end)
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>循环传送玩家</b></font>",
+        Default = false,
+        Callback = function(s)
+            loopTpToPlayer = s
+            if s then
+                task.spawn(function()
+                    while loopTpToPlayer do
+                        pcall(function()
+                            local char = Players.LocalPlayer.Character
+                            local root = char and char:FindFirstChild("HumanoidRootPart")
+                            if not root then return end
+                            local target = Players:FindFirstChild(selectedPlayer)
+                            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                                root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                            end
+                        end)
+                        task.wait(0.1)
+                    end
+                end)
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>循环传送过来</b></font>",
+        Default = false,
+        Callback = function(s)
+            loopTpToMe = s
+            if s then
+                task.spawn(function()
+                    while loopTpToMe do
+                        pcall(function()
+                            local char = Players.LocalPlayer.Character
+                            local root = char and char:FindFirstChild("HumanoidRootPart")
+                            if not root then return end
+                            local target = Players:FindFirstChild(selectedPlayer)
+                            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                                target.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
+                            end
+                        end)
+                        task.wait(0.1)
+                    end
+                end)
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>循环甩飞玩家</b></font>",
+        Default = false,
+        Callback = function(s)
+            _G.CatFling_Enabled = s
+            if s and not _G.CatFling_Running then
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/tongyong/refs/heads/main/%E7%94%A9%E9%A3%9E.lua"))("猫脚本")
+            end
+        end
+    })
+    local changeSpeed = false
+    local speedValue = 16
+    local changeGravity = false
+    local gravityValue = 196.2
+    local changeJump = false
+    local jumpValue = 50
+    local selectedPlayer = ""
+    _G.CatSelectedPlayer = ""
+    local function getPlayerList()
+        local list = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= Players.LocalPlayer then
+                table.insert(list, p.Name)
+            end
+        end
+        if #list == 0 then table.insert(list, "无玩家") end
+        return list
+    end
+    local function refreshPlayerList()
+        local list = getPlayerList()
+        if playerDropdown then
+            if playerDropdown.SetValues then
+                playerDropdown:SetValues(list)
+            elseif playerDropdown.Refresh then
+                playerDropdown:Refresh(list)
+            elseif playerDropdown.Update then
+                playerDropdown:Update({ Values = list })
+            end
+        end
+    end
+    refreshPlayerList()
+    Players.PlayerAdded:Connect(refreshPlayerList)
+    Players.PlayerRemoving:Connect(function(plr)
+        if selectedPlayer == plr.Name then
+            selectedPlayer = ""
+            _G.CatSelectedPlayer = ""
+        end
+        refreshPlayerList()
+    end)
+    local loopTpToPlayer = false
+    local loopTpToMe = false
+end
+Window:SelectTab(1)
