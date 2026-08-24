@@ -320,74 +320,81 @@ end)
 local DeveloperTab = Tabs.Developer
 local DeveloperGroup = DeveloperTab:AddLeftGroupbox("坐标工具")
 
-local coordPara = DeveloperGroup:AddParagraph({
-    Title = "<font color='#FFC0CB'><b>当前坐标: 加载中...</b></font>",
-    Desc = "",
-})
-
 DeveloperGroup:AddButton({
-    Title = "<font color='#FFC0CB'><b>复制当前坐标</b></font>",
-    Callback = function()
-        pcall(function()
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local pos = char.HumanoidRootPart.Position
-                local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                if setclipboard then setclipboard(coord) end
-                Library:Notify({
-                    Title = "坐标",
-                    Description = "坐标已复制到剪贴板！\n" .. coord,
-                    Time = 3,
-                })
+    Text = "开启坐标显示",
+    Func = function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local root = char:WaitForChild("HumanoidRootPart")
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "CoordinateCopyTool"
+        gui.Parent = player:WaitForChild("PlayerGui")
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 250, 0, 100)
+        frame.Position = UDim2.new(0.5, -125, 0.5, -50)
+        frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        frame.Active = true
+        frame.Parent = gui
+        local textBox = Instance.new("TextBox")
+        textBox.Size = UDim2.new(0.9, 0, 0, 30)
+        textBox.Position = UDim2.new(0.05, 0, 0.15, 0)
+        textBox.Text = "加载中..."
+        textBox.ClearTextOnFocus = false
+        textBox.TextEditable = false
+        textBox.Parent = frame
+        local copyBtn = Instance.new("TextButton")
+        copyBtn.Size = UDim2.new(0.9, 0, 0, 35)
+        copyBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
+        copyBtn.Text = "点击准备复制 (Ctrl+C)"
+        copyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        copyBtn.TextColor3 = Color3.new(1, 1, 1)
+        copyBtn.Parent = frame
+        local dragging = false
+        local dragStart, startPos
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
             end
         end)
-    end
-})
-
-DeveloperGroup:AddButton({
-    Title = "<font color='#FFC0CB'><b>复制服务器JobId</b></font>",
-    Callback = function()
-        pcall(function()
-            if setclipboard then setclipboard(game.JobId) end
-            Library:Notify({
-                Title = "JobId",
-                Description = "服务器JobId已复制到剪贴板！",
-                Time = 3,
-            })
-        end)
-    end
-})
-
-DeveloperGroup:AddButton({
-    Title = "<font color='#FFC0CB'><b>复制游戏PlaceId</b></font>",
-    Callback = function()
-        pcall(function()
-            if setclipboard then setclipboard(tostring(game.PlaceId)) end
-            Library:Notify({
-                Title = "PlaceId",
-                Description = "游戏PlaceId已复制到剪贴板！",
-                Time = 3,
-            })
-        end)
-    end
-})
-
--- 坐标实时更新
-task.spawn(function()
-    while not isDestroyed do
-        task.wait(0.1)
-        pcall(function()
-            if coordPara and coordPara.SetTitle then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    local pos = char.HumanoidRootPart.Position
-                    local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                    coordPara:SetTitle("<font color='#FFC0CB'><b>当前坐标: " .. coord .. "</b></font>")
-                end
+        frame.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             end
         end)
+        frame.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+        game:GetService("RunService").RenderStepped:Connect(function()
+            local pos = root.Position
+            local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+            if not textBox:IsFocused() then
+                textBox.Text = formattedPos
+            end
+        end)
+        copyBtn.MouseButton1Click:Connect(function()
+            textBox:CaptureFocus()
+            textBox.SelectionStart = 1
+            textBox.CursorPosition = #textBox.Text + 1
+            copyBtn.Text = "现在按下 Ctrl + C 复制！"
+            task.wait(2)
+            copyBtn.Text = "点击准备复制 (Ctrl+C)"
+        end)
     end
-end)
+})
+
+DeveloperGroup:AddButton({
+    Text = "关闭坐标显示",
+    Func = function()
+        local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
+        if gui then
+            gui:Destroy()
+        end
+    end
+})
 
 -- ==================== 原功能 ====================
 
@@ -1592,6 +1599,9 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
+    -- 关闭坐标显示
+    local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
+    if gui then gui:Destroy() end
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
             data.Billboard:Destroy()
