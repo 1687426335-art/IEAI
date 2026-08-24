@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Developer = Window:AddTab("开发者功能", "code"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -316,233 +316,78 @@ Players.PlayerRemoving:Connect(function(p)
     RemoveESP(p.UserId)
 end)
 
--- ==================== 隐身功能 ====================
-local CatInvisGroup = Tabs.Player:AddLeftGroupbox("隐身功能")
+-- ==================== 开发者功能 ====================
+local DeveloperTab = Tabs.Developer
+local DeveloperGroup = DeveloperTab:AddLeftGroupbox("坐标工具")
 
-_G.CatInvis_Enabled = _G.CatInvis_Enabled or false
-_G.CatInvis_Running = false
+local coordPara = DeveloperGroup:AddParagraph({
+    Title = "<font color='#FFC0CB'><b>当前坐标: 加载中...</b></font>",
+    Desc = "",
+})
 
-local CatInvisPlayers = Players
-local CatInvisRunService = RunService
-local CatInvisUIS = UserInputService
-local CatInvisWorkspace = Workspace
-local CatInvisPlayer = player
-local CatInvisCamera = camera
-local HIDE_Y = -20
-local MOVE_SPEED = 16
-local JUMP_VELOCITY = 50
-local GRAVITY = Workspace.Gravity
-local proxyPart = nil
-local localPlatform = nil
-local proxyVelocityY = 0
-local shouldJump = false
-local noclipEnabled = true
-local CAMERA_HEIGHT = 4
-local RAY_LENGTH = 10
-local followPlat = nil
-local invisActive = false
-
-local function getGroundHeight(position, ignoreCharacter)
-    local rayOrigin = position + Vector3.new(0, 2, 0)
-    local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    local ignoreList = {proxyPart}
-    if ignoreCharacter then
-        for _, part in ipairs(ignoreCharacter:GetDescendants()) do
-            if part:IsA("BasePart") then
-                table.insert(ignoreList, part)
+DeveloperGroup:AddButton({
+    Title = "<font color='#FFC0CB'><b>复制当前坐标</b></font>",
+    Callback = function()
+        pcall(function()
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local pos = char.HumanoidRootPart.Position
+                local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                if setclipboard then setclipboard(coord) end
+                Library:Notify({
+                    Title = "坐标",
+                    Description = "坐标已复制到剪贴板！\n" .. coord,
+                    Time = 3,
+                })
             end
-        end
-    end
-    rayParams.FilterDescendantsInstances = ignoreList
-    local result = CatInvisWorkspace:Raycast(rayOrigin, rayDirection, rayParams)
-    if result then
-        return result.Position.Y
-    end
-    return nil
-end
-
-local function setNoclip(character, enabled)
-    if not character then return end
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not enabled
-        end
-    end
-end
-
-local function cleanup()
-    if proxyPart then
-        proxyPart:Destroy()
-        proxyPart = nil
-    end
-    if localPlatform then
-        localPlatform:Destroy()
-        localPlatform = nil
-    end
-    if followPlat then
-        followPlat:Destroy()
-        followPlat = nil
-    end
-    pcall(function()
-        CatInvisRunService:UnbindFromRenderStep("InvisMovementV5")
-    end)
-    CatInvisUIS.MouseBehavior = Enum.MouseBehavior.Default
-    local character = CatInvisPlayer.Character
-    if character then
-        setNoclip(character, false)
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = 16
-            humanoid.JumpPower = 50
-            humanoid.AutoRotate = true
-            humanoid.PlatformStand = false
-        end
-    end
-    CatInvisCamera.CameraSubject = CatInvisPlayer.Character and CatInvisPlayer.Character:FindFirstChildOfClass("Humanoid")
-    CatInvisCamera.CameraType = Enum.CameraType.Custom
-    invisActive = false
-end
-
-local function init()
-    if invisActive then return end
-    local character = CatInvisPlayer.Character or CatInvisPlayer.CharacterAdded:Wait()
-    local root = character:WaitForChild("HumanoidRootPart")
-    local humanoid = character:WaitForChild("Humanoid")
-    local head = character:WaitForChild("Head")
-    humanoid.WalkSpeed = 0
-    humanoid.JumpPower = 50
-    humanoid.AutoRotate = false
-    humanoid.PlatformStand = false
-    localPlatform = Instance.new("Part")
-    localPlatform.Name = "LocalPlatform"
-    localPlatform.Size = Vector3.new(10, 1, 10)
-    localPlatform.CFrame = CFrame.new(root.Position.X, HIDE_Y - 2, root.Position.Z)
-    localPlatform.Anchored = true
-    localPlatform.CanCollide = true
-    localPlatform.Transparency = 1
-    localPlatform.Parent = CatInvisWorkspace
-    proxyPart = Instance.new("Part")
-    proxyPart.Name = "LocalProxy"
-    proxyPart.Size = Vector3.new(2, 2, 2)
-    proxyPart.Transparency = 1
-    proxyPart.CanCollide = false
-    proxyPart.Anchored = true
-    proxyPart.Parent = CatInvisWorkspace
-    local headPos = head.Position
-    local groundY = getGroundHeight(headPos, character)
-    local initY = (groundY and (groundY + CAMERA_HEIGHT)) or headPos.Y
-    proxyPart.CFrame = CFrame.new(headPos.X, initY, headPos.Z)
-    CatInvisCamera.CameraSubject = proxyPart
-    CatInvisCamera.CameraType = Enum.CameraType.Custom
-    if not CatInvisUIS.TouchEnabled then
-        CatInvisUIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-    else
-        CatInvisUIS.MouseBehavior = Enum.MouseBehavior.Default
-    end
-    proxyVelocityY = 0
-    setNoclip(character, noclipEnabled)
-    followPlat = Instance.new("Part")
-    followPlat.Name = "CatFollowPlat"
-    followPlat.Size = Vector3.new(10, 1, 10)
-    followPlat.Anchored = true
-    followPlat.CanCollide = true
-    followPlat.Transparency = 0.3
-    followPlat.Parent = CatInvisWorkspace
-    if localPlatform then localPlatform:Destroy() localPlatform = nil end
-    invisActive = true
-    CatInvisRunService:BindToRenderStep("InvisMovementV5", Enum.RenderPriority.Camera.Value + 1, function(dt)
-        update(dt, character)
-    end)
-end
-
-function update(dt, character)
-    if not character or not character.Parent then
-        cleanup()
-        return
-    end
-    local root = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not root or not humanoid then
-        cleanup()
-        return
-    end
-    root.CFrame = CFrame.new(proxyPart.Position.X, HIDE_Y, proxyPart.Position.Z)
-    root.Velocity = Vector3.zero
-    root.RotVelocity = Vector3.zero
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") and part ~= root then
-            part.Velocity = Vector3.zero
-            part.RotVelocity = Vector3.zero
-        end
-    end
-    setNoclip(character, noclipEnabled)
-    if proxyPart and proxyPart.Parent then
-        CatInvisCamera.CameraSubject = proxyPart
-        CatInvisCamera.CameraType = Enum.CameraType.Custom
-    end
-    if not proxyPart or not proxyPart.Parent then return end
-    local horizontalMove = Vector3.zero
-    local moveDir = humanoid.MoveDirection
-    if moveDir.Magnitude > 0 then
-        local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
-        horizontalMove = flatDir * MOVE_SPEED * dt
-    end
-    local currentPos = proxyPart.Position
-    local targetPos = currentPos + horizontalMove
-    local targetGroundY = getGroundHeight(targetPos, character)
-    local desiredGroundY = targetGroundY and (targetGroundY + CAMERA_HEIGHT) or nil
-    local isOnGround = (proxyVelocityY <= 0) and desiredGroundY and (currentPos.Y <= desiredGroundY + 0.2)
-    if shouldJump and isOnGround then
-        proxyVelocityY = JUMP_VELOCITY
-        shouldJump = false
-        isOnGround = false
-    end
-    if isOnGround then
-        if desiredGroundY then
-            targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
-            proxyVelocityY = 0
-        end
-    else
-        proxyVelocityY = proxyVelocityY - GRAVITY * dt
-        local newY = currentPos.Y + proxyVelocityY * dt
-        targetPos = Vector3.new(targetPos.X, newY, targetPos.Z)
-        if desiredGroundY and newY <= desiredGroundY then
-            targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
-            proxyVelocityY = 0
-        end
-    end
-    proxyPart.CFrame = CFrame.new(targetPos)
-    pcall(function()
-        if followPlat and followPlat.Parent then
-            followPlat.CFrame = CFrame.new(targetPos.X, HIDE_Y - 2, targetPos.Z)
-        end
-    end)
-end
-
-local lastJumpRequestTime = 0
-CatInvisUIS.JumpRequest:Connect(function()
-    local now = tick()
-    if now - lastJumpRequestTime > 0.2 then
-        lastJumpRequestTime = now
-        shouldJump = true
-    end
-end)
-
-CatInvisGroup:AddToggle("CatInvisToggle", {
-    Text = "隐身模式",
-    Desc = "开启后人物进入隐身状态，可以自由移动穿墙",
-    Default = false,
-    Callback = function(value)
-        _G.CatInvis_Enabled = value
-        if value then
-            pcall(init)
-        else
-            pcall(cleanup)
-        end
+        end)
     end
 })
+
+DeveloperGroup:AddButton({
+    Title = "<font color='#FFC0CB'><b>复制服务器JobId</b></font>",
+    Callback = function()
+        pcall(function()
+            if setclipboard then setclipboard(game.JobId) end
+            Library:Notify({
+                Title = "JobId",
+                Description = "服务器JobId已复制到剪贴板！",
+                Time = 3,
+            })
+        end)
+    end
+})
+
+DeveloperGroup:AddButton({
+    Title = "<font color='#FFC0CB'><b>复制游戏PlaceId</b></font>",
+    Callback = function()
+        pcall(function()
+            if setclipboard then setclipboard(tostring(game.PlaceId)) end
+            Library:Notify({
+                Title = "PlaceId",
+                Description = "游戏PlaceId已复制到剪贴板！",
+                Time = 3,
+            })
+        end)
+    end
+})
+
+-- 坐标实时更新
+task.spawn(function()
+    while not isDestroyed do
+        task.wait(0.1)
+        pcall(function()
+            if coordPara and coordPara.SetTitle then
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local pos = char.HumanoidRootPart.Position
+                    local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                    coordPara:SetTitle("<font color='#FFC0CB'><b>当前坐标: " .. coord .. "</b></font>")
+                end
+            end
+        end)
+    end
+end)
 
 -- ==================== 原功能 ====================
 
@@ -1747,9 +1592,6 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    -- 清理隐身
-    _G.CatInvis_Enabled = false
-    pcall(cleanup)
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
             data.Billboard:Destroy()
