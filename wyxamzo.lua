@@ -317,27 +317,37 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 -- ==================== 隐身功能 ====================
-local playerGroup = Tabs.Player
-local invisGroup = playerGroup:AddLeftGroupbox("隐身功能")
+local CatInvisGroup = Tabs.Player:AddLeftGroupbox("隐身功能")
 
+_G.CatInvis_Enabled = _G.CatInvis_Enabled or false
+_G.CatInvis_Running = false
+
+local CatInvisPlayers = Players
+local CatInvisRunService = RunService
+local CatInvisUIS = UserInputService
+local CatInvisWorkspace = Workspace
+local CatInvisPlayer = player
+local CatInvisCamera = camera
+local HIDE_Y = -20
+local MOVE_SPEED = 16
+local JUMP_VELOCITY = 50
+local GRAVITY = Workspace.Gravity
 local proxyPart = nil
 local localPlatform = nil
 local proxyVelocityY = 0
 local shouldJump = false
-local invisEnabled = false
+local noclipEnabled = true
 local CAMERA_HEIGHT = 4
 local RAY_LENGTH = 10
-local HIDE_Y = -20
-local MOVE_SPEED = 16
-local JUMP_VELOCITY = 50
+local followPlat = nil
+local invisActive = false
 
 local function getGroundHeight(position, ignoreCharacter)
     local rayOrigin = position + Vector3.new(0, 2, 0)
     local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    local ignoreList = {}
-    if proxyPart then table.insert(ignoreList, proxyPart) end
+    local ignoreList = {proxyPart}
     if ignoreCharacter then
         for _, part in ipairs(ignoreCharacter:GetDescendants()) do
             if part:IsA("BasePart") then
@@ -346,14 +356,23 @@ local function getGroundHeight(position, ignoreCharacter)
         end
     end
     rayParams.FilterDescendantsInstances = ignoreList
-    local result = Workspace:Raycast(rayOrigin, rayDirection, rayParams)
+    local result = CatInvisWorkspace:Raycast(rayOrigin, rayDirection, rayParams)
     if result then
         return result.Position.Y
     end
     return nil
 end
 
-local function cleanupInvis()
+local function setNoclip(character, enabled)
+    if not character then return end
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not enabled
+        end
+    end
+end
+
+local function cleanup()
     if proxyPart then
         proxyPart:Destroy()
         proxyPart = nil
@@ -362,27 +381,40 @@ local function cleanupInvis()
         localPlatform:Destroy()
         localPlatform = nil
     end
-    RunService:UnbindFromRenderStep("InvisMovementV5")
-    local camera = workspace.CurrentCamera
-    camera.CameraSubject = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    camera.CameraType = Enum.CameraType.Custom
-    UIS.MouseBehavior = Enum.MouseBehavior.Default
-    invisEnabled = false
+    if followPlat then
+        followPlat:Destroy()
+        followPlat = nil
+    end
+    pcall(function()
+        CatInvisRunService:UnbindFromRenderStep("InvisMovementV5")
+    end)
+    CatInvisUIS.MouseBehavior = Enum.MouseBehavior.Default
+    local character = CatInvisPlayer.Character
+    if character then
+        setNoclip(character, false)
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            humanoid.JumpPower = 50
+            humanoid.AutoRotate = true
+            humanoid.PlatformStand = false
+        end
+    end
+    CatInvisCamera.CameraSubject = CatInvisPlayer.Character and CatInvisPlayer.Character:FindFirstChildOfClass("Humanoid")
+    CatInvisCamera.CameraType = Enum.CameraType.Custom
+    invisActive = false
 end
 
-local function initInvis()
-    local character = player.Character
-    if not character then return end
-    local root = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    local head = character:FindFirstChild("Head")
-    if not root or not humanoid or not head then return end
-
+local function init()
+    if invisActive then return end
+    local character = CatInvisPlayer.Character or CatInvisPlayer.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+    local head = character:WaitForChild("Head")
     humanoid.WalkSpeed = 0
     humanoid.JumpPower = 50
     humanoid.AutoRotate = false
     humanoid.PlatformStand = false
-
     localPlatform = Instance.new("Part")
     localPlatform.Name = "LocalPlatform"
     localPlatform.Size = Vector3.new(10, 1, 10)
@@ -390,126 +422,124 @@ local function initInvis()
     localPlatform.Anchored = true
     localPlatform.CanCollide = true
     localPlatform.Transparency = 1
-    localPlatform.Parent = Workspace
-
+    localPlatform.Parent = CatInvisWorkspace
     proxyPart = Instance.new("Part")
     proxyPart.Name = "LocalProxy"
     proxyPart.Size = Vector3.new(2, 2, 2)
     proxyPart.Transparency = 1
     proxyPart.CanCollide = false
     proxyPart.Anchored = true
-    proxyPart.Parent = Workspace
-
+    proxyPart.Parent = CatInvisWorkspace
     local headPos = head.Position
     local groundY = getGroundHeight(headPos, character)
     local initY = (groundY and (groundY + CAMERA_HEIGHT)) or headPos.Y
     proxyPart.CFrame = CFrame.new(headPos.X, initY, headPos.Z)
-
-    local camera = workspace.CurrentCamera
-    camera.CameraSubject = proxyPart
-    camera.CameraType = Enum.CameraType.Custom
-
-    if not UIS.TouchEnabled then
-        UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+    CatInvisCamera.CameraSubject = proxyPart
+    CatInvisCamera.CameraType = Enum.CameraType.Custom
+    if not CatInvisUIS.TouchEnabled then
+        CatInvisUIS.MouseBehavior = Enum.MouseBehavior.LockCenter
     else
-        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        CatInvisUIS.MouseBehavior = Enum.MouseBehavior.Default
     end
-
     proxyVelocityY = 0
-    invisEnabled = true
-
-    UIS.JumpRequest:Connect(function()
-        shouldJump = true
-    end)
-
-    RunService:BindToRenderStep("InvisMovementV5", Enum.RenderPriority.Camera.Value + 1, function(dt)
-        if not invisEnabled or not character or not character.Parent then
-            cleanupInvis()
-            return
-        end
-        local root2 = character:FindFirstChild("HumanoidRootPart")
-        local humanoid2 = character:FindFirstChildOfClass("Humanoid")
-        if not root2 or not humanoid2 then
-            cleanupInvis()
-            return
-        end
-
-        root2.CFrame = CFrame.new(root2.Position.X, HIDE_Y, root2.Position.Z)
-        root2.Velocity = Vector3.new(root2.Velocity.X, 0, root2.Velocity.Z)
-        root2.RotVelocity = Vector3.zero
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part ~= root2 then
-                part.Velocity = Vector3.zero
-                part.RotVelocity = Vector3.zero
-            end
-        end
-
-        if not proxyPart or not proxyPart.Parent then return end
-
-        local horizontalMove = Vector3.zero
-        local moveDir = humanoid2.MoveDirection
-        if moveDir.Magnitude > 0 then
-            local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
-            horizontalMove = flatDir * MOVE_SPEED * dt
-        end
-
-        local currentPos = proxyPart.Position
-        local targetPos = currentPos + horizontalMove
-
-        local targetGroundY = getGroundHeight(targetPos, character)
-        local desiredGroundY = targetGroundY and (targetGroundY + CAMERA_HEIGHT) or nil
-
-        local isOnGround = (proxyVelocityY <= 0) and desiredGroundY and (currentPos.Y <= desiredGroundY + 0.2)
-
-        if shouldJump and isOnGround then
-            proxyVelocityY = JUMP_VELOCITY
-            shouldJump = false
-            isOnGround = false
-        end
-
-        if isOnGround then
-            if desiredGroundY then
-                targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
-                proxyVelocityY = 0
-            end
-        else
-            proxyVelocityY = proxyVelocityY - GRAVITY * dt
-            local newY = currentPos.Y + proxyVelocityY * dt
-            targetPos = Vector3.new(targetPos.X, newY, targetPos.Z)
-
-            if desiredGroundY and newY <= desiredGroundY then
-                targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
-                proxyVelocityY = 0
-            end
-        end
-
-        proxyPart.CFrame = CFrame.new(targetPos)
+    setNoclip(character, noclipEnabled)
+    followPlat = Instance.new("Part")
+    followPlat.Name = "CatFollowPlat"
+    followPlat.Size = Vector3.new(10, 1, 10)
+    followPlat.Anchored = true
+    followPlat.CanCollide = true
+    followPlat.Transparency = 0.3
+    followPlat.Parent = CatInvisWorkspace
+    if localPlatform then localPlatform:Destroy() localPlatform = nil end
+    invisActive = true
+    CatInvisRunService:BindToRenderStep("InvisMovementV5", Enum.RenderPriority.Camera.Value + 1, function(dt)
+        update(dt, character)
     end)
 end
 
-invisGroup:AddToggle("InvisToggle", {
-    Text = "开启隐身",
+function update(dt, character)
+    if not character or not character.Parent then
+        cleanup()
+        return
+    end
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not root or not humanoid then
+        cleanup()
+        return
+    end
+    root.CFrame = CFrame.new(proxyPart.Position.X, HIDE_Y, proxyPart.Position.Z)
+    root.Velocity = Vector3.zero
+    root.RotVelocity = Vector3.zero
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= root then
+            part.Velocity = Vector3.zero
+            part.RotVelocity = Vector3.zero
+        end
+    end
+    setNoclip(character, noclipEnabled)
+    if proxyPart and proxyPart.Parent then
+        CatInvisCamera.CameraSubject = proxyPart
+        CatInvisCamera.CameraType = Enum.CameraType.Custom
+    end
+    if not proxyPart or not proxyPart.Parent then return end
+    local horizontalMove = Vector3.zero
+    local moveDir = humanoid.MoveDirection
+    if moveDir.Magnitude > 0 then
+        local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+        horizontalMove = flatDir * MOVE_SPEED * dt
+    end
+    local currentPos = proxyPart.Position
+    local targetPos = currentPos + horizontalMove
+    local targetGroundY = getGroundHeight(targetPos, character)
+    local desiredGroundY = targetGroundY and (targetGroundY + CAMERA_HEIGHT) or nil
+    local isOnGround = (proxyVelocityY <= 0) and desiredGroundY and (currentPos.Y <= desiredGroundY + 0.2)
+    if shouldJump and isOnGround then
+        proxyVelocityY = JUMP_VELOCITY
+        shouldJump = false
+        isOnGround = false
+    end
+    if isOnGround then
+        if desiredGroundY then
+            targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+            proxyVelocityY = 0
+        end
+    else
+        proxyVelocityY = proxyVelocityY - GRAVITY * dt
+        local newY = currentPos.Y + proxyVelocityY * dt
+        targetPos = Vector3.new(targetPos.X, newY, targetPos.Z)
+        if desiredGroundY and newY <= desiredGroundY then
+            targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+            proxyVelocityY = 0
+        end
+    end
+    proxyPart.CFrame = CFrame.new(targetPos)
+    pcall(function()
+        if followPlat and followPlat.Parent then
+            followPlat.CFrame = CFrame.new(targetPos.X, HIDE_Y - 2, targetPos.Z)
+        end
+    end)
+end
+
+local lastJumpRequestTime = 0
+CatInvisUIS.JumpRequest:Connect(function()
+    local now = tick()
+    if now - lastJumpRequestTime > 0.2 then
+        lastJumpRequestTime = now
+        shouldJump = true
+    end
+end)
+
+CatInvisGroup:AddToggle("CatInvisToggle", {
+    Text = "隐身模式",
+    Desc = "开启后人物进入隐身状态，可以自由移动穿墙",
     Default = false,
-    Callback = function(v)
-        if v then
-            initInvis()
+    Callback = function(value)
+        _G.CatInvis_Enabled = value
+        if value then
+            pcall(init)
         else
-            if invisEnabled then
-                local character = player.Character
-                if character then
-                    local root = character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character:FindFirstChildOfClass("Humanoid")
-                    if root and humanoid then
-                        local restoreGroundY = getGroundHeight(proxyPart.Position, nil) or (proxyPart.Position.Y - CAMERA_HEIGHT)
-                        root.CFrame = CFrame.new(proxyPart.Position.X, restoreGroundY, proxyPart.Position.Z)
-                        humanoid.WalkSpeed = 16
-                        humanoid.JumpPower = 50
-                        humanoid.AutoRotate = true
-                        humanoid.PlatformStand = false
-                    end
-                end
-                cleanupInvis()
-            end
+            pcall(cleanup)
         end
     end
 })
@@ -1717,7 +1747,9 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    cleanupInvis()
+    -- 清理隐身
+    _G.CatInvis_Enabled = false
+    pcall(cleanup)
     for userId, data in pairs(ESP_LIST) do
         if data.Billboard then
             data.Billboard:Destroy()
