@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Police = Window:AddTab("警察功能", "shield"), Developer = Window:AddTab("开发者功能", "code"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Developer = Window:AddTab("开发者功能", "code"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -316,110 +316,41 @@ Players.PlayerRemoving:Connect(function(p)
     RemoveESP(p.UserId)
 end)
 
--- ==================== 警察功能 ====================
-local policeTab = Tabs.Police
-local policeGroup = policeTab:AddLeftGroupbox("追捕系统")
+-- ==================== 防甩飞功能（独立线程） ====================
+_G.CatAntiFling_Enabled = false
+_G.CatAntiFling_Running = false
 
--- 检查玩家是否有通缉星星UI
-local function HasWantedStars(p)
-    local pg = p:FindFirstChild("PlayerGui")
-    if not pg then return false end
-    
-    -- 遍历所有GUI
-    for _, gui in ipairs(pg:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            -- 检查GUI名字
-            local guiName = gui.Name:lower()
-            if guiName:find("wanted") or guiName:find("通缉") or guiName:find("stars") or guiName:find("bounty") or guiName:find("crime") then
-                return true
-            end
-            
-            -- 递归检查所有子组件，找星星
-            local function scanForStars(container)
-                for _, child in ipairs(container:GetChildren()) do
-                    if child:IsA("ImageLabel") or child:IsA("ImageButton") then
-                        local childName = child.Name:lower()
-                        if childName:find("star") and child.Visible == true then
-                            return true
+local function AntiFlingLoop()
+    if _G.CatAntiFling_Running then return end
+    _G.CatAntiFling_Running = true
+    task.spawn(function()
+        while not isDestroyed do
+            if _G.CatAntiFling_Enabled then
+                pcall(function()
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local vel = root.Velocity
+                    if vel.Magnitude > 500 or math.abs(vel.Y) > 300 then
+                        root.Velocity = Vector3.new(0, 0, 0)
+                        root.RotVelocity = Vector3.new(0, 0, 0)
+                    end
+                    for _, obj in ipairs(root:GetChildren()) do
+                        if (obj:IsA("BodyVelocity") or obj:IsA("BodyAngularVelocity")) and obj.Name ~= "CatAntiFling" and obj.Name ~= "CatAntiFlingAngular" then
+                            obj:Destroy()
                         end
                     end
-                    if child:IsA("Frame") or child:IsA("ImageLabel") or child:IsA("ImageButton") then
-                        local result = scanForStars(child)
-                        if result then return true end
-                    end
-                end
-                return false
+                end)
             end
-            
-            if scanForStars(gui) then
-                return true
-            end
+            task.wait()
         end
-    end
-    
-    return false
+        _G.CatAntiFling_Running = false
+    end)
 end
 
--- 获取所有通缉玩家
-local function GetWantedPlayers()
-    local wanted = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            if HasWantedStars(p) then
-                table.insert(wanted, p)
-            end
-        end
-    end
-    return wanted
-end
-
-policeGroup:AddButton({
-    Text = "随机传送通缉玩家",
-    Func = function()
-        if not Settings.TeleportEnabled then
-            Library:Notify({ Title = "传送失败", Description = "请先在传送Tab中开启启用传送", Time = 3 })
-            return
-        end
-        
-        local wantedList = GetWantedPlayers()
-        
-        if #wantedList == 0 then
-            Library:Notify({ Title = "追捕失败", Description = "当前服务器没有通缉玩家", Time = 3 })
-            return
-        end
-        
-        local target = wantedList[math.random(1, #wantedList)]
-        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-        if targetRoot then
-            local char = player.Character
-            if char then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.CFrame = CFrame.new(targetRoot.Position)
-                    Library:Notify({ Title = "追捕成功", Description = "已传送到: " .. target.Name .. " (" .. #wantedList .. "人通缉)", Time = 3 })
-                end
-            end
-        end
-    end
-})
-
-policeGroup:AddDivider()
-
-policeGroup:AddButton({
-    Text = "扫描通缉玩家",
-    Func = function()
-        local wantedList = GetWantedPlayers()
-        if #wantedList == 0 then
-            Library:Notify({ Title = "扫描结果", Description = "当前无通缉玩家", Time = 3 })
-            return
-        end
-        local names = {}
-        for _, p in ipairs(wantedList) do
-            table.insert(names, p.Name)
-        end
-        Library:Notify({ Title = "通缉玩家列表", Description = table.concat(names, ", "), Time = 5 })
-    end
-})
+-- 启动防甩飞循环（始终运行，但默认禁用）
+AntiFlingLoop()
 
 -- ==================== 开发者功能 ====================
 local DeveloperTab = Tabs.Developer
@@ -1314,6 +1245,20 @@ flyGroup:AddToggle("StaminaToggle", {
     Default = false,
     Callback = function(value)
         staminaOn = value
+    end
+})
+flyGroup:AddDivider()
+flyGroup:AddToggle("AntiFlingToggle", {
+    Text = "防甩飞",
+    Desc = "防止被其他脚本甩飞",
+    Default = false,
+    Callback = function(value)
+        _G.CatAntiFling_Enabled = value
+        if value then
+            Library:Notify({ Title = "防甩飞", Description = "已开启，抵御甩飞攻击", Time = 2 })
+        else
+            Library:Notify({ Title = "防甩飞", Description = "已关闭", Time = 2 })
+        end
     end
 })
 
