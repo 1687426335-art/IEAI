@@ -318,7 +318,7 @@ end)
 
 -- ==================== 警察功能 ====================
 local policeTab = Tabs.Police
-local policeGroup = policeTab:AddLeftGroupbox("警察功能")
+local policeGroup = policeTab:AddLeftGroupbox("追捕系统")
 
 policeGroup:AddButton({
     Text = "随机传送通缉玩家",
@@ -361,7 +361,7 @@ policeGroup:AddButton({
         end
         
         if #wantedList == 0 then
-            Library:Notify({ Title = "传送失败", Description = "当前服务器没有通缉玩家", Time = 3 })
+            Library:Notify({ Title = "追捕失败", Description = "当前服务器没有通缉玩家", Time = 3 })
             return
         end
         
@@ -373,7 +373,7 @@ policeGroup:AddButton({
                 local root = char:FindFirstChild("HumanoidRootPart")
                 if root then
                     root.CFrame = CFrame.new(targetRoot.Position)
-                    Library:Notify({ Title = "传送成功", Description = "已传送到通缉玩家: " .. target.Name, Time = 3 })
+                    Library:Notify({ Title = "追捕成功", Description = "已传送到通缉玩家: " .. target.Name, Time = 3 })
                 end
             end
         end
