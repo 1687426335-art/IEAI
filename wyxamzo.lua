@@ -320,6 +320,59 @@ end)
 local policeTab = Tabs.Police
 local policeGroup = policeTab:AddLeftGroupbox("追捕系统")
 
+-- 检查玩家是否有通缉星星UI
+local function HasWantedStars(p)
+    local pg = p:FindFirstChild("PlayerGui")
+    if not pg then return false end
+    
+    -- 遍历所有GUI
+    for _, gui in ipairs(pg:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            -- 检查GUI名字
+            local guiName = gui.Name:lower()
+            if guiName:find("wanted") or guiName:find("通缉") or guiName:find("stars") or guiName:find("bounty") or guiName:find("crime") then
+                return true
+            end
+            
+            -- 递归检查所有子组件，找星星
+            local function scanForStars(container)
+                for _, child in ipairs(container:GetChildren()) do
+                    if child:IsA("ImageLabel") or child:IsA("ImageButton") then
+                        local childName = child.Name:lower()
+                        if childName:find("star") and child.Visible == true then
+                            return true
+                        end
+                    end
+                    if child:IsA("Frame") or child:IsA("ImageLabel") or child:IsA("ImageButton") then
+                        local result = scanForStars(child)
+                        if result then return true end
+                    end
+                end
+                return false
+            end
+            
+            if scanForStars(gui) then
+                return true
+            end
+        end
+    end
+    
+    return false
+end
+
+-- 获取所有通缉玩家
+local function GetWantedPlayers()
+    local wanted = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            if HasWantedStars(p) then
+                table.insert(wanted, p)
+            end
+        end
+    end
+    return wanted
+end
+
 policeGroup:AddButton({
     Text = "随机传送通缉玩家",
     Func = function()
@@ -328,37 +381,7 @@ policeGroup:AddButton({
             return
         end
         
-        local wantedList = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local isWanted = false
-                for _, child in ipairs(p:GetChildren()) do
-                    if child:IsA("BoolValue") and child.Name:lower():find("wanted") and child.Value == true then
-                        isWanted = true
-                        break
-                    end
-                    if child:IsA("IntValue") and child.Name:lower():find("wanted") and child.Value > 0 then
-                        isWanted = true
-                        break
-                    end
-                end
-                if not isWanted and p.Character then
-                    for _, child in ipairs(p.Character:GetDescendants()) do
-                        if child:IsA("BoolValue") and child.Name:lower():find("wanted") and child.Value == true then
-                            isWanted = true
-                            break
-                        end
-                        if child:IsA("IntValue") and child.Name:lower():find("wanted") and child.Value > 0 then
-                            isWanted = true
-                            break
-                        end
-                    end
-                end
-                if isWanted then
-                    table.insert(wantedList, p)
-                end
-            end
-        end
+        local wantedList = GetWantedPlayers()
         
         if #wantedList == 0 then
             Library:Notify({ Title = "追捕失败", Description = "当前服务器没有通缉玩家", Time = 3 })
@@ -373,10 +396,28 @@ policeGroup:AddButton({
                 local root = char:FindFirstChild("HumanoidRootPart")
                 if root then
                     root.CFrame = CFrame.new(targetRoot.Position)
-                    Library:Notify({ Title = "追捕成功", Description = "已传送到通缉玩家: " .. target.Name, Time = 3 })
+                    Library:Notify({ Title = "追捕成功", Description = "已传送到: " .. target.Name .. " (" .. #wantedList .. "人通缉)", Time = 3 })
                 end
             end
         end
+    end
+})
+
+policeGroup:AddDivider()
+
+policeGroup:AddButton({
+    Text = "扫描通缉玩家",
+    Func = function()
+        local wantedList = GetWantedPlayers()
+        if #wantedList == 0 then
+            Library:Notify({ Title = "扫描结果", Description = "当前无通缉玩家", Time = 3 })
+            return
+        end
+        local names = {}
+        for _, p in ipairs(wantedList) do
+            table.insert(names, p.Name)
+        end
+        Library:Notify({ Title = "通缉玩家列表", Description = table.concat(names, ", "), Time = 5 })
     end
 })
 
