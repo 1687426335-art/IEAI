@@ -1,5 +1,5 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Developer = Window:AddTab("开发者功能", "code"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
+local function safeLoad(url) local success, result = pcall(function() return loadstring(game:HttpGet(url))() end) if not success then warn("加载失败: " .. url) return nil end return result end local Library = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/黑曜石主库.ui") local ThemeManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/主题管理.ui") local SaveManager = safeLoad("https://raw.githubusercontent.com/kongbaNB/ui/refs/heads/main/配置管理.ui") if not Library then game:GetService("StarterGui"):SetCore("SendNotification", { Title = "错误", Text = "UI 库加载失败，请检查网络或脚本资源", Duration = 5, }) return end local Options = Library.Options local Toggles = Library.Toggles local Players = game:GetService("Players") local ReplicatedStorage = game:GetService("ReplicatedStorage") local Workspace = game:GetService("Workspace") local RunService = game:GetService("RunService") local VirtualInputManager = game:GetService("VirtualInputManager") local player = Players.LocalPlayer local Window = Library:CreateWindow({ Title = "wdfex-圣奥里", Footer = "此脚本由wdfex高级工程师制作倒卖没有季吧", Icon = 131153193945220, NotifySide = "Right", ShowCustomCursor = true, }) Library:Notify({ Title = "圣奥里", Description = "创作者：wdfex\nQQ：1687426335（已为您开启反作弊与防挂机祝您玩的愉快）\n脚本已加载成功", Time = 5, }) local Tabs = { Notice = Window:AddTab("公告", "info"), Player = Window:AddTab("玩家修改", "user"), Gun = Window:AddTab("枪械功能", "target"), KA = Window:AddTab("杀戮光环", "skull"), Teleports = Window:AddTab("传送点", "map-pin"), ESP = Window:AddTab("透视", "eye"), Money = Window:AddTab("刷钱", "dollar"), Developer = Window:AddTab("开发者功能", "code"), Settings = Window:AddTab("设置", "settings"), } local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息") NoticeGroup:AddLabel('wdfex') NoticeGroup:AddLabel('创作者：wdfex') NoticeGroup:AddDivider() NoticeGroup:AddLabel('已更换悬浮窗添加了一些功能') NoticeGroup:AddLabel('杀戮光环的优先攻击最近目标如果选择距离内没有人') NoticeGroup:AddLabel('那这个选项就不会生效杀戮光环正常生效') NoticeGroup:AddDivider() NoticeGroup:AddLabel('如果你使用的过程中出现一些bug请联系作者修复')
 
 local Settings = {
     HoldTime = 0,
@@ -52,7 +52,7 @@ local JobColors = {
     ["医疗服务工作人员"] = Color3.fromRGB(0, 220, 100),
 }
 
--- ==================== 透视功能（实时刷新+自动修复） ====================
+-- ==================== 透视功能 ====================
 local ESP_ENABLED = false
 local ESP_SHOW_NAME = true
 local ESP_SHOW_TEAM = true
@@ -291,32 +291,160 @@ espGroup:AddToggle("ESPShowDist", {
     end
 })
 
--- 透视实时刷新循环（0.15秒刷新一次，确保实时）
 task.spawn(function()
     while not isDestroyed do
         task.wait(0.15)
-        if ESP_ENABLED then
-            RefreshESP()
-        end
+        if ESP_ENABLED then RefreshESP() end
     end
 end)
 
--- 玩家加入时自动添加透视
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.3)
-        if ESP_ENABLED then
-            RefreshESP()
-        end
+        if ESP_ENABLED then RefreshESP() end
     end)
 end)
 
--- 玩家离开时清理
 Players.PlayerRemoving:Connect(function(p)
     RemoveESP(p.UserId)
 end)
 
--- ==================== 防甩飞功能（独立线程） ====================
+-- ==================== 刷钱功能 ====================
+local moneyTab = Tabs.Money
+local moneyGroup = moneyTab:AddLeftGroupbox("出租车刷钱")
+
+-- 模拟点击坐标（根据屏幕分辨率动态计算）
+local function GetPhoneClickPos()
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    local x = screenSize.X * 0.85
+    local y = screenSize.Y * 0.35
+    return x, y
+end
+
+local function ClickAt(x, y)
+    VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+    task.wait(0.05)
+    VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+end
+
+-- 接单
+local function AcceptOrder()
+    local x, y = GetPhoneClickPos()
+    ClickAt(x, y)              -- 点击手机
+    task.wait(0.3)
+    ClickAt(x, y + 100)        -- 点击接单按钮
+    task.wait(0.3)
+    ClickAt(x, y + 160)        -- 点击确认
+    task.wait(0.3)
+    ClickAt(x, y + 240)        -- 点击完成
+    task.wait(0.3)
+end
+
+-- 获取目标位置（从地图中找第一个BasePart）
+local function GetTargetPosition()
+    local targetFolder = workspace.Gameplay.Entities.ClientContent
+    if not targetFolder then return nil end
+    for _, child in ipairs(targetFolder:GetDescendants()) do
+        if child:IsA("BasePart") then
+            return child.Position + Vector3.new(0, 3, 0)
+        end
+    end
+    return nil
+end
+
+-- 强制传送（不依赖传送开关）
+local function ForceTeleport(pos)
+    local char = player.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart then
+        humanoid.Sit = false
+        task.wait(0.1)
+    end
+    hrp.CFrame = CFrame.new(pos)
+    hrp.Velocity = Vector3.new(0,0,0)
+    hrp.RotVelocity = Vector3.new(0,0,0)
+    return true
+end
+
+-- 自动接单循环控制
+local autoAcceptRunning = false
+local autoTaxiRunning = false
+
+-- 启动自动接单
+local function StartAutoAccept()
+    if autoAcceptRunning then return end
+    autoAcceptRunning = true
+    task.spawn(function()
+        while _G.AutoAcceptOrder do
+            pcall(AcceptOrder)
+            task.wait(1)
+        end
+        autoAcceptRunning = false
+    end)
+end
+
+-- 启动出租车刷钱循环
+local function StartAutoTaxi()
+    if autoTaxiRunning then return end
+    autoTaxiRunning = true
+    task.spawn(function()
+        while _G.AutoTaxi do
+            -- 接单
+            pcall(AcceptOrder)
+            task.wait(1)
+            -- 第一次传送
+            local pos1 = GetTargetPosition()
+            if pos1 then pcall(ForceTeleport, pos1) end
+            task.wait(2.5)
+            -- 第二次传送
+            local pos2 = GetTargetPosition()
+            if pos2 then pcall(ForceTeleport, pos2) end
+            task.wait(2)
+        end
+        autoTaxiRunning = false
+    end)
+end
+
+-- 全局开关变量
+_G.AutoAcceptOrder = false
+_G.AutoTaxi = false
+
+moneyGroup:AddToggle("AutoAcceptToggle", {
+    Text = "自动接单",
+    Desc = "持续自动点击手机接单（不传送）",
+    Default = false,
+    Callback = function(v)
+        _G.AutoAcceptOrder = v
+        if v then
+            StartAutoAccept()
+            Library:Notify({ Title = "自动接单", Description = "已启动", Time = 2 })
+        else
+            Library:Notify({ Title = "自动接单", Description = "已停止", Time = 2 })
+        end
+    end
+})
+
+moneyGroup:AddDivider()
+
+moneyGroup:AddToggle("AutoTaxiToggle", {
+    Text = "出租车刷钱",
+    Desc = "自动接单 + 两次传送至目标点（完整循环）",
+    Default = false,
+    Callback = function(v)
+        _G.AutoTaxi = v
+        if v then
+            StartAutoTaxi()
+            Library:Notify({ Title = "出租车刷钱", Description = "已启动", Time = 2 })
+        else
+            Library:Notify({ Title = "出租车刷钱", Description = "已停止", Time = 2 })
+        end
+    end
+})
+
+-- ==================== 防甩飞功能 ====================
 _G.CatAntiFling_Enabled = false
 _G.CatAntiFling_Running = false
 
@@ -333,8 +461,8 @@ local function AntiFlingLoop()
                     if not root then return end
                     local vel = root.Velocity
                     if vel.Magnitude > 500 or math.abs(vel.Y) > 300 then
-                        root.Velocity = Vector3.new(0, 0, 0)
-                        root.RotVelocity = Vector3.new(0, 0, 0)
+                        root.Velocity = Vector3.new(0,0,0)
+                        root.RotVelocity = Vector3.new(0,0,0)
                     end
                     for _, obj in ipairs(root:GetChildren()) do
                         if (obj:IsA("BodyVelocity") or obj:IsA("BodyAngularVelocity")) and obj.Name ~= "CatAntiFling" and obj.Name ~= "CatAntiFlingAngular" then
@@ -348,8 +476,6 @@ local function AntiFlingLoop()
         _G.CatAntiFling_Running = false
     end)
 end
-
--- 启动防甩飞循环（始终运行，但默认禁用）
 AntiFlingLoop()
 
 -- ==================== 开发者功能 ====================
@@ -426,14 +552,11 @@ DeveloperGroup:AddButton({
     Text = "关闭坐标显示",
     Func = function()
         local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
-        if gui then
-            gui:Destroy()
-        end
+        if gui then gui:Destroy() end
     end
 })
 
--- ==================== 原功能 ====================
-
+-- ==================== 传送数据及原功能 ====================
 local function GetTeleportData()
     return {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594), region = "圣奥里"},
@@ -498,6 +621,7 @@ local function TeleportTo(pos)
     end)
 end
 
+-- ==================== 其他功能（飞行、穿墙、碰撞箱等） ====================
 local function ApplyNoclip()
     if isDestroyed or not Settings.NoclipEnabled then return end
     local char = player.Character
@@ -1069,6 +1193,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- ==================== UI控件 ====================
 local weaponGroup = Tabs.Gun:AddLeftGroupbox("枪械功能")
 weaponGroup:AddToggle("FastFire", {
     Text = "超快射速",
@@ -1262,7 +1387,6 @@ flyGroup:AddToggle("AntiFlingToggle", {
     end
 })
 
--- 飞天快捷开关
 local flyQuickToggle = false
 local flyQuickButton = nil
 local flyQuickScreenGui = nil
