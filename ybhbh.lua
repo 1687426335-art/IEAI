@@ -112,203 +112,6 @@ local Tabs = {}
 function Tabs:Create(name, icon)
     return Window:Tab({ Title = name, Icon = icon })
 end
-Tabs.Announce = Tabs:Create("<font color='#FFC0CB'>公告</font>", "megaphone")
-Tabs.Announce:Paragraph({
-    Title = "<font color='#FFC0CB'><b>猫脚本制作不易勿喷</b></font>",
-    Desc = "",
-    Image = "heart",
-    ImageSize = 26,
-})
-Tabs.Announce:Paragraph({
-    Title = "<font color='#FFC0CB'><b>感谢支持</b></font>",
-    Desc = "",
-    Image = "heart",
-    ImageSize = 26,
-})
-Tabs.Announce:Paragraph({
-    Title = "<font color='#FFC0CB'><b>猫脚本是免费的，可以倒卖，前提是要发脚本，拉他们进猫脚本的群\n猫脚本也支持为各大付费脚本服务，想要源码可以找我来领取源码</b></font>",
-    Desc = "",
-    Image = "heart",
-    ImageSize = 26,
-})
-local announcePara = Tabs.Announce:Paragraph({
-    Title = "<font color='#FFC0CB'><b>猫脚本：569036702\n猫脚本互赞群：1051220818</b></font>",
-    Desc = "",
-    Image = "heart",
-    ImageSize = 26,
-})
-task.spawn(function()
-    task.wait(0.3)
-    pcall(function()
-        local frame = announcePara.Frame or announcePara.Instance or announcePara.Main or announcePara.Container
-        if not frame then
-            for _, v in pairs(announcePara) do
-                if typeof(v) == "Instance" and v:IsA("GuiObject") then
-                    frame = v
-                    break
-                end
-            end
-        end
-        if frame and frame:IsA("GuiObject") then
-            frame.Active = true
-            frame.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    pcall(function()
-                        if setclipboard then
-                            setclipboard("猫脚本：569036702 | 猫脚本互赞群：1051220818")
-                        end
-                        game:GetService("StarterGui"):SetCore("SendNotification", {
-                            Title = "猫脚本",
-                            Text = "猫脚本QQ群号与互赞群号已复制到剪贴板！",
-                            Duration = 3
-                        })
-                    end)
-                end
-            end)
-        end
-    end)
-end)
-Tabs.Announce:Button({
-    Title = "<font color='#FFD700'><b>🏆 点击查看赞助榜 🏆</b></font>",
-    Callback = function()
-        local sponsorUrl = "https://raw.githubusercontent.com/kitten-maomao/Master-script/refs/heads/main/sponsor.txt"
-        pcall(function()
-            if setclipboard then
-                setclipboard(sponsorUrl)
-            end
-        end)
-        local ok = pcall(function()
-            game:GetService("GuiService"):OpenBrowserWindow(sponsorUrl)
-        end)
-        if ok then
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "猫脚本",
-                Text = "正在打开浏览器查看赞助榜...",
-                Duration = 3
-            })
-        else
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "猫脚本",
-                Text = "链接已复制到剪贴板，请粘贴到浏览器查看",
-                Duration = 5
-            })
-        end
-    end
-})
-local imageUrl = "https://bee-reg-ab.imagency.cn/p/93db9216459b0a0f94072f0ebf159f07.jpg"
-local localAssetId = nil
-task.spawn(function()
-    pcall(function()
-        local folder = "猫脚本"
-        if not isfolder(folder) then makefolder(folder) end
-        local filename = folder .. "/sponsor_img.png"
-        local data = game:HttpGet(imageUrl)
-        writefile(filename, data)
-        local ok, asset = pcall(getcustomasset, filename)
-        if ok then
-            localAssetId = asset
-        end
-    end)
-end)
-local imagePara = Tabs.Announce:Paragraph({
-    Title = "<font color='#FFD700'><b>点击放大</b></font>",
-    Thumbnail = imageUrl,
-    ThumbnailSize = 250,
-})
-local isEnlarged = false
-task.spawn(function()
-    task.wait(0.5)
-    pcall(function()
-        local function waitForAsset()
-            local waited = 0
-            while not localAssetId and waited < 10 do
-                task.wait(0.5)
-                waited = waited + 0.5
-            end
-            return localAssetId
-        end
-        local frame = imagePara.Frame or imagePara.Instance or imagePara.Main or imagePara.Container
-        if not frame then
-            for _, v in pairs(imagePara) do
-                if typeof(v) == "Instance" and v:IsA("GuiObject") then
-                    frame = v
-                    break
-                end
-            end
-        end
-        if frame and frame:IsA("GuiObject") then
-            frame.Active = true
-            frame.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    pcall(function()
-                        local asset = waitForAsset()
-                        if not asset then return end
-                        local PlayerGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-                        if not PlayerGui then return end
-                        if isEnlarged then
-                            local overlay = PlayerGui:FindFirstChild("CatImageOverlay")
-                            if overlay then
-                                local img = overlay:FindFirstChild("EnlargedImage")
-                                if img then
-                                    local ts = game:GetService("TweenService")
-                                    local ti = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                                    local goal = {Size = UDim2.new(0, 260, 0, 260)}
-                                    local tween = ts:Create(img, ti, goal)
-                                    tween:Play()
-                                    tween.Completed:Connect(function()
-                                        overlay:Destroy()
-                                    end)
-                                end
-                            end
-                            isEnlarged = false
-                            return
-                        end
-                        local overlay = Instance.new("ScreenGui")
-                        overlay.Name = "CatImageOverlay"
-                        overlay.Parent = PlayerGui
-                        local bg = Instance.new("Frame")
-                        bg.Size = UDim2.new(1, 0, 1, 0)
-                        bg.BackgroundTransparency = 1
-                        bg.Active = true
-                        bg.Parent = overlay
-                        local img = Instance.new("ImageLabel")
-                        img.Name = "EnlargedImage"
-                        img.AnchorPoint = Vector2.new(0.5, 0.5)
-                        img.Position = UDim2.new(0.5, 0, 0.5, 0)
-                        img.Size = UDim2.new(0, 260, 0, 260)
-                        img.BackgroundTransparency = 1
-                        img.Image = asset
-                        img.ScaleType = Enum.ScaleType.Fit
-                        img.Parent = overlay
-                        local targetSize = UDim2.new(0, 320, 0, 320)
-                        local ts = game:GetService("TweenService")
-                        local ti = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                        local goal = {Size = targetSize}
-                        local tween = ts:Create(img, ti, goal)
-                        tween:Play()
-                        isEnlarged = true
-                        bg.InputBegan:Connect(function(inp, gp)
-                            if gp then return end
-                            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                                local ts2 = game:GetService("TweenService")
-                                local ti2 = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                                local goal2 = {Size = UDim2.new(0, 260, 0, 260)}
-                                local tween2 = ts2:Create(img, ti2, goal2)
-                                tween2:Play()
-                                tween2.Completed:Connect(function()
-                                    overlay:Destroy()
-                                end)
-                                isEnlarged = false
-                            end
-                        end)
-                    end)
-                end
-            end)
-        end
-    end)
-end)
 Tabs.General = Tabs:Create("<font color='#FFC0CB'>通用</font>", "zap")
 do
     local Tab = Tabs.General
@@ -625,5 +428,81 @@ do
     end)
     local loopTpToPlayer = false
     local loopTpToMe = false
+end
+Tabs.Info = Tabs:Create("<font color='#FFC0CB'>信息</font>", "info")
+do
+    local Tab = Tabs.Info
+    local serverInfoText = "本服务器ID: " .. game.JobId .. "\n游戏服务器ID: " .. tostring(game.PlaceId) .. "\n玩家: " .. Players.LocalPlayer.Name
+    Tab:Paragraph({
+        Title = "<font color='#FFC0CB'><b>" .. serverInfoText .. "</b></font>",
+        Desc = "",
+        Image = "info",
+        ImageSize = 26,
+    })
+    local coordPara = Tab:Paragraph({
+        Title = "<font color='#FFC0CB'><b>当前坐标: 加载中...</b></font>",
+        Desc = "",
+        Image = "crosshair",
+        ImageSize = 26,
+    })
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>📋 复制当前坐标</b></font>",
+        Callback = function()
+            pcall(function()
+                local char = Players.LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local pos = char.HumanoidRootPart.Position
+                    local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                    if setclipboard then setclipboard(coord) end
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "猫脚本",
+                        Text = "坐标已复制到剪贴板！\n" .. coord,
+                        Duration = 3
+                    })
+                end
+            end)
+        end
+    })
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>📋 复制服务器JobId</b></font>",
+        Callback = function()
+            pcall(function()
+                if setclipboard then setclipboard(game.JobId) end
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "猫脚本",
+                    Text = "服务器JobId已复制到剪贴板！",
+                    Duration = 3
+                })
+            end)
+        end
+    })
+    Tab:Button({
+        Title = "<font color='#FFC0CB'><b>📋 复制游戏PlaceId</b></font>",
+        Callback = function()
+            pcall(function()
+                if setclipboard then setclipboard(tostring(game.PlaceId)) end
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "猫脚本",
+                    Text = "游戏PlaceId已复制到剪贴板！",
+                    Duration = 3
+                })
+            end)
+        end
+    })
+    task.spawn(function()
+        while coordPara do
+            task.wait(0.1)
+            pcall(function()
+                local char = Players.LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local pos = char.HumanoidRootPart.Position
+                    local coord = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                    if coordPara and coordPara.SetTitle then
+                        coordPara:SetTitle("<font color='#FFC0CB'><b>当前坐标: " .. coord .. "</b></font>")
+                    end
+                end
+            end)
+        end
+    end)
 end
 Window:SelectTab(1)
