@@ -943,7 +943,7 @@ task.spawn(function()
     end
 end)
 
--- ==================== 杀戮光环 ====================
+-- ==================== 杀戮光环（修复版） ====================
 local KA_MAX_DISTANCE = 300
 local KA_WALL_CHECK = true
 local kaEnabled = false
@@ -982,18 +982,28 @@ local function kaGetNearestEnemy()
 
     -- 判断目标是否允许攻击
     local function isTargetAllowed(p)
-        -- 检查队伍过滤
         if KATargetPoliceOnly and KATargetCivilianOnly then
             return false
         end
+        
         local teamName = p.Team and p.Team.Name or ""
         local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-        local isCivilian = (teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民") or not p.Team)
+        
+        -- 只攻击警察
         if KATargetPoliceOnly then
             if not isPolice then return false end
-        elseif KATargetCivilianOnly then
-            if not isCivilian then return false end
         end
+        
+        -- 只攻击平民：队伍名必须是"平民"或"Citizen"或"圣奥里公民"
+        if KATargetCivilianOnly then
+            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            -- 如果有明确的职业队伍，不算平民（警察/火焰/医疗/道路等）
+            local hasJob = teamName:find("火焰") or teamName:find("医疗") or teamName:find("道路") or teamName:find("消防") or teamName:find("军人") or teamName:find("黑帮") or teamName:find("送货")
+            if not isCivilian or hasJob then
+                return false
+            end
+        end
+        
         -- 检查是否忽略死亡
         if KAIgnoreDead then
             local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
@@ -1001,6 +1011,7 @@ local function kaGetNearestEnemy()
                 return false
             end
         end
+        
         return true
     end
 
