@@ -952,9 +952,12 @@ local KANearestOnly = false
 local KA_NEAREST_DISTANCE = 25
 local kaStatusLabel = nil
 
--- 新增队伍过滤变量
-local KATargetPoliceOnly = false   -- 只攻击警察
-local KATargetCivilianOnly = false -- 只攻击平民
+-- 队伍过滤变量
+local KATargetPoliceOnly = false
+local KATargetCivilianOnly = false
+
+-- 忽略死亡玩家（血量<=0）
+local KAIgnoreDead = true
 
 local function kaIsVisible(targetHead)
     local char = player.Character
@@ -979,6 +982,7 @@ local function kaGetNearestEnemy()
 
     -- 判断目标是否允许攻击
     local function isTargetAllowed(p)
+        -- 检查队伍过滤
         if KATargetPoliceOnly and KATargetCivilianOnly then
             return false
         end
@@ -986,12 +990,18 @@ local function kaGetNearestEnemy()
         local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
         local isCivilian = (teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民") or not p.Team)
         if KATargetPoliceOnly then
-            return isPolice
+            if not isPolice then return false end
         elseif KATargetCivilianOnly then
-            return isCivilian
-        else
-            return true
+            if not isCivilian then return false end
         end
+        -- 检查是否忽略死亡
+        if KAIgnoreDead then
+            local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+            if not hum or hum.Health <= 0 then
+                return false
+            end
+        end
+        return true
     end
 
     if KANearestOnly then
@@ -1461,7 +1471,7 @@ kaGroup:AddSlider("KADamage", {
 })
 kaGroup:AddDivider()
 
--- 新增队伍过滤开关
+-- 队伍过滤开关
 kaGroup:AddToggle("KATargetPoliceOnly", {
     Text = "只攻击警察",
     Desc = "开启后杀戮光环只会攻击警察队伍的玩家",
@@ -1495,6 +1505,24 @@ kaGroup:AddToggle("KATargetCivilianOnly", {
 })
 
 kaGroup:AddDivider()
+
+-- 忽略死亡玩家开关
+kaGroup:AddToggle("KAIgnoreDead", {
+    Text = "不攻击血量为0的玩家",
+    Desc = "开启后杀戮光环不会攻击死亡或血量为0的玩家",
+    Default = true,
+    Callback = function(value)
+        KAIgnoreDead = value
+        if value then
+            Library:Notify({ Title = "忽略死亡", Description = "已开启，不攻击血量为0的玩家", Time = 2 })
+        else
+            Library:Notify({ Title = "忽略死亡", Description = "已关闭，将攻击所有玩家", Time = 2 })
+        end
+    end
+})
+
+kaGroup:AddDivider()
+
 kaGroup:AddToggle("KANearestOnly", {
     Text = "优先攻击最近目标",
     Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
