@@ -1,4 +1,4 @@
--- ===== wdfex-圣奥里（WindUI悬浮窗版） =====
+-- ===== wdfex-圣奥里 =====
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/kitten-maomao/cdnUI/refs/heads/main/Mao%20ui%E4%BF%AE%E5%A4%8Dbug.lua"))()
 local VirtualUser = game:GetService("VirtualUser")
 local Players = game:GetService("Players")
@@ -840,6 +840,8 @@ do
     local kaDamageMultiplier = 1
     local KANearestOnly = false
     local KA_NEAREST_DISTANCE = 25
+    local kaAttackPolice = false
+    local kaAttackCitizen = false
     local kaStatusText = "状态：已关闭"
     local kaStatusLabel
 
@@ -869,6 +871,47 @@ do
         return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
     end
 
+    local function kaIsTargetValid(p)
+        if p == player then return false end
+        if not p.Character then return false end
+        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+        if not hum or hum.Health <= 0 then return false end
+        if not p.Character:FindFirstChild("Head") then return false end
+        
+        -- 队伍过滤逻辑
+        if kaAttackPolice and kaAttackCitizen then
+            -- 两个都开启：攻击警察和平民
+            if p.Team then
+                local teamName = p.Team.Name
+                if teamName:find("警察") or teamName:find("Police") or teamName:find("平民") or teamName:find("Citizen") then
+                    return true
+                end
+            end
+            return false
+        elseif kaAttackPolice then
+            -- 只攻击警察
+            if p.Team then
+                local teamName = p.Team.Name
+                if teamName:find("警察") or teamName:find("Police") then
+                    return true
+                end
+            end
+            return false
+        elseif kaAttackCitizen then
+            -- 只攻击平民
+            if p.Team then
+                local teamName = p.Team.Name
+                if teamName:find("平民") or teamName:find("Citizen") then
+                    return true
+                end
+            end
+            return false
+        else
+            -- 两个都关闭：攻击所有非自己的玩家
+            return true
+        end
+    end
+
     local function kaGetNearestEnemy()
         local char = player.Character
         if not char then return nil end
@@ -882,20 +925,17 @@ do
             local anyEnemy = nil
             local anyDist = 9999
             for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then
-                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local head = p.Character:FindFirstChild("Head")
-                        if head then
-                            local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                                anyDist = dist
-                                anyEnemy = p
-                            end
-                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                                nearestDistInRange = dist
-                                nearestInRange = p
-                            end
+                if kaIsTargetValid(p) then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            anyDist = dist
+                            anyEnemy = p
+                        end
+                        if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            nearestDistInRange = dist
+                            nearestInRange = p
                         end
                     end
                 end
@@ -904,16 +944,13 @@ do
         end
 
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head then
-                        local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
+            if kaIsTargetValid(p) then
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
                     end
                 end
             end
@@ -973,7 +1010,7 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>攻击距离</b></font>",
-        Placeholder = "默认300",
+        Placeholder = "默认300米",
         Default = "300",
         Callback = function(v) local n = tonumber(v); if n then KA_MAX_DISTANCE = n end end
     })
@@ -999,9 +1036,37 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>优先攻击距离</b></font>",
-        Placeholder = "默认25",
+        Placeholder = "默认25米",
         Default = "25",
         Callback = function(v) local n = tonumber(v); if n then KA_NEAREST_DISTANCE = n end end
+    })
+    
+    -- ===== 新增队伍过滤开关 =====
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>只攻击警察</b></font>",
+        Desc = "<font color='#FFC0CB'>开启后杀戮光环只会攻击警察队伍的玩家</font>",
+        Default = false,
+        Callback = function(s)
+            kaAttackPolice = s
+            if s and kaAttackCitizen then
+                WindUI:Notify({ Title = "杀戮光环", Description = "已开启：攻击警察和平民", Time = 2 })
+            elseif s then
+                WindUI:Notify({ Title = "杀戮光环", Description = "已开启：只攻击警察", Time = 2 })
+            end
+        end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>只攻击平民</b></font>",
+        Desc = "<font color='#FFC0CB'>开启后杀戮光环只会攻击平民队伍的玩家</font>",
+        Default = false,
+        Callback = function(s)
+            kaAttackCitizen = s
+            if s and kaAttackPolice then
+                WindUI:Notify({ Title = "杀戮光环", Description = "已开启：攻击警察和平民", Time = 2 })
+            elseif s then
+                WindUI:Notify({ Title = "杀戮光环", Description = "已开启：只攻击平民", Time = 2 })
+            end
+        end
     })
 end
 
