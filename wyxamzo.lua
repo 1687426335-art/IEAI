@@ -1204,7 +1204,6 @@ RunService.Heartbeat:Connect(function()
                     local direction = (hitPos - origin).Unit
                     local damage = 300
                     pcall(function()
-                        -- 刀的伤害事件（同枪，但可能需要不同参数，这里保持一致）
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
                             shotCode = { origin, direction },
@@ -1212,7 +1211,6 @@ RunService.Heartbeat:Connect(function()
                             pos = hitPos
                         })
                     end)
-                    -- 尝试触发近战攻击事件（如果有）
                     pcall(function()
                         local meleeEvent = ReplicatedStorage:FindFirstChild("Melee")
                         if meleeEvent then
@@ -1554,7 +1552,12 @@ flyGroup:AddToggle("FlyQuickToggle", {
 })
 
 -- ==================== 杀戮光环 UI（枪+刀） ====================
-local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环（枪）")
+local kaTab = Tabs.KA
+
+local kaNoticeGroup = kaTab:AddLeftGroupbox("提示")
+kaNoticeGroup:AddLabel("两个杀戮光环可以一起开")
+
+local kaGroup = kaTab:AddLeftGroupbox("杀戮光环（枪）")
 kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
 kaGroup:AddToggle("KAGunToggle", {
     Text = "启用杀戮光环（枪）",
@@ -1657,8 +1660,7 @@ kaGroup:AddSlider("KAGunNearestDistance", {
 })
 kaGunStatusLabel = kaGroup:AddLabel("状态：已关闭")
 
--- 刀
-local kaMeleeGroup = Tabs.KA:AddLeftGroupbox("杀戮光环（刀）")
+local kaMeleeGroup = kaTab:AddLeftGroupbox("杀戮光环（刀）")
 kaMeleeGroup:AddLabel("注意：需装备近战武器（刀/长戟等）才有伤害")
 kaMeleeGroup:AddToggle("KAMeleeToggle", {
     Text = "启用杀戮光环（刀）",
