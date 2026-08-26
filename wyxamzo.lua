@@ -1073,7 +1073,7 @@ RunService.Heartbeat:Connect(function()
                         local origin = myHead.Position
                         local hitPos = targetHead.Position
                         local direction = (hitPos - origin).Unit
-                        local damage = 100 * kaDamageMultiplier
+                        local damage = 300
                         pcall(function()
                             ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                                 bodyParts = { { "Head", damage } },
@@ -1456,17 +1456,6 @@ kaGroup:AddToggle("KAWallCheck", {
     Default = true,
     Callback = function(value)
         KA_WALL_CHECK = value
-    end
-})
-kaGroup:AddSlider("KADamage", {
-    Text = "伤害倍率",
-    Default = 1,
-    Min = 1,
-    Max = 100,
-    Rounding = 0,
-    Suffix = "倍",
-    Callback = function(value)
-        kaDamageMultiplier = value
     end
 })
 kaGroup:AddDivider()
