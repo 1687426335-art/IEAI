@@ -330,17 +330,17 @@ end
 -- 接单
 local function AcceptOrder()
     local x, y = GetPhoneClickPos()
-    ClickAt(x, y)              -- 点击手机
+    ClickAt(x, y)
     task.wait(0.3)
-    ClickAt(x, y + 100)        -- 点击接单按钮
+    ClickAt(x, y + 100)
     task.wait(0.3)
-    ClickAt(x, y + 160)        -- 点击确认
+    ClickAt(x, y + 160)
     task.wait(0.3)
-    ClickAt(x, y + 240)        -- 点击完成
+    ClickAt(x, y + 240)
     task.wait(0.3)
 end
 
--- 获取目标位置（从地图中找第一个BasePart）
+-- 获取目标位置
 local function GetTargetPosition()
     local targetFolder = workspace.Gameplay.Entities.ClientContent
     if not targetFolder then return nil end
@@ -352,7 +352,7 @@ local function GetTargetPosition()
     return nil
 end
 
--- 强制传送（不依赖传送开关）
+-- 强制传送
 local function ForceTeleport(pos)
     local char = player.Character
     if not char then return false end
@@ -373,7 +373,6 @@ end
 local autoAcceptRunning = false
 local autoTaxiRunning = false
 
--- 启动自动接单
 local function StartAutoAccept()
     if autoAcceptRunning then return end
     autoAcceptRunning = true
@@ -386,20 +385,24 @@ local function StartAutoAccept()
     end)
 end
 
--- 启动出租车刷钱循环
 local function StartAutoTaxi()
     if autoTaxiRunning then return end
     autoTaxiRunning = true
     task.spawn(function()
         while _G.AutoTaxi do
-            -- 接单
-            pcall(AcceptOrder)
+            local count = _G.TaxiClickCount or 1
+            local interval = _G.TaxiClickInterval or 1
+            for i = 1, count do
+                if not _G.AutoTaxi then break end
+                pcall(AcceptOrder)
+                if i < count then
+                    task.wait(interval)
+                end
+            end
             task.wait(1)
-            -- 第一次传送
             local pos1 = GetTargetPosition()
             if pos1 then pcall(ForceTeleport, pos1) end
             task.wait(2.5)
-            -- 第二次传送
             local pos2 = GetTargetPosition()
             if pos2 then pcall(ForceTeleport, pos2) end
             task.wait(2)
@@ -411,6 +414,8 @@ end
 -- 全局开关变量
 _G.AutoAcceptOrder = false
 _G.AutoTaxi = false
+_G.TaxiClickCount = 1
+_G.TaxiClickInterval = 1
 
 moneyGroup:AddToggle("AutoAcceptToggle", {
     Text = "自动接单",
@@ -441,6 +446,34 @@ moneyGroup:AddToggle("AutoTaxiToggle", {
         else
             Library:Notify({ Title = "出租车刷钱", Description = "已停止", Time = 2 })
         end
+    end
+})
+
+moneyGroup:AddDivider()
+
+moneyGroup:AddSlider("ClickCount", {
+    Text = "接单点击次数",
+    Desc = "每次循环接单点击次数（1-5次）",
+    Default = 1,
+    Min = 1,
+    Max = 5,
+    Rounding = 0,
+    Suffix = "次",
+    Callback = function(value)
+        _G.TaxiClickCount = value
+    end
+})
+
+moneyGroup:AddSlider("ClickInterval", {
+    Text = "接单点击间隔",
+    Desc = "每次点击之间的间隔时间（1-20秒）",
+    Default = 1,
+    Min = 1,
+    Max = 20,
+    Rounding = 0,
+    Suffix = "秒",
+    Callback = function(value)
+        _G.TaxiClickInterval = value
     end
 })
 
@@ -1773,7 +1806,6 @@ Library:OnUnload(function()
     if Settings.NoclipEnabled then
         ToggleNoclip(false)
     end
-    -- 关闭坐标显示
     local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
     if gui then gui:Destroy() end
     for userId, data in pairs(ESP_LIST) do
