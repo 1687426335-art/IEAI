@@ -415,27 +415,6 @@ function createUI()
 
     local windowOpen = true
 
-    Window:OnClose(function()
-        windowOpen = false
-        if rainbowBorderAnimation then
-            rainbowBorderAnimation:Disconnect()
-            rainbowBorderAnimation = nil
-        end
-    end)
-
-    local originalOpenFunction = Window.Open
-    Window.Open = function(...)
-        windowOpen = true
-        local result = originalOpenFunction(...)
-        
-        if borderInitialized and borderEnabled and not rainbowBorderAnimation then
-            wait(0.1)
-            startBorderAnimation(Window, animationSpeed)
-        end
-        
-        return result
-    end
-
     -- ==================== 公告Tab ====================
     local NoticeTab = Window:Tab({Title = "公告", Icon = "info", Locked = false})
     local NoticeSection = NoticeTab:Section({Title = "作者消息", Icon = "info", Opened = true})
@@ -2081,6 +2060,9 @@ function createUI()
             playSound()
         end
     })
+
+    -- ===== 关键修复：打开窗口 =====
+    Window:Open()
 
     Window:OnClose(function()
         windowOpen = false
