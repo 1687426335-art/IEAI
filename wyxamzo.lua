@@ -76,7 +76,7 @@ local SessionTag = Window:Tag({
     Radius = 12
 })
 
--- ===== 计时器（统计总使用时间） =====
+-- ===== 计时器 =====
 local saveFolder = "wdfex圣奥里"
 local saveFile = saveFolder .. "/total_time.json"
 local function loadTotalTime()
@@ -161,6 +161,7 @@ do
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>作者: wdfex</b></font>", Desc = "" })
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>如果有什么需要的功能可以向作者提出建议</b></font>", Desc = "" })
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>此脚本无防封需要先执行皮脚本再执行此脚本</b></font>", Desc = "" })
+    Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>本脚本已同步连接皮脚本的服务器，可在透视里面打开同行显示即可在皮脚本用户的头上显示皮脚本更容易让你分辨它是什么脚本</b></font>", Desc = "" })
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>作者快手: wdfex</b></font>", Desc = "" })
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>作者QQ: 1687426335</b></font>", Desc = "" })
     Tab:Paragraph({ Title = "<font color='#FFC0CB'><b>━━━━━━━━━━━━━━━━━━━━</b></font>", Desc = "" })
@@ -173,7 +174,7 @@ local Tab_Player = CreateTab("玩家修改", "user")
 do
     local Tab = Tab_Player
 
-    -- 飞行
+    -- ===== 飞行（带飞天快捷开关） =====
     local FlySpeed = 35
     local flyState = { enabled = false }
     local UserInputService = game:GetService("UserInputService")
@@ -184,6 +185,7 @@ do
             if pm then FlyControl = require(pm):GetControls() end
         end)
     end)
+
     local function flyRefreshParts()
         local char = player.Character
         if not char then
@@ -192,6 +194,7 @@ do
         flyState.hrp = char:FindFirstChild("HumanoidRootPart")
         flyState.hum = char:FindFirstChildOfClass("Humanoid")
     end
+
     local function startFly()
         if flyState.enabled then return end
         flyRefreshParts()
@@ -219,17 +222,124 @@ do
             flyState.hrp.Velocity = Vector3.zero
             if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing) end
         end)
+        -- 更新快捷开关状态
+        if flyQuickStatusLabel then
+            flyQuickStatusLabel.Text = "飞行: 开"
+            if flyQuickButton then
+                flyQuickButton.BorderColor3 = Color3.fromRGB(0, 255, 100)
+                flyQuickButton.ImageColor3 = Color3.fromRGB(0, 255, 100)
+            end
+        end
     end
+
     local function stopFly()
         flyState.enabled = false
         if flyState.connection then flyState.connection:Disconnect(); flyState.connection = nil end
         if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
+        if flyQuickStatusLabel then
+            flyQuickStatusLabel.Text = "飞行: 关"
+            if flyQuickButton then
+                flyQuickButton.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                flyQuickButton.ImageColor3 = Color3.fromRGB(100, 200, 255)
+            end
+        end
+    end
+
+    -- 飞天快捷开关（屏幕上的浮动按钮）
+    local flyQuickToggle = false
+    local flyQuickButton = nil
+    local flyQuickScreenGui = nil
+    local flyQuickStatusLabel = nil
+
+    local function DestroyFlyQuickToggle()
+        if flyQuickScreenGui then
+            flyQuickScreenGui:Destroy()
+            flyQuickScreenGui = nil
+            flyQuickButton = nil
+            flyQuickStatusLabel = nil
+        end
+    end
+
+    local function CreateFlyQuickToggle()
+        if flyQuickButton then return end
+        flyQuickScreenGui = Instance.new("ScreenGui")
+        flyQuickScreenGui.Name = "FlyQuickToggle"
+        flyQuickScreenGui.ResetOnSpawn = false
+        flyQuickScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://7734068321"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
+        button.Parent = flyQuickScreenGui
+        flyQuickButton = button
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = button
+
+        flyQuickStatusLabel = Instance.new("TextLabel")
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.BackgroundTransparency = 1
+        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.Font = Enum.Font.GothamBold
+        flyQuickStatusLabel.TextStrokeTransparency = 0.3
+        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+        flyQuickStatusLabel.Parent = button
+
+        button.MouseButton1Click:Connect(function()
+            if flyState.enabled then
+                stopFly()
+            else
+                startFly()
+            end
+        end)
+
+        local dragging = false
+        local dragStart = nil
+        local startPos = nil
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
+        button.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
+                    startPos.Y.Offset + delta.Y
+                )
+                button.Position = newPos
+            end
+        end)
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
     end
 
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>飞行</b></font>",
+        Title = "<font color='#FFC0CB'><b>飞行（绕过）</b></font>",
         Default = false,
-        Callback = function(s) if s then startFly() else stopFly() end end
+        Callback = function(s)
+            if s then startFly() else stopFly() end
+        end
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>飞行速度</b></font>",
@@ -238,9 +348,19 @@ do
         Callback = function(v) local n = tonumber(v); if n then FlySpeed = n end end
     })
 
-    -- 穿墙
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>穿墙</b></font>",
+        Title = "<font color='#FFC0CB'><b>飞天快捷开关</b></font>",
+        Desc = "<font color='#FFC0CB'>开启后在屏幕显示可拖动的飞天开关</font>",
+        Default = false,
+        Callback = function(s)
+            flyQuickToggle = s
+            if s then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end
+        end
+    })
+
+    -- ===== 穿墙 =====
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>启用人物穿墙</b></font>",
         Default = false,
         Callback = function(s)
             Settings.NoclipEnabled = s
@@ -269,22 +389,26 @@ do
         end
     })
 
-    -- 移速
-    local speedValue = 16
-    local speedLoop = false
+    -- ===== 修改移速 =====
+    local speedValue = 20
+    local speedBypassOn = false
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>修改移速</b></font>",
+        Title = "<font color='#FFC0CB'><b>修改移速（绕过）</b></font>",
+        Desc = "<font color='#FFC0CB'>速度推荐80-90</font>",
         Default = false,
         Callback = function(s)
-            speedLoop = s
+            speedBypassOn = s
             if s then
                 task.spawn(function()
-                    while speedLoop do
+                    while speedBypassOn do
                         pcall(function()
                             local char = player.Character
-                            if char and char:FindFirstChild("Humanoid") then
-                                char.Humanoid.WalkSpeed = speedValue
+                            local hum = char and char:FindFirstChildOfClass("Humanoid")
+                            local root = char and char:FindFirstChild("HumanoidRootPart")
+                            if hum and root and hum.MoveDirection.Magnitude > 0 then
+                                root.CFrame = root.CFrame + hum.MoveDirection * speedValue * 0.1
                             end
+                            if hum then hum.WalkSpeed = speedValue end
                         end)
                         task.wait()
                     end
@@ -292,8 +416,8 @@ do
             else
                 pcall(function()
                     local char = player.Character
-                    if char and char:FindFirstChild("Humanoid") then
-                        char.Humanoid.WalkSpeed = 16
+                    if char and char:FindFirstChildOfClass("Humanoid") then
+                        char:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
                     end
                 end)
             end
@@ -301,12 +425,12 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>移速值</b></font>",
-        Placeholder = "默认16",
-        Default = "16",
+        Placeholder = "默认20",
+        Default = "20",
         Callback = function(v) local n = tonumber(v); if n then speedValue = n end end
     })
 
-    -- 无限体力
+    -- ===== 无限体力 =====
     local staminaOn = false
     local StaminaEvent
     pcall(function()
@@ -346,7 +470,7 @@ do
         end
     })
 
-    -- 防甩飞
+    -- ===== 防甩飞 =====
     _G.CatAntiFling_Enabled = false
     _G.CatAntiFling_Running = false
     local function AntiFlingLoop()
@@ -385,183 +509,6 @@ do
             _G.CatAntiFling_Enabled = s
         end
     })
-
-    -- 快速互动（ProximityPrompt）
-    local interactEnabled = false
-    local function ScanPrompts()
-        if isDestroyed or not interactEnabled then return end
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = Settings.HoldTime
-                obj.MaxActivationDistance = Settings.Distance
-            end
-        end
-    end
-    Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>启用快速互动</b></font>",
-        Default = false,
-        Callback = function(s)
-            interactEnabled = s
-            if s then ScanPrompts() end
-        end
-    })
-    Tab:Input({
-        Title = "<font color='#FFC0CB'><b>按住时间(秒)</b></font>",
-        Placeholder = "0",
-        Default = "0",
-        Callback = function(v)
-            local n = tonumber(v)
-            if n then Settings.HoldTime = n end
-            if interactEnabled then ScanPrompts() end
-        end
-    })
-    Tab:Input({
-        Title = "<font color='#FFC0CB'><b>触发距离</b></font>",
-        Placeholder = "25",
-        Default = "25",
-        Callback = function(v)
-            local n = tonumber(v)
-            if n then Settings.Distance = n end
-            if interactEnabled then ScanPrompts() end
-        end
-    })
-    -- 监听新Prompt
-    workspace.DescendantAdded:Connect(function(obj)
-        if isDestroyed then return end
-        task.wait(0.1)
-        if obj:IsA("ProximityPrompt") and interactEnabled then
-            obj.HoldDuration = Settings.HoldTime
-            obj.MaxActivationDistance = Settings.Distance
-        end
-    end)
-
-    -- 伤害免疫（God模式，针对火焰和爆炸）
-    local godOn = false
-    if StaminaEvent then
-        local oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            if self == StaminaEvent and method == "FireServer" then
-                if args[1] == "takeDamage" and godOn then
-                    return
-                end
-            end
-            return oldNamecall(self, ...)
-        end)
-    end
-    Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>免疫部分伤害</b></font>",
-        Desc = "<font color='#FFC0CB'>免疫火焰和车爆炸伤害</font>",
-        Default = false,
-        Callback = function(s) godOn = s end
-    })
-
-    -- 传送玩家功能（下拉选择玩家）
-    local selectedPlayer = ""
-    local playerDropdown = Tab:Dropdown({
-        Title = "<font color='#FFC0CB'><b>选择玩家</b></font>",
-        Values = {},
-        Default = "",
-        Callback = function(v) selectedPlayer = v end
-    })
-    local function getPlayerList()
-        local list = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then table.insert(list, p.Name) end
-        end
-        if #list == 0 then table.insert(list, "无玩家") end
-        return list
-    end
-    local function refreshPlayerList()
-        local list = getPlayerList()
-        if playerDropdown and playerDropdown.SetValues then
-            playerDropdown:SetValues(list)
-        end
-    end
-    refreshPlayerList()
-    Players.PlayerAdded:Connect(refreshPlayerList)
-    Players.PlayerRemoving:Connect(function(plr)
-        if selectedPlayer == plr.Name then selectedPlayer = "" end
-        refreshPlayerList()
-    end)
-
-    Tab:Button({
-        Title = "<font color='#FFC0CB'><b>传送到玩家</b></font>",
-        Callback = function()
-            pcall(function()
-                local char = player.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                if not root then return end
-                local target = Players:FindFirstChild(selectedPlayer)
-                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
-                end
-            end)
-        end
-    })
-    Tab:Button({
-        Title = "<font color='#FFC0CB'><b>把玩家传送过来</b></font>",
-        Callback = function()
-            pcall(function()
-                local char = player.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                if not root then return end
-                local target = Players:FindFirstChild(selectedPlayer)
-                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    target.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
-                end
-            end)
-        end
-    })
-
-    local loopTpToPlayer = false
-    Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>循环传送到玩家</b></font>",
-        Default = false,
-        Callback = function(s)
-            loopTpToPlayer = s
-            if s then
-                task.spawn(function()
-                    while loopTpToPlayer do
-                        pcall(function()
-                            local char = player.Character
-                            local root = char and char:FindFirstChild("HumanoidRootPart")
-                            if not root then return end
-                            local target = Players:FindFirstChild(selectedPlayer)
-                            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                                root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
-                            end
-                        end)
-                        task.wait(0.1)
-                    end
-                end)
-            end
-        end
-    })
-    local loopTpToMe = false
-    Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>循环传送玩家过来</b></font>",
-        Default = false,
-        Callback = function(s)
-            loopTpToMe = s
-            if s then
-                task.spawn(function()
-                    while loopTpToMe do
-                        pcall(function()
-                            local char = player.Character
-                            local root = char and char:FindFirstChild("HumanoidRootPart")
-                            if not root then return end
-                            local target = Players:FindFirstChild(selectedPlayer)
-                            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                                target.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
-                            end
-                        end)
-                        task.wait(0.1)
-                    end
-                end)
-            end
-        end
-    })
 end
 
 -- ============================================================
@@ -571,7 +518,7 @@ local Tab_Gun = CreateTab("枪械功能", "target")
 do
     local Tab = Tab_Gun
 
-    -- 碰撞箱扩展
+    -- ===== 碰撞箱扩展 =====
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
         local players = Players:GetPlayers()
@@ -579,7 +526,6 @@ do
         for _, p in ipairs(players) do
             if p ~= player and p.Character then
                 if Settings.WhitelistEnabled and Whitelist[p.UserId] then
-                    -- 跳过白名单
                 else
                     local char = p.Character
                     local head = char:FindFirstChild("Head")
@@ -643,7 +589,7 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>头部大小</b></font>",
-        Placeholder = "10",
+        Placeholder = "默认10",
         Default = "10",
         Callback = function(v)
             local n = tonumber(v)
@@ -660,7 +606,7 @@ do
         end
     })
 
-    -- 超快射速
+    -- ===== 超快射速 =====
     Tab:Toggle({
         Title = "<font color='#FFC0CB'><b>超快射速</b></font>",
         Default = false,
@@ -684,11 +630,11 @@ do
                     humanoid.Died:Connect(ModifyWeaponStats)
                 end
             end
-            WindUI:Notify({ Title = "武器强化", Description = "无限射速已生效", Time = 2 })
+            WindUI:Notify({ Title = "武器强化", Description = "无限射速已生效，死亡后自动重新生效", Time = 3 })
         end
     })
 
-    -- 无限子弹
+    -- ===== 无限子弹 =====
     local infAmmoEnabled = false
     Tab:Toggle({
         Title = "<font color='#FFC0CB'><b>无限子弹</b></font>",
@@ -719,7 +665,7 @@ do
         end
     })
 
-    -- 子追
+    -- ===== 子追 =====
     local zzEnabled = false
     local zzDistance = 40
     local zzAffected = nil
@@ -779,13 +725,13 @@ do
         end
     })
     Tab:Input({
-        Title = "<font color='#FFC0CB'><b>子追判定距离</b></font>",
-        Placeholder = "40",
+        Title = "<font color='#FFC0CB'><b>判定距离</b></font>",
+        Placeholder = "默认40",
         Default = "40",
         Callback = function(v) local n = tonumber(v); if n then zzDistance = n end end
     })
 
-    -- 自瞄
+    -- ===== 自瞄 =====
     local aimOn = false
     local aimFOV = 150
     local aimNoTeam = true
@@ -865,7 +811,7 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>FOV圈大小</b></font>",
-        Placeholder = "150",
+        Placeholder = "默认150",
         Default = "150",
         Callback = function(v) local n = tonumber(v); if n then aimFOV = n end end
     })
@@ -897,7 +843,6 @@ do
     local kaStatusText = "状态：已关闭"
     local kaStatusLabel
 
-    -- 创建状态标签（Paragraph）
     kaStatusLabel = Tab:Paragraph({
         Title = "<font color='#FFC0CB'><b>状态：已关闭</b></font>",
         Desc = ""
@@ -1020,7 +965,7 @@ do
             kaEnabled = s
             if s then
                 kaSetStatus("已开启，正在搜索敌人")
-                WindUI:Notify({ Title = "杀戮光环", Description = "已开启", Time = 2 })
+                WindUI:Notify({ Title = "杀戮光环", Description = "已开启，正在搜索敌人", Time = 3 })
             else
                 kaSetStatus("已关闭")
             end
@@ -1028,7 +973,7 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>攻击距离</b></font>",
-        Placeholder = "300",
+        Placeholder = "默认300",
         Default = "300",
         Callback = function(v) local n = tonumber(v); if n then KA_MAX_DISTANCE = n end end
     })
@@ -1039,22 +984,22 @@ do
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>伤害倍率</b></font>",
-        Placeholder = "1",
+        Placeholder = "默认1",
         Default = "1",
         Callback = function(v) local n = tonumber(v); if n then kaDamageMultiplier = n end end
     })
     Tab:Toggle({
         Title = "<font color='#FFC0CB'><b>优先攻击最近目标</b></font>",
-        Desc = "<font color='#FFC0CB'>25米内优先</font>",
+        Desc = "<font color='#FFC0CB'>开启后优先攻击25米内的敌人，25米内无人则攻击远处目标</font>",
         Default = false,
         Callback = function(s)
             KANearestOnly = s
-            if s then WindUI:Notify({ Title = "杀戮光环", Description = "已切换至25米内优先", Time = 2 }) end
+            if s then WindUI:Notify({ Title = "杀戮光环", Description = "已切换至25米内优先攻击", Time = 2 }) end
         end
     })
     Tab:Input({
         Title = "<font color='#FFC0CB'><b>优先攻击距离</b></font>",
-        Placeholder = "25",
+        Placeholder = "默认25",
         Default = "25",
         Callback = function(v) local n = tonumber(v); if n then KA_NEAREST_DISTANCE = n end end
     })
@@ -1367,24 +1312,24 @@ do
         end
     })
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>显示名字</b></font>",
+        Title = "<font color='#FFC0CB'><b>绘制名字</b></font>",
         Default = true,
         Callback = function(s) ESP_SHOW_NAME = s; if ESP_ENABLED then RefreshESP() end end
     })
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>显示队伍</b></font>",
-        Default = true,
-        Callback = function(s) ESP_SHOW_TEAM = s; if ESP_ENABLED then RefreshESP() end end
-    })
-    Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>显示血量</b></font>",
+        Title = "<font color='#FFC0CB'><b>绘制血量</b></font>",
         Default = true,
         Callback = function(s) ESP_SHOW_HEALTH = s; if ESP_ENABLED then RefreshESP() end end
     })
     Tab:Toggle({
-        Title = "<font color='#FFC0CB'><b>显示距离</b></font>",
+        Title = "<font color='#FFC0CB'><b>绘制距离</b></font>",
         Default = true,
         Callback = function(s) ESP_SHOW_DIST = s; if ESP_ENABLED then RefreshESP() end end
+    })
+    Tab:Toggle({
+        Title = "<font color='#FFC0CB'><b>绘制队伍</b></font>",
+        Default = true,
+        Callback = function(s) ESP_SHOW_TEAM = s; if ESP_ENABLED then RefreshESP() end end
     })
 end
 
@@ -1455,11 +1400,12 @@ do
     local Tab = Tab_Settings
 
     Tab:Button({
-        Title = "<font color='#FFC0CB'><b>卸载脚本</b></font>",
+        Title = "<font color='#FFC0CB'><b>关闭脚本</b></font>",
         Callback = function()
             isDestroyed = true
-            -- 清理所有功能
             if flyState and flyState.enabled then stopFly() end
+            if flyQuickScreenGui then flyQuickScreenGui:Destroy() end
+            DestroyFlyQuickToggle()
             if aimGui then aimGui:Destroy() end
             ResetHitbox()
             if Settings.NoclipEnabled then
