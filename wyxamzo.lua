@@ -1436,7 +1436,7 @@ kaGroup:AddSlider("KADistance", {
     Min = 50,
     Max = 1000,
     Rounding = 0,
-    Suffix = "单位",
+    Suffix = "米",
     Callback = function(value)
         KA_MAX_DISTANCE = value
     end
