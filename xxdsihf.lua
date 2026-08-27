@@ -508,13 +508,13 @@ end)
 
 local Window = Library:CreateWindow({
     Title = "圣地亚哥边境",
-    Footer = "恐拜大帝 制作",
+    Footer = "wdfex 制作",
     Icon = 131153193945220,
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
 
-Library:Notify("圣地亚哥边境 - 创作者：恐拜大帝", 5)
+Library:Notify("圣地亚哥边境 - 创作者：wdfex", 5)
 
 local Tabs = {
     Notice = Window:AddTab("通知", "info"),
@@ -524,8 +524,7 @@ local Tabs = {
 }
 
 local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息")
-NoticeGroup:AddLabel('恐拜大帝将持续更新此脚本')
-NoticeGroup:AddLabel('创作者：恐拜大帝')
+NoticeGroup:AddLabel('创作者：wdfex')
 
 local TeleportGroup = Tabs.Main:AddLeftGroupbox("传送")
 
