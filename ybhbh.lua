@@ -4012,7 +4012,7 @@ pcall(function()
 	pg2.Money.Container.premium.Shadow.Visible = false
 	pg2.Money.Container["2x cash"].Shadow.Visible = false
 	pg2.Money.Container.premium.Visible = true
-	pg2.Money.Container.premium.TextLabel.Text = "俄亥俄州"
+	pg2.Money.Container.premium.TextLabel.Text = "wdfex-俄亥俄州"
 	pg2.Money.Container["2x cash"].Visible = true
 	pg2.Money.Container["2x cash"].TextLabel.Text = "wdfex"
 end)
