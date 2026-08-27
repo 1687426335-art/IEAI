@@ -180,7 +180,7 @@ local Tabs = {
 local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息")
 NoticeGroup:AddLabel("快手号：EGD917813")
 NoticeGroup:AddLabel("创作者：wdfex")
-NoticeGroup:AddLabel("QQ：wdfex")
+NoticeGroup:AddLabel("QQ：1687426335")
 
 local function notify(msg)
 	Library:Notify({
