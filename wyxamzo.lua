@@ -944,20 +944,20 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- 杀戮光环（全武器通用）
+-- 杀戮光环（枪）
 -- ============================================================
-local KA_MAX_DISTANCE = 300
-local KA_WALL_CHECK = true
-local kaEnabled = false
-local KANearestOnly = false
-local KA_NEAREST_DISTANCE = 25
-local kaStatusLabel = nil
+local KA_GUN_MAX_DISTANCE = 300
+local KA_GUN_WALL_CHECK = true
+local kaGunEnabled = false
+local KAGunNearestOnly = false
+local KA_GUN_NEAREST_DISTANCE = 25
+local kaGunStatusLabel = nil
 
-local KATargetPoliceOnly = false
-local KATargetCivilianOnly = false
-local KAIgnoreDead = true
+local KAGunTargetPoliceOnly = false
+local KAGunTargetCivilianOnly = false
+local KAGunIgnoreDead = true
 
-local function kaIsVisible(targetHead)
+local function kaGunIsVisible(targetHead)
     local char = player.Character
     if not char then return false end
     local myHead = char:FindFirstChild("Head")
@@ -971,33 +971,33 @@ local function kaIsVisible(targetHead)
     return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
 end
 
-local function kaGetNearestEnemy()
+local function kaGunGetNearestEnemy()
     local char = player.Character
     if not char then return nil end
     local myHead = char:FindFirstChild("Head")
     if not myHead then return nil end
-    local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+    local bestPlayer, bestDist = nil, KA_GUN_MAX_DISTANCE
 
     local function isTargetAllowed(p)
-        if KATargetPoliceOnly and KATargetCivilianOnly then return false end
+        if KAGunTargetPoliceOnly and KAGunTargetCivilianOnly then return false end
         local teamName = p.Team and p.Team.Name or ""
         local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-        if KATargetPoliceOnly then
+        if KAGunTargetPoliceOnly then
             if not isPolice then return false end
         end
-        if KATargetCivilianOnly then
+        if KAGunTargetCivilianOnly then
             local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
             local hasJob = teamName:find("火焰") or teamName:find("医疗") or teamName:find("道路") or teamName:find("消防") or teamName:find("军人") or teamName:find("黑帮") or teamName:find("送货")
             if not isCivilian or hasJob then return false end
         end
-        if KAIgnoreDead then
+        if KAGunIgnoreDead then
             local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
             if not hum or hum.Health <= 0 then return false end
         end
         return true
     end
 
-    if KANearestOnly then
+    if KAGunNearestOnly then
         local nearestInRange = nil
         local nearestDistInRange = 9999
         local anyEnemy = nil
@@ -1009,11 +1009,11 @@ local function kaGetNearestEnemy()
                     local head = p.Character:FindFirstChild("Head")
                     if head and isTargetAllowed(p) then
                         local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        if dist < anyDist and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
                             anyDist = dist
                             anyEnemy = p
                         end
-                        if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        if dist <= KA_GUN_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
                             nearestDistInRange = dist
                             nearestInRange = p
                         end
@@ -1031,7 +1031,7 @@ local function kaGetNearestEnemy()
                 local head = p.Character:FindFirstChild("Head")
                 if head and isTargetAllowed(p) then
                     local dist = (head.Position - myHead.Position).Magnitude
-                    if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                    if dist < bestDist and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
                         bestDist = dist
                         bestPlayer = p
                     end
@@ -1042,16 +1042,16 @@ local function kaGetNearestEnemy()
     return bestPlayer
 end
 
-local function kaSetStatus(text)
-    if kaStatusLabel then
-        pcall(function() kaStatusLabel:SetText(text) end)
+local function kaGunSetStatus(text)
+    if kaGunStatusLabel then
+        pcall(function() kaGunStatusLabel:SetText(text) end)
     end
 end
 
 RunService.Heartbeat:Connect(function()
     if not isDestroyed then
-        if kaEnabled then
-            local target = kaGetNearestEnemy()
+        if kaGunEnabled then
+            local target = kaGunGetNearestEnemy()
             local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
@@ -1060,7 +1060,6 @@ RunService.Heartbeat:Connect(function()
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
                     local damage = 300
-                    -- 发送伤害事件（通用，枪和刀都适用）
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
@@ -1069,7 +1068,6 @@ RunService.Heartbeat:Connect(function()
                             pos = hitPos
                         })
                     end)
-                    -- 尝试触发射击事件（枪用）
                     pcall(function()
                         local handleShots = ReplicatedStorage:FindFirstChild("Events")
                         handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
@@ -1077,19 +1075,156 @@ RunService.Heartbeat:Connect(function()
                             handleShots:FireServer("2", "Shoot")
                         end
                     end)
-                    -- 尝试触发近战事件（刀用）
+                    kaGunSetStatus("状态：已锁定 " .. target.Name .. "，攻击已发送")
+                else
+                    kaGunSetStatus("状态：等待角色头部加载")
+                end
+            else
+                kaGunSetStatus("状态：范围内未找到敌人")
+            end
+        end
+    end
+end)
+
+-- ============================================================
+-- 杀戮光环（刀）
+-- ============================================================
+local KA_MELEE_MAX_DISTANCE = 300
+local KA_MELEE_WALL_CHECK = true
+local kaMeleeEnabled = false
+local KAMeleeNearestOnly = false
+local KA_MELEE_NEAREST_DISTANCE = 25
+local kaMeleeStatusLabel = nil
+
+local KAMeleeTargetPoliceOnly = false
+local KAMeleeTargetCivilianOnly = false
+local KAMeleeIgnoreDead = true
+
+local function kaMeleeIsVisible(targetHead)
+    local char = player.Character
+    if not char then return false end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return false end
+    local direction = targetHead.Position - myHead.Position
+    local distance = direction.Magnitude
+    if distance < 0.1 then return true end
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
+end
+
+local function kaMeleeGetNearestEnemy()
+    local char = player.Character
+    if not char then return nil end
+    local myHead = char:FindFirstChild("Head")
+    if not myHead then return nil end
+    local bestPlayer, bestDist = nil, KA_MELEE_MAX_DISTANCE
+
+    local function isTargetAllowed(p)
+        if KAMeleeTargetPoliceOnly and KAMeleeTargetCivilianOnly then return false end
+        local teamName = p.Team and p.Team.Name or ""
+        local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
+        if KAMeleeTargetPoliceOnly then
+            if not isPolice then return false end
+        end
+        if KAMeleeTargetCivilianOnly then
+            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            local hasJob = teamName:find("火焰") or teamName:find("医疗") or teamName:find("道路") or teamName:find("消防") or teamName:find("军人") or teamName:find("黑帮") or teamName:find("送货")
+            if not isCivilian or hasJob then return false end
+        end
+        if KAMeleeIgnoreDead then
+            local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+            if not hum or hum.Health <= 0 then return false end
+        end
+        return true
+    end
+
+    if KAMeleeNearestOnly then
+        local nearestInRange = nil
+        local nearestDistInRange = 9999
+        local anyEnemy = nil
+        local anyDist = 9999
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head and isTargetAllowed(p) then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < anyDist and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
+                            anyDist = dist
+                            anyEnemy = p
+                        end
+                        if dist <= KA_MELEE_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
+                            nearestDistInRange = dist
+                            nearestInRange = p
+                        end
+                    end
+                end
+            end
+        end
+        if nearestInRange then return nearestInRange else return anyEnemy end
+    end
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local head = p.Character:FindFirstChild("Head")
+                if head and isTargetAllowed(p) then
+                    local dist = (head.Position - myHead.Position).Magnitude
+                    if dist < bestDist and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
+                        bestDist = dist
+                        bestPlayer = p
+                    end
+                end
+            end
+        end
+    end
+    return bestPlayer
+end
+
+local function kaMeleeSetStatus(text)
+    if kaMeleeStatusLabel then
+        pcall(function() kaMeleeStatusLabel:SetText(text) end)
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not isDestroyed then
+        if kaMeleeEnabled then
+            local target = kaMeleeGetNearestEnemy()
+            local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
+            if targetHead then
+                local myHead = player.Character and player.Character:FindFirstChild("Head")
+                if myHead then
+                    local origin = myHead.Position
+                    local hitPos = targetHead.Position
+                    local direction = (hitPos - origin).Unit
+                    local damage = 300
+                    pcall(function()
+                        -- 刀的伤害事件（同枪，但可能需要不同参数，这里保持一致）
+                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                            bodyParts = { { "Head", damage } },
+                            shotCode = { origin, direction },
+                            target = target,
+                            pos = hitPos
+                        })
+                    end)
+                    -- 尝试触发近战攻击事件（如果有）
                     pcall(function()
                         local meleeEvent = ReplicatedStorage:FindFirstChild("Melee")
                         if meleeEvent then
                             meleeEvent:FireServer()
                         end
                     end)
-                    kaSetStatus("状态：已锁定 " .. target.Name .. "，攻击已发送")
+                    kaMeleeSetStatus("状态：已锁定 " .. target.Name .. "，攻击已发送（刀）")
                 else
-                    kaSetStatus("状态：等待角色头部加载")
+                    kaMeleeSetStatus("状态：等待角色头部加载")
                 end
             else
-                kaSetStatus("状态：范围内未找到敌人")
+                kaMeleeSetStatus("状态：范围内未找到敌人")
             end
         end
     end
@@ -1418,23 +1553,23 @@ flyGroup:AddToggle("FlyQuickToggle", {
     end
 })
 
--- ==================== 杀戮光环 UI ====================
-local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环")
-kaGroup:AddLabel("注意：需拿武器才有伤害，")
-kaGroup:AddToggle("KAToggle", {
-    Text = "启用杀戮光环",
+-- ==================== 杀戮光环 UI（枪+刀） ====================
+local kaGroup = Tabs.KA:AddLeftGroupbox("杀戮光环（枪）")
+kaGroup:AddLabel("注意：需装备枪械武器才有伤害")
+kaGroup:AddToggle("KAGunToggle", {
+    Text = "启用杀戮光环（枪）",
     Default = false,
     Callback = function(value)
-        kaEnabled = value
+        kaGunEnabled = value
         if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已开启，正在搜索敌人", Time = 3 })
-            kaSetStatus("状态：已开启，正在搜索敌人")
+            Library:Notify({ Title = "杀戮光环（枪）", Description = "已开启，正在搜索敌人", Time = 3 })
+            kaGunSetStatus("状态：已开启，正在搜索敌人")
         else
-            kaSetStatus("状态：已关闭")
+            kaGunSetStatus("状态：已关闭")
         end
     end
 })
-kaGroup:AddSlider("KADistance", {
+kaGroup:AddSlider("KAGunDistance", {
     Text = "攻击距离",
     Default = 300,
     Min = 50,
@@ -1442,25 +1577,25 @@ kaGroup:AddSlider("KADistance", {
     Rounding = 0,
     Suffix = "米",
     Callback = function(value)
-        KA_MAX_DISTANCE = value
+        KA_GUN_MAX_DISTANCE = value
     end
 })
-kaGroup:AddToggle("KAWallCheck", {
+kaGroup:AddToggle("KAGunWallCheck", {
     Text = "墙体检测",
     Default = true,
     Callback = function(value)
-        KA_WALL_CHECK = value
+        KA_GUN_WALL_CHECK = value
     end
 })
 kaGroup:AddDivider()
-kaGroup:AddToggle("KATargetPoliceOnly", {
+kaGroup:AddToggle("KAGunTargetPoliceOnly", {
     Text = "只攻击警察",
     Desc = "开启后只攻击警察队伍的玩家",
     Default = false,
     Callback = function(value)
-        KATargetPoliceOnly = value
-        if value and KATargetCivilianOnly then
-            KATargetCivilianOnly = false
+        KAGunTargetPoliceOnly = value
+        if value and KAGunTargetCivilianOnly then
+            KAGunTargetCivilianOnly = false
             Library:Notify({ Title = "队伍过滤", Description = "已自动关闭【只攻击平民】", Time = 2 })
         end
         if value then
@@ -1468,14 +1603,14 @@ kaGroup:AddToggle("KATargetPoliceOnly", {
         end
     end
 })
-kaGroup:AddToggle("KATargetCivilianOnly", {
+kaGroup:AddToggle("KAGunTargetCivilianOnly", {
     Text = "只攻击平民",
     Desc = "开启后只攻击平民队伍的玩家",
     Default = false,
     Callback = function(value)
-        KATargetCivilianOnly = value
-        if value and KATargetPoliceOnly then
-            KATargetPoliceOnly = false
+        KAGunTargetCivilianOnly = value
+        if value and KAGunTargetPoliceOnly then
+            KAGunTargetPoliceOnly = false
             Library:Notify({ Title = "队伍过滤", Description = "已自动关闭【只攻击警察】", Time = 2 })
         end
         if value then
@@ -1483,12 +1618,12 @@ kaGroup:AddToggle("KATargetCivilianOnly", {
         end
     end
 })
-kaGroup:AddToggle("KAIgnoreDead", {
+kaGroup:AddToggle("KAGunIgnoreDead", {
     Text = "不攻击血量为0的玩家",
     Desc = "开启后不会攻击死亡或血量为0的玩家",
     Default = true,
     Callback = function(value)
-        KAIgnoreDead = value
+        KAGunIgnoreDead = value
         if value then
             Library:Notify({ Title = "忽略死亡", Description = "已开启，不攻击血量为0的玩家", Time = 2 })
         else
@@ -1497,18 +1632,18 @@ kaGroup:AddToggle("KAIgnoreDead", {
     end
 })
 kaGroup:AddDivider()
-kaGroup:AddToggle("KANearestOnly", {
+kaGroup:AddToggle("KAGunNearestOnly", {
     Text = "优先攻击最近目标",
     Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
     Default = false,
     Callback = function(value)
-        KANearestOnly = value
+        KAGunNearestOnly = value
         if value then
-            Library:Notify({ Title = "杀戮光环", Description = "已切换至25米内优先攻击", Time = 2 })
+            Library:Notify({ Title = "杀戮光环（枪）", Description = "已切换至25米内优先攻击", Time = 2 })
         end
     end
 })
-kaGroup:AddSlider("KANearestDistance", {
+kaGroup:AddSlider("KAGunNearestDistance", {
     Text = "优先攻击距离",
     Default = 25,
     Min = 5,
@@ -1516,11 +1651,115 @@ kaGroup:AddSlider("KANearestDistance", {
     Rounding = 0,
     Suffix = "米",
     Callback = function(value)
-        KA_NEAREST_DISTANCE = value
-        Library:Notify({ Title = "杀戮光环", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
+        KA_GUN_NEAREST_DISTANCE = value
+        Library:Notify({ Title = "杀戮光环（枪）", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
     end
 })
-kaStatusLabel = kaGroup:AddLabel("状态：已关闭")
+kaGunStatusLabel = kaGroup:AddLabel("状态：已关闭")
+
+-- 刀
+local kaMeleeGroup = Tabs.KA:AddLeftGroupbox("杀戮光环（刀）")
+kaMeleeGroup:AddLabel("注意：需装备近战武器（刀/长戟等）才有伤害")
+kaMeleeGroup:AddToggle("KAMeleeToggle", {
+    Text = "启用杀戮光环（刀）",
+    Default = false,
+    Callback = function(value)
+        kaMeleeEnabled = value
+        if value then
+            Library:Notify({ Title = "杀戮光环（刀）", Description = "已开启，正在搜索敌人", Time = 3 })
+            kaMeleeSetStatus("状态：已开启，正在搜索敌人")
+        else
+            kaMeleeSetStatus("状态：已关闭")
+        end
+    end
+})
+kaMeleeGroup:AddSlider("KAMeleeDistance", {
+    Text = "攻击距离",
+    Default = 300,
+    Min = 50,
+    Max = 1000,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        KA_MELEE_MAX_DISTANCE = value
+    end
+})
+kaMeleeGroup:AddToggle("KAMeleeWallCheck", {
+    Text = "墙体检测",
+    Default = true,
+    Callback = function(value)
+        KA_MELEE_WALL_CHECK = value
+    end
+})
+kaMeleeGroup:AddDivider()
+kaMeleeGroup:AddToggle("KAMeleeTargetPoliceOnly", {
+    Text = "只攻击警察",
+    Desc = "开启后只攻击警察队伍的玩家",
+    Default = false,
+    Callback = function(value)
+        KAMeleeTargetPoliceOnly = value
+        if value and KAMeleeTargetCivilianOnly then
+            KAMeleeTargetCivilianOnly = false
+            Library:Notify({ Title = "队伍过滤", Description = "已自动关闭【只攻击平民】", Time = 2 })
+        end
+        if value then
+            Library:Notify({ Title = "队伍过滤", Description = "只攻击警察队伍", Time = 2 })
+        end
+    end
+})
+kaMeleeGroup:AddToggle("KAMeleeTargetCivilianOnly", {
+    Text = "只攻击平民",
+    Desc = "开启后只攻击平民队伍的玩家",
+    Default = false,
+    Callback = function(value)
+        KAMeleeTargetCivilianOnly = value
+        if value and KAMeleeTargetPoliceOnly then
+            KAMeleeTargetPoliceOnly = false
+            Library:Notify({ Title = "队伍过滤", Description = "已自动关闭【只攻击警察】", Time = 2 })
+        end
+        if value then
+            Library:Notify({ Title = "队伍过滤", Description = "只攻击平民队伍", Time = 2 })
+        end
+    end
+})
+kaMeleeGroup:AddToggle("KAMeleeIgnoreDead", {
+    Text = "不攻击血量为0的玩家",
+    Desc = "开启后不会攻击死亡或血量为0的玩家",
+    Default = true,
+    Callback = function(value)
+        KAMeleeIgnoreDead = value
+        if value then
+            Library:Notify({ Title = "忽略死亡", Description = "已开启，不攻击血量为0的玩家", Time = 2 })
+        else
+            Library:Notify({ Title = "忽略死亡", Description = "已关闭，将攻击所有玩家", Time = 2 })
+        end
+    end
+})
+kaMeleeGroup:AddDivider()
+kaMeleeGroup:AddToggle("KAMeleeNearestOnly", {
+    Text = "优先攻击最近目标",
+    Desc = "开启后优先攻击25米内的敌人，25米内无人则攻击远处目标",
+    Default = false,
+    Callback = function(value)
+        KAMeleeNearestOnly = value
+        if value then
+            Library:Notify({ Title = "杀戮光环（刀）", Description = "已切换至25米内优先攻击", Time = 2 })
+        end
+    end
+})
+kaMeleeGroup:AddSlider("KAMeleeNearestDistance", {
+    Text = "优先攻击距离",
+    Default = 25,
+    Min = 5,
+    Max = 100,
+    Rounding = 0,
+    Suffix = "米",
+    Callback = function(value)
+        KA_MELEE_NEAREST_DISTANCE = value
+        Library:Notify({ Title = "杀戮光环（刀）", Description = "优先攻击距离已设为" .. value .. "米", Time = 2 })
+    end
+})
+kaMeleeStatusLabel = kaMeleeGroup:AddLabel("状态：已关闭")
 
 local zzGroup = Tabs.Gun:AddLeftGroupbox("子追")
 zzGroup:AddToggle("ZZToggle", {
