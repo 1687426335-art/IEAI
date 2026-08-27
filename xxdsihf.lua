@@ -1,5 +1,5 @@
 -- ============================================================
--- wdfex 卡密验证系统
+-- wdfex 卡密验证系统（高级版）
 -- 卡密格式：wdfex-XXXX-XXXX（字母数字混合，不区分大小写）
 -- ============================================================
 
@@ -7,10 +7,10 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 -- ===== 配置 =====
 local CONFIG = {
-    -- 预设有效卡密（生产环境建议从服务器获取）
     VALID_KEYS = {
         "wdfex-a1b2-c3d4",
         "wdfex-9f8e-7d6c",
@@ -18,7 +18,6 @@ local CONFIG = {
         "wdfex-1q2w-3e4r",
         "wdfex-6t7y-8u9i",
     },
-    -- 存储已使用卡密的Key（保存在HttpService或本地）
     SAVE_KEY = "wdfex_used_keys",
 }
 
@@ -26,7 +25,6 @@ local CONFIG = {
 local function IsKeyFormatValid(key)
     if type(key) ~= "string" then return false end
     key = key:lower()
-    -- 匹配 wdfex-xxxx-xxxx（x为字母或数字）
     local pattern = "^wdfex%-[%w][%w][%w][%w]%-[%w][%w][%w][%w]$"
     return string.match(key, pattern) ~= nil
 end
@@ -45,7 +43,6 @@ local function IsKeyValid(key)
     return false
 end
 
--- ===== 存储已使用卡密（使用HttpService或自定义存储） =====
 local function GetUsedKeys()
     local success, result = pcall(function()
         return getgenv()._wdfex_used_keys
@@ -78,7 +75,6 @@ local function MarkKeyUsed(key)
     SaveUsedKeys(used)
 end
 
--- ===== 验证主函数 =====
 local function ValidateKey(key, onSuccess, onFail)
     if not key or key == "" then
         if onFail then onFail("请输入卡密") end
@@ -86,7 +82,7 @@ local function ValidateKey(key, onSuccess, onFail)
     end
     
     if not IsKeyFormatValid(key) then
-        if onFail then onFail("卡密格式错误，正确格式：wdfex-XXXX-XXXX") end
+        if onFail then onFail("卡密格式错误") end
         return false
     end
     
@@ -105,9 +101,10 @@ local function ValidateKey(key, onSuccess, onFail)
     return true
 end
 
--- ===== UI ======
+-- ============================================================
+-- 高级UI
+-- ============================================================
 local function CreateKeyUI(onVerified)
-    -- 防止重复创建
     local oldGui = CoreGui:FindFirstChild("wdfexKeySystem")
     if oldGui then oldGui:Destroy() end
     
@@ -117,182 +114,323 @@ local function CreateKeyUI(onVerified)
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = CoreGui
     
-    -- 背景遮罩
-    local overlay = Instance.new("Frame")
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.6
-    overlay.Parent = screenGui
-    
-    -- 主窗口
+    -- ===== 主窗口（毛玻璃效果） =====
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 420, 0, 320)
-    mainFrame.Position = UDim2.new(0.5, -210, 0.5, -160)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-    mainFrame.BackgroundTransparency = 0.05
-    mainFrame.BorderSizePixel = 2
-    mainFrame.BorderColor3 = Color3.fromRGB(100, 180, 255)
+    mainFrame.Size = UDim2.new(0, 440, 0, 340)
+    mainFrame.Position = UDim2.new(0.5, -220, 0.5, -170)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
+    mainFrame.BackgroundTransparency = 0.12
+    mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
-    mainFrame.Parent = overlay
+    mainFrame.Parent = screenGui
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = mainFrame
+    -- 主窗口圆角
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 16)
+    mainCorner.Parent = mainFrame
     
-    -- 彩色顶栏
+    -- 玻璃边框（渐变光晕）
+    local borderFrame = Instance.new("Frame")
+    borderFrame.Size = UDim2.new(1, 4, 1, 4)
+    borderFrame.Position = UDim2.new(0, -2, 0, -2)
+    borderFrame.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+    borderFrame.BackgroundTransparency = 0.7
+    borderFrame.BorderSizePixel = 0
+    borderFrame.ClipsDescendants = true
+    borderFrame.ZIndex = 0
+    borderFrame.Parent = mainFrame
+    
+    local borderCorner = Instance.new("UICorner")
+    borderCorner.CornerRadius = UDim.new(0, 18)
+    borderCorner.Parent = borderFrame
+    
+    -- 内发光光晕
+    local glow = Instance.new("Frame")
+    glow.Size = UDim2.new(1.4, 0, 1.4, 0)
+    glow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+    glow.BackgroundColor3 = Color3.fromRGB(80, 140, 255)
+    glow.BackgroundTransparency = 0.92
+    glow.BorderSizePixel = 0
+    glow.ZIndex = 0
+    glow.Parent = mainFrame
+    
+    local glowCorner = Instance.new("UICorner")
+    glowCorner.CornerRadius = UDim.new(1, 0)
+    glowCorner.Parent = glow
+    
+    -- ===== 顶部装饰条 =====
     local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, 0, 0, 4)
-    topBar.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    topBar.Size = UDim2.new(0.8, 0, 0, 3)
+    topBar.Position = UDim2.new(0.1, 0, 0, 0)
+    topBar.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+    topBar.BackgroundTransparency = 0.3
     topBar.BorderSizePixel = 0
     topBar.Parent = mainFrame
     
-    -- 标题
+    local topCorner = Instance.new("UICorner")
+    topCorner.CornerRadius = UDim.new(1, 0)
+    topCorner.Parent = topBar
+    
+    -- ===== Logo区域 =====
+    local logoContainer = Instance.new("Frame")
+    logoContainer.Size = UDim2.new(0, 56, 0, 56)
+    logoContainer.Position = UDim2.new(0.5, -28, 0, 24)
+    logoContainer.BackgroundColor3 = Color3.fromRGB(40, 80, 180)
+    logoContainer.BackgroundTransparency = 0.3
+    logoContainer.BorderSizePixel = 0
+    logoContainer.Parent = mainFrame
+    
+    local logoCorner = Instance.new("UICorner")
+    logoCorner.CornerRadius = UDim.new(1, 0)
+    logoCorner.Parent = logoContainer
+    
+    local logoText = Instance.new("TextLabel")
+    logoText.Size = UDim2.new(1, 0, 1, 0)
+    logoText.BackgroundTransparency = 1
+    logoText.Text = "W"
+    logoText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    logoText.TextSize = 28
+    logoText.Font = Enum.Font.GothamBold
+    logoText.Parent = logoContainer
+    
+    -- ===== 标题 =====
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 12)
+    title.Size = UDim2.new(1, 0, 0, 28)
+    title.Position = UDim2.new(0, 0, 0, 88)
     title.BackgroundTransparency = 1
     title.Text = "wdfex 卡密验证"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 24
+    title.TextSize = 22
     title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Center
     title.Parent = mainFrame
     
+    -- ===== 副标题 =====
     local subTitle = Instance.new("TextLabel")
-    subTitle.Size = UDim2.new(1, 0, 0, 24)
-    subTitle.Position = UDim2.new(0, 0, 0, 52)
+    subTitle.Size = UDim2.new(1, 0, 0, 20)
+    subTitle.Position = UDim2.new(0, 0, 0, 120)
     subTitle.BackgroundTransparency = 1
-    subTitle.Text = "请输入你的卡密以激活脚本"
-    subTitle.TextColor3 = Color3.fromRGB(180, 180, 200)
+    subTitle.Text = "请输入卡密"
+    subTitle.TextColor3 = Color3.fromRGB(160, 170, 200)
     subTitle.TextSize = 14
     subTitle.Font = Enum.Font.Gotham
+    subTitle.TextXAlignment = Enum.TextXAlignment.Center
     subTitle.Parent = mainFrame
     
-    -- 输入框
+    -- ===== 分割线 =====
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(0.8, 0, 0, 1)
+    line.Position = UDim2.new(0.1, 0, 0, 148)
+    line.BackgroundColor3 = Color3.fromRGB(80, 120, 220)
+    line.BackgroundTransparency = 0.6
+    line.BorderSizePixel = 0
+    line.Parent = mainFrame
+    
+    -- ===== 输入框 =====
     local inputBg = Instance.new("Frame")
-    inputBg.Size = UDim2.new(0.85, 0, 0, 48)
-    inputBg.Position = UDim2.new(0.075, 0, 0, 90)
-    inputBg.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    inputBg.BackgroundTransparency = 0.3
-    inputBg.BorderSizePixel = 2
-    inputBg.BorderColor3 = Color3.fromRGB(60, 60, 90)
+    inputBg.Size = UDim2.new(0.8, 0, 0, 50)
+    inputBg.Position = UDim2.new(0.1, 0, 0, 165)
+    inputBg.BackgroundColor3 = Color3.fromRGB(30, 30, 55)
+    inputBg.BackgroundTransparency = 0.4
+    inputBg.BorderSizePixel = 1.5
+    inputBg.BorderColor3 = Color3.fromRGB(60, 80, 140)
+    inputBg.ClipsDescendants = true
     inputBg.Parent = mainFrame
     
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.CornerRadius = UDim.new(0, 10)
     inputCorner.Parent = inputBg
     
+    -- 输入框前缀
+    local prefix = Instance.new("TextLabel")
+    prefix.Size = UDim2.new(0, 60, 1, 0)
+    prefix.Position = UDim2.new(0, 12, 0, 0)
+    prefix.BackgroundTransparency = 1
+    prefix.Text = "wdfex-"
+    prefix.TextColor3 = Color3.fromRGB(120, 160, 255)
+    prefix.TextSize = 17
+    prefix.Font = Enum.Font.GothamBold
+    prefix.TextXAlignment = Enum.TextXAlignment.Left
+    prefix.ParentLabel = inputBg
+    
     local keyInput = Instance.new("TextBox")
-    keyInput.Size = UDim2.new(1, -20, 1, 0)
-    keyInput.Position = UDim2.new(0, 10, 0, 0)
+    keyInput.Size = UDim2.new(1, -80, 1, 0)
+    keyInput.Position = UDim2.new(0, 72, 0, 0)
     keyInput.BackgroundTransparency = 1
-    keyInput.PlaceholderText = "wdfex-XXXX-XXXX"
-    keyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 180)
+    keyInput.PlaceholderText = "XXXX-XXXX"
+    keyInput.PlaceholderColor3 = Color3.fromRGB(120, 130, 170)
     keyInput.Text = ""
     keyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    keyInput.TextSize = 18
+    keyInput.TextSize = 17
     keyInput.Font = Enum.Font.Gotham
     keyInput.ClearTextOnFocus = false
     keyInput.Parent = inputBg
     
-    -- 状态提示
+    -- ===== 状态提示 =====
     local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(0.85, 0, 0, 24)
-    statusLabel.Position = UDim2.new(0.075, 0, 0, 148)
+    statusLabel.Size = UDim2.new(0.8, 0, 0, 22)
+    statusLabel.Position = UDim2.new(0.1, 0, 0, 222)
     statusLabel.BackgroundTransparency = 1
     statusLabel.Text = ""
     statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-    statusLabel.TextSize = 13
+    status.TextSize = 13
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextXAlignment = Enum.TextXAlignment.Center
     statusLabel.Parent = mainFrame
     
-    -- 验证按钮
+    -- ===== 验证按钮 =====
     local verifyBtn = Instance.new("TextButton")
-    verifyBtn.Size = UDim2.new(0.35, 0, 0, 48)
-    verifyBtn.Position = UDim2.new(0.325, 0, 0, 185)
-    verifyBtn.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
-    verifyBtn.BackgroundTransparency = 0.15
-    verifyBtn.BorderSizePixel = 2
-    verifyBtn.BorderColor3 = Color3.fromRGB(100, 180, 255)
-    verifyBtn.Text = "验证卡密"
+    verifyBtn.Size = UDim2.new(0.4, 0, 0, 48)
+    verifyBtn.Position = UDim2.new(0.3, 0, 0, 255)
+    verifyBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 255)
+    verifyBtn.BackgroundTransparency = 0.2
+    verifyBtn.BorderSizePixel = 1.5
+    verifyBtn.BorderColor3 = Color3.fromRGB(80, 160, 255)
+    verifyBtn.Text = "验 证"
     verifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    verifyBtn.TextSize = 18
+    verifyBtn.TextSize = 17
     verifyBtn.Font = Enum.Font.GothamBold
     verifyBtn.Parent = mainFrame
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.CornerRadius = UDim.new(0, 10)
     btnCorner.Parent = verifyBtn
     
-    -- 提示
+    -- 按钮光效
+    local btnGlow = Instance.new("Frame")
+    btnGlow.Size = UDim2.new(1.2, 0, 1.6, 0)
+    btnGlow.Position = UDim2.new(-0.1, 0, -0.3, 0)
+    btnGlow.BackgroundColor3 = Color3.fromRGB(60, 130, 255)
+    btnGlow.BackgroundTransparency = 0.9
+    btnGlow.BorderSizePixel = 0
+    btnGlow.ZIndex = 0
+    btnGlow.Parent = verifyBtn
+    
+    local btnGlowCorner = Instance.new("UICorner")
+    btnGlowCorner.CornerRadius = UDim.new(1, 0)
+    btnGlowCorner.Parent = btnGlow
+    
+    -- ===== 底部提示 =====
     local tip = Instance.new("TextLabel")
-    tip.Size = UDim2.new(1, 0, 0, 20)
-    tip.Position = UDim2.new(0, 0, 0, 250)
+    tip.Size = UDim2.new(1, 0, 0, 18)
+    tip.Position = UDim2.new(0, 0, 1, -24)
     tip.BackgroundTransparency = 1
-    tip.Text = "卡密格式：wdfex-XXXX-XXXX（字母数字不限）"
-    tip.TextColor3 = Color3.fromRGB(120, 120, 150)
+    tip.Text = "格式：wdfex-XXXX-XXXX  ·  字母数字不限"
+    tip.TextColor3 = Color3.fromRGB(100, 110, 150)
     tip.TextSize = 11
     tip.Font = Enum.Font.Gotham
     tip.TextXAlignment = Enum.TextXAlignment.Center
     tip.Parent = mainFrame
     
-    -- ===== 验证按钮点击 =====
-    verifyBtn.MouseButton1Click:Connect(function()
+    -- ===== 关闭按钮 =====
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 32, 0, 32)
+    closeBtn.Position = UDim2.new(1, -40, 0, 12)
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(150, 160, 200)
+    closeBtn.TextSize = 18
+    closeBtn.Font = Enum.Font.Gotham
+    closeBtn.Parent = mainFrame
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- 悬停效果
+    closeBtn.MouseEnter:Connect(function()
+        closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end)
+    closeBtn.MouseLeave:Connect(function()
+        closeBtn.TextColor3 = Color3.fromRGB(150, 160, 200)
+    end)
+    
+    -- ===== 按钮悬停动画 =====
+    verifyBtn.MouseEnter:Connect(function()
+        TweenService:Create(verifyBtn, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.05
+        }):Play()
+        TweenService:Create(verifyBtn, TweenInfo.new(0.2), {
+            BorderColor3 = Color3.fromRGB(120, 200, 255)
+        }):Play()
+    end)
+    verifyBtn.MouseLeave:Connect(function()
+        TweenService:Create(verifyBtn, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.2
+        }):Play()
+        TweenService:Create(verifyBtn, TweenInfo.new(0.2), {
+            BorderColor3 = Color3.fromRGB(80, 160, 255)
+        }):Play()
+    end)
+    
+    -- ===== 输入框聚焦动画 =====
+    keyInput.Focused:Connect(function()
+        TweenService:Create(inputBg, TweenInfo.new(0.2), {
+            BorderColor3 = Color3.fromRGB(80, 160, 255),
+            BackgroundTransparency = 0.2
+        }):Play()
+    end)
+    keyInput.FocusLost:Connect(function()
+        TweenService:Create(inputBg, TweenInfo.new(0.2), {
+            BorderColor3 = Color3.fromRGB(60, 80, 140),
+            BackgroundTransparency = 0.4
+        }):Play()
+    end)
+    
+    -- ===== 验证逻辑 =====
+    local function doVerify()
         local key = keyInput.Text
+        if key ~= "" and not string.find(key:lower(), "^wdfex%-") then
+            key = "wdfex-" .. key
+        end
+        
         statusLabel.Text = "验证中..."
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
         
-        ValidateKey(key, 
-            -- 成功
+        ValidateKey(key,
             function()
-                statusLabel.Text = "✓ 验证成功！"
-                statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-                
-                -- 成功动画
-                local tween = TweenService:Create(verifyBtn, TweenInfo.new(0.3), {
+                statusLabel.Text = "✓ 验证成功"
+                statusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
+                TweenService:Create(verifyBtn, TweenInfo.new(0.3), {
                     BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-                })
-                tween:Play()
+                }):Play()
+                TweenService:Create(verifyBtn, TweenInfo.new(0.3), {
+                    BorderColor3 = Color3.fromRGB(0, 220, 120)
+                }):Play()
                 
-                task.wait(0.5)
-                
-                -- 销毁UI
+                task.wait(0.6)
                 screenGui:Destroy()
-                
-                -- 执行回调
-                if onVerified then
-                    onVerified()
-                end
+                if onVerified then onVerified() end
             end,
-            -- 失败
             function(errMsg)
                 statusLabel.Text = "✗ " .. errMsg
                 statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-                
-                local tween = TweenService:Create(inputBg, TweenInfo.new(0.15), {
-                    BorderColor3 = Color3.fromRGB(255, 50, 50)
-                })
-                tween:Play()
-                task.wait(0.3)
                 TweenService:Create(inputBg, TweenInfo.new(0.15), {
-                    BorderColor3 = Color3.fromRGB(60, 60, 90)
+                    BorderColor3 = Color3.fromRGB(255, 60, 60)
+                }):Play()
+                task.wait(0.25)
+                TweenService:Create(inputBg, TweenInfo.new(0.15), {
+                    BorderColor3 = Color3.fromRGB(60, 80, 140)
                 }):Play()
             end
         )
-    end)
+    end
     
-    -- 回车键验证
+    verifyBtn.MouseButton1Click:Connect(doVerify)
+    
     keyInput.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            verifyBtn.MouseButton1Click:Fire()
-        end
+        if enterPressed then doVerify() end
     end)
     
-    -- 拖动窗口
+    -- ===== 拖动 =====
     local dragging = false
     local dragStart, startPos
+    local dragHandle = Instance.new("Frame")
+    dragHandle.Size = UDim2.new(1, 0, 0, 100)
+    dragHandle.BackgroundTransparency = 1
+    dragHandle.Parent = mainFrame
     
-    mainFrame.InputBegan:Connect(function(input)
+    dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
@@ -300,7 +438,7 @@ local function CreateKeyUI(onVerified)
         end
     end)
     
-    mainFrame.InputChanged:Connect(function(input)
+    UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             mainFrame.Position = UDim2.new(
@@ -312,26 +450,31 @@ local function CreateKeyUI(onVerified)
         end
     end)
     
-    mainFrame.InputEnded:Connect(function(input)
+    UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
+    
+    -- ===== 入场动画 =====
+    mainFrame.BackgroundTransparency = 1
+    mainFrame.Size = UDim2.new(0, 400, 0, 300)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+    
+    TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.12,
+        Size = UDim2.new(0, 440, 0, 340),
+        Position = UDim2.new(0.5, -220, 0.5, -170)
+    }):Play()
 end
 
 -- ============================================================
--- 导出函数
+-- 导出
 -- ============================================================
--- 调用方式：wdfex.Verify(function() print("验证成功，加载脚本") end)
--- 或者直接调用：wdfex.Verify(加载脚本的函数)
-
 local wdfex = {
-    -- 验证卡密（显示UI）
     Verify = function(onVerified)
         CreateKeyUI(onVerified)
     end,
-    
-    -- 纯验证（不显示UI，返回布尔值）
     CheckKey = function(key)
         if not key or key == "" then
             return false, "请输入卡密"
@@ -347,8 +490,6 @@ local wdfex = {
         end
         return true, "验证成功"
     end,
-    
-    -- 手动标记卡密已使用
     UseKey = function(key)
         if IsKeyValid(key) and not IsKeyUsed(key) then
             MarkKeyUsed(key)
@@ -356,32 +497,14 @@ local wdfex = {
         end
         return false
     end,
-    
-    -- 获取已使用卡密列表
     GetUsedKeys = GetUsedKeys,
-    
-    -- 重置所有已使用卡密（仅调试用）
     ResetAllKeys = function()
         SaveUsedKeys({})
     end,
 }
 
--- ============================================================
--- 使用示例
--- ============================================================
--- [[
--- 在脚本开头调用：
--- wdfex.Verify(function()
---     print("✅ 验证成功，开始加载主脚本")
---     -- 在这里加载你的主脚本
---     loadstring(game:HttpGet("你的脚本URL"))()
--- end)
--- ]]
-
--- 如果直接运行此脚本，显示验证界面
 wdfex.Verify(function()
-    print("✅ 验证成功，脚本已激活")
-    -- 这里可以放你的主功能代码
+    print("✅ 验证成功")
 end)
 
 return wdfex
