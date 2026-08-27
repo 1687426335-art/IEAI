@@ -76,7 +76,7 @@ end
 
 -- ==================== 窗口 ====================
 local Window = Library:CreateWindow({
-    Title = "wdfex-墨水游戏",
+    Title = "墨水游戏",
     Footer = "wdfex 制作",
     Icon = 131153193945220,
     NotifySide = "Right",
