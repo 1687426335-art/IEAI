@@ -1,7 +1,7 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "吃吃世界",
-    Text = "作者：恐拜大帝\nQQ：3999698324"
+    Text = "作者：wdfex\nQQ：1687426335"
 })
 
 local function safeLoad(url)
@@ -308,7 +308,7 @@ local function loadFlightScript()
         TextLabel.Position = UDim2.new(0.469327301,0,0,0)
         TextLabel.Size = UDim2.new(0,100,0,28)
         TextLabel.Font = Enum.Font.SourceSans
-        TextLabel.Text = "恐拜大帝"
+        TextLabel.Text = "wdfex"
         TextLabel.TextColor3 = Color3.fromRGB(0,0,0)
         TextLabel.TextScaled = true
         TextLabel.TextSize = 14
@@ -613,7 +613,7 @@ end
 
 local Window = Library:CreateWindow({
     Title = "吃吃世界",
-    Footer = "恐拜大帝 制作",
+    Footer = "wdfex 制作",
     Icon = 131153193945220,
     NotifySide = "Right",
     ShowCustomCursor = true,
@@ -868,7 +868,7 @@ VisualRight:AddToggle('CrosshairSpin', {
 })
 
 local OtherLeft = Tabs.Other:AddLeftGroupbox("杂项")
-OtherLeft:AddLabel("作者：恐拜大帝")
+OtherLeft:AddLabel("作者：wdfex")
 OtherLeft:AddLabel("QQ：3999698324", true)
 OtherLeft:AddButton({
     Text = '卸载脚本',
