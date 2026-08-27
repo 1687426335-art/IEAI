@@ -148,7 +148,7 @@ end
 
 local Window = Library:CreateWindow({
 	Title = "俄亥俄州",
-	Footer = "恐拜大帝 制作",
+	Footer = "wdfex 制作",
 	Icon = 131153193945220,
 	NotifySide = "Right",
 	ShowCustomCursor = true,
@@ -156,7 +156,7 @@ local Window = Library:CreateWindow({
 
 Library:Notify({
 	Title = "俄亥俄州",
-	Description = "创作者：恐拜大帝\nQQ：3999698324\n脚本已加载成功",
+	Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功",
 	Time = 5,
 })
 
@@ -178,9 +178,9 @@ local Tabs = {
 }
 
 local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息")
-NoticeGroup:AddLabel("恐拜大帝将持续更新此脚本")
-NoticeGroup:AddLabel("创作者：恐拜大帝")
-NoticeGroup:AddLabel("QQ：3999698324")
+NoticeGroup:AddLabel("快手号：EGD917813")
+NoticeGroup:AddLabel("创作者：wdfex")
+NoticeGroup:AddLabel("QQ：wdfex")
 
 local function notify(msg)
 	Library:Notify({
@@ -4014,7 +4014,7 @@ pcall(function()
 	pg2.Money.Container.premium.Visible = true
 	pg2.Money.Container.premium.TextLabel.Text = "俄亥俄州"
 	pg2.Money.Container["2x cash"].Visible = true
-	pg2.Money.Container["2x cash"].TextLabel.Text = "恐拜大帝"
+	pg2.Money.Container["2x cash"].TextLabel.Text = "wdfex"
 end)
 pcall(function()
 	Workspace.BlackMarket.Dealer.Dealer.ProximityPrompt.HoldDuration = 0
