@@ -1,3 +1,6 @@
+-- ============================================================
+-- WindUI 框架（保留UI样式，删除原功能，增加欢迎弹窗）
+-- ============================================================
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 WindUI.TransparencyValue = 0.2
 WindUI:SetTheme("Dark")
@@ -246,28 +249,54 @@ local function applyUIScale(scale)
 end
 
 -- ============================================================
--- 服务器检测（是否为圣奥里）
+-- 用户名渐变色（用于欢迎弹窗）
 -- ============================================================
-local function CheckGame()
-    local gameName = game.Name
-    if gameName:find("圣奥里") or gameName:find("San Aurie") or gameName:find("SanAurie") then return true end
-    local success, result = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    end)
-    if success and result and result.Name then
-        if result.Name:find("圣奥里") or result.Name:find("San Aurie") or result.Name:find("SanAurie") then return true end
+local username = game:GetService("Players").LocalPlayer.Name
+local coloredUsername = ""
+local gradientColors = {
+    "#4169E1", 
+    "#6A5ACD",  
+    "#9370DB",  
+    "#8A2BE2", 
+    "#4B0082"   
+}
+local goldColor = "#FFD700"
+for i = 1, #username do
+    local char = username:sub(i, i)
+    if char:match("[A-Za-z0-9]") then
+        local colorIndex = (i - 1) % #gradientColors + 1
+        coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. char .. '</font>'
+    else
+        coloredUsername = coloredUsername .. '<font color="' .. goldColor .. '">' .. char .. '</font>'
     end
-    return false
 end
 
-if not CheckGame() then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "加载失败",
-        Text = "当前服务器不是圣奥里（San Aurie）",
-        Duration = 5,
-    })
-    return
-end
+-- ============================================================
+-- 欢迎弹窗（WindUI Popup）
+-- ============================================================
+local Confirmed = false
+WindUI:Popup({
+    Title = 'wdfex-圣奥里',
+    IconThemed = true,
+    Icon = "crown",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. "\n使用 wdfex-圣奥里\n你的支持是我们更新的动力\nQQ：1687426335",
+    Buttons = {
+        {
+            Title = "取消",
+            Callback = function() end,
+            Variant = "Secondary",
+        },
+        {
+            Title = "执行",
+            Icon = "arrow-right",
+            Callback = function() 
+                Confirmed = true 
+                createUI()
+            end,
+            Variant = "Primary",
+        }
+    }
+})
 
 -- ============================================================
 -- 全局变量和配置
@@ -1442,14 +1471,6 @@ function createUI()
         end)
     end
 
-    -- 通知
-    WindUI:Notify({
-        Title = "圣奥里",
-        Content = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功",
-        Duration = 5,
-        Icon = "check"
-    })
-
     -- ============================================================
     -- Tab: 公告
     -- ============================================================
@@ -2159,7 +2180,5 @@ function createUI()
     end)
 end
 
--- ============================================================
--- 启动UI
--- ============================================================
-createUI()
+-- 如果用户点击取消，不创建UI，直接结束
+-- 如果用户点击执行，会调用 createUI()
