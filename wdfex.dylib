@@ -1,0 +1,242 @@
+// ============================================================
+// 欢乐斗地主 悬浮窗 + 功能注入 (iOS越狱 .dylib)
+// 使用 Theos 编译
+// 文件: Tweak.xm
+// ============================================================
+
+#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
+#import <objc/runtime.h>
+#import <objc/message.h>
+
+// ============================================================
+// 悬浮窗 UI 类
+// ============================================================
+@interface FloatingWindow : UIWindow
+@property (nonatomic, strong) UIButton *floatButton;
+@property (nonatomic, strong) UILabel *infoLabel;
+@property (nonatomic, strong) UIView *contentView;
+@property (nonatomic, assign) BOOL isExpanded;
+@end
+
+@implementation FloatingWindow
+
+- (instancetype)init {
+    self = [super initWithFrame:[UIScreen mainScreen].bounds];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        self.windowLevel = UIWindowLevelStatusBar + 100;
+        self.hidden = NO;
+        self.userInteractionEnabled = YES;
+        
+        [self setupUI];
+        [self setupGesture];
+    }
+    return self;
+}
+
+- (void)setupUI {
+    // 悬浮按钮 (圆形)
+    self.floatButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.floatButton.frame = CGRectMake(20, 200, 55, 55);
+    self.floatButton.backgroundColor = [UIColor colorWithRed:0.2 green:0.2 blue:0.4 alpha:0.85];
+    self.floatButton.layer.cornerRadius = 27.5;
+    self.floatButton.layer.borderWidth = 2;
+    self.floatButton.layer.borderColor = [UIColor colorWithRed:0.4 green:0.6 blue:1.0 alpha:1.0].CGColor;
+    self.floatButton.layer.shadowColor = [UIColor blackColor].CGColor;
+    self.floatButton.layer.shadowOpacity = 0.5;
+    self.floatButton.layer.shadowOffset = CGSizeMake(0, 2);
+    self.floatButton.layer.shadowRadius = 4;
+    [self.floatButton setTitle:@"🎴" forState:UIControlStateNormal];
+    self.floatButton.titleLabel.font = [UIFont systemFontOfSize:28];
+    [self.floatButton addTarget:self action:@selector(toggleExpand) forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:self.floatButton];
+    
+    // 内容面板 (展开后显示)
+    self.contentView = [[UIView alloc] initWithFrame:CGRectMake(20, 260, 160, 120)];
+    self.contentView.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.2 alpha:0.9];
+    self.contentView.layer.cornerRadius = 12;
+    self.contentView.layer.borderWidth = 1;
+    self.contentView.layer.borderColor = [UIColor colorWithRed:0.3 green:0.5 blue:0.8 alpha:1.0].CGColor;
+    self.contentView.hidden = YES;
+    [self addSubview:self.contentView];
+    
+    // 信息标签
+    self.infoLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 140, 100)];
+    self.infoLabel.textColor = [UIColor whiteColor];
+    self.infoLabel.font = [UIFont fontWithName:@"PingFangSC-Medium" size:13];
+    self.infoLabel.numberOfLines = 0;
+    self.infoLabel.text = @"🎴 记牌器\n剩余: --\n我的牌: --";
+    [self.contentView addSubview:self.infoLabel];
+    
+    // 关闭按钮
+    UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    closeBtn.frame = CGRectMake(120, 5, 30, 30);
+    [closeBtn setTitle:@"✕" forState:UIControlStateNormal];
+    [closeBtn setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    closeBtn.titleLabel.font = [UIFont boldSystemFontOfSize:16];
+    [closeBtn addTarget:self action:@selector(hideFloating) forControlEvents:UIControlEventTouchUpInside];
+    [self.contentView addSubview:closeBtn];
+    
+    self.isExpanded = NO;
+}
+
+- (void)setupGesture {
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+    [self.floatButton addGestureRecognizer:pan];
+}
+
+- (void)handlePan:(UIPanGestureRecognizer *)gesture {
+    CGPoint translation = [gesture translationInView:self];
+    CGPoint newCenter = CGPointMake(self.floatButton.center.x + translation.x, self.floatButton.center.y + translation.y);
+    
+    // 边界限制
+    CGFloat halfWidth = self.floatButton.frame.size.width / 2;
+    newCenter.x = MAX(halfWidth, MIN(self.frame.size.width - halfWidth, newCenter.x));
+    newCenter.y = MAX(halfWidth + 40, MIN(self.frame.size.height - halfWidth - 40, newCenter.y));
+    
+    self.floatButton.center = newCenter;
+    [gesture setTranslation:CGPointZero inView:self];
+    
+    // 拖动时隐藏展开面板
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        [self collapse];
+    }
+}
+
+- (void)toggleExpand {
+    if (self.isExpanded) {
+        [self collapse];
+    } else {
+        [self expand];
+    }
+}
+
+- (void)expand {
+    self.isExpanded = YES;
+    self.contentView.hidden = NO;
+    [UIView animateWithDuration:0.3 animations:^{
+        self.contentView.alpha = 1.0;
+    }];
+    [self updateInfo];
+}
+
+- (void)collapse {
+    self.isExpanded = NO;
+    [UIView animateWithDuration:0.3 animations:^{
+        self.contentView.alpha = 0.0;
+    } completion:^(BOOL finished) {
+        self.contentView.hidden = YES;
+    }];
+}
+
+- (void)hideFloating {
+    self.hidden = YES;
+}
+
+- (void)updateInfo {
+    // 从游戏内存读取数据 (通过 Hook 获取)
+    // 这里通过全局变量更新
+    extern NSInteger g_remainingCards;
+    extern NSString *g_myCards;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.infoLabel.text = [NSString stringWithFormat:@"🎴 记牌器\n剩余: %ld张\n我的牌: %@", (long)g_remainingCards, g_myCards ?: @"--"];
+    });
+}
+
+@end
+
+// ============================================================
+// 全局变量 (存储牌局数据)
+// ============================================================
+NSInteger g_remainingCards = 0;
+NSString *g_myCards = @"--";
+
+// ============================================================
+// Hook 游戏类
+// ============================================================
+
+// 假设游戏主类 (需要 class-dump 获取真实类名)
+// 这里用 GameManager 和 PokerManager 举例
+
+%hook GameManager
+
+// Hook 获取剩余牌数的方法
+- (NSInteger)getRemainingCards {
+    NSInteger count = %orig;
+    g_remainingCards = count;
+    return count;
+}
+
+// Hook 获取手牌的方法
+- (NSString *)getMyCards {
+    NSString *cards = %orig;
+    g_myCards = cards;
+    return cards;
+}
+
+%end
+
+%hook PokerManager
+
+// Hook 出牌结果 (可用于自动出牌)
+- (BOOL)playCards:(id)cards {
+    // 这里可以拦截出牌逻辑
+    // 比如 AI 自动出牌
+    return %orig;
+}
+
+%end
+
+%hook NetworkManager
+
+// Hook 网络请求 (可拦截和修改数据)
+- (void)sendPacket:(id)packet {
+    // 修改数据包
+    %orig;
+}
+
+%end
+
+// ============================================================
+// 初始化 Hook 和创建悬浮窗
+// ============================================================
+static FloatingWindow *g_window = nil;
+
+%ctor {
+    // 延迟创建悬浮窗，等待游戏加载
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        g_window = [[FloatingWindow alloc] init];
+    });
+}
+
+// ============================================================
+// 徽标 (dylib 识别用)
+// ============================================================
+%init {
+    // 设置一个全局变量标记注入成功
+    NSLog(@"[HappyDDZ] 🎯 注入成功!");
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"✅ 注入成功" 
+                                                     message:@"悬浮窗已加载" 
+                                                    delegate:nil 
+                                           cancelButtonTitle:@"OK" 
+                                           otherButtonTitles:nil];
+    [alert show];
+}
+
+// ============================================================
+// 编译说明
+// ============================================================
+// 
+// 1. 安装 Theos: https://github.com/theos/theos
+// 2. 创建 tweak 项目: $THEOS/bin/nic.pl
+// 3. 选择 tweak 模板
+// 4. 将本代码放入 Tweak.xm
+// 5. Makefile 配置 TARGET = iphone:clang:latest:13.0
+// 6. 编译: make && make package
+// 7. 生成 .deb 文件
+// 8. 解压 .deb 获取 .dylib
+// 9. 用 Filza 安装 .deb 或手动注入 .dylib
+// 10. 重启 SpringBoard 生效
+// 
+// ============================================================
