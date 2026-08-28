@@ -1,6 +1,3 @@
--- ============================================================
--- WindUI 框架（保留UI样式，删除原功能）
--- ============================================================
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 WindUI.TransparencyValue = 0.2
 WindUI:SetTheme("Dark")
