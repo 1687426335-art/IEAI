@@ -1,6 +1,3 @@
--- ============================================================
--- WindUI 框架（保留UI样式，删除原功能，增加欢迎弹窗）
--- ============================================================
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 WindUI.TransparencyValue = 0.2
 WindUI:SetTheme("Dark")
@@ -230,12 +227,12 @@ local function applyBlurEffect(enabled)
         pcall(function()
             local blur = Instance.new("BlurEffect")
             blur.Size = 8
-            blur.Name = "UISX HUBBlur"
+            blur.Name = "UIwdfex-圣奥里Blur"
             blur.Parent = game:GetService("Lighting")
         end)
     else
         pcall(function()
-            local existingBlur = game:GetService("Lighting"):FindFirstChild("UISX HUBBlur")
+            local existingBlur = game:GetService("Lighting"):FindFirstChild("UIwdfex-圣奥里Blur")
             if existingBlur then existingBlur:Destroy() end
         end)
     end
@@ -248,17 +245,11 @@ local function applyUIScale(scale)
     end
 end
 
--- ============================================================
--- 用户名渐变色（用于欢迎弹窗）
--- ============================================================
+local Confirmed = false
 local username = game:GetService("Players").LocalPlayer.Name
 local coloredUsername = ""
 local gradientColors = {
-    "#4169E1", 
-    "#6A5ACD",  
-    "#9370DB",  
-    "#8A2BE2", 
-    "#4B0082"   
+    "#4169E1", "#6A5ACD", "#9370DB", "#8A2BE2", "#4B0082"
 }
 local goldColor = "#FFD700"
 for i = 1, #username do
@@ -271,15 +262,11 @@ for i = 1, #username do
     end
 end
 
--- ============================================================
--- 欢迎弹窗（WindUI Popup）
--- ============================================================
-local Confirmed = false
 WindUI:Popup({
     Title = 'wdfex-圣奥里',
     IconThemed = true,
     Icon = "crown",
-    Content = "欢迎尊重的用户 " .. coloredUsername .. "\n使用 wdfex-圣奥里\n你的支持是我们更新的动力\nQQ：1687426335",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-圣奥里\n当前支持服务器\n圣奥里",
     Buttons = {
         {
             Title = "取消",
@@ -289,8 +276,8 @@ WindUI:Popup({
         {
             Title = "执行",
             Icon = "arrow-right",
-            Callback = function() 
-                Confirmed = true 
+            Callback = function()
+                Confirmed = true
                 createUI()
             end,
             Variant = "Primary",
@@ -298,9 +285,6 @@ WindUI:Popup({
     }
 })
 
--- ============================================================
--- 全局变量和配置
--- ============================================================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -324,9 +308,6 @@ local isDestroyed = false
 local connections = {}
 local noclipConnections = {}
 
--- ============================================================
--- 透视功能
--- ============================================================
 local ESP_ENABLED = false
 local ESP_SHOW_NAME = true
 local ESP_SHOW_TEAM = true
@@ -517,9 +498,6 @@ Players.PlayerAdded:Connect(function(p)
 end)
 Players.PlayerRemoving:Connect(function(p) RemoveESP(p.UserId) end)
 
--- ============================================================
--- 防甩飞功能
--- ============================================================
 _G.CatAntiFling_Enabled = false
 _G.CatAntiFling_Running = false
 
@@ -553,9 +531,6 @@ local function AntiFlingLoop()
 end
 AntiFlingLoop()
 
--- ============================================================
--- 飞行功能（圣奥里版）
--- ============================================================
 local UserInputService = game:GetService("UserInputService")
 local FlySpeed = 35
 local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
@@ -630,11 +605,8 @@ local function flyMicroStepLoop()
         flyState.lastTime = now
         if not flyState.hrp or not flyState.hrp.Parent then break end
         local inWall = flyDetectWall()
-        if inWall and not flyAnchor.active then
-            flyEnterAnchor()
-        elseif not inWall and flyAnchor.active then
-            flyExitAnchor()
-        end
+        if inWall and not flyAnchor.active then flyEnterAnchor()
+        elseif not inWall and flyAnchor.active then flyExitAnchor() end
         local moveDir
         if FlyControl then
             local mv = FlyControl:GetMoveVector()
@@ -711,7 +683,6 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
--- 飞天快捷开关
 local flyQuickToggle = false
 local flyQuickButton = nil
 local flyQuickScreenGui = nil
@@ -804,9 +775,6 @@ local function CreateFlyQuickToggle()
     table.insert(connections, statusConn)
 end
 
--- ============================================================
--- Noclip
--- ============================================================
 local function ApplyNoclip()
     if isDestroyed or not Settings.NoclipEnabled then return end
     local char = player.Character
@@ -829,9 +797,6 @@ local function ToggleNoclip(state)
     end
 end
 
--- ============================================================
--- 碰撞箱扩展
--- ============================================================
 local function ApplyHitbox()
     if isDestroyed or not Settings.HitboxEnabled then return end
     local players = Players:GetPlayers()
@@ -896,9 +861,6 @@ local function UpdateWhitelist()
     end
 end
 
--- ============================================================
--- 传送功能
--- ============================================================
 local function GetTeleportData()
     return {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594), region = "圣奥里"},
@@ -961,9 +923,6 @@ local function TeleportTo(pos)
     pcall(function() root.CFrame = CFrame.new(pos) end)
 end
 
--- ============================================================
--- 杀戮光环（枪）
--- ============================================================
 local KA_GUN_MAX_DISTANCE = 300
 local KA_GUN_WALL_CHECK = true
 local kaGunEnabled = false
@@ -1097,9 +1056,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ============================================================
--- 杀戮光环（刀）
--- ============================================================
 local KA_MELEE_MAX_DISTANCE = 300
 local KA_MELEE_WALL_CHECK = true
 local kaMeleeEnabled = false
@@ -1230,9 +1186,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ============================================================
--- 快速互动
--- ============================================================
 local interactEnabled = false
 local ScanPrompts
 
@@ -1256,9 +1209,6 @@ workspace.DescendantAdded:Connect(function(obj)
     end
 end)
 
--- ============================================================
--- 伤害免疫
--- ============================================================
 local staminaOn = false
 local godOn = false
 local StaminaEvent
@@ -1291,9 +1241,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- 移速修改
--- ============================================================
 local speedBypassOn = false
 local speedBypassValue = 20
 RunService.Heartbeat:Connect(function(dt)
@@ -1306,9 +1253,6 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
--- ============================================================
--- 无限子弹（枪械）
--- ============================================================
 local infAmmoEnabled = false
 task.spawn(function()
     while not isDestroyed do
@@ -1330,9 +1274,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- 超快射速
--- ============================================================
 local function ModifyWeaponStats()
     local garbage = getgc(true)
     for _, tbl in pairs(garbage) do
@@ -1344,9 +1285,6 @@ local function ModifyWeaponStats()
     end
 end
 
--- ============================================================
--- 开发者功能 - 坐标显示
--- ============================================================
 local function CreateCoordinateTool()
     local char = player.Character or player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
@@ -1413,32 +1351,51 @@ local function DestroyCoordinateTool()
     if gui then gui:Destroy() end
 end
 
--- ============================================================
--- UI主窗口（圣奥里功能 + WindUI样式）
--- ============================================================
 function createUI()
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-圣奥里',
         Icon = "crown",
         IconThemed = true,
-        Author = "by wdfex",
-        Folder = "wdfexHub",
-        Size = UDim2.fromOffset(600, 400),
+        Author = "作者：wdfex",
+        Folder = "CloudHub",
+        Size = UDim2.fromOffset(300, 200),
         Transparent = true,
         Theme = "Dark",
         HideSearchBar = false,
         ScrollBarEnabled = true,
         Resizable = true,
+        Background = "https://raw.githubusercontent.com/SQ182/y/c713ef1eeed1dc6b50e547dcbfee45034c385bf9/image_download_1768053890832.jpg",
+        BackgroundImageTransparency = 0.5,
+        User = {
+            Enabled = true,
+            Callback = function()
+                WindUI:Notify({
+                    Title = "点击了自己",
+                    Content = "没什么",
+                    Duration = 1,
+                    Icon = "4483362748"
+                })
+            end,
+            Anonymous = false
+        },
         SideBarWidth = 250,
         Search = {
             Enabled = true,
-            Placeholder = "搜索功能...",
-            Callback = function(searchText) end
+            Placeholder = "搜索...",
+            Callback = function(searchText)
+                print("搜索内容:", searchText)
+            end
         },
         SidePanel = {
             Enabled = true,
             Content = {
-                { Type = "Button", Text = "", Style = "Subtle", Size = UDim2.new(1, -20, 0, 30), Callback = function() end }
+                {
+                    Type = "Button",
+                    Text = "",
+                    Style = "Subtle",
+                    Size = UDim2.new(1, -20, 0, 30),
+                    Callback = function() end
+                }
             }
         }
     })
@@ -1448,20 +1405,28 @@ function createUI()
         Icon = "crown",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
-        Color = ColorSequence.new(Color3.fromHex("4B0082")),
+        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
     })
-
+    Window:Tag({
+        Title = "正在寻求",
+        Color = Color3.fromHex("#00008B")
+    })
+    Window:Tag({
+        Title = "3.0.1",
+        Color = Color3.fromHex("#32CD32")
+    })
     spawn(function()
         while true do
             for hue = 0, 1, 0.01 do
                 local color = Color3.fromHSV(hue, 0.8, 1)
-                Window:EditOpenButton({ Color = ColorSequence.new(color) })
+                Window:EditOpenButton({
+                    Color = ColorSequence.new(color)
+                })
                 wait(0.04)
             end
         end
     end)
-
     if not borderInitialized then
         spawn(function()
             wait(0.5)
@@ -1471,26 +1436,44 @@ function createUI()
         end)
     end
 
-    -- ============================================================
-    -- Tab: 公告
-    -- ============================================================
-    local tabNotice = Window:Tab({Title = "公告", Icon = "info"})
-    local noticeGroup = tabNotice:Section({Title = "作者消息", Opened = true})
-    noticeGroup:Paragraph({Title = "wdfex", Desc = "创作者：wdfex"})
-    noticeGroup:Divider()
-    noticeGroup:Paragraph({Title = "已更换悬浮窗添加了一些功能", Desc = ""})
-    noticeGroup:Paragraph({Title = "杀戮光环的优先攻击最近目标如果选择距离内没有人", Desc = "那这个选项就不会生效杀戮光环正常生效"})
-    noticeGroup:Divider()
-    noticeGroup:Paragraph({Title = "作者QQ: 1687426335", Desc = "如果你使用的过程中出现一些bug请联系作者修复"})
+    local windowOpen = true
 
-    -- ============================================================
-    -- Tab: 玩家修改
-    -- ============================================================
-    local tabPlayer = Window:Tab({Title = "玩家修改", Icon = "user"})
+    Window:OnClose(function()
+        windowOpen = false
+        if rainbowBorderAnimation then
+            rainbowBorderAnimation:Disconnect()
+            rainbowBorderAnimation = nil
+        end
+    end)
 
-    -- 快速互动
-    local interactGroup = tabPlayer:Section({Title = "快速互动", Opened = true})
-    interactGroup:Toggle({
+    local originalOpenFunction = Window.Open
+    Window.Open = function(...)
+        windowOpen = true
+        local result = originalOpenFunction(...)
+        if borderInitialized and borderEnabled and not rainbowBorderAnimation then
+            wait(0.1)
+            startBorderAnimation(Window, animationSpeed)
+        end
+        return result
+    end
+
+    local infoTab = Window:Tab({Title = "公告", Icon = "layout-grid", Locked = false})
+    local infoSection = infoTab:Section({Title = "作者消息",Icon = "info", Opened = true})
+    infoSection:Divider()
+    infoSection:Paragraph({
+        Title = "创作者：wdfex",
+        Desc = "QQ：1687426335",
+        ThumbnailSize = 190,
+    })
+    infoSection:Paragraph({
+        Title = "脚本已加载成功，祝你玩的愉快",
+        ThumbnailSize = 190,
+    })
+
+    local playerTab = Window:Tab({Title = "玩家修改", Icon = "gift"})
+
+    local interactSection = playerTab:Section({Title = "快速互动", Opened = true})
+    interactSection:Toggle({
         Title = "启用快速互动",
         Default = false,
         Callback = function(value)
@@ -1498,7 +1481,7 @@ function createUI()
             if value then scanPrompts() end
         end
     })
-    interactGroup:Slider({
+    interactSection:Slider({
         Title = "按住时间",
         Value = {Min = 0, Max = 10, Default = 0},
         Callback = function(value)
@@ -1509,7 +1492,7 @@ function createUI()
             end
         end
     })
-    interactGroup:Slider({
+    interactSection:Slider({
         Title = "触发距离",
         Value = {Min = 5, Max = 150, Default = 25},
         Callback = function(value)
@@ -1521,54 +1504,52 @@ function createUI()
         end
     })
 
-    -- 伤害免疫
-    local godGroup = tabPlayer:Section({Title = "伤害免疫", Opened = false})
-    godGroup:Toggle({
+    local godSection = playerTab:Section({Title = "伤害免疫", Opened = false})
+    godSection:Toggle({
         Title = "免疫部分伤害",
         Default = false,
         Callback = function(value) godOn = value end
     })
-    godGroup:Paragraph({Title = "免疫火焰和车爆炸时候的伤害", Desc = ""})
+    godSection:Paragraph({Title = "免疫火焰和车爆炸时候的伤害", Desc = ""})
 
-    -- 角色修改
-    local flyGroup = tabPlayer:Section({Title = "角色修改", Opened = false})
-    flyGroup:Toggle({
+    local flySection = playerTab:Section({Title = "角色修改", Opened = false})
+    flySection:Toggle({
         Title = "飞行（绕过）",
         Default = false,
         Callback = function(value)
             if value then startFly() else stopFly() end
         end
     })
-    flyGroup:Slider({
+    flySection:Slider({
         Title = "飞行速度",
         Value = {Min = 10, Max = 620, Default = 35},
         Callback = function(value) FlySpeed = value end
     })
-    flyGroup:Divider()
-    flyGroup:Toggle({
+    flySection:Divider()
+    flySection:Toggle({
         Title = "启用人物穿墙",
         Default = false,
         Callback = function(value) ToggleNoclip(value) end
     })
-    flyGroup:Divider()
-    flyGroup:Toggle({
+    flySection:Divider()
+    flySection:Toggle({
         Title = "修改移速（绕过）",
         Default = false,
         Callback = function(value) speedBypassOn = value end
     })
-    flyGroup:Slider({
+    flySection:Slider({
         Title = "移速",
         Value = {Min = 5, Max = 150, Default = 20},
         Callback = function(value) speedBypassValue = value end
     })
-    flyGroup:Divider()
-    flyGroup:Toggle({
+    flySection:Divider()
+    flySection:Toggle({
         Title = "无限体力",
         Default = false,
         Callback = function(value) staminaOn = value end
     })
-    flyGroup:Divider()
-    flyGroup:Toggle({
+    flySection:Divider()
+    flySection:Toggle({
         Title = "防甩飞",
         Default = false,
         Callback = function(value)
@@ -1576,8 +1557,8 @@ function createUI()
             WindUI:Notify({ Title = "防甩飞", Content = value and "已开启" or "已关闭", Duration = 2, Icon = "shield" })
         end
     })
-    flyGroup:Divider()
-    flyGroup:Toggle({
+    flySection:Divider()
+    flySection:Toggle({
         Title = "飞天快捷开关",
         Default = false,
         Callback = function(value)
@@ -1586,13 +1567,9 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- Tab: 枪械功能
-    -- ============================================================
-    local tabGun = Window:Tab({Title = "枪械功能", Icon = "target"})
-
-    local gunGroup = tabGun:Section({Title = "枪械功能", Opened = true})
-    gunGroup:Toggle({
+    local gunTab = Window:Tab({Title = "枪械功能", Icon = "target"})
+    local gunSection = gunTab:Section({Title = "枪械功能", Opened = true})
+    gunSection:Toggle({
         Title = "超快射速",
         Default = false,
         Callback = function(value)
@@ -1606,14 +1583,14 @@ function createUI()
             WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3, Icon = "zap" })
         end
     })
-    gunGroup:Toggle({
+    gunSection:Toggle({
         Title = "无限子弹",
         Default = false,
         Callback = function(value) infAmmoEnabled = value end
     })
 
-    local hitboxGroup = tabGun:Section({Title = "碰撞箱扩展", Opened = false})
-    hitboxGroup:Toggle({
+    local hitboxSection = gunTab:Section({Title = "碰撞箱扩展", Opened = false})
+    hitboxSection:Toggle({
         Title = "启用头部碰撞箱（推荐20-25）",
         Default = false,
         Callback = function(value)
@@ -1621,7 +1598,7 @@ function createUI()
             if value then ApplyHitbox() else ResetHitbox() end
         end
     })
-    hitboxGroup:Slider({
+    hitboxSection:Slider({
         Title = "头部大小",
         Value = {Min = 5, Max = 400, Default = 10},
         Callback = function(value)
@@ -1629,7 +1606,7 @@ function createUI()
             if Settings.HitboxEnabled then ApplyHitbox() end
         end
     })
-    hitboxGroup:Toggle({
+    hitboxSection:Toggle({
         Title = "好友检测 (白名单)",
         Default = false,
         Callback = function(value)
@@ -1638,13 +1615,10 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- Tab: 杀戮光环（枪）
-    -- ============================================================
-    local tabKAGun = Window:Tab({Title = "杀戮光环（枪）", Icon = "crosshair"})
-    local kaGunGroup = tabKAGun:Section({Title = "杀戮光环（枪）", Opened = true})
-    kaGunGroup:Paragraph({Title = "注意：需装备枪械武器才有伤害", Desc = ""})
-    kaGunGroup:Toggle({
+    local kaGunTab = Window:Tab({Title = "杀戮光环（枪）", Icon = "skull"})
+    local kaGunSection = kaGunTab:Section({Title = "杀戮光环（枪）", Opened = true})
+    kaGunSection:Paragraph({Title = "注意：需装备枪械武器才有伤害", Desc = ""})
+    kaGunSection:Toggle({
         Title = "启用杀戮光环（枪）",
         Default = false,
         Callback = function(value)
@@ -1653,18 +1627,18 @@ function createUI()
             if value then kaGunSetStatus("状态：已开启，正在搜索敌人") else kaGunSetStatus("状态：已关闭") end
         end
     })
-    kaGunGroup:Slider({
+    kaGunSection:Slider({
         Title = "攻击距离",
         Value = {Min = 50, Max = 1000, Default = 300},
         Callback = function(value) KA_GUN_MAX_DISTANCE = value end
     })
-    kaGunGroup:Toggle({
+    kaGunSection:Toggle({
         Title = "墙体检测",
         Default = true,
         Callback = function(value) KA_GUN_WALL_CHECK = value end
     })
-    kaGunGroup:Divider()
-    kaGunGroup:Toggle({
+    kaGunSection:Divider()
+    kaGunSection:Toggle({
         Title = "只攻击警察",
         Default = false,
         Callback = function(value)
@@ -1676,7 +1650,7 @@ function createUI()
             WindUI:Notify({ Title = "队伍过滤", Content = value and "只攻击警察队伍" or "已关闭", Duration = 2 })
         end
     })
-    kaGunGroup:Toggle({
+    kaGunSection:Toggle({
         Title = "只攻击平民",
         Default = false,
         Callback = function(value)
@@ -1688,7 +1662,7 @@ function createUI()
             WindUI:Notify({ Title = "队伍过滤", Content = value and "只攻击平民队伍" or "已关闭", Duration = 2 })
         end
     })
-    kaGunGroup:Toggle({
+    kaGunSection:Toggle({
         Title = "不攻击血量为0的玩家",
         Default = true,
         Callback = function(value)
@@ -1696,8 +1670,8 @@ function createUI()
             WindUI:Notify({ Title = "忽略死亡", Content = value and "已开启，不攻击血量为0的玩家" or "已关闭", Duration = 2 })
         end
     })
-    kaGunGroup:Divider()
-    kaGunGroup:Toggle({
+    kaGunSection:Divider()
+    kaGunSection:Toggle({
         Title = "优先攻击最近目标",
         Default = false,
         Callback = function(value)
@@ -1705,7 +1679,7 @@ function createUI()
             WindUI:Notify({ Title = "杀戮光环（枪）", Content = value and "已切换至优先攻击" or "已关闭", Duration = 2 })
         end
     })
-    kaGunGroup:Slider({
+    kaGunSection:Slider({
         Title = "优先攻击距离",
         Value = {Min = 5, Max = 100, Default = 25},
         Callback = function(value)
@@ -1713,15 +1687,12 @@ function createUI()
             WindUI:Notify({ Title = "杀戮光环（枪）", Content = "优先攻击距离已设为" .. value .. "米", Duration = 2 })
         end
     })
-    kaGunStatusLabel = kaGunGroup:Paragraph({Title = "状态：已关闭", Desc = ""})
+    kaGunStatusLabel = kaGunSection:Paragraph({Title = "状态：已关闭", Desc = ""})
 
-    -- ============================================================
-    -- Tab: 杀戮光环（刀）
-    -- ============================================================
-    local tabKAMelee = Window:Tab({Title = "杀戮光环（刀）", Icon = "swords"})
-    local kaMeleeGroup = tabKAMelee:Section({Title = "杀戮光环（刀）", Opened = true})
-    kaMeleeGroup:Paragraph({Title = "注意：需装备近战武器（刀/长戟等）才有伤害", Desc = ""})
-    kaMeleeGroup:Toggle({
+    local kaMeleeTab = Window:Tab({Title = "杀戮光环（刀）", Icon = "swords"})
+    local kaMeleeSection = kaMeleeTab:Section({Title = "杀戮光环（刀）", Opened = true})
+    kaMeleeSection:Paragraph({Title = "注意：需装备近战武器（刀/长戟等）才有伤害", Desc = ""})
+    kaMeleeSection:Toggle({
         Title = "启用杀戮光环（刀）",
         Default = false,
         Callback = function(value)
@@ -1730,18 +1701,18 @@ function createUI()
             if value then kaMeleeSetStatus("状态：已开启，正在搜索敌人") else kaMeleeSetStatus("状态：已关闭") end
         end
     })
-    kaMeleeGroup:Slider({
+    kaMeleeSection:Slider({
         Title = "攻击距离",
         Value = {Min = 50, Max = 1000, Default = 300},
         Callback = function(value) KA_MELEE_MAX_DISTANCE = value end
     })
-    kaMeleeGroup:Toggle({
+    kaMeleeSection:Toggle({
         Title = "墙体检测",
         Default = true,
         Callback = function(value) KA_MELEE_WALL_CHECK = value end
     })
-    kaMeleeGroup:Divider()
-    kaMeleeGroup:Toggle({
+    kaMeleeSection:Divider()
+    kaMeleeSection:Toggle({
         Title = "只攻击警察",
         Default = false,
         Callback = function(value)
@@ -1753,7 +1724,7 @@ function createUI()
             WindUI:Notify({ Title = "队伍过滤", Content = value and "只攻击警察队伍" or "已关闭", Duration = 2 })
         end
     })
-    kaMeleeGroup:Toggle({
+    kaMeleeSection:Toggle({
         Title = "只攻击平民",
         Default = false,
         Callback = function(value)
@@ -1765,7 +1736,7 @@ function createUI()
             WindUI:Notify({ Title = "队伍过滤", Content = value and "只攻击平民队伍" or "已关闭", Duration = 2 })
         end
     })
-    kaMeleeGroup:Toggle({
+    kaMeleeSection:Toggle({
         Title = "不攻击血量为0的玩家",
         Default = true,
         Callback = function(value)
@@ -1773,8 +1744,8 @@ function createUI()
             WindUI:Notify({ Title = "忽略死亡", Content = value and "已开启，不攻击血量为0的玩家" or "已关闭", Duration = 2 })
         end
     })
-    kaMeleeGroup:Divider()
-    kaMeleeGroup:Toggle({
+    kaMeleeSection:Divider()
+    kaMeleeSection:Toggle({
         Title = "优先攻击最近目标",
         Default = false,
         Callback = function(value)
@@ -1782,7 +1753,7 @@ function createUI()
             WindUI:Notify({ Title = "杀戮光环（刀）", Content = value and "已切换至优先攻击" or "已关闭", Duration = 2 })
         end
     })
-    kaMeleeGroup:Slider({
+    kaMeleeSection:Slider({
         Title = "优先攻击距离",
         Value = {Min = 5, Max = 100, Default = 25},
         Callback = function(value)
@@ -1790,14 +1761,11 @@ function createUI()
             WindUI:Notify({ Title = "杀戮光环（刀）", Content = "优先攻击距离已设为" .. value .. "米", Duration = 2 })
         end
     })
-    kaMeleeStatusLabel = kaMeleeGroup:Paragraph({Title = "状态：已关闭", Desc = ""})
+    kaMeleeStatusLabel = kaMeleeSection:Paragraph({Title = "状态：已关闭", Desc = ""})
 
-    -- ============================================================
-    -- Tab: 传送点
-    -- ============================================================
-    local tabTeleport = Window:Tab({Title = "传送点", Icon = "map-pin"})
-    local teleGroup = tabTeleport:Section({Title = "传送控制", Opened = true})
-    teleGroup:Toggle({
+    local teleTab = Window:Tab({Title = "传送点", Icon = "map-pin"})
+    local teleSection = teleTab:Section({Title = "传送控制", Opened = true})
+    teleSection:Toggle({
         Title = "启用传送",
         Default = false,
         Callback = function(value) Settings.TeleportEnabled = value end
@@ -1808,21 +1776,21 @@ function createUI()
         table.insert(teleNames, data.n)
     end
 
-    teleGroup:Dropdown({
+    teleSection:Dropdown({
         Title = "选定传送地点",
         Values = teleNames,
         Value = teleNames[1] or "",
         Callback = function(value) end
     })
 
-    teleGroup:Button({
+    teleSection:Button({
         Title = "传送到选定地点",
         Callback = function()
             if not Settings.TeleportEnabled then
                 WindUI:Notify({ Title = "传送", Content = "你还没有开启传送开关，请先开启", Duration = 3, Icon = "x" })
                 return
             end
-            local selected = teleGroup:GetValue("选定传送地点")
+            local selected = teleSection:GetValue("选定传送地点")
             for _, data in ipairs(FIXED_TELEPORTS) do
                 if data.n == selected then
                     TeleportTo(data.p)
@@ -1834,12 +1802,9 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- Tab: 透视
-    -- ============================================================
-    local tabESP = Window:Tab({Title = "透视", Icon = "eye"})
-    local espGroup = tabESP:Section({Title = "透视设置", Opened = true})
-    espGroup:Toggle({
+    local espTab = Window:Tab({Title = "透视", Icon = "eye"})
+    local espSection = espTab:Section({Title = "透视设置", Opened = true})
+    espSection:Toggle({
         Title = "透视总开关",
         Default = false,
         Callback = function(value)
@@ -1847,8 +1812,8 @@ function createUI()
             if value then RefreshESP() end
         end
     })
-    espGroup:Divider()
-    espGroup:Toggle({
+    espSection:Divider()
+    espSection:Toggle({
         Title = "显示名字",
         Default = true,
         Callback = function(value)
@@ -1856,7 +1821,7 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-    espGroup:Toggle({
+    espSection:Toggle({
         Title = "显示队伍",
         Default = true,
         Callback = function(value)
@@ -1864,7 +1829,7 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-    espGroup:Toggle({
+    espSection:Toggle({
         Title = "显示血量",
         Default = true,
         Callback = function(value)
@@ -1872,7 +1837,7 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-    espGroup:Toggle({
+    espSection:Toggle({
         Title = "显示距离",
         Default = true,
         Callback = function(value)
@@ -1881,28 +1846,27 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- Tab: 开发者功能
-    -- ============================================================
-    local tabDev = Window:Tab({Title = "开发者功能", Icon = "code"})
-    local devGroup = tabDev:Section({Title = "坐标工具", Opened = true})
-    devGroup:Button({
+    local devTab = Window:Tab({Title = "开发者功能", Icon = "code"})
+    local devSection = devTab:Section({Title = "坐标工具", Opened = true})
+    devSection:Button({
         Title = "开启坐标显示",
         Callback = function() CreateCoordinateTool() end
     })
-    devGroup:Button({
+    devSection:Button({
         Title = "关闭坐标显示",
         Callback = function() DestroyCoordinateTool() end
     })
 
-    -- ============================================================
-    -- Tab: 设置（WindUI原版UI设置 + 卸载脚本）
-    -- ============================================================
-    local SettingsTab = Window:Tab({Title = "设置", Icon = "settings"})
-    
-    -- UI设置部分（保留WindUI原版）
-    local uiGroup = SettingsTab:Section({Title = "UI设置", Opened = true})
-    uiGroup:Toggle({
+    local settingsTab = Window:Tab({Title = "ui设置", Icon = "palette"})
+    settingsTab:Paragraph({
+        Title = "ui设置",
+        Desc = "二改wind原版ui",
+        Image = "settings",
+        ImageSize = 20,
+        Color = "White"
+    })
+
+    settingsTab:Toggle({
         Title = "启用边框",
         Value = borderEnabled,
         Callback = function(value)
@@ -1912,59 +1876,88 @@ function createUI()
                 local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
                 if rainbowStroke then
                     rainbowStroke.Enabled = value
-                    if value then startBorderAnimation(Window, animationSpeed)
-                    elseif rainbowBorderAnimation then
+                    if value and windowOpen and not rainbowBorderAnimation then
+                        startBorderAnimation(Window, animationSpeed)
+                    elseif not value and rainbowBorderAnimation then
                         rainbowBorderAnimation:Disconnect()
                         rainbowBorderAnimation = nil
                     end
-                    WindUI:Notify({ Title = "边框", Content = value and "已启用" or "已禁用", Duration = 2 })
+                    WindUI:Notify({
+                        Title = "边框",
+                        Content = value and "已启用" or "已禁用",
+                        Duration = 2,
+                        Icon = value and "eye" or "eye-off"
+                    })
                 end
             end
         end
     })
-    uiGroup:Toggle({
+
+    settingsTab:Toggle({
         Title = "启用字体颜色",
         Value = fontColorEnabled,
         Callback = function(value)
             fontColorEnabled = value
             applyFontColorsToWindow(currentFontColorScheme)
-            WindUI:Notify({ Title = "字体颜色", Content = value and "已启用" or "已禁用", Duration = 2 })
+            WindUI:Notify({
+                Title = "字体颜色",
+                Content = value and "已启用" or "已禁用",
+                Duration = 2,
+                Icon = value and "type" or "type"
+            })
         end
     })
-    uiGroup:Toggle({
+
+    settingsTab:Toggle({
         Title = "启用音效",
         Value = soundEnabled,
         Callback = function(value)
             soundEnabled = value
-            WindUI:Notify({ Title = "音效", Content = value and "已启用" or "已禁用", Duration = 2 })
+            WindUI:Notify({
+                Title = "音效",
+                Content = value and "已启用" or "已禁用",
+                Duration = 2,
+                Icon = value and "volume-2" or "volume-x"
+            })
         end
     })
-    uiGroup:Toggle({
+
+    settingsTab:Toggle({
         Title = "启用背景模糊",
         Value = blurEnabled,
         Callback = function(value)
             blurEnabled = value
             applyBlurEffect(value)
-            WindUI:Notify({ Title = "背景模糊", Content = value and "已启用" or "已禁用", Duration = 2 })
+            WindUI:Notify({
+                Title = "背景模糊",
+                Content = value and "已启用" or "已禁用",
+                Duration = 2,
+                Icon = value and "cloud-rain" or "cloud"
+            })
         end
     })
 
     local colorSchemeNames = {}
-    for name, _ in pairs(COLOR_SCHEMES) do table.insert(colorSchemeNames, name) end
+    for name, _ in pairs(COLOR_SCHEMES) do
+        table.insert(colorSchemeNames, name)
+    end
     table.sort(colorSchemeNames)
 
-    uiGroup:Dropdown({
+    settingsTab:Dropdown({
         Title = "边框颜色方案",
+        Desc = "选择喜欢的颜色组合",
         Values = colorSchemeNames,
         Value = "彩虹颜色",
         Callback = function(value)
             currentBorderColorScheme = value
-            initializeRainbowBorder(value, animationSpeed)
+            local success = initializeRainbowBorder(value, animationSpeed)
             playSound()
         end
     })
-    uiGroup:Dropdown({
+
+    settingsTab:Dropdown({
         Title = "字体颜色方案",
+        Desc = "选择文字颜色组合",
         Values = colorSchemeNames,
         Value = "彩虹颜色",
         Callback = function(value)
@@ -1979,7 +1972,11 @@ function createUI()
         local description = FONT_DESCRIPTIONS[fontName] or fontName
         table.insert(fontOptions, {text = description, value = fontName})
     end
-    table.sort(fontOptions, function(a, b) return a.text < b.text end)
+
+    table.sort(fontOptions, function(a, b)
+        return a.text < b.text
+    end)
+
     local fontValues = {}
     local fontValueToName = {}
     for _, option in ipairs(fontOptions) do
@@ -1987,67 +1984,111 @@ function createUI()
         fontValueToName[option.text] = option.value
     end
 
-    uiGroup:Dropdown({
+    settingsTab:Dropdown({
         Title = "字体样式",
+        Desc = "选择文字字体样式 (" .. #FONT_STYLES .. " 种可用)",
         Values = fontValues,
         Value = "标准粗体",
         Callback = function(value)
             local fontName = fontValueToName[value]
             if fontName then
                 currentFontStyle = fontName
-                applyFontStyleToWindow(fontName)
+                local successCount, totalCount = applyFontStyleToWindow(fontName)
                 playSound()
             end
         end
     })
 
-    uiGroup:Slider({
+    settingsTab:Slider({
         Title = "边框转动速度",
-        Value = {Min = 1, Max = 10, Default = 5},
+        Desc = "调整边框旋转的快慢",
+        Value = { Min = 1, Max = 10, Default = 5 },
         Callback = function(value)
             animationSpeed = value
             if rainbowBorderAnimation then
                 rainbowBorderAnimation:Disconnect()
                 rainbowBorderAnimation = nil
             end
-            if borderEnabled then startBorderAnimation(Window, animationSpeed) end
+            if borderEnabled then
+                startBorderAnimation(Window, animationSpeed)
+            end
             applyFontColorsToWindow(currentFontColorScheme)
             playSound()
         end
     })
-    uiGroup:Slider({
+
+    settingsTab:Slider({
         Title = "UI整体缩放",
-        Value = {Min = 0.5, Max = 1.5, Default = 1, Step = 0.1},
+        Desc = "调整UI大小比例",
+        Value = { Min = 0.5, Max = 1.5, Default = 1 },
+        Step = 0.1,
         Callback = function(value)
             uiScale = value
             applyUIScale(value)
             playSound()
         end
     })
-    uiGroup:Slider({
+
+    settingsTab:Divider()
+
+    settingsTab:Slider({
         Title = "UI透明度",
-        Value = {Min = 0, Max = 1, Default = 0.2, Step = 0.1},
+        Desc = "调整整个UI的透明度",
+        Value = { Min = 0, Max = 1, Default = 0.2 },
+        Step = 0.1,
         Callback = function(value)
             Window:ToggleTransparency(tonumber(value) > 0)
             WindUI.TransparencyValue = tonumber(value)
             playSound()
         end
     })
-    uiGroup:Slider({
-        Title = "边框粗细",
-        Value = {Min = 1, Max = 5, Default = 1.5, Step = 0.5},
+
+    settingsTab:Slider({
+        Title = "调整UI宽度",
+        Desc = "调整窗口的宽度",
+        Value = { Min = 500, Max = 800, Default = 600 },
         Callback = function(value)
-            local mainFrame = Window.UIElements and Window.UIElements.Main
-            if mainFrame then
-                local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-                if rainbowStroke then rainbowStroke.Thickness = value end
+            if Window.UIElements and Window.UIElements.Main then
+                Window.UIElements.Main.Size = UDim2.fromOffset(value, 400)
             end
             playSound()
         end
     })
-    uiGroup:Slider({
+
+    settingsTab:Slider({
+        Title = "调整UI高度",
+        Desc = "调整窗口的高度",
+        Value = { Min = 300, Max = 600, Default = 400 },
+        Callback = function(value)
+            if Window.UIElements and Window.UIElements.Main then
+                local currentWidth = Window.UIElements.Main.Size.X.Offset
+                Window.UIElements.Main.Size = UDim2.fromOffset(currentWidth, value)
+            end
+            playSound()
+        end
+    })
+
+    settingsTab:Slider({
+        Title = "边框粗细",
+        Desc = "调整边框的粗细",
+        Value = { Min = 1, Max = 5, Default = 1.5 },
+        Step = 0.5,
+        Callback = function(value)
+            local mainFrame = Window.UIElements and Window.UIElements.Main
+            if mainFrame then
+                local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
+                if rainbowStroke then
+                    rainbowStroke.Thickness = value
+                end
+            end
+            playSound()
+        end
+    })
+
+    settingsTab:Slider({
         Title = "圆角大小",
-        Value = {Min = 0, Max = 20, Default = 16},
+        Desc = "调整UI圆角的大小",
+        Value = { Min = 0, Max = 20, Default = 16 },
         Callback = function(value)
             local mainFrame = Window.UIElements and Window.UIElements.Main
             if mainFrame then
@@ -2062,7 +2103,7 @@ function createUI()
         end
     })
 
-    uiGroup:Button({
+    settingsTab:Button({
         Title = "恢复UI到原位",
         Icon = "rotate-ccw",
         Callback = function()
@@ -2072,7 +2113,8 @@ function createUI()
             end
         end
     })
-    uiGroup:Button({
+
+    settingsTab:Button({
         Title = "重置UI大小",
         Icon = "maximize-2",
         Callback = function()
@@ -2082,7 +2124,8 @@ function createUI()
             end
         end
     })
-    uiGroup:Button({
+
+    settingsTab:Button({
         Title = "随机字体",
         Icon = "shuffle",
         Callback = function()
@@ -2092,7 +2135,8 @@ function createUI()
             playSound()
         end
     })
-    uiGroup:Button({
+
+    settingsTab:Button({
         Title = "随机颜色",
         Icon = "palette",
         Callback = function()
@@ -2102,8 +2146,10 @@ function createUI()
             playSound()
         end
     })
-    uiGroup:Divider()
-    uiGroup:Button({
+
+    settingsTab:Divider()
+
+    settingsTab:Button({
         Title = "刷新字体颜色",
         Icon = "refresh-cw",
         Callback = function()
@@ -2111,31 +2157,35 @@ function createUI()
             playSound()
         end
     })
-    uiGroup:Button({
+
+    settingsTab:Button({
         Title = "刷新字体样式",
         Icon = "refresh-cw",
         Callback = function()
-            applyFontStyleToWindow(currentFontStyle)
-            playSound()
-        end
-    })
-    uiGroup:Button({
-        Title = "测试所有字体",
-        Icon = "check-circle",
-        Callback = function()
-            local workingFonts = {}
-            for i, fontName in ipairs(FONT_STYLES) do
-                local success = pcall(function() local test = Enum.Font[fontName] end)
-                if success then table.insert(workingFonts, fontName) end
-            end
-            WindUI:Notify({ Title = "字体测试", Content = "可用字体: " .. #workingFonts .. "/" .. #FONT_STYLES, Duration = 3 })
+            local successCount, totalCount = applyFontStyleToWindow(currentFontStyle)
             playSound()
         end
     })
 
-    -- 卸载脚本
-    local unloadGroup = SettingsTab:Section({Title = "脚本管理", Opened = false})
-    unloadGroup:Button({
+    settingsTab:Button({
+        Title = "测试所有字体",
+        Icon = "check-circle",
+        Callback = function()
+            local workingFonts = {}
+            local totalFonts = #FONT_STYLES
+            for i, fontName in ipairs(FONT_STYLES) do
+                local success = pcall(function()
+                    local test = Enum.Font[fontName]
+                end)
+                if success then
+                    table.insert(workingFonts, fontName)
+                end
+            end
+            playSound()
+        end
+    })
+
+    settingsTab:Button({
         Title = "卸载脚本",
         Icon = "power",
         Callback = function()
@@ -2145,8 +2195,8 @@ function createUI()
             ResetHitbox()
             if Settings.NoclipEnabled then ToggleNoclip(false) end
             DestroyCoordinateTool()
-            for userId, data in pairs(ESP_LIST) do
-                if data.Billboard then data.Billboard:Destroy() end
+            for userId, data in pairs(ESP_LIST)Border do
+                if data.BillAnimationboard then then data.Billboard:Destroy() end
             end
             ESP_LIST = {}
             for _, conn in ipairs(connections) do pcall(function() conn:Disconnect() end) end
@@ -2156,11 +2206,9 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 窗口关闭事件
-    -- ============================================================
     Window:OnClose(function()
-        if rainbowBorderAnimation then
+        windowOpen = false
+        if rainbow
             rainbowBorderAnimation:Disconnect()
             rainbowBorderAnimation = nil
         end
@@ -2168,6 +2216,7 @@ function createUI()
     end)
 
     Window:OnDestroy(function()
+        windowOpen = false
         if rainbowBorderAnimation then
             rainbowBorderAnimation:Disconnect()
             rainbowBorderAnimation = nil
@@ -2179,6 +2228,3 @@ function createUI()
         applyBlurEffect(false)
     end)
 end
-
--- 如果用户点击取消，不创建UI，直接结束
--- 如果用户点击执行，会调用 createUI()
