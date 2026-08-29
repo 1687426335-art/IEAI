@@ -64,7 +64,8 @@ local Tabs = {
 }
 
 local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息")
-NoticeGroup:AddLabel('作者：wdfex')
+NoticeGroup:AddLabel(' QQ：1687426335')
+NoticeGroup:AddLabel('创作者：wdfec')
 
 local UpgradeGroup = Tabs.Main:AddLeftGroupbox("自动升级基地")
 local BypassGroup = Tabs.Main:AddLeftGroupbox("绕过")
