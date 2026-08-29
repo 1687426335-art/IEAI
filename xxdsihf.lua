@@ -23,7 +23,7 @@ for i = 1, #version do
 end
 
 WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">偷</font><font color="' .. gradientColors[5] .. '">蛋</font>',
+    Title = '<font color="' .. gradientColors[1] .. '">偷一个</font><font color="' .. gradientColors[5] .. '">蛋</font>',
     IconThemed = true,
     Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>偷一个蛋</font> 当前版本型号是: " .. coloredVersion .. "\nwdfex 制作",
     Buttons = {
