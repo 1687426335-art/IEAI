@@ -1,12 +1,4 @@
 -- This file has been deobfuscated Luraph using Hurricane https://discord.com/invite/AbeurBzKXe
-local args = {
-    [1] = {
-        ["Uid"] = "d46a82d7877e4272a5364b50d64cc86f"
-    }
-}
-
-game:GetService("ReplicatedStorage").Network:FindFirstChild("Eggs: RequestAreaEggCarry"):InvokeServer(unpack(args))
-
 local function safeLoad(url)
     local success, result = pcall(function()
         return loadstring(game:HttpGet(url))()
@@ -33,1048 +25,678 @@ end
 
 local Options = Library.Options
 local Toggles = Library.Toggles
-
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
-local Network = ReplicatedStorage:WaitForChild("Network")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 local Window = Library:CreateWindow({
-    Title = "偷一个蛋",
-    Footer = "wdfex 制作",
+    Title = "最强战场",
+    Footer = "最强战场 | wdfex 制作",
     Icon = 131153193945220,
     NotifySide = "Right",
     ShowCustomCursor = true,
 })
 
-Library:Notify({
-    Title = "偷一个蛋",
-    Description = "创作者：wdfex\nQQ：1687426335\n脚本已加载成功",
-    Time = 5,
-})
+Library:Notify("最强战场脚本已加载 - 创作者：终极战场", 5)
 
 local Tabs = {
     Notice = Window:AddTab("通知", "info"),
-    Main = Window:AddTab("主要", "info"),
+    Main = Window:AddTab("主要", "star"),
     Settings = Window:AddTab("设置", "settings"),
 }
 
 local NoticeGroup = Tabs.Notice:AddLeftGroupbox("作者消息")
-NoticeGroup:AddLabel(' QQ：1687426335')
-NoticeGroup:AddLabel('创作者：wdfec')
+NoticeGroup:AddLabel('终极战场 - 最强战场脚本')
 
-local UpgradeGroup = Tabs.Main:AddLeftGroupbox("自动升级基地")
-local BypassGroup = Tabs.Main:AddLeftGroupbox("绕过")
-local InteractGroup = Tabs.Main:AddLeftGroupbox("交互功能")
-local AutoHomeGroup = Tabs.Main:AddLeftGroupbox("自动回家")
-local AuraGroup = Tabs.Main:AddLeftGroupbox("打飞光环")
+local lockTargetPlayer = nil
+local lockConnection = nil
+local lockEnabled = false
+local lockBackEnabled = false
+local lockCircleEnabled = false
+local lockLookAtEnabled = false
+local lockUndergroundEnabled = false
+local circleAngle = 0
 
-local GiftGroup = Tabs.Main:AddRightGroupbox("自动同意赠礼")
-local SpeedGroup = Tabs.Main:AddRightGroupbox("绕过移速修改")
-local TeleportGroup = Tabs.Main:AddRightGroupbox("绕过传送功能")
-local FlyGroup = Tabs.Main:AddRightGroupbox("绕过飞行")
+local rangeParts = {}
+local rangeConn = nil
 
-local upgradeConnection = nil
-local giftConnections = {}
-
-local States = {
-    AntiDeath = false,
-    DeleteDragons = false,
-    AntiPull = false,
-    SpeedEnabled = false,
-    AutoHome = false,
-}
-
-local AntiDeathConnection = nil
-local AntiPullConnection = nil
-local SpeedConnection = nil
-local TeleportLoopConnection = nil
-local CurrentTeleportTarget = nil
-local lastEggDetectTime = 0
-local eggChildAddedConn = nil
-local backpackChildAddedConn = nil
-local auraThread = nil
-local auraEnabled = false
-local popupHomeBtn = nil
-local popupEndBtn = nil
-local popupDragConn = nil
-
-local function DeletePullBackFiles()
-    local char = player.Character
-    if char then
-        for _, obj in ipairs(char:GetChildren()) do
-            if obj:IsA("LocalScript") then
-                local n = obj.Name:lower()
-                if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-        end
-    end
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character then
-            for _, obj in ipairs(plr.Character:GetChildren()) do
-                if obj:IsA("LocalScript") then
-                    local n = obj.Name:lower()
-                    if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
-                        pcall(function() obj:Destroy() end)
-                    end
-                end
-            end
-        end
-    end
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("LocalScript") or obj:IsA("Script") then
-            local n = obj.Name:lower()
-            if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("highseed") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
-                pcall(function() obj:Destroy() end)
-            end
-        end
-        if obj:IsA("ModuleScript") then
-            local n = obj.Name:lower()
-            if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("anticheat") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
-                pcall(function() obj:Destroy() end)
-            end
-        end
+local function stopLock()
+    if lockConnection then
+        lockConnection:Disconnect()
+        lockConnection = nil
     end
 end
 
-local function StartAntiDeath()
-    if AntiDeathConnection then return end
-    AntiDeathConnection = RunService.Heartbeat:Connect(function()
-        local char = player.Character
-        if char then
-            local healthScript = char:FindFirstChild("Health")
-            if healthScript and healthScript:IsA("Script") then
-                pcall(function() healthScript:Destroy() end)
-            end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                pcall(function()
-                    hum.MaxHealth = math.huge
-                    hum.Health = math.huge
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                end)
-            end
+local function startLock()
+    stopLock()
+    lockConnection = RunService.RenderStepped:Connect(function()
+        if not lockEnabled or not lockTargetPlayer then return end
+        local myChar = player.Character
+        local targetChar = lockTargetPlayer.Character
+        if not myChar or not targetChar then return end
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+        if not myHRP or not targetHRP then return end
+
+        local targetPos = targetHRP.Position
+        local newPos
+
+        if lockUndergroundEnabled then
+            local behind = -targetHRP.CFrame.LookVector * 1.5
+            newPos = targetPos + behind
+            newPos = Vector3.new(newPos.X, targetPos.Y - 2.2, newPos.Z)
+        elseif lockCircleEnabled then
+            circleAngle = circleAngle + math.rad(4)
+            local radius = 3
+            newPos = targetPos + Vector3.new(math.cos(circleAngle) * radius, 0, math.sin(circleAngle) * radius)
+        elseif lockBackEnabled then
+            local backOffset = -targetHRP.CFrame.LookVector * 2.5
+            newPos = targetPos + backOffset
+        else
+            newPos = targetPos + Vector3.new(0, 0, -2)
         end
 
-        local debris = Workspace:FindFirstChild("__DEBRIS")
-        if debris then
-            for _, item in ipairs(debris:GetChildren()) do
-                if item.Name == "PlayerTrap" or item.Name:find("Trap") or item.Name:find("Kill") or item.Name:find("Death") then
-                    pcall(function() item:Destroy() end)
-                end
-            end
-        end
-
-        local guardsFolder = Workspace:FindFirstChild("_Guards")
-        if guardsFolder then
-            for _, item in ipairs(guardsFolder:GetChildren()) do
-                pcall(function() item:Destroy() end)
-            end
+        if lockLookAtEnabled then
+            myHRP.CFrame = CFrame.lookAt(newPos, targetPos)
+        else
+            myHRP.CFrame = CFrame.new(newPos)
         end
     end)
 end
 
-local function StopAntiDeath()
-    if AntiDeathConnection then
-        AntiDeathConnection:Disconnect()
-        AntiDeathConnection = nil
+local function clearRange()
+    if rangeConn then
+        rangeConn:Disconnect()
+        rangeConn = nil
     end
+    for _, part in ipairs(rangeParts) do
+        if part then part:Destroy() end
+    end
+    rangeParts = {}
 end
 
-local function DeleteAllDragons()
-    local guardAreas = Workspace:FindFirstChild("Areas") and Workspace.Areas:FindFirstChild("GuardAreas")
-    if guardAreas then
-        for _, area in ipairs(guardAreas:GetChildren()) do
-            local guard = area:FindFirstChild("Guard")
-            if guard then
-                pcall(function() guard:Destroy() end)
+local HitboxGroup = Tabs.Main:AddLeftGroupbox("碰撞箱扩大")
+HitboxGroup:AddToggle('HitboxExpand', {
+    Text = '碰撞箱扩大',
+    Default = false,
+    Callback = function(state)
+        local Core = require(ReplicatedStorage:WaitForChild("Core"))
+        local orig = Core.Get("Combat", "Hit").Box
+        if state then
+            Core.Get("Combat", "Hit").Box = function(_, char, data)
+                data = data or {}
+                data.Size = Vector3.new(150, 150, 150)
+                return orig(nil, char, data)
             end
+        else
+            Core.Get("Combat", "Hit").Box = orig
         end
     end
-    local guardsFolder = Workspace:FindFirstChild("_Guards")
-    if guardsFolder then
-        for _, item in ipairs(guardsFolder:GetChildren()) do
-            pcall(function() item:Destroy() end)
-        end
+})
+HitboxGroup:AddInput('HitboxX', {
+    Text = '碰撞箱X轴',
+    Default = "150",
+    Callback = function(value)
     end
-end
-
-local function StartAntiPull()
-    if AntiPullConnection then return end
-    DeletePullBackFiles()
-    AntiPullConnection = RunService.Heartbeat:Connect(function()
-        DeletePullBackFiles()
-    end)
-end
-
-local function StopAntiPull()
-    if AntiPullConnection then
-        AntiPullConnection:Disconnect()
-        AntiPullConnection = nil
+})
+HitboxGroup:AddInput('HitboxY', {
+    Text = '碰撞箱Y轴',
+    Default = "150",
+    Callback = function(value)
     end
-end
-
-local function doUpgrade()
-    local remote = Network:FindFirstChild("Plots: RequestBaseUpgrade")
-    if remote then
-        pcall(function()
-            remote:FireServer()
-        end)
+})
+HitboxGroup:AddInput('HitboxZ', {
+    Text = '碰撞箱Z轴',
+    Default = "150",
+    Callback = function(value)
     end
-end
-
-local function acceptGift(senderId, giftId)
-    local remote = Network:FindFirstChild("Gifting: Response")
-    if remote then
-        pcall(function()
-            remote:InvokeServer(senderId, giftId, true)
-        end)
-    end
-end
-
-UpgradeGroup:AddToggle("AutoUpgrade", {
-    Text = "自动升级基地",
+})
+HitboxGroup:AddToggle('ShowRange', {
+    Text = '显示攻击碰撞箱范围',
     Default = false,
-    Tooltip = "开启后自动发送基地升级请求",
-}):OnChanged(function(state)
-    if state then
-        upgradeConnection = RunService.Heartbeat:Connect(function()
-            doUpgrade()
-        end)
-    else
-        if upgradeConnection then
-            upgradeConnection:Disconnect()
-            upgradeConnection = nil
-        end
-    end
-end)
-
-GiftGroup:AddToggle("AutoGift", {
-    Text = "自动同意赠礼",
-    Default = false,
-    Tooltip = "开启后自动同意收到的礼物",
-}):OnChanged(function(state)
-    if state then
-        local requestNames = {"Gifting: Request", "Gifting: Offer", "Gifting: Incoming"}
-        for _, name in ipairs(requestNames) do
-            local remote = Network:FindFirstChild(name)
-            if remote then
-                if remote:IsA("RemoteEvent") then
-                    local conn = remote.OnClientEvent:Connect(function(senderId, giftId)
-                        acceptGift(senderId, giftId)
-                    end)
-                    table.insert(giftConnections, conn)
-                elseif remote:IsA("RemoteFunction") then
-                    remote.OnClientInvoke = function(senderId, giftId)
-                        acceptGift(senderId, giftId)
+    Callback = function(state)
+        clearRange()
+        if state then
+            local radius = 60
+            local segments = 60
+            for i = 1, segments do
+                local part = Instance.new("Part")
+                part.Anchored = true
+                part.CanCollide = false
+                part.Size = Vector3.new(0.2, 0.2, radius * 2 * math.pi / segments)
+                part.Material = Enum.Material.Neon
+                part.Color = Color3.fromRGB(255, 0, 0)
+                part.Parent = workspace
+                rangeParts[i] = part
+            end
+            rangeConn = RunService.RenderStepped:Connect(function()
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                local pos = hrp.Position - Vector3.new(0, 0.9, 0)
+                for i, part in ipairs(rangeParts) do
+                    if part then
+                        local angle = (i / segments) * 2 * math.pi
+                        part.Position = pos + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
                     end
                 end
-            end
-        end
-    else
-        for _, conn in ipairs(giftConnections) do
-            if conn then
-                conn:Disconnect()
-            end
-        end
-        giftConnections = {}
-    end
-end)
-
-BypassGroup:AddToggle("AntiDeathToggle", {
-    Text = "绕过反作弊击杀",
-    Default = false,
-    Tooltip = "持续删除死亡相关文件并设置无限血量",
-}):OnChanged(function(state)
-    States.AntiDeath = state
-    if state then
-        StartAntiDeath()
-    else
-        StopAntiDeath()
-    end
-end)
-
-BypassGroup:AddToggle("DeleteDragonsToggle", {
-    Text = "删除所有龙",
-    Default = false,
-    Tooltip = "删除所有龙与守卫",
-}):OnChanged(function(state)
-    States.DeleteDragons = state
-    if state then
-        DeleteAllDragons()
-    end
-end)
-
-BypassGroup:AddToggle("AntiPullToggle", {
-    Text = "绕过反作弊回拉",
-    Default = false,
-    Tooltip = "持续删除回拉/反作弊相关脚本",
-}):OnChanged(function(state)
-    States.AntiPull = state
-    if state then
-        StartAntiPull()
-    else
-        StopAntiPull()
-    end
-end)
-
-local function doTeleport(targetPos)
-    DeletePullBackFiles()
-    local char = player.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            pcall(function()
-                hum.MaxHealth = math.huge
-                hum.Health = math.huge
-                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-                hum.PlatformStand = false
-                hum.Sit = false
             end)
         end
-        local healthScript = char:FindFirstChild("Health")
-        if healthScript and healthScript:IsA("Script") then
-            pcall(function() healthScript:Destroy() end)
+    end
+})
+
+local LockGroup = Tabs.Main:AddRightGroupbox("锁人功能")
+
+local lockDropdown = LockGroup:AddDropdown('LockTarget', {
+    Text = '选择目标玩家',
+    Values = { "无" },
+    Default = "无",
+    Callback = function(name)
+        if name == "无" then
+            lockTargetPlayer = nil
+        else
+            lockTargetPlayer = Players:FindFirstChild(name)
         end
-        for _, obj in ipairs(char:GetChildren()) do
-            if obj:IsA("LocalScript") then
-                local n = obj.Name:lower()
-                if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
-                    pcall(function() obj:Destroy() end)
-                end
+        if lockEnabled then
+            startLock()
+        end
+    end
+})
+
+LockGroup:AddToggle('LockMaster', {
+    Text = '锁人总开关',
+    Default = false,
+    Callback = function(state)
+        lockEnabled = state
+        if state then
+            startLock()
+        else
+            stopLock()
+        end
+    end
+})
+
+LockGroup:AddToggle('LockBack', {
+    Text = '锁背',
+    Default = false,
+    Callback = function(state)
+        lockBackEnabled = state
+    end
+})
+
+LockGroup:AddToggle('Circle', {
+    Text = '转圈',
+    Default = false,
+    Callback = function(state)
+        lockCircleEnabled = state
+    end
+})
+
+LockGroup:AddToggle('LookAt', {
+    Text = '看着玩家',
+    Default = false,
+    Callback = function(state)
+        lockLookAtEnabled = state
+    end
+})
+
+LockGroup:AddToggle('Underground', {
+    Text = '在地下打',
+    Default = false,
+    Callback = function(state)
+        lockUndergroundEnabled = state
+    end
+})
+
+LockGroup:AddButton({
+    Text = '刷新玩家列表',
+    Func = function()
+        local names = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(names, p.Name)
             end
         end
-    end
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then
+        if #names == 0 then
+            names = { "无" }
+        end
         pcall(function()
-            hrp.Velocity = Vector3.zero
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.RotVelocity = Vector3.zero
-            hrp.CFrame = CFrame.new(targetPos) * (hrp.CFrame - hrp.CFrame.Position)
+            lockDropdown:SetValues(names)
         end)
     end
-end
+})
 
-local function startTeleportLoop(targetPos)
-    if TeleportLoopConnection then
-        TeleportLoopConnection:Disconnect()
-        TeleportLoopConnection = nil
+Players.PlayerAdded:Connect(function()
+    local names = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(names, p.Name)
+        end
     end
-    CurrentTeleportTarget = targetPos
-    local startTime = os.clock()
-    TeleportLoopConnection = RunService.Heartbeat:Connect(function()
-        if not CurrentTeleportTarget then
-            TeleportLoopConnection:Disconnect()
-            TeleportLoopConnection = nil
-            return
+    if #names == 0 then
+        names = { "无" }
+    end
+    pcall(function()
+        lockDropdown:SetValues(names)
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function()
+    local names = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(names, p.Name)
         end
-        if os.clock() - startTime > 5 then
-            CurrentTeleportTarget = nil
-            TeleportLoopConnection:Disconnect()
-            TeleportLoopConnection = nil
-            return
+    end
+    if #names == 0 then
+        names = { "无" }
+    end
+    pcall(function()
+        lockDropdown:SetValues(names)
+    end)
+end)
+
+local ExtraLeft = Tabs.Main:AddLeftGroupbox("传送")
+local TPYW = nil
+ExtraLeft:AddDropdown('TeleportLocation', {
+    Text = '传送位置',
+    Values = { "地图", "山脉", "安全港", "秘密房间1", "秘密房间2" },
+    Default = "地图",
+    Callback = function(option)
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if option == "地图" then
+            hrp.CFrame = CFrame.new(63.4928513, 440.505829, -92.9229507)
+        elseif option == "山脉" then
+            hrp.CFrame = CFrame.new(253.515198, 699.103455, 420.533813)
+        elseif option == "安全港" then
+            hrp.CFrame = CFrame.new(-774.454834, -137.237228, 126.384216)
+        elseif option == "秘密房间1" then
+            hrp.CFrame = CFrame.new(-62, 29, 20338)
+        elseif option == "秘密房间2" then
+            hrp.CFrame = CFrame.new(1068, 133, 23015)
         end
+    end
+})
+ExtraLeft:AddButton({
+    Text = '设置原位',
+    Func = function()
         local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
-            local dist = (hrp.Position - CurrentTeleportTarget).Magnitude
-            if dist > 3 then
-                doTeleport(CurrentTeleportTarget)
-            else
-                CurrentTeleportTarget = nil
-                TeleportLoopConnection:Disconnect()
-                TeleportLoopConnection = nil
+            TPYW = hrp.CFrame
+        end
+    end
+})
+ExtraLeft:AddButton({
+    Text = '传送原位',
+    Func = function()
+        if TPYW then
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = TPYW
             end
         end
-    end)
-end
+    end
+})
 
-TeleportGroup:AddButton("传送到最后区域", function()
-    startTeleportLoop(Vector3.new(3405.4, 70.6, -353.4))
-end)
-
-TeleportGroup:AddButton("传送到家里", function()
-    startTeleportLoop(Vector3.new(519.1, 70.6, -365.4))
-end)
-
-SpeedGroup:AddToggle("SpeedToggle", {
-    Text = "移速修改总开关",
+local ExtraRight = Tabs.Main:AddRightGroupbox("战斗辅助")
+ExtraRight:AddToggle('AutoAttack', {
+    Text = '自动攻击',
     Default = false,
-    Tooltip = "开启后修改人物移动速度并自动启用绕过",
-}):OnChanged(function(state)
-    States.SpeedEnabled = state
-    if state then
-        if not States.AntiDeath then
-            States.AntiDeath = true
-            StartAntiDeath()
-        end
-        if not States.AntiPull then
-            States.AntiPull = true
-            StartAntiPull()
-        end
-        if SpeedConnection then SpeedConnection:Disconnect() end
-        SpeedConnection = RunService.Heartbeat:Connect(function()
-            DeletePullBackFiles()
-            local char = player.Character
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    local val = Options.SpeedSlider and Options.SpeedSlider.Value or 16
-                    pcall(function()
-                        hum.WalkSpeed = val
-                        hum.MaxHealth = math.huge
-                        hum.Health = math.huge
-                        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                    end)
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while state do
+                    task.wait(0.3)
+                    local char = player.Character
+                    if char then
+                        local communicate = char:FindFirstChild("Communicate")
+                        if communicate then
+                            communicate:FireServer({ ["Goal"] = "LeftClick" })
+                            task.wait(0.05)
+                            communicate:FireServer({ ["Goal"] = "LeftClickRelease" })
+                        end
+                    end
                 end
-                local healthScript = char:FindFirstChild("Health")
-                if healthScript and healthScript:IsA("Script") then
-                    pcall(function() healthScript:Destroy() end)
-                end
-            end
-        end)
-    else
-        if SpeedConnection then
-            SpeedConnection:Disconnect()
-            SpeedConnection = nil
-        end
-        local char = player.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                pcall(function() hum.WalkSpeed = 16 end)
-            end
-        end
-    end
-end)
-
-SpeedGroup:AddSlider("SpeedSlider", {
-    Text = "移速数值",
-    Default = 16,
-    Min = 16,
-    Max = 300,
-    Rounding = 0,
-    Tooltip = "调整人物移动速度，范围16-300",
-}):OnChanged(function(value)
-    if States.SpeedEnabled then
-        local char = player.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                pcall(function() hum.WalkSpeed = value end)
-            end
-        end
-    end
-end)
-
-InteractGroup:AddButton("全图交互", function()
-    local wow_player = game:GetService("Players").LocalPlayer
-    local wow_char = wow_player.Character
-    if not wow_char then return end
-    local wow_runtime = workspace:FindFirstChild("Runtime")
-    local wow_scanRoot = wow_runtime and wow_runtime:FindFirstChild("LootPoints") or workspace
-    for _, wow_obj in ipairs(wow_scanRoot:GetDescendants()) do
-        if wow_obj:IsA("ProximityPrompt") then
-            pcall(function()
-                fireproximityprompt(wow_obj)
             end)
         end
     end
-end)
-
-local function onEggDetected()
-    if not States.AutoHome then return end
-    local now = tick()
-    if now - lastEggDetectTime < 5 then return end
-    lastEggDetectTime = now
-    if not States.AntiDeath then
-        States.AntiDeath = true
-        StartAntiDeath()
-    end
-    if not States.AntiPull then
-        States.AntiPull = true
-        StartAntiPull()
-    end
-    doTeleport(Vector3.new(519.1, 70.6, -365.4))
-end
-
-local function isEggObject(obj)
-    if not obj then return false end
-    local n = obj.Name:lower()
-    return n:find("egg") or n:find("carry") or n:find("areaegg") or n:find("areacarry")
-end
-
-local function setupEggListeners()
-    if eggChildAddedConn then
-        pcall(function() eggChildAddedConn:Disconnect() end)
-        eggChildAddedConn = nil
-    end
-    if backpackChildAddedConn then
-        pcall(function() backpackChildAddedConn:Disconnect() end)
-        backpackChildAddedConn = nil
-    end
-
-    local char = player.Character
-    if char then
-        for _, obj in ipairs(char:GetChildren()) do
-            if isEggObject(obj) then
-                onEggDetected()
-            end
-        end
-        eggChildAddedConn = char.ChildAdded:Connect(function(child)
-            if isEggObject(child) then
-                onEggDetected()
-            end
-        end)
-    end
-
-    local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        for _, obj in ipairs(backpack:GetChildren()) do
-            if isEggObject(obj) then
-                onEggDetected()
-            end
-        end
-        backpackChildAddedConn = backpack.ChildAdded:Connect(function(child)
-            if isEggObject(child) then
-                onEggDetected()
-            end
-        end)
-    end
-end
-
-local function clearEggListeners()
-    if eggChildAddedConn then
-        pcall(function() eggChildAddedConn:Disconnect() end)
-        eggChildAddedConn = nil
-    end
-    if backpackChildAddedConn then
-        pcall(function() backpackChildAddedConn:Disconnect() end)
-        backpackChildAddedConn = nil
-    end
-end
-
-AutoHomeGroup:AddToggle("AutoHomeToggle", {
-    Text = "检测到偷蛋立马传送回家",
+})
+ExtraRight:AddToggle('AutoUltimate', {
+    Text = '自动开大',
     Default = false,
-    Tooltip = "检测到身上或背包出现蛋道具时自动传送回家",
-}):OnChanged(function(state)
-    States.AutoHome = state
-    if state then
-        setupEggListeners()
-    else
-        clearEggListeners()
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while state do
+                    task.wait(1)
+                    pcall(function()
+                        if (player:GetAttribute("Ultimate") or 0) >= 100 then
+                            player.Character.Communicate:FireServer({
+                                MoveDirection = Vector3.new(0, 0, 0),
+                                Key = Enum.KeyCode.G,
+                                Goal = "KeyPress"
+                            })
+                        end
+                    end)
+                end
+            end)
+        end
     end
-end)
-
-player.CharacterAdded:Connect(function()
-    if States.AutoHome then
-        task.wait(0.3)
-        setupEggListeners()
+})
+ExtraRight:AddToggle('GrabToVoid', {
+    Text = '抓人传虚空',
+    Default = false,
+    Callback = function(state)
+        if state then
+            player.Backpack.ChildAdded:Connect(function(tool)
+                if tool:IsA("Tool") and tool.Name == "Lethal Whirlwind Stream" then
+                    tool.Equipped:Connect(function()
+                        local hrp = player.Character.HumanoidRootPart
+                        local originalCF = hrp.CFrame
+                        task.wait(1)
+                        hrp.CFrame = CFrame.new(-62, 29, 20338)
+                        task.wait(3)
+                        hrp.CFrame = originalCF
+                    end)
+                end
+            end)
+        end
     end
-end)
-
-AutoHomeGroup:AddButton("偷蛋并回家", function()
-    if not States.AntiDeath then
-        States.AntiDeath = true
-        StartAntiDeath()
+})
+ExtraRight:AddToggle('CancelDashEndlag', {
+    Text = '取消冲刺后摇',
+    Default = false,
+    Callback = function(state)
+        if state then
+            local frontDashArgs = { [1] = { Dash = Enum.KeyCode.W, Key = Enum.KeyCode.Q, Goal = "KeyPress" } }
+            local function frontDash()
+                if player.Character then
+                    local communicate = player.Character:FindFirstChild("Communicate")
+                    if communicate then
+                        communicate:FireServer(unpack(frontDashArgs))
+                    end
+                end
+            end
+            UIS.InputBegan:Connect(function(input, t)
+                if t then return end
+                if state and input.KeyCode == Enum.KeyCode.Q and not UIS:IsKeyDown(Enum.KeyCode.D) and not UIS:IsKeyDown(Enum.KeyCode.A) and not UIS:IsKeyDown(Enum.KeyCode.S) and player.Character and player.Character:FindFirstChild("UsedDash") then
+                    frontDash()
+                end
+            end)
+        end
     end
-    if not States.AntiPull then
-        States.AntiPull = true
-        StartAntiPull()
+})
+ExtraRight:AddToggle('AutoParry', {
+    Text = '自动防御',
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while state do
+                    task.wait(0.5)
+                    pcall(function()
+                        local char = player.Character
+                        if char then
+                            local communicate = char:FindFirstChild("Communicate")
+                            if communicate then
+                                communicate:FireServer({ ["Goal"] = "KeyPress", ["Key"] = Enum.KeyCode.F })
+                                task.wait(0.1)
+                                communicate:FireServer({ ["Goal"] = "KeyRelease", ["Key"] = Enum.KeyCode.F })
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
     end
-    local eggRemote = Network:FindFirstChild("Eggs: RequestAreaEggCarry")
-    if eggRemote and eggRemote:IsA("RemoteFunction") then
+})
+ExtraRight:AddToggle('RemoveFreeze', {
+    Text = '移除定身',
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while state do
+                    task.wait(0.1)
+                    pcall(function()
+                        local char = player.Character
+                        if char then
+                            local freeze = char:FindFirstChild("Freeze")
+                            if freeze then
+                                freeze:Destroy()
+                            end
+                            local comboStun = char:FindFirstChild("ComboStun")
+                            if comboStun then
+                                comboStun:Destroy()
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+})
+local ExtraStats = Tabs.Main:AddLeftGroupbox("属性伪造")
+ExtraStats:AddInput('FakeKills', {
+    Text = '击杀数',
+    Default = "",
+    Callback = function(input)
         pcall(function()
-            eggRemote:InvokeServer({Uid = "d46a82d7877e4272a5364b50d64cc86f"})
+            player.leaderstats.Kills.Value = tonumber(input) or 0
         end)
     end
-    task.wait(1)
-    doTeleport(Vector3.new(519.1, 70.6, -365.4))
-end)
+})
+ExtraStats:AddInput('FakeTotalKills', {
+    Text = '总击杀数',
+    Default = "",
+    Callback = function(input)
+        pcall(function()
+            player.leaderstats["Total Kills"].Value = tonumber(input) or 0
+        end)
+    end
+})
 
-AuraGroup:AddToggle("AuraToggle", {
-    Text = "打飞光环",
+ExtraRight:AddToggle('AutoTrashMaster', {
+    Text = '自动垃圾桶',
     Default = false,
-    Tooltip = "开启后自动攻击周围玩家",
-}):OnChanged(function(state)
-    auraEnabled = state
-    if state then
-        auraThread = task.spawn(function()
-            while auraEnabled do
-                local range = Options.AuraRange and Options.AuraRange.Value or 10
-                local freq = Options.AuraFreq and Options.AuraFreq.Value or 0.5
-                local myChar = player.Character
-                local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                if myHRP then
-                    for _, plr in ipairs(Players:GetPlayers()) do
-                        if plr ~= player and plr.Character then
-                            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                local dist = (hrp.Position - myHRP.Position).Magnitude
-                                if dist <= range then
-                                    local batRemote = Network:FindFirstChild("Bat:Activate")
-                                    if batRemote and batRemote:IsA("RemoteEvent") then
-                                        pcall(function()
-                                            batRemote:FireServer(plr, "11406186857:16:1786605357845")
-                                        end)
-                                        pcall(function()
-                                            batRemote:FireServer(plr, "11406186857:7:1786605352104")
-                                        end)
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                local Workspace = game:GetService("Workspace")
+                local TRASH_RANGE = 15
+                local PLAYER_RANGE = 100
+                local PICKUP_DISTANCE = 2
+                local ATTACK_DISTANCE = 2
+                local HEIGHT_OFFSET = 3
+                local character, rootPart, humanoid
+                local function update()
+                    character = player.Character
+                    if character then
+                        rootPart = character:FindFirstChild("HumanoidRootPart")
+                        humanoid = character:FindFirstChildOfClass("Humanoid")
+                    else
+                        rootPart = nil
+                        humanoid = nil
+                    end
+                end
+                update()
+                player.CharacterAdded:Connect(update)
+                while state and RunService.Heartbeat:Wait() do
+                    pcall(function()
+                        update()
+                        if not character or not rootPart or not humanoid or humanoid.Health <= 0 then
+                            task.wait(1)
+                            return
+                        end
+                        if not character:GetAttribute("HasTrashcan") then
+                            local trashFolder = Workspace:FindFirstChild("Trash") or (Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Trash"))
+                            if not trashFolder then
+                                task.wait(1)
+                                return
+                            end
+                            local nearestTrash, nearestDist, trashPos
+                            for _, trash in ipairs(trashFolder:GetChildren()) do
+                                if trash:IsA("Model") then
+                                    local part = trash:FindFirstChild("Handle") or trash:FindFirstChild("MainPart") or trash.PrimaryPart
+                                    if part then
+                                        local dist = (rootPart.Position - part.Position).Magnitude
+                                        if dist <= TRASH_RANGE and (not nearestDist or dist < nearestDist) then
+                                            nearestTrash = trash
+                                            nearestDist = dist
+                                            trashPos = part.Position
+                                        end
+                                    end
+                                end
+                            end
+                            if nearestTrash then
+                                local dir = (trashPos - rootPart.Position).Unit
+                                dir = Vector3.new(dir.X, 0, dir.Z).Unit
+                                local targetPos = trashPos + dir * PICKUP_DISTANCE
+                                rootPart.CFrame = CFrame.new(targetPos)
+                                task.wait(0.2)
+                                dir = (trashPos - rootPart.Position).Unit
+                                local look = Vector3.new(dir.X, 0, dir.Z).Unit
+                                if look.Magnitude > 0.1 then
+                                    rootPart.CFrame = CFrame.new(rootPart.Position, rootPart.Position + look)
+                                end
+                                local comm = character:FindFirstChild("Communicate")
+                                if comm then
+                                    comm:FireServer({ Goal = "LeftClick" })
+                                    task.wait(0.15)
+                                    comm:FireServer({ Goal = "LeftClickRelease" })
+                                end
+                                local t = 0
+                                while t < 2 and state do
+                                    if character:GetAttribute("HasTrashcan") then break end
+                                    task.wait(0.1)
+                                    t = t + 0.1
+                                end
+                            else
+                                task.wait(1)
+                            end
+                        else
+                            local nearestPlayer = nil
+                            local minDist = PLAYER_RANGE
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") and p.Character.Humanoid.Health > 0 then
+                                    local dist = (rootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                                    if dist < minDist then
+                                        nearestPlayer = p
+                                        minDist = dist
+                                    end
+                                end
+                            end
+                            if nearestPlayer then
+                                local targetRoot = nearestPlayer.Character.HumanoidRootPart
+                                local behind = targetRoot.Position - (targetRoot.CFrame.LookVector * ATTACK_DISTANCE)
+                                rootPart.CFrame = CFrame.new(behind)
+                                task.wait(0.2)
+                                local look = (targetRoot.Position - rootPart.Position).Unit
+                                look = Vector3.new(look.X, 0, look.Z).Unit
+                                if look.Magnitude > 0.1 then
+                                    rootPart.CFrame = CFrame.new(rootPart.Position, rootPart.Position + look)
+                                end
+                                local comm = character:FindFirstChild("Communicate")
+                                if comm then
+                                    comm:FireServer({ Goal = "LeftClick" })
+                                    task.wait(0.1)
+                                    comm:FireServer({ Goal = "LeftClickRelease" })
+                                end
+                                task.wait(1.5)
+                            else
+                                task.wait(1)
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+})
+ExtraRight:AddToggle('AutoTrashV2', {
+    Text = '自动垃圾桶V2',
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                local Workspace = game:GetService("Workspace")
+                local RANGE = 5
+                while state do
+                    task.wait(0.1)
+                    pcall(function()
+                        local char = player.Character
+                        if not char then return end
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if not root then return end
+                        local folder = Workspace:FindFirstChild("Trash") or (Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Trash"))
+                        if not folder then return end
+                        local nearest, nearestDist
+                        for _, trash in ipairs(folder:GetChildren()) do
+                            if trash:IsA("Model") then
+                                local part = trash:FindFirstChild("Handle") or trash:FindFirstChild("MainPart") or trash.PrimaryPart
+                                if part then
+                                    local dist = (root.Position - part.Position).Magnitude
+                                    if dist <= RANGE and (not nearestDist or dist < nearestDist) then
+                                        nearest = trash
+                                        nearestDist = dist
                                     end
                                 end
                             end
                         end
-                    end
+                        if nearest then
+                            local pos = nearest:GetPivot().Position
+                            local dir = (pos - root.Position).Unit
+                            dir = Vector3.new(dir.X, 0, dir.Z).Unit
+                            root.CFrame = CFrame.lookAt(root.Position, root.Position + dir)
+                            if not char:GetAttribute("HasTrashcan") then
+                                local comm = char:FindFirstChild("Communicate")
+                                if comm then
+                                    comm:FireServer({ Goal = "LeftClick" })
+                                    task.wait(0.05)
+                                    comm:FireServer({ Goal = "LeftClickRelease" })
+                                end
+                            end
+                        end
+                    end)
                 end
-                task.wait(freq)
-            end
-        end)
-    else
-        auraEnabled = false
-        if auraThread then
-            pcall(function() task.cancel(auraThread) end)
-            auraThread = nil
+            end)
         end
     end
-end)
+})
 
-AuraGroup:AddSlider("AuraRange", {
-    Text = "光环范围",
-    Default = 10,
-    Min = 5,
-    Max = 100,
-    Rounding = 0,
-    Tooltip = "攻击周围玩家的距离范围",
-}):OnChanged(function(value)
-end)
-
-AuraGroup:AddSlider("AuraFreq", {
-    Text = "攻击频率",
-    Default = 0.5,
-    Min = 0.1,
-    Max = 2,
-    Rounding = 1,
-    Tooltip = "每次攻击的间隔时间（秒）",
-}):OnChanged(function(value)
-end)
-
-local function makeDraggableButton(btn, onClick)
-    local isDragging = false
-    local hasMoved = false
-    local dragStartMouse = nil
-    local dragStartPos = nil
-    local dragConn = nil
-
-    btn.MouseButton1Down:Connect(function()
-        isDragging = true
-        hasMoved = false
-        dragStartMouse = UserInputService:GetMouseLocation()
-        dragStartPos = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
-
-        if dragConn then
-            pcall(function() dragConn:Disconnect() end)
-            dragConn = nil
-        end
-
-        dragConn = RunService.RenderStepped:Connect(function()
-            if not isDragging then return end
-            local mousePos = UserInputService:GetMouseLocation()
-            local delta = mousePos - dragStartMouse
-            if delta.Magnitude > 3 then
-                hasMoved = true
-            end
-            btn.Position = UDim2.new(0, dragStartPos.X + delta.X, 0, dragStartPos.Y + delta.Y)
-        end)
-    end)
-
-    local function endDrag()
-        if not isDragging then return end
-        isDragging = false
-        if dragConn then
-            pcall(function() dragConn:Disconnect() end)
-            dragConn = nil
-        end
+local SetGroup = Tabs.Settings:AddLeftGroupbox("菜单")
+SetGroup:AddButton({
+    Text = '卸载脚本',
+    Func = function()
+        stopLock()
+        clearRange()
+        Library:Unload()
     end
-
-    btn.MouseButton1Up:Connect(function()
-        endDrag()
-        if not hasMoved then
-            onClick()
-        end
-    end)
-
-    btn.MouseLeave:Connect(endDrag)
-end
-
-local function createPopupButtons()
-    if popupHomeBtn then
-        pcall(function() popupHomeBtn:Destroy() end)
-        popupHomeBtn = nil
+})
+SetGroup:AddButton({
+    Text = '重载界面',
+    Func = function()
+        Library:Unload()
     end
-    if popupEndBtn then
-        pcall(function() popupEndBtn:Destroy() end)
-        popupEndBtn = nil
-    end
-
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PopupTeleportGui"
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    pcall(function() screenGui.Parent = CoreGui end)
-    if not screenGui.Parent then
-        screenGui.Parent = player:WaitForChild("PlayerGui")
-    end
-
-    local homeBtn = Instance.new("TextButton")
-    homeBtn.Name = "PopupHomeBtn"
-    homeBtn.Size = UDim2.new(0, 200, 0, 80)
-    homeBtn.Position = UDim2.new(1, -220, 0, 20)
-    homeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    homeBtn.BorderSizePixel = 0
-    homeBtn.Text = "回家"
-    homeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    homeBtn.TextSize = 24
-    homeBtn.Font = Enum.Font.GothamBold
-    homeBtn.Parent = screenGui
-    popupHomeBtn = homeBtn
-
-    makeDraggableButton(homeBtn, function()
-        if not States.AntiDeath then
-            States.AntiDeath = true
-            StartAntiDeath()
-        end
-        if not States.AntiPull then
-            States.AntiPull = true
-            StartAntiPull()
-        end
-        doTeleport(Vector3.new(519.1, 70.6, -365.4))
-    end)
-
-    local endBtn = Instance.new("TextButton")
-    endBtn.Name = "PopupEndBtn"
-    endBtn.Size = UDim2.new(0, 200, 0, 80)
-    endBtn.Position = UDim2.new(1, -220, 0, 110)
-    endBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-    endBtn.BorderSizePixel = 0
-    endBtn.Text = "终点"
-    endBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    endBtn.TextSize = 24
-    endBtn.Font = Enum.Font.GothamBold
-    endBtn.Parent = screenGui
-    popupEndBtn = endBtn
-
-    makeDraggableButton(endBtn, function()
-        if not States.AntiDeath then
-            States.AntiDeath = true
-            StartAntiDeath()
-        end
-        if not States.AntiPull then
-            States.AntiPull = true
-            StartAntiPull()
-        end
-        doTeleport(Vector3.new(3405.4, 70.6, -353.4))
-    end)
-end
-
-local function destroyPopupButtons()
-    if popupHomeBtn then
-        local parent = popupHomeBtn.Parent
-        pcall(function() popupHomeBtn:Destroy() end)
-        popupHomeBtn = nil
-        if parent and parent.Name == "PopupTeleportGui" then
-            pcall(function() parent:Destroy() end)
-        end
-    end
-    popupEndBtn = nil
-end
-
-TeleportGroup:AddToggle("PopupHomeToggle", {
-    Text = "开启弹窗回家",
-    Default = false,
-    Tooltip = "开启后在屏幕右上角显示红色回家按钮",
-}):OnChanged(function(state)
-    if state then
-        if not popupHomeBtn then
-            createPopupButtons()
-        end
-        pcall(function() popupHomeBtn.Visible = true end)
-    else
-        pcall(function() popupHomeBtn.Visible = false end)
-    end
-end)
-
-TeleportGroup:AddToggle("PopupEndToggle", {
-    Text = "开启弹窗终点",
-    Default = false,
-    Tooltip = "开启后在屏幕右上角显示蓝色终点按钮",
-}):OnChanged(function(state)
-    if state then
-        if not popupEndBtn then
-            createPopupButtons()
-        end
-        pcall(function() popupEndBtn.Visible = true end)
-    else
-        pcall(function() popupEndBtn.Visible = false end)
-    end
-end)
-
-local function initFly()
-    local st = {on = false, spd = 100, hrp = nil, hum = nil, mt = nil, ht = nil, dc = nil, tp = nil, lt = 0, an = false, hd = nil, rl = 3.5, rc = 12, vl = 3, lastPos = nil, lastTime = nil, expectedPos = nil}
-    local ctrl = nil
-    task.spawn(function()
-        pcall(function()
-            local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
-            if pm then ctrl = require(pm):GetControls() end
-        end)
-    end)
-    local function refresh()
-        local ch = player.Character
-        if not ch then st.hrp = nil st.hum = nil st.hd = nil return end
-        st.hrp = ch:FindFirstChild("HumanoidRootPart")
-        st.hum = ch:FindFirstChildOfClass("Humanoid")
-        st.hd = ch:FindFirstChild("Head")
-    end
-    local function wall()
-        if not st.hrp then return false end
-        local pos = st.hrp.Position
-        local rp = RaycastParams.new()
-        rp.FilterType = Enum.RaycastFilterType.Blacklist
-        rp.FilterDescendantsInstances = { player.Character }
-        for i = 1, st.rc do
-            local a = (i / st.rc) * 2 * math.pi
-            local dx = math.cos(a)
-            local dz = math.sin(a)
-            for j = -(st.vl - 1) // 2, (st.vl - 1) // 2 do
-                local dir = Vector3.new(dx, j * 0.5, dz).Unit
-                local r = workspace:Raycast(pos, dir * st.rl, rp)
-                if r and r.Instance and r.Instance.CanCollide and r.Instance.Transparency < 0.9 then
-                    return true
-                end
-            end
-        end
-        return false
-    end
-    local function enterA()
-        if st.an then return end
-        if not st.hd or not st.hrp or not st.hum then return end
-        st.hd.Anchored = true
-        st.hum.PlatformStand = true
-        st.an = true
-    end
-    local function exitA()
-        if not st.an then return end
-        if st.hd and st.hum then
-            st.hd.Anchored = false
-            st.hum.PlatformStand = false
-        end
-        st.an = false
-    end
-    local function microLoop()
-        st.tp = st.hrp.Position
-        st.lt = tick()
-        while st.on do
-            local now = tick()
-            local dt = now - st.lt
-            st.lt = now
-            if not st.hrp or not st.hrp.Parent then break end
-            local inW = wall()
-            if inW and not st.an then
-                enterA()
-            elseif not inW and st.an then
-                exitA()
-            end
-            local mv
-            if ctrl then
-                local v = ctrl:GetMoveVector()
-                local cf = workspace.CurrentCamera.CFrame
-                mv = (cf.LookVector * -v.Z) + (cf.RightVector * v.X)
-            else
-                mv = (st.hum and st.hum.MoveDirection) or Vector3.zero
-            end
-            local vy = 0
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                vy = 1
-            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                vy = -1
-            end
-            local d = (mv + Vector3.new(0, vy, 0)) * st.spd * dt
-            st.tp = st.tp + d
-            local cp = st.hrp.Position
-            local rem = st.tp - cp
-            local dist = rem.Magnitude
-            if dist > 0 then
-                local steps = math.ceil(dist / 10)
-                local sv = rem / steps
-                for i = 1, steps do
-                    if not st.on then break end
-                    cp = cp + sv
-                    st.hrp.CFrame = CFrame.new(cp) * st.hrp.CFrame.Rotation
-                    st.hrp.Velocity = Vector3.zero
-                end
-            else
-                st.hrp.CFrame = CFrame.new(st.tp) * st.hrp.CFrame.Rotation
-                st.hrp.Velocity = Vector3.zero
-            end
-            if st.lastPos and st.lastTime and dt > 0 then
-                local moved = (st.hrp.Position - st.lastPos).Magnitude
-                local maxNormal = st.spd * dt * 1.5
-                if moved > maxNormal then
-                    st.hrp.CFrame = CFrame.new(st.expectedPos or st.lastPos) * st.hrp.CFrame.Rotation
-                    st.hrp.Velocity = Vector3.zero
-                    st.hrp.AssemblyLinearVelocity = Vector3.zero
-                end
-                if st.expectedPos and (st.hrp.Position - st.expectedPos).Magnitude > 5 then
-                    st.hrp.CFrame = CFrame.new(st.expectedPos) * st.hrp.CFrame.Rotation
-                    st.hrp.Velocity = Vector3.zero
-                    st.hrp.AssemblyLinearVelocity = Vector3.zero
-                end
-            end
-            st.lastPos = st.hrp.Position
-            st.lastTime = tick()
-            st.expectedPos = st.hrp.Position + (mv + Vector3.new(0, vy, 0)) * st.spd * dt
-            if st.hum then
-                st.hum:ChangeState(Enum.HumanoidStateType.Climbing)
-            end
-            task.wait(0.001)
-        end
-    end
-    local function healthLoop()
-        while st.on do
-            if st.hum and st.hum.Health <= 0 then
-                st.hum.Health = st.hum.MaxHealth
-            end
-            task.wait(0.1)
-        end
-    end
-    local function start()
-        if st.on then return end
-        refresh()
-        if not st.hrp or not st.hum then return end
-        st.on = true
-        st.hum:ChangeState(Enum.HumanoidStateType.Climbing)
-        st.mt = task.spawn(microLoop)
-        st.ht = task.spawn(healthLoop)
-        st.dc = st.hum.Died:Connect(function()
-            if st.hum and st.on then
-                st.hum.Health = st.hum.MaxHealth
-                st.hum:ChangeState(Enum.HumanoidStateType.Running)
-            end
-        end)
-    end
-    local function stop()
-        if not st.on then return end
-        st.on = false
-        exitA()
-        if st.mt then task.cancel(st.mt) st.mt = nil end
-        if st.ht then task.cancel(st.ht) st.ht = nil end
-        if st.dc then st.dc:Disconnect() st.dc = nil end
-        if st.hum then st.hum:ChangeState(Enum.HumanoidStateType.Running) end
-        refresh()
-        if st.hrp then
-            st.hrp.Velocity = Vector3.zero
-            st.hrp.AssemblyLinearVelocity = Vector3.zero
-        end
-    end
-    player.CharacterAdded:Connect(function()
-        if st.on then
-            stop()
-            task.wait(0.2)
-            start()
-        end
-    end)
-    return {
-        setE = function(v)
-            if v then start() else stop() end
-        end,
-        setS = function(v) st.spd = v end,
-    }
-end
-
-local flyMod = initFly()
-
-FlyGroup:AddToggle("FlyBypass", {
-    Text = "飞行绕过",
-    Default = false,
-    Tooltip = "开启飞行功能并自动启用绕过",
-}):OnChanged(function(value)
-    if value then
-        if not States.AntiDeath then
-            States.AntiDeath = true
-            StartAntiDeath()
-        end
-        if not States.AntiPull then
-            States.AntiPull = true
-            StartAntiPull()
-        end
-        flyMod.setE(true)
-    else
-        flyMod.setE(false)
-    end
-end)
-
-FlyGroup:AddSlider("FlySpeed", {
-    Text = "飞行速度",
-    Default = 100,
-    Min = 0,
-    Max = 500,
-    Rounding = 0,
-    Tooltip = "调整飞行速度",
-}):OnChanged(function(value)
-    flyMod.setS(value)
-end)
-
-local UnloadGroup = Tabs.Settings:AddLeftGroupbox("脚本管理")
-UnloadGroup:AddButton("卸载脚本", function()
-    if upgradeConnection then
-        upgradeConnection:Disconnect()
-        upgradeConnection = nil
-    end
-    for _, conn in ipairs(giftConnections) do
-        if conn then
-            conn:Disconnect()
-        end
-    end
-    giftConnections = {}
-    if SpeedConnection then
-        SpeedConnection:Disconnect()
-        SpeedConnection = nil
-    end
-    if TeleportLoopConnection then
-        TeleportLoopConnection:Disconnect()
-        TeleportLoopConnection = nil
-    end
-    CurrentTeleportTarget = nil
-    clearEggListeners()
-    auraEnabled = false
-    if auraThread then
-        pcall(function() task.cancel(auraThread) end)
-        auraThread = nil
-    end
-    destroyPopupButtons()
-    StopAntiDeath()
-    StopAntiPull()
-    flyMod.setE(false)
-    Library:Unload()
-end)
+})
+SetGroup:AddLabel('菜单快捷键')
+SetGroup:AddKeyPicker('MenuKeybind', {
+    Default = 'RightShift',
+    NoUI = true,
+    Text = 'Menu keybind'
+})
+Library.ToggleKeybind = Options.MenuKeybind
 
 if ThemeManager then
     ThemeManager:SetLibrary(Library)
-    ThemeManager:SetFolder("MyScriptTheme")
+    ThemeManager:SetFolder("最强战场主题")
     ThemeManager:ApplyToTab(Tabs.Settings)
 end
-
 if SaveManager then
     SaveManager:SetLibrary(Library)
     SaveManager:IgnoreThemeSettings()
-    SaveManager:SetFolder("MyScriptConfig")
+    SaveManager:SetFolder("最强战场配置")
     SaveManager:BuildConfigSection(Tabs.Settings)
 end
