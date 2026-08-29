@@ -90,7 +90,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex",
+                    Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -101,7 +101,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -115,7 +115,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
