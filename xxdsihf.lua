@@ -215,8 +215,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v1.2.3版本提示",
-        Desc = "已修复已知问题\n修复了飞天卡顿闪退问题",
+        Title = "v2.0.1版本更新提示",
+        Desc = "已修复已知问题\n修复了杀戮光环问题修复某些设备开启飞天闪退问题",
         ThumbnailSize = 190,
     })
     infoTab:Select()
