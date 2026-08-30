@@ -1,6 +1,7 @@
 -- ==================== 卡密验证系统 ====================
--- 照抄你的自动执行方式: loadstring(game:HttpGet(URL))()
--- 验证成功后5秒弹窗自动加载外部脚本
+-- 验证成功后自动加载外部脚本
+-- 左上角显示设备UID，验证成功显示详情弹窗
+-- 作者卡: 作者卡-AFXD-wdfexNB (仅限作者设备使用)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -24,8 +25,14 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
--- ==================== 100个预生成卡密 ====================
+-- ===== 作者的设备UID（固定值，用于作者卡验证） =====
+local AUTHOR_DEVICE_UID = "XXBDDDXXEWFRNGDGHPRCBYAX"
+
+-- ==================== 100个预生成卡密 + 作者卡 ====================
 local KEYS_DATA = {
+    -- ===== 作者卡 (1个，卡密以"作者卡"开头，仅限作者设备使用) =====
+    ["作者卡-AFXD-wdfexNB"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil, isAuthorKey = true },
+
     -- ===== 天卡 DAY (25个) =====
     ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -242,12 +249,7 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
--- ============================================================
--- 照抄你的自动执行方式: loadstring(game:HttpGet(URL))()
--- 验证成功后5秒弹窗结束自动加载目标脚本
--- ============================================================
 local function loadTargetScript()
-    -- 完全照抄你的自动执行方式
     loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
 end
 
@@ -296,7 +298,7 @@ local function showSuccessPopup(keyData)
     popupTitle.TextXAlignment = Enum.TextXAlignment.Center
     popupTitle.Parent = popupFrame
 
-    -- 卡密类型
+    -- 卡密类型（作者卡显示为"作者卡"）
     local typeLabel = Instance.new("TextLabel")
     typeLabel.Size = UDim2.new(1, 0, 0, 28)
     typeLabel.Position = UDim2.new(0, 0, 0, 105)
@@ -361,20 +363,15 @@ local function showSuccessPopup(keyData)
     progressCorner.CornerRadius = UDim.new(0, 2)
     progressCorner.Parent = progressBar
 
-    -- 5秒倒计时（使用task.wait更稳定）
+    -- 5秒倒计时
     for i = 5, 1, -1 do
         popupFooter.Text = "脚本将在 " .. i .. " 秒后自动加载..."
         progressBar.Size = UDim2.new(0.8 * (i / 5), 0, 0, 4)
         task.wait(1)
     end
 
-    -- 倒计时结束，关闭弹窗
     popupGui:Destroy()
-    
-    -- ============================================================
-    -- 照抄你的自动执行方式: loadstring(game:HttpGet(URL))()
-    -- ============================================================
-    loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
+    loadTargetScript()
 end
 
 confirmBtn.MouseButton1Click:Connect(function()
@@ -425,37 +422,105 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    if keyData.used then
-        attemptCount = attemptCount + 1
-        local remaining = 3 - attemptCount
-        statusLabel.Text = "卡密已被使用 (剩余尝试: " .. remaining .. "/3)"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-        inputBox.Text = ""
+    -- ===== 作者卡特殊验证 =====
+    if keyData.isAuthorKey then
+        if DEVICE_UID ~= AUTHOR_DEVICE_UID then
+            attemptCount = attemptCount + 1
+            local remaining = 3 - attemptCount
+            statusLabel.Text = "你不是作者！ (剩余尝试: " .. remaining .. "/3)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            inputBox.Text = ""
 
-        if attemptCount >= 3 then
-            locked = true
-            confirmBtn.Visible = false
-            inputBox.Visible = false
-            statusLabel.Text = "错误次数过多，锁定 10 秒"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+            if attemptCount >= 3 then
+                locked = true
+                confirmBtn.Visible = false
+                inputBox.Visible = false
+                statusLabel.Text = "错误次数过多，锁定 10 秒"
+                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
 
-            local startTime = os.time()
-            lockTimer = task.spawn(function()
-                while os.time() - startTime < 10 do
-                    local remaining = 10 - (os.time() - startTime)
-                    statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
-                    task.wait(0.5)
-                end
-                locked = false
-                attemptCount = 0
-                confirmBtn.Visible = true
-                inputBox.Visible = true
-                statusLabel.Text = "已解锁，请重新输入卡密"
-                statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                inputBox.Text = ""
-            end)
+                local startTime = os.time()
+                lockTimer = task.spawn(function()
+                    while os.time() - startTime < 10 do
+                        local remaining = 10 - (os.time() - startTime)
+                        statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
+                        task.wait(0.5)
+                    end
+                    locked = false
+                    attemptCount = 0
+                    confirmBtn.Visible = true
+                    inputBox.Visible = true
+                    statusLabel.Text = "已解锁，请重新输入卡密"
+                    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    inputBox.Text = ""
+                end)
+            end
+            return
         end
-        return
+        if keyData.used then
+            attemptCount = attemptCount + 1
+            local remaining = 3 - attemptCount
+            statusLabel.Text = "作者卡已被使用 (剩余尝试: " .. remaining .. "/3)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            inputBox.Text = ""
+
+            if attemptCount >= 3 then
+                locked = true
+                confirmBtn.Visible = false
+                inputBox.Visible = false
+                statusLabel.Text = "错误次数过多，锁定 10 秒"
+                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+
+                local startTime = os.time()
+                lockTimer = task.spawn(function()
+                    while os.time() - startTime < 10 do
+                        local remaining = 10 - (os.time() - startTime)
+                        statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
+                        task.wait(0.5)
+                    end
+                    locked = false
+                    attemptCount = 0
+                    confirmBtn.Visible = true
+                    inputBox.Visible = true
+                    statusLabel.Text = "已解锁，请重新输入卡密"
+                    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    inputBox.Text = ""
+                end)
+            end
+            return
+        end
+    else
+        if keyData.used then
+            attemptCount = attemptCount + 1
+            local remaining = 3 - attemptCount
+            statusLabel.Text = "卡密已被使用 (剩余尝试: " .. remaining .. "/3)"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+            inputBox.Text = ""
+
+            if attemptCount >= 3 then
+                locked = true
+                confirmBtn.Visible = false
+                inputBox.Visible = false
+                statusLabel.Text = "错误次数过多，锁定 10 秒"
+                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+
+                local startTime = os.time()
+                lockTimer = task.spawn(function()
+                    while os.time() - startTime < 10 do
+                        local remaining = 10 - (os.time() - startTime)
+                        statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
+                        task.wait(0.5)
+                    end
+                    locked = false
+                    attemptCount = 0
+                    confirmBtn.Visible = true
+                    inputBox.Visible = true
+                    statusLabel.Text = "已解锁，请重新输入卡密"
+                    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    inputBox.Text = ""
+                end)
+            end
+            return
+        end
     end
 
     -- 绑定设备
@@ -463,10 +528,7 @@ confirmBtn.MouseButton1Click:Connect(function()
     keyData.bind = DEVICE_UID
     keyData.bindTime = os.time()
 
-    -- 隐藏验证界面
     screenGui:Destroy()
-
-    -- 显示成功弹窗（5秒后自动加载目标脚本）
     showSuccessPopup(keyData)
 end)
 
@@ -481,7 +543,9 @@ frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
-print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25)")
+print("作者设备UID: " .. AUTHOR_DEVICE_UID)
+print("作者卡: 作者卡-AFXD-wdfexNB (仅限作者设备使用)")
+print("卡密总数: 101个 (天卡25, 周卡25, 月卡25, 永久卡25, 作者卡1)")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
 print("自动执行方式: loadstring(game:HttpGet(URL))()")
 print("==========================")
