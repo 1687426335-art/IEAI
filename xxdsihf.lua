@@ -1,15 +1,82 @@
--- ==================== 卡密验证系统 ====================
--- 正确卡密: wdfex2024 (可修改)
--- 设备UID绑定: 同一设备只能验证一次，之后自动跳过验证直接进入主界面
--- 封禁系统: 管理后台可封禁设备UID
+-- ==================== 卡密验证系统 (60张卡密) ====================
+-- 天卡15张, 周卡15张, 月卡15张, 永久卡15张
+-- 设备UID绑定 + 封禁系统 + 管理后台
 
 local player = game.Players.LocalPlayer
 local userId = player.UserId
 
--- ==================== 正确卡密配置 ====================
-local CORRECT_KEY = "wdfex2024"  -- 修改这里可以更换卡密
-local MAX_ATTEMPTS = 3           -- 最大尝试次数
-local LOCK_TIME = 10             -- 锁定时间（秒）
+-- ==================== 60张卡密列表 ====================
+local VALID_KEYS = {
+    -- 天卡 DAY (15张)
+    ["wdfex-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-H9J2K4M7R1-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-B5N8Q2T6X9-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-V3M7P1K4L8-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-C6H9J2R5T1-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-F4N8Q1X7K3-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-M2P6T9L4V8-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-R7K1H4N9Q2-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-X5V8M3P6T1-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-J2L4N7Q9R5-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-T6X1K3M8P2-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-H7R4V9L2N5-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-Q3M8T1X6K4-DAY"] = { type = "天卡", days = 1 },
+    ["wdfex-L5P9N2R7V3-DAY"] = { type = "天卡", days = 1 },
+
+    -- 周卡 WEEK (15张)
+    ["wdfex-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-J2H7R4N9P3-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-V6L1T8X4K7-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-N3Q9R5P2M8-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-X4K7T1L9V3-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-H8M2P6R4N1-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-Q5V9L3X7T2-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-R1N6P4M8K3-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-T7X2K9V5L1-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-L4M8R2N6Q9-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-V3P7T1X5K2-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-J9N4L8R2M6-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-H2T6X1K7V4-WEEK"] = { type = "周卡", days = 7 },
+    ["wdfex-Q8M3P9L1N5-WEEK"] = { type = "周卡", days = 7 },
+
+    -- 月卡 MONTH (15张)
+    ["wdfex-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-J9P1N4X7R3-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-M5K2T8V1L9-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-X7R3N6P4Q1-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-H2L9V4T7K8-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-Q6P1M8X3N5-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-N4K7R9T2V6-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-R8X3L5M1P9-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-T1V6N4Q8K3-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-K5M9P2X7R4-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-L3T8V1N6Q9-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-X7P4K2M9R1-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-H6N1Q5T3V8-MONTH"] = { type = "月卡", days = 30 },
+    ["wdfex-R2M9X4L7P6-MONTH"] = { type = "月卡", days = 30 },
+
+    -- 永久卡 FOREVER (15张)
+    ["wdfex-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-H2M9R5N7X4-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-P8K4T1V6L3-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-N5R7X2M9Q1-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-V3L8P6K2T9-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-Q7M4N1X8R6-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-K2T9V5L4P7-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-R6X3N8M1Q5-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-H4P7K9T2L6-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-M8V1X5N3R9-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-L2Q6P4K8T1-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-X5N9R3V7M2-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-T8K4P1L6Q3-FOREVER"] = { type = "永久卡", days = -1 },
+    ["wdfex-R1M7X2N9V4-FOREVER"] = { type = "永久卡", days = -1 },
+}
+
+print("已加载卡密数量: " .. table.getn(VALID_KEYS))
 
 -- ==================== 设备UID生成 ====================
 local function getDeviceUID()
@@ -30,7 +97,7 @@ print("设备UID: " .. DEVICE_UID)
 
 -- ==================== DataStore 存储系统 ====================
 local DataStoreService = game:GetService("DataStoreService")
-local store = DataStoreService:GetDataStore("SimpleKeySystem_v2")
+local store = DataStoreService:GetDataStore("KeySystemData_v4")
 
 local function loadData(key)
     local success, result = pcall(function()
@@ -64,7 +131,6 @@ local function isDeviceBanned(uid)
 end
 
 -- ==================== 设备绑定系统 ====================
--- 存储格式: { deviceUID = true } 表示该设备已验证过
 local ACTIVATED_DEVICES = loadData("activated_devices") or {}
 
 local function saveActivatedList()
@@ -72,16 +138,32 @@ local function saveActivatedList()
 end
 
 local function isDeviceActivated(uid)
-    return ACTIVATED_DEVICES[uid] == true
+    return ACTIVATED_DEVICES[uid] ~= nil
 end
 
-local function activateDevice(uid)
-    ACTIVATED_DEVICES[uid] = true
+local function getDeviceKeyInfo(uid)
+    return ACTIVATED_DEVICES[uid]
+end
+
+local function activateDevice(uid, key, keyData)
+    ACTIVATED_DEVICES[uid] = {
+        key = key,
+        type = keyData.type,
+        days = keyData.days,
+        bindTime = os.time()
+    }
     saveActivatedList()
 end
 
+-- ==================== 检查卡密是否过期 ====================
+local function isKeyExpired(keyData)
+    if keyData.days == -1 then return false end
+    if not keyData.bindTime then return true end
+    local elapsed = os.time() - keyData.bindTime
+    return elapsed > keyData.days * 86400
+end
+
 -- ==================== 检查设备状态 ====================
--- 先检查封禁
 if isDeviceBanned(DEVICE_UID) then
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "BannedScreen"
@@ -139,15 +221,23 @@ if isDeviceBanned(DEVICE_UID) then
     return
 end
 
--- 检查设备是否已验证过（已激活）
 if isDeviceActivated(DEVICE_UID) then
-    print("设备已验证，跳过卡密输入")
-    -- 直接启动主界面
-    createUI()
-    return
+    local info = getDeviceKeyInfo(DEVICE_UID)
+    if info then
+        local expired = isKeyExpired(info)
+        if expired and info.days ~= -1 then
+            ACTIVATED_DEVICES[DEVICE_UID] = nil
+            saveActivatedList()
+            print("卡密已过期，请重新验证")
+        else
+            print("设备已验证，卡密类型: " .. info.type .. "，跳过验证")
+            createUI()
+            return
+        end
+    end
 end
 
--- ==================== GUI 验证界面（首次使用需要输入卡密） ====================
+-- ==================== GUI 验证界面 ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "KeyValidation"
 screenGui.ResetOnSpawn = false
@@ -181,7 +271,7 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -20, 0, 28)
 statusLabel.Position = UDim2.new(0, 10, 0, 55)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "请输入卡密"
+statusLabel.Text = "请输入您的卡密"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 statusLabel.TextSize = 14
 statusLabel.Font = Enum.Font.Gotham
@@ -226,9 +316,8 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
-local function onSuccess()
-    -- 激活设备
-    activateDevice(DEVICE_UID)
+local function onSuccess(inputKey, keyData)
+    activateDevice(DEVICE_UID, inputKey, keyData)
     
     statusLabel.Text = "验证成功，正在启动..."
     statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -241,22 +330,22 @@ end
 
 local function onFail(message)
     attemptCount = attemptCount + 1
-    local remaining = MAX_ATTEMPTS - attemptCount
-    statusLabel.Text = message .. " (剩余尝试: " .. remaining .. "/" .. MAX_ATTEMPTS .. ")"
+    local remaining = 3 - attemptCount
+    statusLabel.Text = message .. " (剩余尝试: " .. remaining .. "/3)"
     statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
     inputBox.Text = ""
     
-    if attemptCount >= MAX_ATTEMPTS then
+    if attemptCount >= 3 then
         locked = true
         confirmBtn.Visible = false
         inputBox.Visible = false
-        statusLabel.Text = "错误次数过多，锁定 " .. LOCK_TIME .. " 秒"
+        statusLabel.Text = "错误次数过多，锁定 10 秒"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
         
         local startTime = os.time()
         lockTimer = task.spawn(function()
-            while os.time() - startTime < LOCK_TIME do
-                local remaining = LOCK_TIME - (os.time() - startTime)
+            while os.time() - startTime < 10 do
+                local remaining = 10 - (os.time() - startTime)
                 statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
                 task.wait(0.5)
             end
@@ -285,11 +374,25 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    if input == CORRECT_KEY then
-        onSuccess()
-    else
-        onFail("卡密错误")
+    local keyData = VALID_KEYS[input]
+    if not keyData then
+        onFail("卡密不存在")
+        return
     end
+    
+    if isDeviceActivated(DEVICE_UID) then
+        statusLabel.Text = "您已激活一张卡密，无法更换"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+        return
+    end
+    
+    if isDeviceBanned(DEVICE_UID) then
+        statusLabel.Text = "您的设备已被封禁"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        return
+    end
+    
+    onSuccess(input, keyData)
 end)
 
 inputBox.FocusLost:Connect(function(enterPressed)
@@ -304,6 +407,7 @@ frame.Selectable = true
 print("设备UID: " .. DEVICE_UID)
 print("设备是否已激活: " .. tostring(isDeviceActivated(DEVICE_UID)))
 print("设备是否被封禁: " .. tostring(isDeviceBanned(DEVICE_UID)))
+print("可用卡密数量: " .. table.getn(VALID_KEYS))
 
 -- ============================================================
 -- ==================== 主脚本 (验证成功后执行) ====================
@@ -447,7 +551,6 @@ function createUI()
         local affectedHeads = {}
         local frameCount = 0
 
-        -- 防甩飞
         _G.CatAntiFling_Enabled = false
         _G.CatAntiFling_Running = false
         local function AntiFlingLoop()
@@ -1977,7 +2080,6 @@ function createUI()
         -- ============================================================
         G:Divider({ Text = "脚本管理" })
         
-        -- 管理后台入口
         G:Toggle({
             Title = "打开管理后台",
             Desc = "输入密码进入设备管理后台",
@@ -1989,7 +2091,7 @@ function createUI()
                         Content = "请输入管理密码",
                         Placeholder = "输入密码",
                     })
-                    if password == "wdfex888" then
+                    if password == "wdfex-ZAQ-978" then
                         openAdminPanel()
                     else
                         WindUI:Notify({
@@ -2002,7 +2104,6 @@ function createUI()
             end
         })
         
-        -- 管理后台功能
         local function openAdminPanel()
             local adminGui = Instance.new("ScreenGui")
             adminGui.Name = "AdminPanel"
@@ -2049,7 +2150,6 @@ function createUI()
             adminTitle.TextXAlignment = Enum.TextXAlignment.Center
             adminTitle.Parent = mainFrame
             
-            -- 当前设备UID显示
             local uidLabel = Instance.new("TextLabel")
             uidLabel.Size = UDim2.new(1, -20, 0, 25)
             uidLabel.Position = UDim2.new(0, 10, 0, 55)
@@ -2079,7 +2179,6 @@ function createUI()
             banListLabel.TextXAlignment = Enum.TextXAlignment.Left
             banListLabel.Parent = mainFrame
             
-            -- 封禁列表滚动容器
             local scrollFrame = Instance.new("ScrollingFrame")
             scrollFrame.Size = UDim2.new(0.9, 0, 0, 120)
             scrollFrame.Position = UDim2.new(0.05, 0, 0, 125)
@@ -2093,7 +2192,6 @@ function createUI()
             scrollCorner.CornerRadius = UDim.new(0, 6)
             scrollCorner.Parent = scrollFrame
             
-            -- 更新封禁列表
             local function updateBanList()
                 for _, child in ipairs(scrollFrame:GetChildren()) do
                     if child:IsA("TextLabel") then
@@ -2133,7 +2231,6 @@ function createUI()
             end
             updateBanList()
             
-            -- 输入区域
             local inputFrame = Instance.new("Frame")
             inputFrame.Size = UDim2.new(0.9, 0, 0, 80)
             inputFrame.Position = UDim2.new(0.05, 0, 0, 260)
@@ -2242,7 +2339,6 @@ function createUI()
                 WindUI:Notify({ Title = "提示", Content = "未找到该设备", Duration = 2 })
             end)
             
-            -- 刷新按钮
             local refreshBtn = Instance.new("TextButton")
             refreshBtn.Size = UDim2.new(0.15, 0, 0, 25)
             refreshBtn.Position = UDim2.new(0.8, 0, 0, 0)
@@ -2257,7 +2353,6 @@ function createUI()
             refreshCorner.CornerRadius = UDim.new(0, 6)
             refreshCorner.Parent = refreshBtn
             refreshBtn.MouseButton1Click:Connect(function()
-                -- 重新加载封禁列表
                 local newList = loadData("banned_devices") or {}
                 BANNED_DEVICES = newList
                 updateBanList()
