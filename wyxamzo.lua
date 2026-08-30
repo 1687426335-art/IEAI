@@ -1,6 +1,7 @@
 -- ==================== 卡密验证系统 ====================
 -- 验证成功后自动加载外部脚本
 -- 左上角显示设备UID，验证成功显示详情弹窗
+-- 新增：重试机制 + 详细错误显示
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -24,8 +25,9 @@ local function getDeviceUID()
 end
 
 local DEVICE_UID = getDeviceUID()
+local lastError = nil
 
--- ==================== 100个预生成卡密 + 作者卡密 ====================
+-- ==================== 101个卡密 ====================
 local KEYS_DATA = {
     -- ===== 作者专属卡密（永久有效） =====
     ["作者卡-ZHW-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
@@ -175,7 +177,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.Position = UDim2.new(0, 0, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "卡密验证"
+title.Text = "wdfex 卡密验证"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 24
 title.Font = Enum.Font.GothamBold
@@ -249,20 +251,54 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
--- ==================== 成功弹窗函数 ====================
-local function loadTargetScript()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
-    end)
-    if not success then
+-- ==================== 修复：重试加载机制 ====================
+local function loadTargetScript(retryCount)
+    retryCount = retryCount or 0
+    
+    if retryCount >= 3 then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "加载失败",
-            Text = "脚本加载失败: " .. tostring(err),
-            Duration = 5,
+            Text = "脚本加载失败，已重试3次\n请检查网络或联系作者\n错误: " .. (lastError or "未知错误"),
+            Duration = 8,
         })
+        return
     end
+    
+    -- 获取脚本
+    local success, result = pcall(function()
+        return game:HttpGet(TARGET_SCRIPT_URL)
+    end)
+    
+    if not success then
+        lastError = tostring(result)
+        task.wait(1)
+        loadTargetScript(retryCount + 1)
+        return
+    end
+    
+    -- 编译脚本
+    local func, err = loadstring(result)
+    if not func then
+        lastError = "语法错误: " .. tostring(err)
+        task.wait(1)
+        loadTargetScript(retryCount + 1)
+        return
+    end
+    
+    -- 执行脚本
+    local execSuccess, execErr = pcall(func)
+    if not execSuccess then
+        lastError = tostring(execErr)
+        task.wait(1)
+        loadTargetScript(retryCount + 1)
+        return
+    end
+    
+    -- 加载成功
+    print("目标脚本加载成功！")
 end
 
+-- ==================== 成功弹窗函数 ====================
 local function showSuccessPopup(keyData)
     local popupGui = Instance.new("ScreenGui")
     popupGui.Name = "SuccessPopup"
@@ -487,7 +523,7 @@ end)
 frame.Active = true
 frame.Selectable = true
 
-print("===== 卡密验证系统已加载 =====")
+print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 101个 (作者卡1, 天卡25, 周卡25, 月卡25, 永久卡25)")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
