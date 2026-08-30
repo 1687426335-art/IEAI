@@ -29,9 +29,9 @@ for i = 1, #version do
 end
 
 WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex-Hub</font>',
+    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n圣奥里（San Aurie）脚本已就绪！",
     Buttons = {
         {
             Title = "取消",
@@ -52,7 +52,7 @@ WindUI:Popup({
 
 function createUI()
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex-Hub',
+        Title = 'wdfex-圣奥里',
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -90,7 +90,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex-Hub",
+                    Text = "wdfex",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -101,7 +101,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = "wdfex",
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -115,7 +115,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = "wdfex",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -191,7 +191,8 @@ function createUI()
     end
     AntiFlingLoop()
 
-    -- ==================== 公告/通知 Tab ====================
+    -- ==================== Tab 创建 ====================
+    -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
@@ -204,24 +205,25 @@ function createUI()
         Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复"
     })
 
+    -- 通知 Tab
     local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
     local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前已经修复了部分设备\n开启飞天卡顿闪退的问题\n杀戮光环目前还有一些问题\n此脚本由wdfex一人制作",
+        Desc = "目前还有一些问题\n可能无法解决\n已解决使用手机的用户开启飞天卡10帧问题\n此脚本由wdfex一人开发",
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.1提示",
-        Desc = "\n修复了一些问题",
+        Desc = "即将更新v2.1版本此版本将会开启收费\n如果你跟作者认识可以跟作者要一张月卡",
         ThumbnailSize = 190,
     })
     infoTab:Select()
 
-    -- ==================== 主功能 Section ====================
+    -- 主功能 Section
     local MainSection = Window:Section({
         Title = "主功能",
         Opened = true,
@@ -237,7 +239,7 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
 
-    -- ==================== 其他功能 Section ====================
+    -- 其他功能 Section
     local OtherSection = Window:Section({
         Title = "其他功能",
         Opened = true,
@@ -247,7 +249,7 @@ function createUI()
     local G = AddTab(OtherSection, "设置", "settings")
 
     -- ============================================================
-    -- 玩家修改 Tab
+    -- 玩家修改 Tab (A)
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -313,9 +315,8 @@ function createUI()
         end
     end
 
-    A:Divider({ Text = "快速互动" })
-
     local interactEnabled = false
+    A:Divider({ Text = "快速互动" })
     A:Toggle({
         Title = "启用快速互动",
         Value = false,
@@ -331,7 +332,6 @@ function createUI()
             end
         end
     })
-
     A:Slider({
         Title = "按住时间",
         Step = 0.1,
@@ -347,7 +347,6 @@ function createUI()
             end
         end
     })
-
     A:Slider({
         Title = "触发距离",
         Step = 1,
@@ -365,20 +364,17 @@ function createUI()
     })
 
     A:Divider({ Text = "伤害免疫" })
-
     local godOn = false
     A:Toggle({
         Title = "免疫部分伤害",
         Value = false,
         Callback = function(value)
             godOn = value
-            -- 通过 hook 实现，见下方
         end
     })
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
     A:Divider({ Text = "角色修改" })
-
     -- 飞行功能
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
@@ -542,7 +538,6 @@ function createUI()
             if value then startFly() else stopFly() end
         end
     })
-
     A:Slider({
         Title = "飞行速度",
         Step = 1,
@@ -553,7 +548,6 @@ function createUI()
     })
 
     A:Divider({ Text = "穿墙" })
-
     A:Toggle({
         Title = "启用人物穿墙",
         Value = false,
@@ -582,7 +576,6 @@ function createUI()
     })
 
     A:Divider({ Text = "移速" })
-
     local speedBypassOn = false
     local speedBypassValue = 20
     A:Toggle({
@@ -592,7 +585,6 @@ function createUI()
             speedBypassOn = value
         end
     })
-
     A:Slider({
         Title = "移速",
         Step = 1,
@@ -601,7 +593,6 @@ function createUI()
             speedBypassValue = value
         end
     })
-
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
         local char = player.Character
@@ -613,7 +604,6 @@ function createUI()
     end)
 
     A:Divider({ Text = "体力" })
-
     local staminaOn = false
     local StaminaEvent
     pcall(function()
@@ -646,7 +636,6 @@ function createUI()
             task.wait(0.3)
         end
     end)
-
     A:Toggle({
         Title = "无限体力",
         Value = false,
@@ -656,7 +645,6 @@ function createUI()
     })
 
     A:Divider({ Text = "防甩飞" })
-
     A:Toggle({
         Title = "防甩飞",
         Desc = "防止被其他脚本甩飞",
@@ -667,7 +655,6 @@ function createUI()
     })
 
     A:Divider({ Text = "飞天快捷开关" })
-
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -789,10 +776,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 枪械功能 Tab
+    -- 枪械功能 Tab (B)
     -- ============================================================
     B:Divider({ Text = "枪械强化" })
-
     B:Toggle({
         Title = "超快射速",
         Value = false,
@@ -834,7 +820,6 @@ function createUI()
             infAmmoEnabled = value
         end
     })
-
     task.spawn(function()
         while not isDestroyed do
             if infAmmoEnabled then
@@ -856,7 +841,6 @@ function createUI()
     end)
 
     B:Divider({ Text = "碰撞箱扩展" })
-
     B:Toggle({
         Title = "启用头部碰撞箱（推荐20-25）",
         Value = false,
@@ -865,7 +849,6 @@ function createUI()
             if value then ApplyHitbox() else ResetHitbox() end
         end
     })
-
     B:Slider({
         Title = "头部大小",
         Step = 1,
@@ -875,7 +858,6 @@ function createUI()
             if Settings.HitboxEnabled then ApplyHitbox() end
         end
     })
-
     B:Toggle({
         Title = "好友检测 (白名单)",
         Value = false,
@@ -886,7 +868,6 @@ function createUI()
     })
 
     B:Divider({ Text = "子追" })
-
     local zzEnabled = false
     local zzDistance = 40
     local zzAffected = nil
@@ -948,7 +929,6 @@ function createUI()
             if not value then zzRestore() end
         end
     })
-
     B:Slider({
         Title = "判定距离",
         Step = 1,
@@ -959,7 +939,6 @@ function createUI()
     })
 
     B:Divider({ Text = "自瞄" })
-
     local aimOn = false
     local aimFOV = 150
     local aimNoTeam = true
@@ -1042,7 +1021,6 @@ function createUI()
             aimOn = value
         end
     })
-
     B:Slider({
         Title = "FOV圈大小",
         Step = 1,
@@ -1051,7 +1029,6 @@ function createUI()
             aimFOV = value
         end
     })
-
     B:Toggle({
         Title = "不瞄准队友",
         Value = true,
@@ -1059,7 +1036,6 @@ function createUI()
             aimNoTeam = value
         end
     })
-
     B:Toggle({
         Title = "墙壁检测",
         Value = true,
@@ -1069,18 +1045,18 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab
+    -- 杀戮光环 Tab (C)
     -- ============================================================
-    local KA_GUN_MAX_DISTANCE = 300
-    local KA_GUN_WALL_CHECK = true
-    local kaGunEnabled = false
-    local KAGunNearestOnly = false
-    local KA_GUN_NEAREST_DISTANCE = 25
-    local KAGunTargetPoliceOnly = false
-    local KAGunTargetCivilianOnly = false
-    local KAGunIgnoreDead = true
+    local KA_MAX_DISTANCE = 300
+    local KA_WALL_CHECK = true
+    local kaEnabled = false
+    local KANearestOnly = false
+    local KA_NEAREST_DISTANCE = 25
+    local KATargetPoliceOnly = false
+    local KATargetCivilianOnly = false
+    local KAIgnoreDead = true
 
-    local function kaGunIsVisible(targetHead)
+    local function kaIsVisible(targetHead)
         local char = player.Character
         if not char then return false end
         local myHead = char:FindFirstChild("Head")
@@ -1094,33 +1070,31 @@ function createUI()
         return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
     end
 
-    local function kaGunGetNearestEnemy()
+    local function kaGetNearestEnemy()
         local char = player.Character
         if not char then return nil end
         local myHead = char:FindFirstChild("Head")
         if not myHead then return nil end
-        local bestPlayer, bestDist = nil, KA_GUN_MAX_DISTANCE
+        local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
 
         local function isTargetAllowed(p)
-            if KAGunTargetPoliceOnly and KAGunTargetCivilianOnly then return false end
+            if KATargetPoliceOnly and KATargetCivilianOnly then return false end
             local teamName = p.Team and p.Team.Name or ""
             local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-            if KAGunTargetPoliceOnly then
+            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            if KATargetPoliceOnly then
                 if not isPolice then return false end
+            elseif KATargetCivilianOnly then
+                if not isCivilian then return false end
             end
-            if KAGunTargetCivilianOnly then
-                local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
-                local hasJob = teamName:find("火焰") or teamName:find("医疗") or teamName:find("道路") or teamName:find("消防") or teamName:find("军人") or teamName:find("黑帮") or teamName:find("送货")
-                if not isCivilian or hasJob then return false end
-            end
-            if KAGunIgnoreDead then
+            if KAIgnoreDead then
                 local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
                 if not hum or hum.Health <= 0 then return false end
             end
             return true
         end
 
-        if KAGunNearestOnly then
+        if KANearestOnly then
             local nearestInRange = nil
             local nearestDistInRange = 9999
             local anyEnemy = nil
@@ -1132,11 +1106,11 @@ function createUI()
                         local head = p.Character:FindFirstChild("Head")
                         if head and isTargetAllowed(p) then
                             local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
+                            if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
                                 anyDist = dist
                                 anyEnemy = p
                             end
-                            if dist <= KA_GUN_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
+                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
                                 nearestDistInRange = dist
                                 nearestInRange = p
                             end
@@ -1154,7 +1128,7 @@ function createUI()
                     local head = p.Character:FindFirstChild("Head")
                     if head and isTargetAllowed(p) then
                         local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist and (not KA_GUN_WALL_CHECK or kaGunIsVisible(head)) then
+                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
                             bestDist = dist
                             bestPlayer = p
                         end
@@ -1166,8 +1140,8 @@ function createUI()
     end
 
     RunService.Heartbeat:Connect(function()
-        if not isDestroyed and kaGunEnabled then
-            local target = kaGunGetNearestEnemy()
+        if not isDestroyed and kaEnabled then
+            local target = kaGetNearestEnemy()
             local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
@@ -1196,291 +1170,79 @@ function createUI()
         end
     end)
 
-    C:Divider({ Text = "杀戮光环（枪）" })
+    C:Divider({ Text = "杀戮光环" })
     C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
-
     C:Toggle({
-        Title = "启用杀戮光环（枪）",
+        Title = "启用杀戮光环",
         Value = false,
         Callback = function(value)
-            kaGunEnabled = value
+            kaEnabled = value
         end
     })
-
     C:Slider({
         Title = "攻击距离",
         Step = 1,
         Value = { Min = 50, Max = 1000, Default = 300 },
         Callback = function(value)
-            KA_GUN_MAX_DISTANCE = value
+            KA_MAX_DISTANCE = value
         end
     })
-
     C:Toggle({
         Title = "墙体检测",
         Value = true,
         Callback = function(value)
-            KA_GUN_WALL_CHECK = value
+            KA_WALL_CHECK = value
         end
     })
 
     C:Divider({ Text = "过滤" })
-
     C:Toggle({
         Title = "只攻击警察",
         Value = false,
         Callback = function(value)
-            KAGunTargetPoliceOnly = value
-            if value and KAGunTargetCivilianOnly then
-                KAGunTargetCivilianOnly = false
+            KATargetPoliceOnly = value
+            if value and KATargetCivilianOnly then
+                KATargetCivilianOnly = false
             end
         end
     })
-
     C:Toggle({
         Title = "只攻击平民",
         Value = false,
         Callback = function(value)
-            KAGunTargetCivilianOnly = value
-            if value and KAGunTargetPoliceOnly then
-                KAGunTargetPoliceOnly = false
+            KATargetCivilianOnly = value
+            if value and KATargetPoliceOnly then
+                KATargetPoliceOnly = false
             end
         end
     })
-
     C:Toggle({
         Title = "不攻击血量为0的玩家",
         Value = true,
         Callback = function(value)
-            KAGunIgnoreDead = value
+            KAIgnoreDead = value
         end
     })
 
     C:Divider({ Text = "优先攻击" })
-
     C:Toggle({
         Title = "优先攻击最近目标",
         Value = false,
         Callback = function(value)
-            KAGunNearestOnly = value
+            KANearestOnly = value
         end
     })
-
     C:Slider({
         Title = "优先攻击距离",
         Step = 1,
         Value = { Min = 5, Max = 100, Default = 25 },
         Callback = function(value)
-            KA_GUN_NEAREST_DISTANCE = value
-        end
-    })
-
-    -- 杀戮光环（刀）
-    local KA_MELEE_MAX_DISTANCE = 300
-    local KA_MELEE_WALL_CHECK = true
-    local kaMeleeEnabled = false
-    local KAMeleeNearestOnly = false
-    local KA_MELEE_NEAREST_DISTANCE = 25
-    local KAMeleeTargetPoliceOnly = false
-    local KAMeleeTargetCivilianOnly = false
-    local KAMeleeIgnoreDead = true
-
-    local function kaMeleeIsVisible(targetHead)
-        local char = player.Character
-        if not char then return false end
-        local myHead = char:FindFirstChild("Head")
-        if not myHead then return false end
-        local direction = targetHead.Position - myHead.Position
-        local distance = direction.Magnitude
-        if distance < 0.1 then return true end
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
-        rayParams.FilterType = Enum.RaycastFilterType.Exclude
-        return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
-    end
-
-    local function kaMeleeGetNearestEnemy()
-        local char = player.Character
-        if not char then return nil end
-        local myHead = char:FindFirstChild("Head")
-        if not myHead then return nil end
-        local bestPlayer, bestDist = nil, KA_MELEE_MAX_DISTANCE
-
-        local function isTargetAllowed(p)
-            if KAMeleeTargetPoliceOnly and KAMeleeTargetCivilianOnly then return false end
-            local teamName = p.Team and p.Team.Name or ""
-            local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-            if KAMeleeTargetPoliceOnly then
-                if not isPolice then return false end
-            end
-            if KAMeleeTargetCivilianOnly then
-                local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
-                local hasJob = teamName:find("火焰") or teamName:find("医疗") or teamName:find("道路") or teamName:find("消防") or teamName:find("军人") or teamName:find("黑帮") or teamName:find("送货")
-                if not isCivilian or hasJob then return false end
-            end
-            if KAMeleeIgnoreDead then
-                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-                if not hum or hum.Health <= 0 then return false end
-            end
-            return true
-        end
-
-        if KAMeleeNearestOnly then
-            local nearestInRange = nil
-            local nearestDistInRange = 9999
-            local anyEnemy = nil
-            local anyDist = 9999
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then
-                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local head = p.Character:FindFirstChild("Head")
-                        if head and isTargetAllowed(p) then
-                            local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
-                                anyDist = dist
-                                anyEnemy = p
-                            end
-                            if dist <= KA_MELEE_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
-                                nearestDistInRange = dist
-                                nearestInRange = p
-                            end
-                        end
-                    end
-                end
-            end
-            if nearestInRange then return nearestInRange else return anyEnemy end
-        end
-
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head and isTargetAllowed(p) then
-                        local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist and (not KA_MELEE_WALL_CHECK or kaMeleeIsVisible(head)) then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
-                    end
-                end
-            end
-        end
-        return bestPlayer
-    end
-
-    RunService.Heartbeat:Connect(function()
-        if not isDestroyed and kaMeleeEnabled then
-            local target = kaMeleeGetNearestEnemy()
-            local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
-            if targetHead then
-                local myHead = player.Character and player.Character:FindFirstChild("Head")
-                if myHead then
-                    local origin = myHead.Position
-                    local hitPos = targetHead.Position
-                    local direction = (hitPos - origin).Unit
-                    local damage = 300
-                    pcall(function()
-                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
-                            bodyParts = { { "Head", damage } },
-                            shotCode = { origin, direction },
-                            target = target,
-                            pos = hitPos
-                        })
-                    end)
-                    pcall(function()
-                        local meleeEvent = ReplicatedStorage:FindFirstChild("Melee")
-                        if meleeEvent then
-                            meleeEvent:FireServer()
-                        end
-                    end)
-                end
-            end
-        end
-    end)
-
-    C:Divider({ Text = "杀戮光环（刀）" })
-    C:Paragraph({ Title = "注意", Desc = "需装备近战武器（刀/长戟等）才有伤害" })
-
-    C:Toggle({
-        Title = "启用杀戮光环（刀）",
-        Value = false,
-        Callback = function(value)
-            kaMeleeEnabled = value
-        end
-    })
-
-    C:Slider({
-        Title = "攻击距离",
-        Step = 1,
-        Value = { Min = 50, Max = 1000, Default = 300 },
-        Callback = function(value)
-            KA_MELEE_MAX_DISTANCE = value
-        end
-    })
-
-    C:Toggle({
-        Title = "墙体检测",
-        Value = true,
-        Callback = function(value)
-            KA_MELEE_WALL_CHECK = value
-        end
-    })
-
-    C:Divider({ Text = "过滤" })
-
-    C:Toggle({
-        Title = "只攻击警察",
-        Value = false,
-        Callback = function(value)
-            KAMeleeTargetPoliceOnly = value
-            if value and KAMeleeTargetCivilianOnly then
-                KAMeleeTargetCivilianOnly = false
-            end
-        end
-    })
-
-    C:Toggle({
-        Title = "只攻击平民",
-        Value = false,
-        Callback = function(value)
-            KAMeleeTargetCivilianOnly = value
-            if value and KAMeleeTargetPoliceOnly then
-                KAMeleeTargetPoliceOnly = false
-            end
-        end
-    })
-
-    C:Toggle({
-        Title = "不攻击血量为0的玩家",
-        Value = true,
-        Callback = function(value)
-            KAMeleeIgnoreDead = value
-        end
-    })
-
-    C:Divider({ Text = "优先攻击" })
-
-    C:Toggle({
-        Title = "优先攻击最近目标",
-        Value = false,
-        Callback = function(value)
-            KAMeleeNearestOnly = value
-        end
-    })
-
-    C:Slider({
-        Title = "优先攻击距离",
-        Step = 1,
-        Value = { Min = 5, Max = 100, Default = 25 },
-        Callback = function(value)
-            KA_MELEE_NEAREST_DISTANCE = value
+            KA_NEAREST_DISTANCE = value
         end
     })
 
     -- ============================================================
-    -- 传送点 Tab
+    -- 传送点 Tab (D)
     -- ============================================================
     D:Toggle({
         Title = "启用传送",
@@ -1576,7 +1338,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab
+    -- 透视 Tab (E)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1773,9 +1535,7 @@ function createUI()
             if value then RefreshESP() end
         end
     })
-
     E:Divider()
-
     E:Toggle({
         Title = "显示名字",
         Value = true,
@@ -1784,7 +1544,6 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-
     E:Toggle({
         Title = "显示队伍",
         Value = true,
@@ -1793,7 +1552,6 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-
     E:Toggle({
         Title = "显示血量",
         Value = true,
@@ -1802,7 +1560,6 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
-
     E:Toggle({
         Title = "显示距离",
         Value = true,
@@ -1815,30 +1572,23 @@ function createUI()
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.15)
-            if ESP_ENABLED then
-                RefreshESP()
-            end
+            if ESP_ENABLED then RefreshESP() end
         end
     end)
-
     Players.PlayerAdded:Connect(function(p)
         p.CharacterAdded:Connect(function()
             task.wait(0.3)
-            if ESP_ENABLED then
-                RefreshESP()
-            end
+            if ESP_ENABLED then RefreshESP() end
         end)
     end)
-
     Players.PlayerRemoving:Connect(function(p)
         RemoveESP(p.UserId)
     end)
 
     -- ============================================================
-    -- 开发者功能 Tab
+    -- 开发者功能 Tab (F)
     -- ============================================================
     F:Divider({ Text = "坐标工具" })
-
     F:Button({
         Title = "开启坐标显示",
         Callback = function()
@@ -1913,7 +1663,6 @@ function createUI()
             end)
         end
     })
-
     F:Button({
         Title = "关闭坐标显示",
         Callback = function()
@@ -1923,7 +1672,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 设置 Tab
+    -- 设置 Tab (G)
     -- ============================================================
     G:Button({
         Title = "卸载脚本",
