@@ -1,7 +1,6 @@
 -- ==================== 卡密验证系统 ====================
 -- 验证成功后自动加载外部脚本
 -- 左上角显示设备UID，验证成功显示详情弹窗
--- 新增：重试机制 + 详细错误显示
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -25,13 +24,9 @@ local function getDeviceUID()
 end
 
 local DEVICE_UID = getDeviceUID()
-local lastError = nil
 
--- ==================== 101个卡密 ====================
+-- ==================== 100个预生成卡密 ====================
 local KEYS_DATA = {
-    -- ===== 作者专属卡密（永久有效） =====
-    ["作者卡-ZHW-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
-
     -- ===== 天卡 DAY (25个) =====
     ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -58,7 +53,6 @@ local KEYS_DATA = {
     ["WDF-H8P2Q6L4V1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-K3V9N5R7X2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-T7M4L1P8Q6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-
     -- ===== 周卡 WEEK (25个) =====
     ["WDF-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
@@ -85,7 +79,6 @@ local KEYS_DATA = {
     ["WDF-T8L5N1M7R4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-V6P2K9X3L8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-Q4N7R1T5M2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-
     -- ===== 月卡 MONTH (25个) =====
     ["WDF-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
@@ -112,7 +105,6 @@ local KEYS_DATA = {
     ["WDF-Q5M8P3K1R7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-R6T4X9V2L1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-K2N7M5P9Q4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-
     -- ===== 永久卡 FOREVER (25个) =====
     ["WDF-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
     ["WDF-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
@@ -231,7 +223,7 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 8)
 btnCorner.Parent = confirmBtn
 
--- ===== 底部提示 =====
+-- ===== 底部提示（已按你的要求修改） =====
 local footerLabel = Instance.new("TextLabel")
 footerLabel.Size = UDim2.new(1, -20, 0, 36)
 footerLabel.Position = UDim2.new(0, 10, 0, 225)
@@ -250,53 +242,6 @@ local TARGET_SCRIPT_URL = "https://raw.githubusercontent.com/1687426335-art/IEAI
 local attemptCount = 0
 local locked = false
 local lockTimer = nil
-
--- ==================== 修复：重试加载机制 ====================
-local function loadTargetScript(retryCount)
-    retryCount = retryCount or 0
-    
-    if retryCount >= 3 then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "加载失败",
-            Text = "脚本加载失败，已重试3次\n请检查网络或联系作者\n错误: " .. (lastError or "未知错误"),
-            Duration = 8,
-        })
-        return
-    end
-    
-    -- 获取脚本
-    local success, result = pcall(function()
-        return game:HttpGet(TARGET_SCRIPT_URL)
-    end)
-    
-    if not success then
-        lastError = tostring(result)
-        task.wait(1)
-        loadTargetScript(retryCount + 1)
-        return
-    end
-    
-    -- 编译脚本
-    local func, err = loadstring(result)
-    if not func then
-        lastError = "语法错误: " .. tostring(err)
-        task.wait(1)
-        loadTargetScript(retryCount + 1)
-        return
-    end
-    
-    -- 执行脚本
-    local execSuccess, execErr = pcall(func)
-    if not execSuccess then
-        lastError = tostring(execErr)
-        task.wait(1)
-        loadTargetScript(retryCount + 1)
-        return
-    end
-    
-    -- 加载成功
-    print("目标脚本加载成功！")
-end
 
 -- ==================== 成功弹窗函数 ====================
 local function showSuccessPopup(keyData)
@@ -409,16 +354,34 @@ local function showSuccessPopup(keyData)
     progressCorner.Parent = progressBar
 
     -- 5秒倒计时
-    for i = 5, 1, -1 do
-        local percent = i / 5
+    local countdown = 5
+    local startTime = os.time()
+    while countdown > 0 do
+        local elapsed = os.time() - startTime
+        countdown = 5 - elapsed
+        if countdown <= 0 then break end
+        local percent = countdown / 5
         progressBar.Size = UDim2.new(0.8 * percent, 0, 0, 4)
-        popupFooter.Text = "脚本将在 " .. i .. " 秒后自动加载..."
-        task.wait(1)
+        popupFooter.Text = "脚本将在 " .. math.ceil(countdown) .. " 秒后自动加载..."
+        RunService.RenderStepped:Wait()
     end
 
-    -- 倒计时结束，销毁弹窗并加载脚本
+    -- 加载脚本
     popupGui:Destroy()
     loadTargetScript()
+end
+
+local function loadTargetScript()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
+    end)
+    if not success then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "加载失败",
+            Text = "脚本加载失败: " .. tostring(err),
+            Duration = 5,
+        })
+    end
 end
 
 confirmBtn.MouseButton1Click:Connect(function()
@@ -510,7 +473,7 @@ confirmBtn.MouseButton1Click:Connect(function()
     -- 隐藏验证界面
     screenGui:Destroy()
 
-    -- 显示成功弹窗（倒计时结束自动加载脚本）
+    -- 显示成功弹窗
     showSuccessPopup(keyData)
 end)
 
@@ -525,6 +488,6 @@ frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
-print("卡密总数: 101个 (作者卡1, 天卡25, 周卡25, 月卡25, 永久卡25)")
+print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25)")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
 print("==========================")
