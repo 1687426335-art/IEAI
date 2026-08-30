@@ -26,6 +26,7 @@ end
 local DEVICE_UID = getDeviceUID()
 
 -- ===== 作者的设备UID（固定值，用于作者卡验证） =====
+-- 注意：这里存的是原始UID，比较时会转大写
 local AUTHOR_DEVICE_UID = "XXBDDDXXEWFRNGDGHPRCBYAX"
 
 -- ==================== 100个预生成卡密 + 作者卡 ====================
@@ -298,7 +299,7 @@ local function showSuccessPopup(keyData)
     popupTitle.TextXAlignment = Enum.TextXAlignment.Center
     popupTitle.Parent = popupFrame
 
-    -- 卡密类型（作者卡显示为"作者卡"）
+    -- 卡密类型
     local typeLabel = Instance.new("TextLabel")
     typeLabel.Size = UDim2.new(1, 0, 0, 28)
     typeLabel.Position = UDim2.new(0, 0, 0, 105)
@@ -422,9 +423,13 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    -- ===== 作者卡特殊验证 =====
+    -- ===== 作者卡特殊验证（修复版：转为大写比较） =====
     if keyData.isAuthorKey then
-        if DEVICE_UID ~= AUTHOR_DEVICE_UID then
+        -- 转为大写并去除首尾空格后比较
+        local currentUID = string.upper(string.gsub(DEVICE_UID, "%s+", ""))
+        local authorUID = string.upper(string.gsub(AUTHOR_DEVICE_UID, "%s+", ""))
+        
+        if currentUID ~= authorUID then
             attemptCount = attemptCount + 1
             local remaining = 3 - attemptCount
             statusLabel.Text = "你不是作者！ (剩余尝试: " .. remaining .. "/3)"
@@ -542,10 +547,8 @@ frame.Active = true
 frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
-print("设备UID: " .. DEVICE_UID)
+print("当前设备UID: " .. DEVICE_UID)
 print("作者设备UID: " .. AUTHOR_DEVICE_UID)
-print("作者卡: 作者卡-AFXD-wdfexNB (仅限作者设备使用)")
+print("作者卡: 作者卡-AFXD-wdfexNB")
 print("卡密总数: 101个 (天卡25, 周卡25, 月卡25, 永久卡25, 作者卡1)")
-print("目标脚本: " .. TARGET_SCRIPT_URL)
-print("自动执行方式: loadstring(game:HttpGet(URL))()")
 print("==========================")
