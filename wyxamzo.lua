@@ -26,7 +26,9 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
--- ==================== 100个预生成卡密 ====================
+-- ==================== 100个预生成卡密（混合大小写，随机码乱序） ====================
+-- 所有卡密键名统一转小写存储，验证时输入自动转小写匹配
+-- 随机码部分混合大小写，看起来更乱更随机
 local KEYS_DATA = {
     -- ===== 天卡 DAY (25个) =====
     ["wdfex-k4M8R2n7P9-day"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -136,7 +138,7 @@ local KEYS_DATA = {
     ["wdfex-Q6P3K9N2L7-forever"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
     ["wdfex-l4T8X1V6R2-forever"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
 
-    -- ===== 作者卡密（永久有效） =====
+    -- ===== 作者卡密（永久有效，不区分大小写） =====
     ["wdfex-作者卡-zhw-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
 }
 
@@ -250,45 +252,20 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
--- ==================== 加载目标脚本（带重试机制） ====================
+-- ==================== 成功弹窗函数 ====================
 local function loadTargetScript()
-    local maxRetries = 2
-    local retryCount = 0
-    
-    while retryCount < maxRetries do
-        local success, err = pcall(function()
-            local content = game:HttpGet(TARGET_SCRIPT_URL)
-            local func = loadstring(content)
-            if func then
-                func()
-            else
-                error("loadstring 返回 nil，脚本可能包含语法错误")
-            end
-        end)
-        
-        if success then
-            return true
-        else
-            retryCount = retryCount + 1
-            if retryCount < maxRetries then
-                task.wait(1)
-            else
-                -- 显示详细的错误信息
-                local errorMsg = tostring(err)
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "脚本加载失败",
-                    Text = "错误: " .. errorMsg .. "\n请检查目标脚本是否完整或联系作者修复",
-                    Duration = 10,
-                })
-                -- 同时输出到控制台方便调试
-                warn("目标脚本加载失败: " .. errorMsg)
-            end
-        end
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
+    end)
+    if not success then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "加载失败",
+            Text = "脚本加载失败: " .. tostring(err),
+            Duration = 5,
+        })
     end
-    return false
 end
 
--- ==================== 成功弹窗函数 ====================
 local function showSuccessPopup(keyData)
     local popupGui = Instance.new("ScreenGui")
     popupGui.Name = "SuccessPopup"
