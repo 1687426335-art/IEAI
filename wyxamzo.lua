@@ -1,8 +1,12 @@
 -- ==================== 卡密验证系统 ====================
--- 验证成功后自动加载: https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua
+-- 验证成功后自动加载外部脚本
+-- 参考逻辑：loadstring(game:HttpGet("URL"))()
 
-local player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local player = LocalPlayer
 
+-- ==================== 工具函数 ====================
 local function getDeviceUID()
     local userId = player.UserId
     local success, machineId = pcall(function()
@@ -19,8 +23,10 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
+-- ==================== 100个预生成卡密 ====================
+-- 格式: 卡密 = { 类型, 天数(-1为永久), 是否已使用, 绑定设备 }
 local ALL_KEYS = {
-    -- 天卡 DAY (25个)
+    -- ===== 天卡 DAY (25个) =====
     ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
     ["WDF-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
     ["WDF-H9J2K4M7R1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
@@ -46,7 +52,7 @@ local ALL_KEYS = {
     ["WDF-H8P2Q6L4V1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
     ["WDF-K3V9N5R7X2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
     ["WDF-T7M4L1P8Q6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
-    -- 周卡 WEEK (25个)
+    -- ===== 周卡 WEEK (25个) =====
     ["WDF-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
     ["WDF-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
     ["WDF-J2H7R4N9P3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
@@ -72,7 +78,7 @@ local ALL_KEYS = {
     ["WDF-T8L5N1M7R4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
     ["WDF-V6P2K9X3L8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
     ["WDF-Q4N7R1T5M2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil },
-    -- 月卡 MONTH (25个)
+    -- ===== 月卡 MONTH (25个) =====
     ["WDF-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
     ["WDF-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
     ["WDF-J9P1N4X7R3-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
@@ -98,7 +104,7 @@ local ALL_KEYS = {
     ["WDF-Q5M8P3K1R7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
     ["WDF-R6T4X9V2L1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
     ["WDF-K2N7M5P9Q4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil },
-    -- 永久卡 FOREVER (25个)
+    -- ===== 永久卡 FOREVER (25个) =====
     ["WDF-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil },
     ["WDF-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil },
     ["WDF-H2M9R5N7X4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil },
@@ -126,6 +132,7 @@ local ALL_KEYS = {
     ["WDF-L4T8X1V6R2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil },
 }
 
+-- ==================== DataStore 存储 ====================
 local DataStoreService = game:GetService("DataStoreService")
 local store = DataStoreService:GetDataStore("KeySystemData")
 
@@ -157,7 +164,7 @@ end
 
 local KEYS_DATA = initKeys()
 
--- ==================== GUI 验证界面 ====================
+-- ==================== 验证界面 ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "KeyValidation"
 screenGui.ResetOnSpawn = false
@@ -167,7 +174,6 @@ local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 380, 0, 230)
 frame.Position = UDim2.new(0.5, -190, 0.5, -115)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-frame.BackgroundTransparency = 0.05
 frame.BorderSizePixel = 2
 frame.BorderColor3 = Color3.fromRGB(80, 180, 255)
 frame.Parent = screenGui
@@ -231,13 +237,16 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 8)
 btnCorner.Parent = confirmBtn
 
+-- ==================== 目标脚本URL ====================
+local TARGET_SCRIPT_URL = "https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"
+
 -- ==================== 验证逻辑 ====================
 local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
-local function loadMainScript()
-    statusLabel.Text = "验证成功，正在加载..."
+local function loadTargetScript()
+    statusLabel.Text = "验证成功，正在加载脚本..."
     statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
     confirmBtn.Visible = false
     inputBox.Visible = false
@@ -245,14 +254,15 @@ local function loadMainScript()
     screenGui:Destroy()
     task.wait(0.2)
     
+    -- ===== 参考你发的脚本，直接用 loadstring + game:HttpGet =====
     local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"))()
+        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
     end)
     
     if not success then
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "错误",
-            Text = "加载失败: " .. tostring(err),
+            Title = "加载失败",
+            Text = "脚本加载失败: " .. tostring(err),
             Duration = 5,
         })
     end
@@ -339,12 +349,13 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
     
+    -- 绑定设备
     keyData.used = true
     keyData.bind = DEVICE_UID
     keyData.bindTime = os.time()
     saveKeys(KEYS_DATA)
     
-    loadMainScript()
+    loadTargetScript()
 end)
 
 inputBox.FocusLost:Connect(function(enterPressed)
@@ -359,4 +370,5 @@ frame.Selectable = true
 print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25)")
+print("目标脚本: " .. TARGET_SCRIPT_URL)
 print("==========================")
