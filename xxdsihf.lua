@@ -31,7 +31,7 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n圣奥里（San Aurie）脚本已就绪！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
     Buttons = {
         {
             Title = "取消",
@@ -52,7 +52,7 @@ WindUI:Popup({
 
 function createUI()
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex-圣奥里',
+        Title = 'wdfex-Hub',
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -90,7 +90,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex",
+                    Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -101,7 +101,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -115,7 +115,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -197,12 +197,12 @@ function createUI()
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
         Title = "wdfex",
-        Desc = "创作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
+        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
     })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
-        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复"
+        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n如果你被封了跟脚本没有任何问题属于自己被挂DC了"
     })
 
     -- 通知 Tab
