@@ -218,7 +218,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.1提示",
-        Desc = "即将更新v2.1版本此版本将会开启收费\n如果你跟作者认识可以跟作者要一张月卡",
+        Desc = "无\n.",
         ThumbnailSize = 190,
     })
     infoTab:Select()
