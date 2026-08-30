@@ -1,60 +1,127 @@
--- 先创建 UI（用代码动态生成，省得你手动拖）
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- ==================== 创建 UI ====================
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 150)
-frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
+-- 背景遮罩（点击无反应，仅装饰）
+local overlay = Instance.new("Frame")
+overlay.Size = UDim2.new(1, 0, 1, 0)
+overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+overlay.BackgroundTransparency = 0.5
+overlay.BorderSizePixel = 0
+overlay.Parent = gui
 
+-- 主卡片
+local card = Instance.new("Frame")
+card.Size = UDim2.new(0, 360, 0, 200)
+card.Position = UDim2.new(0.5, -180, 0.5, -100)
+card.BackgroundColor3 = Color3.fromRGB(245, 245, 255)  -- 浅色磨砂
+card.BackgroundTransparency = 0.15
+card.BorderSizePixel = 0
+card.Parent = overlay
+
+-- 圆角
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = card
+
+-- 边框发光（用另一个Frame做描边）
+local border = Instance.new("Frame")
+border.Size = UDim2.new(1, 0, 1, 0)
+border.BackgroundTransparency = 1
+border.BorderSizePixel = 2
+border.BorderColor3 = Color3.fromRGB(100, 180, 255)
+border.Parent = card
+local borderCorner = Instance.new("UICorner")
+borderCorner.CornerRadius = UDim.new(0, 16)
+borderCorner.Parent = border
+
+-- 阴影效果（用多个UIStroke模拟，但简单起见用另一个半透明框）
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(1, 4, 1, 4)
+shadow.Position = UDim2.new(0, -2, 0, -2)
+shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+shadow.BackgroundTransparency = 0.3
+shadow.BorderSizePixel = 0
+shadow.ZIndex = 0
+shadow.Parent = card
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 18)
+shadowCorner.Parent = shadow
+
+-- 标题
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 10)
 title.BackgroundTransparency = 1
-title.Text = "🔑 输入卡密"
+title.Text = "🔐 输入授权码"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
-title.Parent = frame
+title.Font = Enum.Font.GothamBold
+title.TextStrokeTransparency = 0.5
+title.Parent = card
 
+-- 输入框（没有格式占位）
 local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(0.8, 0, 0, 36)
-textBox.Position = UDim2.new(0.1, 0, 0.3, 0)
-textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+textBox.Size = UDim2.new(0.8, 0, 0, 40)
+textBox.Position = UDim2.new(0.1, 0, 0.35, 0)
+textBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+textBox.BackgroundTransparency = 0.2
 textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-textBox.PlaceholderText = "wdfex-1234-5678"
+textBox.PlaceholderText = ""  -- 不显示任何格式
 textBox.ClearTextOnFocus = false
-textBox.Parent = frame
+textBox.Font = Enum.Font.GothamMedium
+textBox.TextScaled = true
+textBox.Parent = card
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.Parent = textBox
 
+-- 验证按钮
 local checkBtn = Instance.new("TextButton")
-checkBtn.Size = UDim2.new(0.4, 0, 0, 40)
-checkBtn.Position = UDim2.new(0.3, 0, 0.6, 0)
+checkBtn.Size = UDim2.new(0.5, 0, 0, 44)
+checkBtn.Position = UDim2.new(0.25, 0, 0.6, 0)
 checkBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 checkBtn.Text = "验证"
 checkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-checkBtn.Parent = frame
+checkBtn.Font = Enum.Font.GothamBold
+checkBtn.TextScaled = true
+checkBtn.AutoButtonColor = false
+checkBtn.Parent = card
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 12)
+btnCorner.Parent = checkBtn
 
+-- 按钮悬停效果（用Tween）
+local tweenService = game:GetService("TweenService")
+local btnHoverIn = tweenService:Create(checkBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)})
+local btnHoverOut = tweenService:Create(checkBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 120, 255)})
+checkBtn.MouseEnter:Connect(function() btnHoverIn:Play() end)
+checkBtn.MouseLeave:Connect(function() btnHoverOut:Play() end)
+
+-- 结果标签
 local resultLabel = Instance.new("TextLabel")
 resultLabel.Size = UDim2.new(1, 0, 0, 30)
-resultLabel.Position = UDim2.new(0, 0, 0.85, 0)
+resultLabel.Position = UDim2.new(0, 0, 0.82, 0)
 resultLabel.BackgroundTransparency = 1
 resultLabel.Text = ""
 resultLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 resultLabel.TextScaled = true
-resultLabel.Parent = frame
+resultLabel.Font = Enum.Font.GothamMedium
+resultLabel.Parent = card
 
 -- ==================== 验证逻辑 ====================
 
--- ✅ 预设有效卡密（只用作娱乐演示，实际要放服务器）
+-- 预设有效卡密（仅娱乐演示）
 local validKeys = {
     "wdfex-1234-5678",
     "wdfex-abcd-efgh",
     "wdfex-9999-0000"
 }
 
--- 格式检查函数
+-- 格式检查（但不暴露格式给用户）
 local function isValidFormat(key)
-    -- 匹配：wdfex- + 四位字母数字 + - + 四位字母数字
     return string.match(key, "^wdfex%-%w%w%w%w%-%w%w%w%w$") ~= nil
 end
 
@@ -62,12 +129,11 @@ end
 checkBtn.MouseButton1Click:Connect(function()
     local input = textBox.Text
     if not isValidFormat(input) then
-        resultLabel.Text = "❌ 格式错误，请按 wdfex-####-####"
+        resultLabel.Text = "❌ 卡密无效"   -- 不提示格式
         resultLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
         return
     end
     
-    -- 检查是否在有效列表里
     local found = false
     for _, key in ipairs(validKeys) do
         if key == input then
@@ -77,12 +143,14 @@ checkBtn.MouseButton1Click:Connect(function()
     end
     
     if found then
-        resultLabel.Text = "✅ 验证通过！解锁成功！"
+        resultLabel.Text = "✅ 验证通过！"
         resultLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        -- 🎉 这里可以放你真正要执行的代码（比如加载游戏功能）
-        print("卡密正确，玩家：" .. game.Players.LocalPlayer.Name)
+        -- 🎉 成功时执行你的功能（例如加载游戏）
+        print("玩家 " .. player.Name .. " 验证成功！")
+        -- 可选：关闭UI
+        -- gui:Destroy()
     else
-        resultLabel.Text = "❌ 卡密无效，请重试"
+        resultLabel.Text = "❌ 卡密无效"
         resultLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
 end)
