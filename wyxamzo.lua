@@ -1,7 +1,7 @@
 -- ==================== 卡密验证系统 ====================
 -- 验证成功后自动加载外部脚本
 -- 左上角显示设备UID，验证成功显示详情弹窗
--- 作者卡: 作者卡-AFXD-wdfexNB (仅限作者设备使用)
+-- 天卡显示剩余时分秒，周卡/月卡显示天+时分秒，永久卡显示永久
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -25,14 +25,10 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
--- ===== 作者的设备UID（固定值，用于作者卡验证） =====
--- 注意：这里存的是原始UID，比较时会转大写
-local AUTHOR_DEVICE_UID = "XXBDDDXXEWFRNGDGHPRCBYAX"
-
 -- ==================== 100个预生成卡密 + 作者卡 ====================
 local KEYS_DATA = {
-    -- ===== 作者卡 (1个，卡密以"作者卡"开头，仅限作者设备使用) =====
-    ["作者卡-AFXD-wdfexNB"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil, isAuthorKey = true },
+    -- ===== 作者卡 (1个) =====
+    ["作者卡-AFXD-wdfexNB"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
 
     -- ===== 天卡 DAY (25个) =====
     ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -60,6 +56,7 @@ local KEYS_DATA = {
     ["WDF-H8P2Q6L4V1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-K3V9N5R7X2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
     ["WDF-T7M4L1P8Q6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+
     -- ===== 周卡 WEEK (25个) =====
     ["WDF-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
@@ -86,6 +83,7 @@ local KEYS_DATA = {
     ["WDF-T8L5N1M7R4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-V6P2K9X3L8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
     ["WDF-Q4N7R1T5M2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+
     -- ===== 月卡 MONTH (25个) =====
     ["WDF-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
@@ -112,6 +110,7 @@ local KEYS_DATA = {
     ["WDF-Q5M8P3K1R7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-R6T4X9V2L1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
     ["WDF-K2N7M5P9Q4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+
     -- ===== 永久卡 FOREVER (25个) =====
     ["WDF-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
     ["WDF-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
@@ -245,6 +244,39 @@ footerLabel.Parent = frame
 -- ==================== 目标脚本URL ====================
 local TARGET_SCRIPT_URL = "https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"
 
+-- ==================== 格式化剩余时间 ====================
+local function formatRemainingTime(keyData)
+    -- 永久卡
+    if keyData.days == -1 then
+        return "永久"
+    end
+    
+    -- 计算剩余秒数（从绑定时间开始算）
+    local bindTime = keyData.bindTime or os.time()
+    local totalSeconds = keyData.days * 86400
+    local elapsed = os.time() - bindTime
+    local remaining = totalSeconds - elapsed
+    
+    if remaining <= 0 then
+        return "已过期"
+    end
+    
+    local days = math.floor(remaining / 86400)
+    remaining = remaining - days * 86400
+    local hours = math.floor(remaining / 3600)
+    remaining = remaining - hours * 3600
+    local minutes = math.floor(remaining / 60)
+    local seconds = math.floor(remaining % 60)
+    
+    -- 天卡（1天）：只显示时/分/秒
+    if keyData.days == 1 then
+        return string.format("%02d时 %02d分 %02d秒", hours, minutes, seconds)
+    end
+    
+    -- 周卡/月卡：显示天 + 时/分/秒
+    return string.format("%d天 %02d时 %02d分 %02d秒", days, hours, minutes, seconds)
+end
+
 -- ==================== 验证逻辑 ====================
 local attemptCount = 0
 local locked = false
@@ -263,8 +295,8 @@ local function showSuccessPopup(keyData)
     popupGui.Parent = player:WaitForChild("PlayerGui")
 
     local popupFrame = Instance.new("Frame")
-    popupFrame.Size = UDim2.new(0, 450, 0, 280)
-    popupFrame.Position = UDim2.new(0.5, -225, 0.5, -140)
+    popupFrame.Size = UDim2.new(0, 450, 0, 320)
+    popupFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
     popupFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
     popupFrame.BorderSizePixel = 2
     popupFrame.BorderColor3 = Color3.fromRGB(0, 255, 100)
@@ -278,7 +310,7 @@ local function showSuccessPopup(keyData)
     -- 成功图标
     local icon = Instance.new("TextLabel")
     icon.Size = UDim2.new(0, 50, 0, 50)
-    icon.Position = UDim2.new(0.5, -25, 0, 12)
+    icon.Position = UDim2.new(0.5, -25, 0, 8)
     icon.BackgroundTransparency = 1
     icon.Text = "✓"
     icon.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -290,7 +322,7 @@ local function showSuccessPopup(keyData)
     -- 标题
     local popupTitle = Instance.new("TextLabel")
     popupTitle.Size = UDim2.new(1, 0, 0, 30)
-    popupTitle.Position = UDim2.new(0, 0, 0, 68)
+    popupTitle.Position = UDim2.new(0, 0, 0, 62)
     popupTitle.BackgroundTransparency = 1
     popupTitle.Text = "验证成功！"
     popupTitle.TextColor3 = Color3.fromRGB(0, 255, 100)
@@ -302,7 +334,7 @@ local function showSuccessPopup(keyData)
     -- 卡密类型
     local typeLabel = Instance.new("TextLabel")
     typeLabel.Size = UDim2.new(1, 0, 0, 28)
-    typeLabel.Position = UDim2.new(0, 0, 0, 105)
+    typeLabel.Position = UDim2.new(0, 0, 0, 98)
     typeLabel.BackgroundTransparency = 1
     typeLabel.Text = "卡密类型: " .. keyData.type
     typeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -311,27 +343,22 @@ local function showSuccessPopup(keyData)
     typeLabel.TextXAlignment = Enum.TextXAlignment.Center
     typeLabel.Parent = popupFrame
 
-    -- 剩余天数
-    local daysLabel = Instance.new("TextLabel")
-    daysLabel.Size = UDim2.new(1, 0, 0, 28)
-    daysLabel.Position = UDim2.new(0, 0, 0, 135)
-    daysLabel.BackgroundTransparency = 1
-    if keyData.days == -1 then
-        daysLabel.Text = "有效期: 永久"
-        daysLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-    else
-        daysLabel.Text = "有效期: " .. keyData.days .. " 天"
-        daysLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
-    end
-    daysLabel.TextSize = 16
-    daysLabel.Font = Enum.Font.Gotham
-    daysLabel.TextXAlignment = Enum.TextXAlignment.Center
-    daysLabel.Parent = popupFrame
+    -- 剩余时间（实时更新）
+    local timeLabel = Instance.new("TextLabel")
+    timeLabel.Size = UDim2.new(1, 0, 0, 30)
+    timeLabel.Position = UDim2.new(0, 0, 0, 130)
+    timeLabel.BackgroundTransparency = 1
+    timeLabel.Text = "剩余: 计算中..."
+    timeLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+    timeLabel.TextSize = 16
+    timeLabel.Font = Enum.Font.GothamBold
+    timeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    timeLabel.Parent = popupFrame
 
     -- 设备UID
     local uidPopupLabel = Instance.new("TextLabel")
     uidPopupLabel.Size = UDim2.new(1, 0, 0, 28)
-    uidPopupLabel.Position = UDim2.new(0, 0, 0, 170)
+    uidPopupLabel.Position = UDim2.new(0, 0, 0, 165)
     uidPopupLabel.BackgroundTransparency = 1
     uidPopupLabel.Text = "设备UID: " .. DEVICE_UID
     uidPopupLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
@@ -343,7 +370,7 @@ local function showSuccessPopup(keyData)
     -- 底部提示
     local popupFooter = Instance.new("TextLabel")
     popupFooter.Size = UDim2.new(1, -20, 0, 20)
-    popupFooter.Position = UDim2.new(0, 10, 0, 210)
+    popupFooter.Position = UDim2.new(0, 10, 0, 205)
     popupFooter.BackgroundTransparency = 1
     popupFooter.Text = "脚本将在 5 秒后自动加载..."
     popupFooter.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -355,7 +382,7 @@ local function showSuccessPopup(keyData)
     -- 倒计时进度条
     local progressBar = Instance.new("Frame")
     progressBar.Size = UDim2.new(0.8, 0, 0, 4)
-    progressBar.Position = UDim2.new(0.1, 0, 0, 240)
+    progressBar.Position = UDim2.new(0.1, 0, 0, 235)
     progressBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
     progressBar.BackgroundTransparency = 0.3
     progressBar.Parent = popupFrame
@@ -364,11 +391,38 @@ local function showSuccessPopup(keyData)
     progressCorner.CornerRadius = UDim.new(0, 2)
     progressCorner.Parent = progressBar
 
+    -- ===== 实时更新剩余时间 =====
+    local updateConnection
+    local function updateTime()
+        local timeText = formatRemainingTime(keyData)
+        timeLabel.Text = "剩余: " .. timeText
+        
+        -- 如果已过期，变色
+        if timeText == "已过期" then
+            timeLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+        else
+            timeLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+        end
+    end
+    
+    -- 立即更新一次
+    updateTime()
+    
+    -- 每秒更新一次
+    updateConnection = RunService.Heartbeat:Connect(function()
+        updateTime()
+    end)
+
     -- 5秒倒计时
     for i = 5, 1, -1 do
         popupFooter.Text = "脚本将在 " .. i .. " 秒后自动加载..."
         progressBar.Size = UDim2.new(0.8 * (i / 5), 0, 0, 4)
         task.wait(1)
+    end
+
+    -- 断开更新连接
+    if updateConnection then
+        updateConnection:Disconnect()
     end
 
     popupGui:Destroy()
@@ -397,8 +451,7 @@ confirmBtn.MouseButton1Click:Connect(function()
         statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
         inputBox.Text = ""
 
-        if attemptCount >= 3 then
-            locked = true
+        if attemptCount >= 3 then            locked = true
             confirmBtn.Visible = false
             inputBox.Visible = false
             statusLabel.Text = "错误次数过多，锁定 10 秒"
@@ -423,81 +476,20 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    -- ===== 作者卡特殊验证（修复版：转为大写比较） =====
-    if keyData.isAuthorKey then
-        -- 转为大写并去除首尾空格后比较
-        local currentUID = string.upper(string.gsub(DEVICE_UID, "%s+", ""))
-        local authorUID = string.upper(string.gsub(AUTHOR_DEVICE_UID, "%s+", ""))
-        
-        if currentUID ~= authorUID then
-            attemptCount = attemptCount + 1
-            local remaining = 3 - attemptCount
-            statusLabel.Text = "你不是作者！ (剩余尝试: " .. remaining .. "/3)"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-            inputBox.Text = ""
-
-            if attemptCount >= 3 then
-                locked = true
-                confirmBtn.Visible = false
-                inputBox.Visible = false
-                statusLabel.Text = "错误次数过多，锁定 10 秒"
-                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-
-                local startTime = os.time()
-                lockTimer = task.spawn(function()
-                    while os.time() - startTime < 10 do
-                        local remaining = 10 - (os.time() - startTime)
-                        statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
-                        task.wait(0.5)
-                    end
-                    locked = false
-                    attemptCount = 0
-                    confirmBtn.Visible = true
-                    inputBox.Visible = true
-                    statusLabel.Text = "已解锁，请重新输入卡密"
-                    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                    inputBox.Text = ""
-                end)
-            end
+    -- ===== 检查卡密是否已被绑定 =====
+    if keyData.used then
+        -- 检查是否是当前设备绑定的
+        if keyData.bind == DEVICE_UID then
+            -- 当前设备绑定的，允许使用
+            -- 直接进入成功流程
+            screenGui:Destroy()
+            showSuccessPopup(keyData)
             return
-        end
-        if keyData.used then
+        else
+            -- 其他设备绑定的，拒绝
             attemptCount = attemptCount + 1
             local remaining = 3 - attemptCount
-            statusLabel.Text = "作者卡已被使用 (剩余尝试: " .. remaining .. "/3)"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-            inputBox.Text = ""
-
-            if attemptCount >= 3 then
-                locked = true
-                confirmBtn.Visible = false
-                inputBox.Visible = false
-                statusLabel.Text = "错误次数过多，锁定 10 秒"
-                statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-
-                local startTime = os.time()
-                lockTimer = task.spawn(function()
-                    while os.time() - startTime < 10 do
-                        local remaining = 10 - (os.time() - startTime)
-                        statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
-                        task.wait(0.5)
-                    end
-                    locked = false
-                    attemptCount = 0
-                    confirmBtn.Visible = true
-                    inputBox.Visible = true
-                    statusLabel.Text = "已解锁，请重新输入卡密"
-                    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                    inputBox.Text = ""
-                end)
-            end
-            return
-        end
-    else
-        if keyData.used then
-            attemptCount = attemptCount + 1
-            local remaining = 3 - attemptCount
-            statusLabel.Text = "卡密已被使用 (剩余尝试: " .. remaining .. "/3)"
+            statusLabel.Text = "卡密已在其他设备绑定，你无法使用 (剩余尝试: " .. remaining .. "/3)"
             statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
             inputBox.Text = ""
 
@@ -528,7 +520,7 @@ confirmBtn.MouseButton1Click:Connect(function()
         end
     end
 
-    -- 绑定设备
+    -- ===== 绑定设备（首次使用） =====
     keyData.used = true
     keyData.bind = DEVICE_UID
     keyData.bindTime = os.time()
@@ -547,8 +539,7 @@ frame.Active = true
 frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
-print("当前设备UID: " .. DEVICE_UID)
-print("作者设备UID: " .. AUTHOR_DEVICE_UID)
-print("作者卡: 作者卡-AFXD-wdfexNB")
+print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 101个 (天卡25, 周卡25, 月卡25, 永久卡25, 作者卡1)")
+print("作者卡: 作者卡-AFXD-wdfexNB")
 print("==========================")
