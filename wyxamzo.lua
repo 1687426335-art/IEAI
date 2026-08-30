@@ -1,6 +1,6 @@
 -- ==================== 卡密验证系统 ====================
 -- 验证成功后自动加载外部脚本
--- 参考逻辑：loadstring(game:HttpGet("URL"))()
+-- 无 DataStore 依赖，直接在客户端内存运行
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -25,7 +25,7 @@ local DEVICE_UID = getDeviceUID()
 
 -- ==================== 100个预生成卡密 ====================
 -- 格式: 卡密 = { 类型, 天数(-1为永久), 是否已使用, 绑定设备 }
-local ALL_KEYS = {
+local KEYS_DATA = {
     -- ===== 天卡 DAY (25个) =====
     ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
     ["WDF-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil },
@@ -132,38 +132,6 @@ local ALL_KEYS = {
     ["WDF-L4T8X1V6R2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil },
 }
 
--- ==================== DataStore 存储 ====================
-local DataStoreService = game:GetService("DataStoreService")
-local store = DataStoreService:GetDataStore("KeySystemData")
-
-local function loadKeys()
-    local success, result = pcall(function()
-        return store:GetAsync("all_keys")
-    end)
-    if success and result then return result end
-    return nil
-end
-
-local function saveKeys(keys)
-    local success = pcall(function()
-        store:SetAsync("all_keys", keys)
-    end)
-    return success
-end
-
-local function initKeys()
-    local saved = loadKeys()
-    if saved then return saved end
-    local newKeys = {}
-    for key, data in pairs(ALL_KEYS) do
-        newKeys[key] = { type = data.type, days = data.days, used = false, bind = nil }
-    end
-    saveKeys(newKeys)
-    return newKeys
-end
-
-local KEYS_DATA = initKeys()
-
 -- ==================== 验证界面 ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "KeyValidation"
@@ -254,7 +222,7 @@ local function loadTargetScript()
     screenGui:Destroy()
     task.wait(0.2)
     
-    -- ===== 参考你发的脚本，直接用 loadstring + game:HttpGet =====
+    -- ===== 使用 loadstring + game:HttpGet 加载目标脚本 =====
     local success, err = pcall(function()
         loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
     end)
@@ -353,7 +321,6 @@ confirmBtn.MouseButton1Click:Connect(function()
     keyData.used = true
     keyData.bind = DEVICE_UID
     keyData.bindTime = os.time()
-    saveKeys(KEYS_DATA)
     
     loadTargetScript()
 end)
