@@ -31,7 +31,7 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n圣奥里（San Aurie）脚本已就绪！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
     Buttons = {
         {
             Title = "取消",
@@ -52,7 +52,7 @@ WindUI:Popup({
 
 function createUI()
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex-圣奥里',
+        Title = 'wdfex-Hub',
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -90,7 +90,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex",
+                    Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -101,7 +101,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -115,7 +115,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex",
+        Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -197,7 +197,7 @@ function createUI()
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
         Title = "wdfex",
-        Desc = "创作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
+        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启绕过反作弊祝您玩的愉快"
     })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
@@ -211,14 +211,14 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "圣奥里脚本\n半成品\n国内免费最佳\n成品认准wdfex",
+        Desc = "目前已开启收费\n如果发现某些功能有bug\n请及时联系作者修复\n作者快手名：wdfex\nQQ：1687426335\n如果使用脚本期间出现被提问题属于被挂DC社区了
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0提示",
-        Desc = "圣奥里专用脚本\n添加了杀戮光环+自瞄+子追等功能",
+        Desc = "修复已知问题\n如果杀戮光环还有什么bug联系作者修复即可",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -1706,7 +1706,7 @@ function createUI()
     })
 
     WindUI:Notify({
-        Title = "wdfex-圣奥里",
+        Title = "wdfex-Hub",
         Content = "脚本已加载成功，欢迎使用！",
         Duration = 3,
     })
