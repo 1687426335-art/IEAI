@@ -1,8 +1,3 @@
--- ==================== 卡密验证系统 ====================
--- 验证成功后自动加载外部脚本
--- 左上角显示设备UID，验证成功显示详情弹窗
--- 卡密不区分大小写
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local player = LocalPlayer
@@ -27,8 +22,6 @@ end
 local DEVICE_UID = getDeviceUID()
 
 -- ==================== 100个预生成卡密（混合大小写，随机码乱序） ====================
--- 所有卡密键名统一转小写存储，验证时输入自动转小写匹配
--- 随机码部分混合大小写，看起来更乱更随机
 local KEYS_DATA = {
     -- ===== 天卡 DAY (25个) =====
     ["wdfex-k4M8R2n7P9-day"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -178,7 +171,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.Position = UDim2.new(0, 0, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "wdfex 卡密验证"
+title.Text = "卡密验证"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 24
 title.Font = Enum.Font.GothamBold
@@ -208,7 +201,7 @@ inputBox.Text = ""
 inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 inputBox.TextSize = 16
 inputBox.Font = Enum.Font.Gotham
-inputBox.PlaceholderText = "请输入卡密（不区分大小写）"
+inputBox.PlaceholderText = "请输入卡密"
 inputBox.ClearTextOnFocus = false
 inputBox.Parent = frame
 
@@ -496,7 +489,7 @@ end)
 frame.Active = true
 frame.Selectable = true
 
-print("===== wdfex 卡密验证系统已加载 =====")
+print("===== 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25) + 作者卡1个")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
