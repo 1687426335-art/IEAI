@@ -1,24 +1,12 @@
 -- ==================== 卡密验证系统 ====================
 -- 验证成功后5秒弹窗自动加载外部脚本
 -- 左上角显示设备UID，验证成功显示详情弹窗
+-- 无外部依赖，稳定弹出
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local player = LocalPlayer
-
--- ===== 加载 RevenantLib（用于通知） =====
-local RevenantLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Revenant", true))()
-local RunService = game:GetService("RunService")
-
--- ===== 彩虹动画 =====
-local t = 0
-RunService.Heartbeat:Connect(function(dt)
-    t = t + 0.012
-    local r = math.sin(t*1.1)*0.45+0.55
-    local g = math.sin(t*1.3)*0.45+0.55
-    local b = math.sin(t*1.6)*0.45+0.55
-    RevenantLib.DefaultColor = Color3.new(r,g,b)
-end)
+local StarterGui = game:GetService("StarterGui")
 
 -- ==================== 工具函数 ====================
 local function getDeviceUID()
@@ -254,19 +242,21 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
--- ===== 照抄你的自动执行方式 =====
+-- ===== 自动执行目标脚本 =====
 local function loadTargetScript()
     local success, err = pcall(function()
         loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
     end)
     
     if success then
-        RevenantLib:Notification({
-            Text = "自动执行成功，脚本已加载",
+        StarterGui:SetCore("SendNotification", {
+            Title = "wdfex",
+            Text = "脚本加载成功！",
             Duration = 3,
         })
     else
-        RevenantLib:Notification({
+        StarterGui:SetCore("SendNotification", {
+            Title = "加载失败",
             Text = "脚本加载失败: " .. tostring(err),
             Duration = 5,
         })
@@ -383,7 +373,7 @@ local function showSuccessPopup(keyData)
     progressCorner.CornerRadius = UDim.new(0, 2)
     progressCorner.Parent = progressBar
 
-    -- 5秒倒计时（用 task.wait 更稳定）
+    -- 5秒倒计时
     for i = 5, 1, -1 do
         popupFooter.Text = "脚本将在 " .. i .. " 秒后自动加载..."
         progressBar.Size = UDim2.new(0.8 * (i / 5), 0, 0, 4)
