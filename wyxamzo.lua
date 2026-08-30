@@ -1,5 +1,6 @@
 -- ==================== 卡密验证系统 ====================
--- 左上角显示设备UID，验证成功后弹出信息窗
+-- 验证成功后自动加载外部脚本
+-- 左上角显示设备UID，方便管理
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -21,6 +22,11 @@ local function getDeviceUID()
 end
 
 local DEVICE_UID = getDeviceUID()
+
+-- ==================== 作者专用卡密配置 ====================
+local AUTHOR_KEY = "作者卡-AZDS-wdfexNB6"
+-- 只有这个设备UID才能使用作者卡密
+local AUTHOR_DEVICE_UID = "XXXBDDDXXEWFRNGDCHPGRCBYAX"
 
 -- ==================== 100个预生成卡密 ====================
 local KEYS_DATA = {
@@ -136,9 +142,21 @@ screenGui.Name = "KeyValidation"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+-- ===== 左上角显示设备UID =====
+local uidLabel = Instance.new("TextLabel")
+uidLabel.Size = UDim2.new(0, 350, 0, 25)
+uidLabel.Position = UDim2.new(0, 10, 0, 10)
+uidLabel.BackgroundTransparency = 1
+uidLabel.Text = "设备UID: " .. DEVICE_UID
+uidLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
+uidLabel.TextSize = 12
+uidLabel.Font = Enum.Font.Gotham
+uidLabel.TextXAlignment = Enum.TextXAlignment.Left
+uidLabel.Parent = screenGui
+
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 260)
-frame.Position = UDim2.new(0.5, -200, 0.5, -130)
+frame.Size = UDim2.new(0, 380, 0, 230)
+frame.Position = UDim2.new(0.5, -190, 0.5, -115)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 frame.BorderSizePixel = 2
 frame.BorderColor3 = Color3.fromRGB(80, 180, 255)
@@ -148,22 +166,9 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = frame
 
--- ===== 左上角设备UID显示 =====
-local uidLabel = Instance.new("TextLabel")
-uidLabel.Size = UDim2.new(1, -20, 0, 20)
-uidLabel.Position = UDim2.new(0, 10, 0, 8)
-uidLabel.BackgroundTransparency = 1
-uidLabel.Text = "设备UID: " .. DEVICE_UID
-uidLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
-uidLabel.TextSize = 11
-uidLabel.Font = Enum.Font.Gotham
-uidLabel.TextXAlignment = Enum.TextXAlignment.Left
-uidLabel.TextYAlignment = Enum.TextYAlignment.Top
-uidLabel.Parent = frame
-
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 45)
-title.Position = UDim2.new(0, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 5)
 title.BackgroundTransparency = 1
 title.Text = "wdfex 卡密验证"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -174,7 +179,7 @@ title.Parent = frame
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -20, 0, 28)
-statusLabel.Position = UDim2.new(0, 10, 0, 80)
+statusLabel.Position = UDim2.new(0, 10, 0, 55)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "请输入您的卡密"
 statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -185,7 +190,7 @@ statusLabel.Parent = frame
 
 local inputBox = Instance.new("TextBox")
 inputBox.Size = UDim2.new(0.8, 0, 0, 38)
-inputBox.Position = UDim2.new(0.1, 0, 0, 118)
+inputBox.Position = UDim2.new(0.1, 0, 0, 92)
 inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
 inputBox.BorderSizePixel = 1
 inputBox.BorderColor3 = Color3.fromRGB(100, 100, 130)
@@ -203,7 +208,7 @@ inputCorner.Parent = inputBox
 
 local confirmBtn = Instance.new("TextButton")
 confirmBtn.Size = UDim2.new(0.35, 0, 0, 42)
-confirmBtn.Position = UDim2.new(0.325, 0, 0, 175)
+confirmBtn.Position = UDim2.new(0.325, 0, 0, 148)
 confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
 confirmBtn.BorderSizePixel = 0
 confirmBtn.Text = "确认"
@@ -219,123 +224,98 @@ btnCorner.Parent = confirmBtn
 -- ==================== 目标脚本URL ====================
 local TARGET_SCRIPT_URL = "https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"
 
--- ==================== 验证成功弹窗函数 ====================
-local function showSuccessPopup(keyData)
-    -- 计算剩余天数
-    local remainingText = ""
-    if keyData.days == -1 then
-        remainingText = "永久有效"
-    else
-        remainingText = keyData.days .. " 天"
-    end
-    
-    -- 创建弹窗GUI
-    local popupGui = Instance.new("ScreenGui")
-    popupGui.Name = "SuccessPopup"
-    popupGui.ResetOnSpawn = false
-    popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    popupGui.Parent = player:WaitForChild("PlayerGui")
-    
-    local popupFrame = Instance.new("Frame")
-    popupFrame.Size = UDim2.new(0, 420, 0, 220)
-    popupFrame.Position = UDim2.new(0.5, -210, 0.5, -110)
-    popupFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-    popupFrame.BorderSizePixel = 2
-    popupFrame.BorderColor3 = Color3.fromRGB(0, 255, 150)
-    popupFrame.Parent = popupGui
-    
-    local popupCorner = Instance.new("UICorner")
-    popupCorner.CornerRadius = UDim.new(0, 14)
-    popupCorner.Parent = popupFrame
-    
-    -- 标题（带勾）
-    local popupTitle = Instance.new("TextLabel")
-    popupTitle.Size = UDim2.new(1, 0, 0, 50)
-    popupTitle.Position = UDim2.new(0, 0, 0, 10)
-    popupTitle.BackgroundTransparency = 1
-    popupTitle.Text = "验证成功!"
-    popupTitle.TextColor3 = Color3.fromRGB(0, 255, 150)
-    popupTitle.TextSize = 28
-    popupTitle.Font = Enum.Font.GothamBold
-    popupTitle.TextXAlignment = Enum.TextXAlignment.Center
-    popupTitle.Parent = popupFrame
-    
-    -- 分割线
-    local divider = Instance.new("Frame")
-    divider.Size = UDim2.new(0.8, 0, 0, 1)
-    divider.Position = UDim2.new(0.1, 0, 0, 68)
-    divider.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-    divider.BackgroundTransparency = 0.5
-    divider.Parent = popupFrame
-    
-    -- 卡密类型
-    local typeLabel = Instance.new("TextLabel")
-    typeLabel.Size = UDim2.new(1, -20, 0, 25)
-    typeLabel.Position = UDim2.new(0, 10, 0, 78)
-    typeLabel.BackgroundTransparency = 1
-    typeLabel.Text = "卡密类型: " .. keyData.type
-    typeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    typeLabel.TextSize = 16
-    typeLabel.Font = Enum.Font.GothamBold
-    typeLabel.TextXAlignment = Enum.TextXAlignment.Left
-    typeLabel.Parent = popupFrame
-    
-    -- 剩余天数
-    local daysLabel = Instance.new("TextLabel")
-    daysLabel.Size = UDim2.new(1, -20, 0, 25)
-    daysLabel.Position = UDim2.new(0, 10, 0, 108)
-    daysLabel.BackgroundTransparency = 1
-    daysLabel.Text = "剩余天数: " .. remainingText
-    daysLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-    daysLabel.TextSize = 16
-    daysLabel.Font = Enum.Font.GothamBold
-    daysLabel.TextXAlignment = Enum.TextXAlignment.Left
-    daysLabel.Parent = popupFrame
-    
-    -- 设备UID
-    local uidPopupLabel = Instance.new("TextLabel")
-    uidPopupLabel.Size = UDim2.new(1, -20, 0, 25)
-    uidPopupLabel.Position = UDim2.new(0, 10, 0, 138)
-    uidPopupLabel.BackgroundTransparency = 1
-    uidPopupLabel.Text = "设备UID: " .. DEVICE_UID
-    uidPopupLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
-    uidPopupLabel.TextSize = 13
-    uidPopupLabel.Font = Enum.Font.Gotham
-    uidPopupLabel.TextXAlignment = Enum.TextXAlignment.Left
-    uidPopupLabel.Parent = popupFrame
-    
-    -- 底部提示
-    local bottomLabel = Instance.new("TextLabel")
-    bottomLabel.Size = UDim2.new(1, 0, 0, 25)
-    bottomLabel.Position = UDim2.new(0, 0, 0, 185)
-    bottomLabel.BackgroundTransparency = 1
-    bottomLabel.Text = "即将自动加载脚本..."
-    bottomLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
-    bottomLabel.TextSize = 13
-    bottomLabel.Font = Enum.Font.Gotham
-    bottomLabel.TextXAlignment = Enum.TextXAlignment.Center
-    bottomLabel.Parent = popupFrame
-    
-    -- 4秒后自动销毁弹窗
-    task.wait(4)
-    popupGui:Destroy()
-end
-
 -- ==================== 验证逻辑 ====================
 local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
-local function loadTargetScript()
-    statusLabel.Text = "验证成功，正在加载脚本..."
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-    confirmBtn.Visible = false
-    inputBox.Visible = false
-    task.wait(0.3)
-    screenGui:Destroy()
-    task.wait(0.2)
+-- ==================== 显示验证成功弹窗（5秒） ====================
+local function showSuccessPopup(keyType, daysLeft, uid)
+    local popupGui = Instance.new("ScreenGui")
+    popupGui.Name = "SuccessPopup"
+    popupGui.ResetOnSpawn = false
+    popupGui.Parent = player:WaitForChild("PlayerGui")
     
-    -- 加载目标脚本
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(0, 450, 0, 220)
+    bg.Position = UDim2.new(0.5, -225, 0.5, -110)
+    bg.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+    bg.BorderSizePixel = 2
+    bg.BorderColor3 = Color3.fromRGB(0, 255, 150)
+    bg.Parent = popupGui
+    
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(0, 16)
+    bgCorner.Parent = bg
+    
+    -- 标题
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 50)
+    titleLabel.Position = UDim2.new(0, 0, 0, 10)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "✅ 验证成功"
+    titleLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+    titleLabel.TextSize = 28
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+    titleLabel.Parent = bg
+    
+    -- 卡密信息
+    local infoText = ""
+    if daysLeft == -1 then
+        infoText = "卡密类型: " .. keyType .. " (永久有效)"
+    else
+        infoText = "卡密类型: " .. keyType .. "\n有效天数: " .. daysLeft .. " 天"
+    end
+    
+    local infoLabel = Instance.new("TextLabel")
+    infoLabel.Size = UDim2.new(1, -40, 0, 80)
+    infoLabel.Position = UDim2.new(0, 20, 0, 65)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.Text = infoText
+    infoLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    infoLabel.TextSize = 16
+    infoLabel.Font = Enum.Font.Gotham
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Center
+    infoLabel.Parent = bg
+    
+    -- 设备UID
+    local uidLabel2 = Instance.new("TextLabel")
+    uidLabel2.Size = UDim2.new(1, -40, 0, 30)
+    uidLabel2.Position = UDim2.new(0, 20, 0, 150)
+    uidLabel2.BackgroundTransparency = 1
+    uidLabel2.Text = "设备UID: " .. uid
+    uidLabel2.TextColor3 = Color3.fromRGB(150, 200, 255)
+    uidLabel2.TextSize = 12
+    uidLabel2.Font = Enum.Font.Gotham
+    uidLabel2.TextXAlignment = Enum.TextXAlignment.Center
+    uidLabel2.Parent = bg
+    
+    -- 倒计时标签
+    local countdownLabel = Instance.new("TextLabel")
+    countdownLabel.Size = UDim2.new(1, 0, 0, 25)
+    countdownLabel.Position = UDim2.new(0, 0, 1, -30)
+    countdownLabel.BackgroundTransparency = 1
+    countdownLabel.Text = "5 秒后自动关闭..."
+    countdownLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    countdownLabel.TextSize = 13
+    countdownLabel.Font = Enum.Font.Gotham
+    countdownLabel.TextXAlignment = Enum.TextXAlignment.Center
+    countdownLabel.Parent = bg
+    
+    -- 5秒后自动关闭并加载脚本
+    task.spawn(function()
+        for i = 5, 1, -1 do
+            countdownLabel.Text = i .. " 秒后自动关闭..."
+            task.wait(1)
+        end
+        popupGui:Destroy()
+        loadTargetScript()
+    end)
+end
+
+-- ==================== 加载目标脚本 ====================
+local function loadTargetScript()
     local success, err = pcall(function()
         loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
     end)
@@ -347,6 +327,36 @@ local function loadTargetScript()
             Duration = 5,
         })
     end
+end
+
+-- ==================== 验证卡密 ====================
+local function validateKey(input)
+    -- 检查作者卡密
+    if input == AUTHOR_KEY then
+        if DEVICE_UID == AUTHOR_DEVICE_UID then
+            -- 作者卡密验证成功
+            return true, "作者卡", -1
+        else
+            return false, "作者卡密仅限指定设备使用"
+        end
+    end
+    
+    -- 检查普通卡密
+    local keyData = KEYS_DATA[input]
+    if not keyData then
+        return false, "卡密不存在"
+    end
+    
+    if keyData.used then
+        return false, "卡密已被使用"
+    end
+    
+    -- 绑定设备
+    keyData.used = true
+    keyData.bind = DEVICE_UID
+    keyData.bindTime = os.time()
+    
+    return true, keyData.type, keyData.days
 end
 
 confirmBtn.MouseButton1Click:Connect(function()
@@ -363,11 +373,25 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    local keyData = KEYS_DATA[input]
-    if not keyData then
+    local valid, msg, days = validateKey(input)
+    
+    if valid then
+        -- 验证成功，显示弹窗
+        statusLabel.Text = "验证成功！"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        confirmBtn.Visible = false
+        inputBox.Visible = false
+        
+        -- 显示成功弹窗（5秒后自动加载脚本）
+        showSuccessPopup(msg, days, DEVICE_UID)
+        
+        -- 隐藏验证界面
+        task.wait(0.3)
+        frame.Visible = false
+    else
         attemptCount = attemptCount + 1
         local remaining = 3 - attemptCount
-        statusLabel.Text = "卡密不存在 (剩余尝试: " .. remaining .. "/3)"
+        statusLabel.Text = msg .. " (剩余尝试: " .. remaining .. "/3)"
         statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
         inputBox.Text = ""
         
@@ -394,53 +418,7 @@ confirmBtn.MouseButton1Click:Connect(function()
                 inputBox.Text = ""
             end)
         end
-        return
     end
-    
-    if keyData.used then
-        attemptCount = attemptCount + 1
-        local remaining = 3 - attemptCount
-        statusLabel.Text = "卡密已被使用 (剩余尝试: " .. remaining .. "/3)"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-        inputBox.Text = ""
-        
-        if attemptCount >= 3 then
-            locked = true
-            confirmBtn.Visible = false
-            inputBox.Visible = false
-            statusLabel.Text = "错误次数过多，锁定 10 秒"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-            
-            local startTime = os.time()
-            lockTimer = task.spawn(function()
-                while os.time() - startTime < 10 do
-                    local remaining = 10 - (os.time() - startTime)
-                    statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
-                    task.wait(0.5)
-                end
-                locked = false
-                attemptCount = 0
-                confirmBtn.Visible = true
-                inputBox.Visible = true
-                statusLabel.Text = "已解锁，请重新输入卡密"
-                statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                inputBox.Text = ""
-            end)
-        end
-        return
-    end
-    
-    -- 绑定设备
-    keyData.used = true
-    keyData.bind = DEVICE_UID
-    keyData.bindTime = os.time()
-    
-    -- 显示成功弹窗（4秒）
-    showSuccessPopup(keyData)
-    
-    -- 延迟加载脚本（弹窗显示期间不加载，避免干扰）
-    task.wait(0.5)
-    loadTargetScript()
 end)
 
 inputBox.FocusLost:Connect(function(enterPressed)
@@ -454,6 +432,7 @@ frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
+print("作者卡密: " .. AUTHOR_KEY)
+print("作者卡密绑定设备: " .. AUTHOR_DEVICE_UID)
 print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25)")
-print("目标脚本: " .. TARGET_SCRIPT_URL)
 print("==========================")
