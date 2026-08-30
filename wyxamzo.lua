@@ -223,7 +223,7 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 8)
 btnCorner.Parent = confirmBtn
 
--- ===== 底部提示（已按你的要求修改） =====
+-- ===== 底部提示 =====
 local footerLabel = Instance.new("TextLabel")
 footerLabel.Size = UDim2.new(1, -20, 0, 36)
 footerLabel.Position = UDim2.new(0, 10, 0, 225)
@@ -244,6 +244,19 @@ local locked = false
 local lockTimer = nil
 
 -- ==================== 成功弹窗函数 ====================
+local function loadTargetScript()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
+    end)
+    if not success then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "加载失败",
+            Text = "脚本加载失败: " .. tostring(err),
+            Duration = 5,
+        })
+    end
+end
+
 local function showSuccessPopup(keyData)
     local popupGui = Instance.new("ScreenGui")
     popupGui.Name = "SuccessPopup"
@@ -353,35 +366,17 @@ local function showSuccessPopup(keyData)
     progressCorner.CornerRadius = UDim.new(0, 2)
     progressCorner.Parent = progressBar
 
-    -- 5秒倒计时
-    local countdown = 5
-    local startTime = os.time()
-    while countdown > 0 do
-        local elapsed = os.time() - startTime
-        countdown = 5 - elapsed
-        if countdown <= 0 then break end
-        local percent = countdown / 5
+    -- ===== 修复：使用 task.wait(1) 进行倒计时 =====
+    for i = 5, 1, -1 do
+        local percent = i / 5
         progressBar.Size = UDim2.new(0.8 * percent, 0, 0, 4)
-        popupFooter.Text = "脚本将在 " .. math.ceil(countdown) .. " 秒后自动加载..."
-        RunService.RenderStepped:Wait()
+        popupFooter.Text = "脚本将在 " .. i .. " 秒后自动加载..."
+        task.wait(1)
     end
 
-    -- 加载脚本
+    -- 倒计时结束，销毁弹窗并加载脚本
     popupGui:Destroy()
     loadTargetScript()
-end
-
-local function loadTargetScript()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
-    end)
-    if not success then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "加载失败",
-            Text = "脚本加载失败: " .. tostring(err),
-            Duration = 5,
-        })
-    end
 end
 
 confirmBtn.MouseButton1Click:Connect(function()
@@ -473,7 +468,7 @@ confirmBtn.MouseButton1Click:Connect(function()
     -- 隐藏验证界面
     screenGui:Destroy()
 
-    -- 显示成功弹窗
+    -- 显示成功弹窗（倒计时结束自动加载脚本）
     showSuccessPopup(keyData)
 end)
 
