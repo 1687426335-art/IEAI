@@ -1,300 +1,373 @@
--- ==================== 卡密管理系统 ====================
--- 卡密类型: 天卡(DAY) 周卡(WEEK) 月卡(MONTH) 永久(FOREVER)
--- 每种类型25个，共100个卡密
--- 存储方式: DataStore（需游戏开启权限）
+-- ============================================================
+-- wdfex-Hub 主脚本（含卡密验证系统）
+-- ============================================================
 
--- ==================== 配置 ====================
-local CONFIG = {
-    PREFIX = "WDF",
-    KEY_LENGTH = 10,
-    MAX_ATTEMPTS = 3,
-    LOCK_TIME = 10,
-    DATASTORE_NAME = "KeySystemData",
-}
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
+local localPlayer = Players.LocalPlayer
 
--- ==================== 工具函数 ====================
-local function generateRandomString(length)
-    local chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    local result = ""
-    for i = 1, length do
-        result = result .. chars:sub(math.random(1, #chars), math.random(1, #chars))
-    end
-    return result
-end
-
-local function getDeviceUID()
-    local player = game.Players.LocalPlayer
-    local userId = player.UserId
-    local success, machineId = pcall(function()
-        return game:GetService("HttpService"):GetMachineId()
-    end)
-    if not success then machineId = "unknown" end
-    local combined = userId .. "_" .. machineId .. "_" .. game.GameId
-    local uid = ""
-    for i = 1, #combined do
-        uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
-    end
-    return uid:sub(1, 32)
-end
-
-local DEVICE_UID = getDeviceUID()
-
--- ==================== 生成100个卡密 ====================
-local function generateKeys()
-    local keys = {}
-    local types = {
-        { name = "DAY", count = 25, days = 1 },
-        { name = "WEEK", count = 25, days = 7 },
-        { name = "MONTH", count = 25, days = 30 },
-        { name = "FOREVER", count = 25, days = -1 },
-    }
-    
-    for _, t in ipairs(types) do
-        for i = 1, t.count do
-            local code = generateRandomString(CONFIG.KEY_LENGTH)
-            local key = CONFIG.PREFIX .. "-" .. code .. "-" .. t.name
-            keys[key] = {
-                type = t.name,
-                days = t.days,
-                generated = os.time(),
-                used = false,
-                bind = nil,
-                bindTime = nil,
-            }
-        end
-    end
-    return keys
-end
-
--- ==================== DataStore 存储 ====================
-local DataStoreService = game:GetService("DataStoreService")
-local store = DataStoreService:GetDataStore(CONFIG.DATASTORE_NAME)
-
-local KeyStorage = {}
-
-function KeyStorage.saveKeys(keys)
-    local success, err = pcall(function()
-        store:SetAsync("all_keys", keys)
-    end)
-    return success, err
-end
-
-function KeyStorage.getKeys()
+-- ===== 设备UID =====
+local function GetDeviceUID()
     local success, result = pcall(function()
-        return store:GetAsync("all_keys")
+        return RbxAnalyticsService:GetClientId()
     end)
     if success and result then
         return result
     end
-    return nil
+    return localPlayer.UserId .. "_" .. tostring(game:GetService("Workspace").DistributedGameTime)
 end
 
-function KeyStorage.initKeys()
-    local existing = KeyStorage.getKeys()
-    if existing then
-        return existing
+local DEVICE_UID = GetDeviceUID()
+
+-- ===== 存储管理 =====
+local function GetStorage()
+    if not getgenv()._wdfex_keys_data then
+        getgenv()._wdfex_keys_data = {}
     end
-    local newKeys = generateKeys()
-    KeyStorage.saveKeys(newKeys)
-    return newKeys
+    return getgenv()._wdfex_keys_data
 end
 
-function KeyStorage.bindKey(key, uid)
-    local keys = KeyStorage.getKeys()
-    if not keys or not keys[key] then
-        return false, "卡密不存在"
-    end
-    if keys[key].used then
-        return false, "卡密已被使用"
-    end
-    keys[key].used = true
-    keys[key].bind = uid
-    keys[key].bindTime = os.time()
-    KeyStorage.saveKeys(keys)
-    return true
+local function SaveKeyData(key, data)
+    local storage = GetStorage()
+    storage[key] = data
 end
 
-function KeyStorage.checkKey(key)
-    local keys = KeyStorage.getKeys()
-    if not keys or not keys[key] then
-        return false, "卡密不存在"
+local function GetKeyData(key)
+    local storage = GetStorage()
+    return storage[key]
+end
+
+-- ===== 卡密列表 =====
+local PRESET_KEYS = {
+    -- 天卡 15个
+    { key = "wdfex-a1b2-c3d4", type = "day" },
+    { key = "wdfex-d5e6-f7g8", type = "day" },
+    { key = "wdfex-h9i0-j1k2", type = "day" },
+    { key = "wdfex-l3m4-n5o6", type = "day" },
+    { key = "wdfex-p7q8-r9s0", type = "day" },
+    { key = "wdfex-t1u2-v3w4", type = "day" },
+    { key = "wdfex-x5y6-z7a8", type = "day" },
+    { key = "wdfex-b9c0-d1e2", type = "day" },
+    { key = "wdfex-f3g4-h5i6", type = "day" },
+    { key = "wdfex-j7k8-l9m0", type = "day" },
+    { key = "wdfex-n1o2-p3q4", type = "day" },
+    { key = "wdfex-r5s6-t7u8", type = "day" },
+    { key = "wdfex-v9w0-x1y2", type = "day" },
+    { key = "wdfex-z3a4-b5c6", type = "day" },
+    { key = "wdfex-d7e8-f9g0", type = "day" },
+    -- 周卡 15个
+    { key = "wdfex-h1i2-j3k4", type = "week" },
+    { key = "wdfex-l5m6-n7o8", type = "week" },
+    { key = "wdfex-p9q0-r1s2", type = "week" },
+    { key = "wdfex-t3u4-v5w6", type = "week" },
+    { key = "wdfex-x7y8-z9a0", type = "week" },
+    { key = "wdfex-b1c2-d3e4", type = "week" },
+    { key = "wdfex-f5g6-h7i8", type = "week" },
+    { key = "wdfex-j9k0-l1m2", type = "week" },
+    { key = "wdfex-n3o4-p5q6", type = "week" },
+    { key = "wdfex-r7s8-t9u0", type = "week" },
+    { key = "wdfex-v1w2-x3y4", type = "week" },
+    { key = "wdfex-z5a6-b7c8", type = "week" },
+    { key = "wdfex-d9e0-f1g2", type = "week" },
+    { key = "wdfex-h3i4-j5k6", type = "week" },
+    { key = "wdfex-l7m8-n9o0", type = "week" },
+    -- 月卡 15个
+    { key = "wdfex-p1q2-r3s4", type = "month" },
+    { key = "wdfex-t5u6-v7w8", type = "month" },
+    { key = "wdfex-x9y0-z1a2", type = "month" },
+    { key = "wdfex-b3c4-d5e6", type = "month" },
+    { key = "wdfex-f7g8-h9i0", type = "month" },
+    { key = "wdfex-j1k2-l3m4", type = "month" },
+    { key = "wdfex-n5o6-p7q8", type = "month" },
+    { key = "wdfex-r9s0-t1u2", type = "month" },
+    { key = "wdfex-v3w4-x5y6", type = "month" },
+    { key = "wdfex-z7a8-b9c0", type = "month" },
+    { key = "wdfex-d1e2-f3g4", type = "month" },
+    { key = "wdfex-h5i6-j7k8", type = "month" },
+    { key = "wdfex-l9m0-n1o2", type = "month" },
+    { key = "wdfex-p3q4-r5s6", type = "month" },
+    { key = "wdfex-t7u8-v9w0", type = "month" },
+    -- 永久卡 15个
+    { key = "wdfex-x1y2-z3a4", type = "forever" },
+    { key = "wdfex-b5c6-d7e8", type = "forever" },
+    { key = "wdfex-f9g0-h1i2", type = "forever" },
+    { key = "wdfex-j3k4-l5m6", type = "forever" },
+    { key = "wdfex-n7o8-p9q0", type = "forever" },
+    { key = "wdfex-r1s2-t3u4", type = "forever" },
+    { key = "wdfex-v5w6-x7y8", type = "forever" },
+    { key = "wdfex-z9a0-b1c2", type = "forever" },
+    { key = "wdfex-d3e4-f5g6", type = "forever" },
+    { key = "wdfex-h7i8-j9k0", type = "forever" },
+    { key = "wdfex-l1m2-n3o4", type = "forever" },
+    { key = "wdfex-p5q6-r7s8", type = "forever" },
+    { key = "wdfex-t9u0-v1w2", type = "forever" },
+    { key = "wdfex-x3y4-z5a6", type = "forever" },
+    { key = "wdfex-b7c8-d9e0", type = "forever" },
+}
+
+local KEY_TYPES = {
+    day = { label = "天卡", hours = 24, expiryText = "24小时" },
+    week = { label = "周卡", hours = 168, expiryText = "7天" },
+    month = { label = "月卡", hours = 720, expiryText = "30天" },
+    forever = { label = "永久卡", hours = nil, expiryText = "永久", foreverDate = os.time({ year = 2099, month = 7, day = 8 }) },
+}
+
+-- ===== 卡密验证函数 =====
+local function IsKeyValid(key)
+    key = key:lower()
+    for _, data in ipairs(PRESET_KEYS) do
+        if data.key:lower() == key then
+            return true, data.type
+        end
     end
-    local data = keys[key]
-    if data.used then
-        return false, "卡密已被使用"
+    return false, nil
+end
+
+local function IsKeyFormatValid(key)
+    if type(key) ~= "string" then return false end
+    key = key:lower()
+    local pattern = "^wdfex%-[%w][%w][%w][%w]%-[%w][%w][%w][%w]$"
+    return string.match(key, pattern) ~= nil
+end
+
+local function GetKeyRemainingTime(key)
+    key = key:lower()
+    local data = GetKeyData(key)
+    if not data then return nil, "未激活" end
+
+    local keyType = data.type
+    local activatedAt = data.activatedAt
+    local currentTime = os.time()
+    local elapsed = currentTime - activatedAt
+
+    if keyType == "forever" then
+        local foreverDate = KEY_TYPES.forever.foreverDate
+        if currentTime >= foreverDate then
+            return 0, "已过期"
+        end
+        local remaining = foreverDate - currentTime
+        local days = math.floor(remaining / 86400)
+        local hours = math.floor((remaining % 86400) / 3600)
+        return remaining, string.format("剩余 %d天 %d小时", days, hours)
     end
-    if data.days ~= -1 then
-        local elapsed = os.time() - data.generated
-        if elapsed > data.days * 86400 then
+
+    local totalHours = KEY_TYPES[keyType].hours
+    local totalSeconds = totalHours * 3600
+    local remaining = totalSeconds - elapsed
+
+    if remaining <= 0 then
+        return 0, "已过期"
+    end
+
+    local days = math.floor(remaining / 86400)
+    local hours = math.floor((remaining % 86400) / 3600)
+    local minutes = math.floor((remaining % 3600) / 60)
+
+    if days > 0 then
+        return remaining, string.format("%s 剩余 %d天 %d小时", KEY_TYPES[keyType].label, days, hours)
+    elseif hours > 0 then
+        return remaining, string.format("%s 剩余 %d小时 %d分钟", KEY_TYPES[keyType].label, hours, minutes)
+    else
+        return remaining, string.format("%s 剩余 %d分钟", KEY_TYPES[keyType].label, minutes)
+    end
+end
+
+local function ValidateKey(key)
+    key = key:lower()
+
+    if not IsKeyFormatValid(key) then
+        return false, "卡密格式错误"
+    end
+
+    local valid, keyType = IsKeyValid(key)
+    if not valid then
+        return false, "卡密无效"
+    end
+
+    local existingData = GetKeyData(key)
+    if existingData then
+        if existingData.deviceId ~= DEVICE_UID then
+            return false, "该卡密已被其他设备使用"
+        end
+        local remaining, status = GetKeyRemainingTime(key)
+        if remaining == 0 then
             return false, "卡密已过期"
         end
+        return true, "验证成功", keyType, existingData
     end
-    return true, data
+
+    local newData = {
+        deviceId = DEVICE_UID,
+        activatedAt = os.time(),
+        type = keyType,
+    }
+    SaveKeyData(key, newData)
+
+    return true, "验证成功", keyType, newData
 end
 
--- ==================== 初始化卡密 ====================
-local ALL_KEYS = KeyStorage.initKeys()
-local attemptCount = 0
-local locked = false
-local lockTimer = nil
+-- ============================================================
+-- 卡密验证UI（无表情包，专业风格）
+-- ============================================================
 
--- ==================== GUI 验证界面 ====================
-local player = game.Players.LocalPlayer
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "KeyValidation"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local StartSound = Instance.new("Sound")
+StartSound.Parent = SoundService
+StartSound.SoundId = "rbxassetid://148729028"
+StartSound.Volume = 0.5
+StartSound:Play()
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 380, 0, 220)
-frame.Position = UDim2.new(0.5, -190, 0.5, -110)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-frame.BackgroundTransparency = 0.05
-frame.BorderSizePixel = 2
-frame.BorderColor3 = Color3.fromRGB(80, 180, 255)
-frame.Parent = screenGui
+local attempts = 0
+local maxAttempts = 3
+local isDragging = false
+local dragStart, frameStart
+local isMobile = UserInputService.TouchEnabled
+local isMouse = UserInputService.MouseEnabled
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = frame
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "wdfexKeyUI"
+ScreenGui.Parent = localPlayer.PlayerGui
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 100
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 45)
-title.Position = UDim2.new(0, 0, 0, 5)
-title.BackgroundTransparency = 1
-title.Text = "wdfex 卡密验证"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 24
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Center
-title.Parent = frame
+local BackgroundOverlay = Instance.new("Frame")
+BackgroundOverlay.Parent = ScreenGui
+BackgroundOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+BackgroundOverlay.BackgroundTransparency = 0.7
+BackgroundOverlay.Size = UDim2.new(1, 0, 1, 0)
+BackgroundOverlay.ZIndex = 1
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -20, 0, 28)
-statusLabel.Position = UDim2.new(0, 10, 0, 55)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "请输入您的卡密"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextSize = 14
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextXAlignment = Enum.TextXAlignment.Center
-statusLabel.Parent = frame
+local MainWin = Instance.new("Frame")
+MainWin.Parent = ScreenGui
+MainWin.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainWin.Position = UDim2.new(0.5, -150, 0.5, -140)
+MainWin.Size = UDim2.new(0, 300, 0, 280)
+MainWin.ZIndex = 2
+MainWin.Active = true
+MainWin.Selectable = true
 
-local inputBox = Instance.new("TextBox")
-inputBox.Size = UDim2.new(0.8, 0, 0, 38)
-inputBox.Position = UDim2.new(0.1, 0, 0, 92)
-inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-inputBox.BorderSizePixel = 1
-inputBox.BorderColor3 = Color3.fromRGB(100, 100, 130)
-inputBox.Text = ""
-inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-inputBox.TextSize = 16
-inputBox.Font = Enum.Font.Gotham
-inputBox.PlaceholderText = "输入卡密 (例: WDF-XXXXX-DAY)"
-inputBox.ClearTextOnFocus = false
-inputBox.Parent = frame
+local WinCorner = Instance.new("UICorner")
+WinCorner.Parent = MainWin
+WinCorner.CornerRadius = UDim.new(0, 12)
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 6)
-inputCorner.Parent = inputBox
+local WinGlow = Instance.new("UIStroke")
+WinGlow.Parent = MainWin
+WinGlow.Color = Color3.fromRGB(90, 90, 90)
+WinGlow.Thickness = 1.5
+WinGlow.Transparency = 0.7
 
-local confirmBtn = Instance.new("TextButton")
-confirmBtn.Size = UDim2.new(0.35, 0, 0, 42)
-confirmBtn.Position = UDim2.new(0.325, 0, 0, 145)
-confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
-confirmBtn.BorderSizePixel = 0
-confirmBtn.Text = "确认"
-confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-confirmBtn.TextSize = 18
-confirmBtn.Font = Enum.Font.GothamBold
-confirmBtn.Parent = frame
+local TitleBar = Instance.new("Frame")
+TitleBar.Parent = MainWin
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.ZIndex = 3
+TitleBar.Active = true
+TitleBar.Selectable = true
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 8)
-btnCorner.Parent = confirmBtn
+local TitleBarCorner = Instance.new("UICorner")
+TitleBarCorner.Parent = TitleBar
+TitleBarCorner.CornerRadius = UDim.new(0, 12, 0, 0)
 
--- ==================== 验证逻辑 ====================
-local function onSuccess()
-    statusLabel.Text = "验证成功，正在加载脚本..."
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-    confirmBtn.Visible = false
-    inputBox.Visible = false
-    task.wait(0.6)
-    screenGui:Destroy()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"))()
-    end)
-    if not success then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "错误",
-            Text = "脚本加载失败: " .. tostring(err),
-            Duration = 5,
-        })
-    end
-end
+local StatusLight = Instance.new("Frame")
+StatusLight.Parent = TitleBar
+StatusLight.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+StatusLight.Position = UDim2.new(0, 8, 0.5, -4)
+StatusLight.Size = UDim2.new(0, 8, 0, 8)
+StatusLight.ZIndex = 4
 
-local function onFail(message)
-    attemptCount = attemptCount + 1
-    local remaining = CONFIG.MAX_ATTEMPTS - attemptCount
-    statusLabel.Text = message .. " (剩余尝试: " .. remaining .. "/" .. CONFIG.MAX_ATTEMPTS .. ")"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-    inputBox.Text = ""
-    
-    if attemptCount >= CONFIG.MAX_ATTEMPTS then
-        locked = true
-        confirmBtn.Visible = false
-        inputBox.Visible = false
-        statusLabel.Text = "错误次数过多，锁定 " .. CONFIG.LOCK_TIME .. " 秒"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-        
-        local startTime = os.time()
-        lockTimer = task.spawn(function()
-            while os.time() - startTime < CONFIG.LOCK_TIME do
-                local remaining = CONFIG.LOCK_TIME - (os.time() - startTime)
-                statusLabel.Text = "请等待 " .. remaining .. " 秒后重试"
-                task.wait(0.5)
-            end
-            locked = false
-            attemptCount = 0
-            confirmBtn.Visible = true
-            inputBox.Visible = true
-            statusLabel.Text = "已解锁，请重新输入卡密"
-            statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            inputBox.Text = ""
-        end)
-    end
-end
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.Parent = StatusLight
+StatusCorner.CornerRadius = UDim.new(1, 0)
 
-confirmBtn.MouseButton1Click:Connect(function()
-    if locked then
-        statusLabel.Text = "系统锁定中，请等待..."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-        return
-    end
-    local input = inputBox.Text
-    if input == "" then
-        statusLabel.Text = "请输入卡密"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-        return
-    end
-    local valid, data = KeyStorage.checkKey(input)
-    if valid then
-        local bindSuccess, bindMsg = KeyStorage.bindKey(input, DEVICE_UID)
-        if bindSuccess then
-            onSuccess()
-        else
-            onFail(bindMsg)
-        end
-    else
-        onFail(data)
-    end
-end)
+local StatusText = Instance.new("TextLabel")
+StatusText.Parent = TitleBar
+StatusText.BackgroundTransparency = 1
+StatusText.Position = UDim2.new(0, 20, 0.5, -6)
+StatusText.Size = UDim2.new(0, 50, 0, 10)
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.Text = "未验证"
+StatusText.TextColor3 = Color3.fromRGB(255, 150, 150)
+StatusText.TextSize = 9
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.ZIndex = 4
 
-inputBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        confirmBtn:Activate()
-    end
-end)
+local TitleAccent = Instance.new("Frame")
+TitleAccent.Parent = TitleBar
+TitleAccent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TitleAccent.Position = UDim2.new(0, 0, 1, -1)
+TitleAccent.Size = UDim2.new(1, 0, 0, 1)
+TitleAccent.ZIndex = 4
 
-frame.Active = true
-frame.Selectable = true
+local Title = Instance.new("TextLabel")
+Title.Parent = TitleBar
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Font = Enum.Font.GothamBlack
+Title.Text = "wdfex 卡密验证"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.TextYAlignment = Enum.TextYAlignment.Center
+Title.ZIndex = 4
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Parent = TitleBar
+SubTitle.BackgroundTransparency = 1
+SubTitle.Position = UDim2.new(0, 0, 0, 25)
+SubTitle.Size = UDim2.new(1, 0, 0, 12)
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.Text = "卡密验证系统 v1.0"
+SubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+SubTitle.TextSize = 10
+SubTitle.TextXAlignment = Enum.TextXAlignment.Center
+SubTitle.ZIndex = 4
+
+local UIDLabel = Instance.new("TextLabel")
+UIDLabel.Parent = MainWin
+UIDLabel.BackgroundTransparency = 1
+UIDLabel.Position = UDim2.new(0, 10, 0, 45)
+UIDLabel.Size = UDim2.new(1, 0, 0, 14)
+UIDLabel.Font = Enum.Font.Gotham
+UIDLabel.Text = "设备UID: " .. string.sub(DEVICE_UID, 1, 20) .. "..."
+UIDLabel.TextColor3 = Color3.fromRGB(120, 120, 140)
+UIDLabel.TextSize = 9
+UIDLabel.TextXAlignment = Enum.TextXAlignment.Left
+UIDLabel.ZIndex = 3
+
+local GroupCard = Instance.new("Frame")
+GroupCard.Parent = MainWin
+GroupCard.BackgroundColor3 = Color3.fromRGB(20, 25, 40)
+GroupCard.Position = UDim2.new(0.5, -135, 0, 65)
+GroupCard.Size = UDim2.new(0, 270, 0, 50)
+GroupCard.ZIndex = 3
+
+local GroupCorner = Instance.new("UICorner")
+GroupCorner.Parent = GroupCard
+GroupCorner.CornerRadius = UDim.new(0, 8)
+
+local GroupGlow = Instance.new("UIStroke")
+GroupGlow.Parent = GroupCard
+GroupGlow.Color = Color3.fromRGB(80, 120, 200)
+GroupGlow.Thickness = 1.5
+GroupGlow.Transparency = 0.3
+
+local GroupLabel = Instance.new("TextLabel")
+GroupLabel.Parent = GroupCard
+GroupLabel.BackgroundTransparency = 1
+GroupLabel.Position = UDim2.new(0, 12, 0, 8)
+GroupLabel.Size = UDim2.new(0, 120, 0, 16)
+GroupLabel.Font = Enum.Font.GothamBold
+GroupLabel.Text = "点击复制群号"
+GroupLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+GroupLabel.TextSize = 11
+GroupLabel.TextXAlignment = Enum.TextXAlignment.Left
+GroupLabel.ZIndex = 4
+
+local GroupNumber = Instance.new("TextLabel")
+GroupNumber.Parent = GroupCard
+GroupNumber.BackgroundTransparency = 1
+GroupNumber.Position = UDim2.new(
