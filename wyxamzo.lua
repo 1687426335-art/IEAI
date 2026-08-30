@@ -175,7 +175,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.Position = UDim2.new(0, 0, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "wdfex 卡密验证"
+title.Text = "卡密验证"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 24
 title.Font = Enum.Font.GothamBold
@@ -487,7 +487,7 @@ end)
 frame.Active = true
 frame.Selectable = true
 
-print("===== wdfex 卡密验证系统已加载 =====")
+print("===== 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 101个 (作者卡1, 天卡25, 周卡25, 月卡25, 永久卡25)")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
