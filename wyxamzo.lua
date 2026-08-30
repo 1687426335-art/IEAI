@@ -1,3 +1,8 @@
+-- ==================== 卡密验证系统 ====================
+-- 验证成功后自动加载外部脚本
+-- 左上角显示设备UID，验证成功显示详情弹窗
+-- 卡密不区分大小写
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local player = LocalPlayer
@@ -21,7 +26,7 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
--- ==================== 100个预生成卡密（混合大小写，随机码乱序） ====================
+-- ==================== 100个预生成卡密 ====================
 local KEYS_DATA = {
     -- ===== 天卡 DAY (25个) =====
     ["wdfex-k4M8R2n7P9-day"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
@@ -131,7 +136,7 @@ local KEYS_DATA = {
     ["wdfex-Q6P3K9N2L7-forever"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
     ["wdfex-l4T8X1V6R2-forever"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
 
-    -- ===== 作者卡密（永久有效，不区分大小写） =====
+    -- ===== 作者卡密（永久有效） =====
     ["wdfex-作者卡-zhw-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
 }
 
@@ -171,7 +176,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.Position = UDim2.new(0, 0, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "卡密验证"
+title.Text = "wdfex 卡密验证"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 24
 title.Font = Enum.Font.GothamBold
@@ -245,20 +250,45 @@ local attemptCount = 0
 local locked = false
 local lockTimer = nil
 
--- ==================== 成功弹窗函数 ====================
+-- ==================== 加载目标脚本（带重试机制） ====================
 local function loadTargetScript()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(TARGET_SCRIPT_URL))()
-    end)
-    if not success then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "加载失败",
-            Text = "脚本加载失败: " .. tostring(err),
-            Duration = 5,
-        })
+    local maxRetries = 2
+    local retryCount = 0
+    
+    while retryCount < maxRetries do
+        local success, err = pcall(function()
+            local content = game:HttpGet(TARGET_SCRIPT_URL)
+            local func = loadstring(content)
+            if func then
+                func()
+            else
+                error("loadstring 返回 nil，脚本可能包含语法错误")
+            end
+        end)
+        
+        if success then
+            return true
+        else
+            retryCount = retryCount + 1
+            if retryCount < maxRetries then
+                task.wait(1)
+            else
+                -- 显示详细的错误信息
+                local errorMsg = tostring(err)
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "脚本加载失败",
+                    Text = "错误: " .. errorMsg .. "\n请检查目标脚本是否完整或联系作者修复",
+                    Duration = 10,
+                })
+                -- 同时输出到控制台方便调试
+                warn("目标脚本加载失败: " .. errorMsg)
+            end
+        end
     end
+    return false
 end
 
+-- ==================== 成功弹窗函数 ====================
 local function showSuccessPopup(keyData)
     local popupGui = Instance.new("ScreenGui")
     popupGui.Name = "SuccessPopup"
@@ -489,7 +519,7 @@ end)
 frame.Active = true
 frame.Selectable = true
 
-print("===== 卡密验证系统已加载 =====")
+print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
 print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25) + 作者卡1个")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
