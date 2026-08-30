@@ -25,120 +25,118 @@ end
 
 local DEVICE_UID = getDeviceUID()
 
--- 去除首尾空格的函数
-local function trim(str)
-    return str:gsub("^%s*(.-)%s*$", "%1")
-end
-
--- ==================== 100个预生成卡密（前缀已改为wdfex） ====================
+-- ==================== 100个预生成卡密 + 作者卡密 ====================
 local KEYS_DATA = {
-    -- ===== 天卡 DAY (25个) =====
-    ["wdfex-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H9J2K4M7R1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-B5N8Q2T6X9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V3M7P1K4L8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-C6H9J2R5T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-F4N8Q1X7K3-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M2P6T9L4V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R7K1H4N9Q2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X5V8M3P6T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-J2L4N7Q9R5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T6X1K3M8P2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H7R4V9L2N5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q3M8T1X6K4-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L5P9N2R7V3-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K1X6T4M9J2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V8R3L7P1N5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N4Q9K2X6T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M7P3V8L4R9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T2X5K1N7Q4-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R9L4M8V2P6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-J5N1X7T3K9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H8P2Q6L4V1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K3V9N5R7X2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T7M4L1P8Q6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
-    -- ===== 周卡 WEEK (25个) =====
-    ["wdfex-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-J2H7R4N9P3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V6L1T8X4K7-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N3Q9R5P2M8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X4K7T1L9V3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H8M2P6R4N1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q5V9L3X7T2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R1N6P4M8K3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T7X2K9V5L1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L4M8R2N6Q9-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V3P7T1X5K2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-J9N4L8R2M6-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H2T6X1K7V4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q8M3P9L1N5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R4V7K2T9X3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L1N5M8P4Q7-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X6T2R9V3K1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H3M7L1N8Q5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-P9V4K2X6T8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N5R8M3L7P1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K2X9T4V6Q3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T8L5N1M7R4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V6P2K9X3L8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q4N7R1T5M2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
-    -- ===== 月卡 MONTH (25个) =====
-    ["wdfex-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-J9P1N4X7R3-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M5K2T8V1L9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X7R3N6P4Q1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H2L9V4T7K8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q6P1M8X3N5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N4K7R9T2V6-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R8X3L5M1P9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T1V6N4Q8K3-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K5M9P2X7R4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L3T8V1N6Q9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X7P4K2M9R1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H6N1Q5T3V8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R2M9X4L7P6-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V8K3N6Q1T5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-P4L1X9M7R2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T7Q2V5N3K8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M1R6P9L4X2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N8K4T2Q6V7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H3P7M1R9K5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X9V2L6N4T8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q5M8P3K1R7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R6T4X9V2L1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K2N7M5P9Q4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
-    -- ===== 永久卡 FOREVER (25个) =====
-    ["wdfex-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H2M9R5N7X4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-P8K4T1V6L3-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N5R7X2M9Q1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V3L8P6K2T9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q7M4N1X8R6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K2T9V5L4P7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R6X3N8M1Q5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H4P7K9T2L6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M8V1X5N3R9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L2Q6P4K8T1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X5N9R3V7M2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T8K4P1L6Q3-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-R1M7X2N9V4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-K6T2Q8P5L1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-V9N4R7X3M6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-P3L8K1T5Q7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-M5X9V2N6R4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-H7Q1P4L8K2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-T3R6M9X1V5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-N8K2L5P9Q4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-X1V7R4M8T6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-Q6P3K9N2L7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
-    ["wdfex-L4T8X1V6R2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    -- ===== 作者专属卡密（永久有效） =====
+    ["作者卡-ZHW-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil },
 
-    -- ===== 作者卡密（特殊，不检查 used） =====
-    ["作者卡-ZHW-wdfexnb"] = { type = "作者卡", days = -1, used = false, bind = nil, bindTime = nil, isAuthorKey = true },
+    -- ===== 天卡 DAY (25个) =====
+    ["WDF-K4M8R2N7P9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-X3Q6T1L5V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H9J2K4M7R1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-B5N8Q2T6X9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-V3M7P1K4L8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-C6H9J2R5T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-F4N8Q1X7K3-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-M2P6T9L4V8-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-R7K1H4N9Q2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-X5V8M3P6T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-J2L4N7Q9R5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T6X1K3M8P2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H7R4V9L2N5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q3M8T1X6K4-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-L5P9N2R7V3-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-K1X6T4M9J2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-V8R3L7P1N5-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-N4Q9K2X6T1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-M7P3V8L4R9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T2X5K1N7Q4-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-R9L4M8V2P6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-J5N1X7T3K9-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H8P2Q6L4V1-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-K3V9N5R7X2-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T7M4L1P8Q6-DAY"] = { type = "天卡", days = 1, used = false, bind = nil, bindTime = nil },
+
+    -- ===== 周卡 WEEK (25个) =====
+    ["WDF-P4K9X2N7R1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-M8V3Q6T1L5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-J2H7R4N9P3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-V6L1T8X4K7-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-N3Q9R5P2M8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-X4K7T1L9V3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-H8M2P6R4N1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q5V9L3X7T2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-R1N6P4M8K3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-T7X2K9V5L1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-L4M8R2N6Q9-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-V3P7T1X5K2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-J9N4L8R2M6-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-H2T6X1K7V4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q8M3P9L1N5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-R4V7K2T9X3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-L1N5M8P4Q7-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-X6T2R9V3K1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-H3M7L1N8Q5-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-P9V4K2X6T8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-N5R8M3L7P1-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-K2X9T4V6Q3-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-T8L5N1M7R4-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-V6P2K9X3L8-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q4N7R1T5M2-WEEK"] = { type = "周卡", days = 7, used = false, bind = nil, bindTime = nil },
+
+    -- ===== 月卡 MONTH (25个) =====
+    ["WDF-R7M4N2X9P1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-T3L8V5Q6K2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-J9P1N4X7R3-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-M5K2T8V1L9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-X7R3N6P4Q1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-H2L9V4T7K8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q6P1M8X3N5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-N4K7R9T2V6-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-R8X3L5M1P9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-T1V6N4Q8K3-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-K5M9P2X7R4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-L3T8V1N6Q9-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-X7P4K2M9R1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-H6N1Q5T3V8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-R2M9X4L7P6-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-V8K3N6Q1T5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-P4L1X9M7R2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-T7Q2V5N3K8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-M1R6P9L4X2-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-N8K4T2Q6V7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-H3P7M1R9K5-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-X9V2L6N4T8-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q5M8P3K1R7-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-R6T4X9V2L1-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+    ["WDF-K2N7M5P9Q4-MONTH"] = { type = "月卡", days = 30, used = false, bind = nil, bindTime = nil },
+
+    -- ===== 永久卡 FOREVER (25个) =====
+    ["WDF-X9N4M7K2R5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T6V3L8P1Q9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H2M9R5N7X4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-P8K4T1V6L3-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-N5R7X2M9Q1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-V3L8P6K2T9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q7M4N1X8R6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-K2T9V5L4P7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-R6X3N8M1Q5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H4P7K9T2L6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-M8V1X5N3R9-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-L2Q6P4K8T1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-X5N9R3V7M2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T8K4P1L6Q3-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-R1M7X2N9V4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-K6T2Q8P5L1-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-V9N4R7X3M6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-P3L8K1T5Q7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-M5X9V2N6R4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-H7Q1P4L8K2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-T3R6M9X1V5-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-N8K2L5P9Q4-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-X1V7R4M8T6-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-Q6P3K9N2L7-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
+    ["WDF-L4T8X1V6R2-FOREVER"] = { type = "永久卡", days = -1, used = false, bind = nil, bindTime = nil },
 }
 
 -- ==================== 验证界面 ====================
@@ -236,7 +234,7 @@ local footerLabel = Instance.new("TextLabel")
 footerLabel.Size = UDim2.new(1, -20, 0, 36)
 footerLabel.Position = UDim2.new(0, 10, 0, 225)
 footerLabel.BackgroundTransparency = 1
-footerLabel.Text = "你如果是作者认识的人可以向作者要一张月卡\n需要截图这个卡密验证的弹窗让我看到你的设备UID才可以🤓"
+footerLabel.Text = "你如果是作者认识的人可以向作者要一张月卡\n需要截图这个卡密验证的弹窗让我看到你的设备UID才可以"
 footerLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 footerLabel.TextSize = 11
 footerLabel.Font = Enum.Font.Gotham
@@ -374,7 +372,7 @@ local function showSuccessPopup(keyData)
     progressCorner.CornerRadius = UDim.new(0, 2)
     progressCorner.Parent = progressBar
 
-    -- 倒计时
+    -- 5秒倒计时
     for i = 5, 1, -1 do
         local percent = i / 5
         progressBar.Size = UDim2.new(0.8 * percent, 0, 0, 4)
@@ -382,6 +380,7 @@ local function showSuccessPopup(keyData)
         task.wait(1)
     end
 
+    -- 倒计时结束，销毁弹窗并加载脚本
     popupGui:Destroy()
     loadTargetScript()
 end
@@ -393,28 +392,13 @@ confirmBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    -- 去除首尾空格
-    local input = trim(inputBox.Text)
+    local input = inputBox.Text
     if input == "" then
         statusLabel.Text = "请输入卡密"
         statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
         return
     end
 
-    -- 检查是否为作者卡密（特殊处理，不检查 used）
-    if input == "作者卡-ZHW-wdfexnb" then
-        local keyData = KEYS_DATA[input]
-        if keyData then
-            -- 绑定设备
-            keyData.bind = DEVICE_UID
-            keyData.bindTime = os.time()
-            screenGui:Destroy()
-            showSuccessPopup(keyData)
-            return
-        end
-    end
-
-    -- 普通卡密验证
     local keyData = KEYS_DATA[input]
     if not keyData then
         attemptCount = attemptCount + 1
@@ -487,7 +471,10 @@ confirmBtn.MouseButton1Click:Connect(function()
     keyData.bind = DEVICE_UID
     keyData.bindTime = os.time()
 
+    -- 隐藏验证界面
     screenGui:Destroy()
+
+    -- 显示成功弹窗（倒计时结束自动加载脚本）
     showSuccessPopup(keyData)
 end)
 
@@ -502,7 +489,6 @@ frame.Selectable = true
 
 print("===== wdfex 卡密验证系统已加载 =====")
 print("设备UID: " .. DEVICE_UID)
-print("卡密总数: 100个 (天卡25, 周卡25, 月卡25, 永久卡25)")
-print("作者卡密: 作者卡-ZHW-wdfexnb")
+print("卡密总数: 101个 (作者卡1, 天卡25, 周卡25, 月卡25, 永久卡25)")
 print("目标脚本: " .. TARGET_SCRIPT_URL)
 print("==========================")
