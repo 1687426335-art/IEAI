@@ -536,7 +536,7 @@ function createUI()
     })
     PoliceEvadeGroup:Slider({
         Title = "触发距离",
-        Desc = "警察进入该距离时触发弹开（米）",
+        Desc = "警察进入该距离时触发弹开",
         Step = 1,
         Value = { Min = 10, Max = 100, Default = 50 },
         Callback = function(value)
