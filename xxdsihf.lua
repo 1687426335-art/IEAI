@@ -236,7 +236,7 @@ function createUI()
     local A = AddTab(MainSection, "玩家修改", "user")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
-    local D = AddTab(MainSection, "传送点", "map-pin")
+    local D = AddTab(MainSection, "传送", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
 
     -- ============================================================
@@ -1383,7 +1383,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 传送点 Tab (D)
+    -- 传送 Tab (D)
     -- ============================================================
     D:Toggle({
         Title = "启用传送",
@@ -1760,94 +1760,6 @@ function createUI()
     Players.PlayerRemoving:Connect(function(p)
         RemoveESP(p.UserId)
     end)
-
-    -- ============================================================
-    -- 开发者功能 Tab (F)
-    -- ============================================================
-    local DeveloperTab = Window:Tab({ Title = "开发者功能", Icon = "code" })
-    local DeveloperGroup = DeveloperTab:Section({ Title = "坐标工具", Opened = true })
-
-    DeveloperGroup:Button({
-        Title = "开启坐标显示",
-        Callback = function()
-            local char = player.Character or player.CharacterAdded:Wait()
-            local root = char:WaitForChild("HumanoidRootPart")
-            local gui = Instance.new("ScreenGui")
-            gui.Name = "CoordinateCopyTool"
-            gui.Parent = player:WaitForChild("PlayerGui")
-
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 250, 0, 100)
-            frame.Position = UDim2.new(0.5, -125, 0.5, -50)
-            frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            frame.Active = true
-            frame.Parent = gui
-
-            local textBox = Instance.new("TextBox")
-            textBox.Size = UDim2.new(0.9, 0, 0, 30)
-            textBox.Position = UDim2.new(0.05, 0, 0.15, 0)
-            textBox.Text = "加载中..."
-            textBox.ClearTextOnFocus = false
-            textBox.TextEditable = false
-            textBox.Parent = frame
-
-            local copyBtn = Instance.new("TextButton")
-            copyBtn.Size = UDim2.new(0.9, 0, 0, 35)
-            copyBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-            copyBtn.Text = "点击准备复制 (Ctrl+C)"
-            copyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            copyBtn.TextColor3 = Color3.new(1, 1, 1)
-            copyBtn.Parent = frame
-
-            local dragging = false
-            local dragStart, startPos
-
-            frame.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = frame.Position
-                end
-            end)
-
-            frame.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStart
-                    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-                end
-            end)
-
-            frame.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-
-            RunService.RenderStepped:Connect(function()
-                local pos = root.Position
-                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                if not textBox:IsFocused() then
-                    textBox.Text = formattedPos
-                end
-            end)
-
-            copyBtn.MouseButton1Click:Connect(function()
-                textBox:CaptureFocus()
-                textBox.SelectionStart = 1
-                textBox.CursorPosition = #textBox.Text + 1
-                copyBtn.Text = "现在按下 Ctrl + C 复制！"
-                task.wait(2)
-                copyBtn.Text = "点击准备复制 (Ctrl+C)"
-            end)
-        end
-    })
-    DeveloperGroup:Button({
-        Title = "关闭坐标显示",
-        Callback = function()
-            local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
-            if gui then gui:Destroy() end
-        end
-    })
 
     -- ============================================================
     -- 设置 Tab (G)
