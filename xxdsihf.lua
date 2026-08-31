@@ -51,6 +51,31 @@ WindUI:Popup({
 })
 
 function createUI()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local player = Players.LocalPlayer
+    local isDestroyed = false
+    local connections = {}
+
+    -- ==================== 设备UID检测 ====================
+    local function getDeviceUID()
+        local userId = player.UserId
+        local success, machineId = pcall(function()
+            return game:GetService("HttpService"):GetMachineId()
+        end)
+        if not success then machineId = "unknown" end
+        local combined = userId .. "_" .. machineId .. "_" .. game.GameId
+        local uid = ""
+        for i = 1, #combined do
+            uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
+        end
+        return uid:sub(1, 32)
+    end
+    local DEVICE_UID = getDeviceUID()
+
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -110,7 +135,7 @@ function createUI()
     })
 
     Window:Tag({
-        Title = "圣奥里",
+        Title = DEVICE_UID,
         Color = Color3.fromHex("#00ffff") 
     })
 
@@ -134,16 +159,6 @@ function createUI()
             end
         end
     end)
-
-    -- ==================== 全局变量 ====================
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Workspace = game:GetService("Workspace")
-    local RunService = game:GetService("RunService")
-    local UserInputService = game:GetService("UserInputService")
-    local player = Players.LocalPlayer
-    local isDestroyed = false
-    local connections = {}
 
     local Settings = {
         HoldTime = 0,
