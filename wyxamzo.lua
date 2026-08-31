@@ -1338,18 +1338,56 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E)
+    -- 透视 Tab (E) - 修复版
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
     local ESP_SHOW_HEALTH = true
     local ESP_SHOW_DIST = true
+    local ESP_SHOW_WANTED = false
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
+    -- 队伍名称中英文映射
+    local teamMap = {
+        ["Police"] = "警察",
+        ["Fire"] = "火焰",
+        ["Medical"] = "医疗",
+        ["Road"] = "道路",
+        ["Civilian"] = "平民",
+        ["Citizen"] = "平民",
+        ["Criminal"] = "匪徒",
+        ["Gang"] = "黑帮",
+        ["Military"] = "军人",
+        ["Delivery"] = "送货",
+        ["Farmer"] = "农民",
+        ["Banker"] = "银行家",
+        ["Mayor"] = "市长",
+        ["Journalist"] = "记者",
+        ["Lawyer"] = "律师",
+        ["Prisoner"] = "囚犯",
+        ["Guard"] = "狱警",
+        ["Driver"] = "司机",
+        ["Chef"] = "厨师",
+        ["Builder"] = "建筑工",
+        ["Miner"] = "矿工",
+        ["Fisherman"] = "渔夫",
+        ["Merchant"] = "商人",
+        ["Student"] = "学生",
+        ["Teacher"] = "老师",
+        ["Engineer"] = "工程师",
+        ["Scientist"] = "科学家",
+        ["Pilot"] = "飞行员",
+        ["Courier"] = "快递员",
+        ["BusDriver"] = "公交车司机",
+    }
+
     local function GetTeam(p)
-        if p.Team then return p.Team.Name end
+        if p.Team then
+            local teamName = p.Team.Name
+            return teamMap[teamName] or teamName
+        end
         return "平民"
     end
 
@@ -1376,6 +1414,63 @@ function createUI()
         local tr = tc:FindFirstChild("HumanoidRootPart")
         if not tr then return 0 end
         return math.floor((mr.Position - tr.Position).Magnitude)
+    end
+
+    local function IsPlayerWanted(p)
+        for _, child in ipairs(p:GetChildren()) do
+            if child:IsA("BoolValue") and child.Value == true then
+                local name = child.Name:lower()
+                if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
+                    return true
+                end
+            end
+            if child:IsA("IntValue") and child.Value > 0 then
+                local name = child.Name:lower()
+                if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
+                    return true
+                end
+            end
+            if child:IsA("NumberValue") and child.Value > 0 then
+                local name = child.Name:lower()
+                if name:find("wanted") or name:find("通缉") or name:find("crime") then
+                    return true
+                end
+            end
+        end
+        if p.Character then
+            for _, child in ipairs(p.Character:GetDescendants()) do
+                if child:IsA("BoolValue") and child.Value == true then
+                    local name = child.Name:lower()
+                    if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
+                        return true
+                    end
+                end
+                if child:IsA("IntValue") and child.Value > 0 then
+                    local name = child.Name:lower()
+                    if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
+                        return true
+                    end
+                end
+                if child:IsA("NumberValue") and child.Value > 0 then
+                    local name = child.Name:lower()
+                    if name:find("wanted") or name:find("通缉") or name:find("crime") then
+                        return true
+                    end
+                end
+            end
+        end
+        local ls = p:FindFirstChild("leaderstats")
+        if ls then
+            for _, child in ipairs(ls:GetChildren()) do
+                if child:IsA("IntValue") and child.Value > 0 then
+                    local name = child.Name:lower()
+                    if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
     end
 
     local function RemoveESP(id)
@@ -1453,6 +1548,8 @@ function createUI()
             local color = GetTeamColor(p)
             local hp = GetHealth(p)
             local dist = GetDist(p)
+            local isWanted = ESP_SHOW_WANTED and IsPlayerWanted(p)
+            local wantedColor = Color3.fromRGB(255, 50, 50)
 
             if ESP_SHOW_NAME then
                 local l = Instance.new("TextLabel")
@@ -1460,7 +1557,11 @@ function createUI()
                 l.Position = UDim2.new(0, 0, 0, y)
                 l.BackgroundTransparency = 1
                 l.Text = p.Name
-                l.TextColor3 = color
+                if isWanted then
+                    l.TextColor3 = wantedColor
+                else
+                    l.TextColor3 = color
+                end
                 l.TextSize = 15
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
@@ -1476,8 +1577,13 @@ function createUI()
                 l.Size = UDim2.new(1, 0, 0, 18)
                 l.Position = UDim2.new(0, 0, 0, y)
                 l.BackgroundTransparency = 1
-                l.Text = "[" .. team .. "]"
-                l.TextColor3 = color
+                if isWanted then
+                    l.Text = "通缉玩家"
+                    l.TextColor3 = wantedColor
+                else
+                    l.Text = "[" .. team .. "]"
+                    l.TextColor3 = color
+                end
                 l.TextSize = 13
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
@@ -1565,6 +1671,16 @@ function createUI()
         Value = true,
         Callback = function(value)
             ESP_SHOW_DIST = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Divider()
+    E:Toggle({
+        Title = "显示通缉玩家",
+        Desc = "通缉玩家显示红色标记和通缉玩家文字",
+        Value = false,
+        Callback = function(value)
+            ESP_SHOW_WANTED = value
             if ESP_ENABLED then RefreshESP() end
         end
     })
