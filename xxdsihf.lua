@@ -60,7 +60,7 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 设备UID检测 ====================
+    -- ==================== 统一设备UID检测 ====================
     local function getDeviceUID()
         local userId = player.UserId
         local success, machineId = pcall(function()
@@ -77,19 +77,17 @@ function createUI()
     local DEVICE_UID = getDeviceUID()
 
     -- ==================== 黑名单与授权系统 ====================
-    -- 作者UID (你自己)
-    local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPCRCBYAX"  -- 替换成你自己的UID
+    -- 作者UID (改成你自己的)
+    local AUTHOR_UID = "这里填你的设备UID"
 
     -- 黑名单列表 (被拉黑的设备UID)
     local BLACKLIST = {
         -- 格式: ["设备UID"] = true,
-        -- 示例: ["ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"] = true,
     }
 
     -- 授权列表 (被授权的设备UID)
     local WHITELIST = {
         -- 格式: ["设备UID"] = true,
-        -- 示例: ["ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"] = true,
     }
 
     -- 检查是否在黑名单
@@ -99,13 +97,11 @@ function createUI()
 
     -- 检查是否已授权
     local function isAuthorized(uid)
-        -- 作者自动授权
         if uid == AUTHOR_UID then return true end
         return WHITELIST[uid] == true
     end
 
     -- ==================== 权限验证 ====================
-    -- 检查黑名单
     if isBlacklisted(DEVICE_UID) then
         local blockGui = Instance.new("ScreenGui")
         blockGui.Name = "BlockedScreen"
@@ -161,7 +157,6 @@ function createUI()
         return
     end
 
-    -- 检查是否已授权
     if not isAuthorized(DEVICE_UID) then
         local authGui = Instance.new("ScreenGui")
         authGui.Name = "AuthScreen"
@@ -228,7 +223,7 @@ function createUI()
         return
     end
 
-    -- ==================== 主UI（授权通过后才加载） ====================
+    -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -313,174 +308,7 @@ function createUI()
         end
     end)
 
-    -- ==================== 黑名单管理界面 ====================
-    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
-    local AdminGroup = SettingsTab:Section({ Title = "管理员功能", Opened = true })
-
-    -- 只有作者才能看到管理功能
-    if DEVICE_UID == AUTHOR_UID then
-        AdminGroup:Divider({ Text = "黑名单管理" })
-        AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要拉黑的设备UID，点击拉黑即可"
-        })
-
-        local blacklistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要拉黑的设备UID...",
-            Callback = function(value)
-                blacklistInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "拉黑设备",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    if blacklistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
-                        return
-                    end
-                    BLACKLIST[blacklistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
-                    print("黑名单已更新: ", blacklistInput)
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "从黑名单移除",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    BLACKLIST[blacklistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Divider({ Text = "授权管理" })
-        AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要授权的设备UID，点击授权即可"
-        })
-
-        local whitelistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要授权的设备UID...",
-            Callback = function(value)
-                whitelistInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "授权设备",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    if whitelistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
-                        return
-                    end
-                    WHITELIST[whitelistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
-                    print("授权列表已更新: ", whitelistInput)
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "移除授权",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    WHITELIST[whitelistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Divider()
-        AdminGroup:Button({
-            Title = "查看当前黑名单",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(BLACKLIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "查看当前授权列表",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(WHITELIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
-            end
-        })
-    else
-        -- 非作者不显示管理功能
-        AdminGroup:Paragraph({
-            Title = "提示",
-            Desc = "只有作者才能访问管理功能"
-        })
-    end
-
-    local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
-
-    SettingsGroup:Button({
-        Title = "卸载脚本",
-        Callback = function()
-            isDestroyed = true
-            stopFly()
-            DestroyFlyQuickToggle()
-            zzRestore()
-            if aimGui then aimGui:Destroy() end
-            ResetHitbox()
-            StopEvadePolice()
-            if Settings.NoclipEnabled then
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
-                    end
-                end
-            end
-            for userId, data in pairs(ESP_LIST) do
-                if data.Billboard then data.Billboard:Destroy() end
-            end
-            ESP_LIST = {}
-            for _, conn in ipairs(connections) do
-                pcall(function() conn:Disconnect() end)
-            end
-            Window:Destroy()
-            WindUI:Notify({ Title = "已卸载", Content = "脚本已卸载", Duration = 2 })
-        end
-    })
-
     -- ==================== 其余原有功能 ====================
-
     local Settings = {
         HoldTime = 0,
         Distance = 25,
@@ -576,7 +404,7 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
 
     -- ============================================================
-    -- 自动躲警察 Tab (独立Tab)
+    -- 自动躲警察 Tab
     -- ============================================================
     local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
     local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
@@ -852,7 +680,6 @@ function createUI()
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
     A:Divider({ Text = "角色修改" })
-    -- 飞行功能
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -2096,6 +1923,169 @@ function createUI()
     Players.PlayerRemoving:Connect(function(p)
         RemoveESP(p.UserId)
     end)
+
+    -- ============================================================
+    -- 设置 Tab (G)
+    -- ============================================================
+    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
+    local AdminGroup = SettingsTab:Section({ Title = "管理员功能", Opened = true })
+
+    if DEVICE_UID == AUTHOR_UID then
+        AdminGroup:Divider({ Text = "黑名单管理" })
+        AdminGroup:Paragraph({
+            Title = "说明",
+            Desc = "输入要拉黑的设备UID，点击拉黑即可"
+        })
+
+        local blacklistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要拉黑的设备UID...",
+            Callback = function(value)
+                blacklistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "拉黑设备",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    if blacklistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                        return
+                    end
+                    BLACKLIST[blacklistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "从黑名单移除",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    BLACKLIST[blacklistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider({ Text = "授权管理" })
+        AdminGroup:Paragraph({
+            Title = "说明",
+            Desc = "输入要授权的设备UID，点击授权即可"
+        })
+
+        local whitelistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要授权的设备UID...",
+            Callback = function(value)
+                whitelistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "授权设备",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    if whitelistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
+                        return
+                    end
+                    WHITELIST[whitelistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "移除授权",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    WHITELIST[whitelistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider()
+        AdminGroup:Button({
+            Title = "查看当前黑名单",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(BLACKLIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "查看当前授权列表",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(WHITELIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+    else
+        AdminGroup:Paragraph({
+            Title = "提示",
+            Desc = "只有作者才能访问管理功能"
+        })
+    end
+
+    local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
+    SettingsGroup:Button({
+        Title = "卸载脚本",
+        Callback = function()
+            isDestroyed = true
+            stopFly()
+            DestroyFlyQuickToggle()
+            zzRestore()
+            if aimGui then aimGui:Destroy() end
+            ResetHitbox()
+            StopEvadePolice()
+            if Settings.NoclipEnabled then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+            for userId, data in pairs(ESP_LIST) do
+                if data.Billboard then data.Billboard:Destroy() end
+            end
+            ESP_LIST = {}
+            for _, conn in ipairs(connections) do
+                pcall(function() conn:Disconnect() end)
+            end
+            Window:Destroy()
+            WindUI:Notify({ Title = "已卸载", Content = "脚本已卸载", Duration = 2 })
+        end
+    })
 
     WindUI:Notify({
         Title = "wdfex-Hub",
