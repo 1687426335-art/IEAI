@@ -1,8 +1,8 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-if LocalPlayer.Name == "91vip78tangxin" then
-    LocalPlayer:Kick("[Yttrium你被禁止使用原因:Roblox服饰装扮辱华")
+if LocalPlayer.Name == "twgsvgs6" then
+    LocalPlayer:Kick("[你被禁止使用原因:Roblox服饰装扮辱华")
 else
     local CurrentPlaceId = tostring(game.PlaceId)
     
