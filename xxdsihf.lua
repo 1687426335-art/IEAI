@@ -76,6 +76,159 @@ function createUI()
     end
     local DEVICE_UID = getDeviceUID()
 
+    -- ==================== 黑名单与授权系统 ====================
+    -- 作者UID (你自己)
+    local AUTHOR_UID = "这里填你的设备UID"  -- 替换成你自己的UID
+
+    -- 黑名单列表 (被拉黑的设备UID)
+    local BLACKLIST = {
+        -- 格式: ["设备UID"] = true,
+        -- 示例: ["ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"] = true,
+    }
+
+    -- 授权列表 (被授权的设备UID)
+    local WHITELIST = {
+        -- 格式: ["设备UID"] = true,
+        -- 示例: ["ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"] = true,
+    }
+
+    -- 检查是否在黑名单
+    local function isBlacklisted(uid)
+        return BLACKLIST[uid] == true
+    end
+
+    -- 检查是否已授权
+    local function isAuthorized(uid)
+        -- 作者自动授权
+        if uid == AUTHOR_UID then return true end
+        return WHITELIST[uid] == true
+    end
+
+    -- ==================== 权限验证 ====================
+    -- 检查黑名单
+    if isBlacklisted(DEVICE_UID) then
+        local blockGui = Instance.new("ScreenGui")
+        blockGui.Name = "BlockedScreen"
+        blockGui.ResetOnSpawn = false
+        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        blockGui.Parent = player:WaitForChild("PlayerGui")
+
+        local blockFrame = Instance.new("Frame")
+        blockFrame.Size = UDim2.new(0, 500, 0, 200)
+        blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
+        blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+        blockFrame.BorderSizePixel = 3
+        blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        blockFrame.Parent = blockGui
+
+        local blockCorner = Instance.new("UICorner")
+        blockCorner.CornerRadius = UDim.new(0, 12)
+        blockCorner.Parent = blockFrame
+
+        local blockTitle = Instance.new("TextLabel")
+        blockTitle.Size = UDim2.new(1, 0, 0, 40)
+        blockTitle.Position = UDim2.new(0, 0, 0, 10)
+        blockTitle.BackgroundTransparency = 1
+        blockTitle.Text = "已被拉黑"
+        blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+        blockTitle.TextSize = 28
+        blockTitle.Font = Enum.Font.GothamBold
+        blockTitle.TextXAlignment = Enum.TextXAlignment.Center
+        blockTitle.Parent = blockFrame
+
+        local blockDesc = Instance.new("TextLabel")
+        blockDesc.Size = UDim2.new(1, -40, 0, 50)
+        blockDesc.Position = UDim2.new(0, 20, 0, 60)
+        blockDesc.BackgroundTransparency = 1
+        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
+        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
+        blockDesc.TextSize = 18
+        blockDesc.Font = Enum.Font.GothamBold
+        blockDesc.TextXAlignment = Enum.TextXAlignment.Center
+        blockDesc.Parent = blockFrame
+
+        local blockUid = Instance.new("TextLabel")
+        blockUid.Size = UDim2.new(1, -40, 0, 30)
+        blockUid.Position = UDim2.new(0, 20, 0, 125)
+        blockUid.BackgroundTransparency = 1
+        blockUid.Text = "设备UID: " .. DEVICE_UID
+        blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
+        blockUid.TextSize = 14
+        blockUid.Font = Enum.Font.Gotham
+        blockUid.TextXAlignment = Enum.TextXAlignment.Center
+        blockUid.Parent = blockFrame
+
+        return
+    end
+
+    -- 检查是否已授权
+    if not isAuthorized(DEVICE_UID) then
+        local authGui = Instance.new("ScreenGui")
+        authGui.Name = "AuthScreen"
+        authGui.ResetOnSpawn = false
+        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        authGui.Parent = player:WaitForChild("PlayerGui")
+
+        local authFrame = Instance.new("Frame")
+        authFrame.Size = UDim2.new(0, 520, 0, 220)
+        authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
+        authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+        authFrame.BorderSizePixel = 3
+        authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
+        authFrame.Parent = authGui
+
+        local authCorner = Instance.new("UICorner")
+        authCorner.CornerRadius = UDim.new(0, 12)
+        authCorner.Parent = authFrame
+
+        local authTitle = Instance.new("TextLabel")
+        authTitle.Size = UDim2.new(1, 0, 0, 40)
+        authTitle.Position = UDim2.new(0, 0, 0, 10)
+        authTitle.BackgroundTransparency = 1
+        authTitle.Text = "未授权"
+        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
+        authTitle.TextSize = 28
+        authTitle.Font = Enum.Font.GothamBold
+        authTitle.TextXAlignment = Enum.TextXAlignment.Center
+        authTitle.Parent = authFrame
+
+        local authDesc = Instance.new("TextLabel")
+        authDesc.Size = UDim2.new(1, -40, 0, 50)
+        authDesc.Position = UDim2.new(0, 20, 0, 60)
+        authDesc.BackgroundTransparency = 1
+        authDesc.Text = "你没有被授权\n你无法使用此脚本"
+        authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
+        authDesc.TextSize = 18
+        authDesc.Font = Enum.Font.GothamBold
+        authDesc.TextXAlignment = Enum.TextXAlignment.Center
+        authDesc.Parent = authFrame
+
+        local authContact = Instance.new("TextLabel")
+        authContact.Size = UDim2.new(1, -40, 0, 25)
+        authContact.Position = UDim2.new(0, 20, 0, 118)
+        authContact.BackgroundTransparency = 1
+        authContact.Text = "请联系作者或管理员授权"
+        authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
+        authContact.TextSize = 14
+        authContact.Font = Enum.Font.Gotham
+        authContact.TextXAlignment = Enum.TextXAlignment.Center
+        authContact.Parent = authFrame
+
+        local authUid = Instance.new("TextLabel")
+        authUid.Size = UDim2.new(1, -40, 0, 30)
+        authUid.Position = UDim2.new(0, 20, 0, 150)
+        authUid.BackgroundTransparency = 1
+        authUid.Text = "设备UID: " .. DEVICE_UID
+        authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
+        authUid.TextSize = 14
+        authUid.Font = Enum.Font.Gotham
+        authUid.TextXAlignment = Enum.TextXAlignment.Center
+        authUid.Parent = authFrame
+
+        return
+    end
+
+    -- ==================== 主UI（授权通过后才加载） ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -159,6 +312,174 @@ function createUI()
             end
         end
     end)
+
+    -- ==================== 黑名单管理界面 ====================
+    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
+    local AdminGroup = SettingsTab:Section({ Title = "管理员功能", Opened = true })
+
+    -- 只有作者才能看到管理功能
+    if DEVICE_UID == AUTHOR_UID then
+        AdminGroup:Divider({ Text = "黑名单管理" })
+        AdminGroup:Paragraph({
+            Title = "说明",
+            Desc = "输入要拉黑的设备UID，点击拉黑即可"
+        })
+
+        local blacklistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要拉黑的设备UID...",
+            Callback = function(value)
+                blacklistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "拉黑设备",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    if blacklistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                        return
+                    end
+                    BLACKLIST[blacklistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                    print("黑名单已更新: ", blacklistInput)
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "从黑名单移除",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    BLACKLIST[blacklistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider({ Text = "授权管理" })
+        AdminGroup:Paragraph({
+            Title = "说明",
+            Desc = "输入要授权的设备UID，点击授权即可"
+        })
+
+        local whitelistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要授权的设备UID...",
+            Callback = function(value)
+                whitelistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "授权设备",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    if whitelistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
+                        return
+                    end
+                    WHITELIST[whitelistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                    print("授权列表已更新: ", whitelistInput)
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "移除授权",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    WHITELIST[whitelistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider()
+        AdminGroup:Button({
+            Title = "查看当前黑名单",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(BLACKLIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "查看当前授权列表",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(WHITELIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+    else
+        -- 非作者不显示管理功能
+        AdminGroup:Paragraph({
+            Title = "提示",
+            Desc = "只有作者才能访问管理功能"
+        })
+    end
+
+    local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
+
+    SettingsGroup:Button({
+        Title = "卸载脚本",
+        Callback = function()
+            isDestroyed = true
+            stopFly()
+            DestroyFlyQuickToggle()
+            zzRestore()
+            if aimGui then aimGui:Destroy() end
+            ResetHitbox()
+            StopEvadePolice()
+            if Settings.NoclipEnabled then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+            for userId, data in pairs(ESP_LIST) do
+                if data.Billboard then data.Billboard:Destroy() end
+            end
+            ESP_LIST = {}
+            for _, conn in ipairs(connections) do
+                pcall(function() conn:Disconnect() end)
+            end
+            Window:Destroy()
+            WindUI:Notify({ Title = "已卸载", Content = "脚本已卸载", Duration = 2 })
+        end
+    })
+
+    -- ==================== 其余原有功能 ====================
 
     local Settings = {
         HoldTime = 0,
@@ -1775,44 +2096,6 @@ function createUI()
     Players.PlayerRemoving:Connect(function(p)
         RemoveESP(p.UserId)
     end)
-
-    -- ============================================================
-    -- 设置 Tab (G)
-    -- ============================================================
-    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
-    local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
-
-    SettingsGroup:Button({
-        Title = "卸载脚本",
-        Callback = function()
-            isDestroyed = true
-            stopFly()
-            DestroyFlyQuickToggle()
-            zzRestore()
-            if aimGui then aimGui:Destroy() end
-            ResetHitbox()
-            StopEvadePolice()
-            if Settings.NoclipEnabled then
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
-                    end
-                end
-            end
-            for userId, data in pairs(ESP_LIST) do
-                if data.Billboard then data.Billboard:Destroy() end
-            end
-            ESP_LIST = {}
-            for _, conn in ipairs(connections) do
-                pcall(function() conn:Disconnect() end)
-            end
-            Window:Destroy()
-            WindUI:Notify({ Title = "已卸载", Content = "脚本已卸载", Duration = 2 })
-        end
-    })
 
     WindUI:Notify({
         Title = "wdfex-Hub",
