@@ -202,7 +202,7 @@ function createUI()
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
-        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复"
+        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
     })
 
     -- 通知 Tab
@@ -211,7 +211,7 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
@@ -247,6 +247,155 @@ function createUI()
 
     local F = AddTab(OtherSection, "开发者功能", "code")
     local G = AddTab(OtherSection, "设置", "settings")
+
+    -- 自动躲警察 Section
+    local PoliceEvadeSection = Window:Section({
+        Title = "自动躲警察",
+        Opened = true,
+    })
+    local H = AddTab(PoliceEvadeSection, "躲警察", "shield")
+
+    -- ============================================================
+    -- 自动躲警察功能 (H)
+    -- ============================================================
+    local AutoEvadePolice = false
+    local EvadeDistance = 50
+    local EvadeStrength = 50
+    local EvadeConnection = nil
+
+    local function IsPolicePlayer(p)
+        if p == player then return false end
+        if p.Team then
+            local teamName = p.Team.Name or ""
+            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                return true
+            end
+        end
+        if p.Character then
+            for _, child in ipairs(p.Character:GetDescendants()) do
+                if child:IsA("StringValue") or child:IsA("BoolValue") then
+                    local name = child.Name:lower()
+                    if name:find("police") or name:find("cop") or name:find("警察") then
+                        return true
+                    end
+                end
+            end
+        end
+        for _, child in ipairs(p:GetChildren()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警察") then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function GetClosestPolice()
+        local char = player.Character
+        if not char then return nil, math.huge end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return nil, math.huge end
+        
+        local closest = nil
+        local closestDist = math.huge
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not IsPolicePlayer(p) then continue end
+            if not p.Character then continue end
+            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+            if not pRoot then continue end
+            local dist = (root.Position - pRoot.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closest = p
+            end
+        end
+        return closest, closestDist
+    end
+
+    local function StartEvadePolice()
+        if EvadeConnection then return end
+        EvadeConnection = RunService.Heartbeat:Connect(function()
+            if not AutoEvadePolice then return end
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            local police, dist = GetClosestPolice()
+            if not police then return end
+            if dist > EvadeDistance then return end
+            
+            local policeRoot = police.Character:FindFirstChild("HumanoidRootPart")
+            if not policeRoot then return end
+            
+            local awayDir = (root.Position - policeRoot.Position).Unit
+            local forceStrength = EvadeStrength * (1 - (dist / EvadeDistance))
+            forceStrength = math.max(forceStrength, 5)
+            
+            local velocity = awayDir * forceStrength * 10
+            root.Velocity = velocity
+            root.AssemblyLinearVelocity = velocity
+            
+            for _, obj in ipairs(root:GetChildren()) do
+                if obj:IsA("BodyVelocity") and obj.Name ~= "EvadePolice" then
+                    obj:Destroy()
+                end
+            end
+        end)
+    end
+
+    local function StopEvadePolice()
+        if EvadeConnection then
+            EvadeConnection:Disconnect()
+            EvadeConnection = nil
+        end
+        local char = player.Character
+        if char then
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Velocity = Vector3.new(0, 0, 0)
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end
+
+    H:Divider({ Text = "自动躲警察" })
+    H:Toggle({
+        Title = "启用自动躲警察",
+        Desc = "警察靠近时自动弹开远离",
+        Value = false,
+        Callback = function(value)
+            AutoEvadePolice = value
+            if value then
+                StartEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已开启，警察靠近将自动弹开", Duration = 2 })
+            else
+                StopEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+    H:Slider({
+        Title = "触发距离",
+        Desc = "警察进入该距离时触发弹开（米）",
+        Step = 1,
+        Value = { Min = 10, Max = 100, Default = 50 },
+        Callback = function(value)
+            EvadeDistance = value
+        end
+    })
+    H:Slider({
+        Title = "弹开力度",
+        Desc = "数值越大弹开越远",
+        Step = 1,
+        Value = { Min = 10, Max = 200, Default = 50 },
+        Callback = function(value)
+            EvadeStrength = value
+        end
+    })
 
     -- ============================================================
     -- 玩家修改 Tab (A)
@@ -1349,7 +1498,42 @@ function createUI()
     local ESP_REFRESH_COUNT = 0
 
     local function GetTeam(p)
-        if p.Team then return p.Team.Name end
+        if p.Team then
+            local teamName = p.Team.Name
+            local teamMap = {
+                ["Police"] = "警察",
+                ["Fire"] = "火焰",
+                ["Medical"] = "医疗",
+                ["Road"] = "道路",
+                ["Civilian"] = "平民",
+                ["Citizen"] = "平民",
+                ["Criminal"] = "匪徒",
+                ["Gang"] = "黑帮",
+                ["Military"] = "军人",
+                ["Delivery"] = "送货",
+                ["Farmer"] = "农民",
+                ["Banker"] = "银行家",
+                ["Mayor"] = "市长",
+                ["Journalist"] = "记者",
+                ["Lawyer"] = "律师",
+                ["Prisoner"] = "囚犯",
+                ["Guard"] = "狱警",
+                ["Driver"] = "司机",
+                ["Chef"] = "厨师",
+                ["Builder"] = "建筑工",
+                ["Miner"] = "矿工",
+                ["Fisherman"] = "渔夫",
+                ["Merchant"] = "商人",
+                ["Student"] = "学生",
+                ["Teacher"] = "老师",
+                ["Engineer"] = "工程师",
+                ["Scientist"] = "科学家",
+                ["Pilot"] = "飞行员",
+                ["Courier"] = "快递员",
+                ["BusDriver"] = "公交车司机",
+            }
+            return teamMap[teamName] or teamName
+        end
         return "平民"
     end
 
@@ -1683,6 +1867,7 @@ function createUI()
             zzRestore()
             if aimGui then aimGui:Destroy() end
             ResetHitbox()
+            StopEvadePolice()
             if Settings.NoclipEnabled then
                 local char = player.Character
                 if char then
