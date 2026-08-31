@@ -240,7 +240,7 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
 
     -- ============================================================
-    -- 自动躲警察 Tab (独立Tab，不归属任何Section)
+    -- 自动躲警察 Tab (独立Tab)
     -- ============================================================
     local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
     local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
@@ -304,8 +304,13 @@ function createUI()
 
     local function StartEvadePolice()
         if EvadeConnection then return end
-        EvadeConnection = RunService.Heartbeat:Connect(function()
+        local frameSkip = 0
+        EvadeConnection = RunService.Stepped:Connect(function()
             if not AutoEvadePolice then return end
+            
+            frameSkip = frameSkip + 1
+            if frameSkip % 3 ~= 0 then return end
+            
             local char = player.Character
             if not char then return end
             local root = char:FindFirstChild("HumanoidRootPart")
@@ -1757,7 +1762,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 开发者功能 Tab (F) - 独立Tab，放在设置前面
+    -- 开发者功能 Tab (F)
     -- ============================================================
     local DeveloperTab = Window:Tab({ Title = "开发者功能", Icon = "code" })
     local DeveloperGroup = DeveloperTab:Section({ Title = "坐标工具", Opened = true })
@@ -1845,7 +1850,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 设置 Tab (G) - 永远在最下面
+    -- 设置 Tab (G)
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
     local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
