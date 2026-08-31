@@ -8,7 +8,7 @@ else
     
     -- 只保留圣奥里
     if CurrentPlaceId == "14030691" then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/xxdsihf.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1687426335-art/IEAI/refs/heads/main/wyxamzo.lua"))()
     else
         local RevenantLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Revenant", true))()
         RevenantLib:Notification({
