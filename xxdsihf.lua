@@ -239,25 +239,12 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
 
-    -- 其他功能 Section
-    local OtherSection = Window:Section({
-        Title = "其他功能",
-        Opened = true,
-    })
-
-    local F = AddTab(OtherSection, "开发者功能", "code")
-    local G = AddTab(OtherSection, "设置", "settings")
-
-    -- 自动躲警察 Section
-    local PoliceEvadeSection = Window:Section({
-        Title = "自动躲警察",
-        Opened = true,
-    })
-    local H = AddTab(PoliceEvadeSection, "躲警察", "shield")
-
     -- ============================================================
-    -- 自动躲警察功能 (H)
+    -- 自动躲警察 Tab (独立Tab，不归属任何Section)
     -- ============================================================
+    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
+    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
+
     local AutoEvadePolice = false
     local EvadeDistance = 50
     local EvadeStrength = 50
@@ -362,8 +349,8 @@ function createUI()
         end
     end
 
-    H:Divider({ Text = "自动躲警察" })
-    H:Toggle({
+    PoliceEvadeGroup:Divider()
+    PoliceEvadeGroup:Toggle({
         Title = "启用自动躲警察",
         Desc = "警察靠近时自动弹开远离",
         Value = false,
@@ -378,7 +365,7 @@ function createUI()
             end
         end
     })
-    H:Slider({
+    PoliceEvadeGroup:Slider({
         Title = "触发距离",
         Desc = "警察进入该距离时触发弹开（米）",
         Step = 1,
@@ -387,7 +374,7 @@ function createUI()
             EvadeDistance = value
         end
     })
-    H:Slider({
+    PoliceEvadeGroup:Slider({
         Title = "弹开力度",
         Desc = "数值越大弹开越远",
         Step = 1,
@@ -1770,10 +1757,12 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 开发者功能 Tab (F)
+    -- 开发者功能 Tab (F) - 独立Tab，放在设置前面
     -- ============================================================
-    F:Divider({ Text = "坐标工具" })
-    F:Button({
+    local DeveloperTab = Window:Tab({ Title = "开发者功能", Icon = "code" })
+    local DeveloperGroup = DeveloperTab:Section({ Title = "坐标工具", Opened = true })
+
+    DeveloperGroup:Button({
         Title = "开启坐标显示",
         Callback = function()
             local char = player.Character or player.CharacterAdded:Wait()
@@ -1847,7 +1836,7 @@ function createUI()
             end)
         end
     })
-    F:Button({
+    DeveloperGroup:Button({
         Title = "关闭坐标显示",
         Callback = function()
             local gui = player.PlayerGui:FindFirstChild("CoordinateCopyTool")
@@ -1856,9 +1845,12 @@ function createUI()
     })
 
     -- ============================================================
-    -- 设置 Tab (G)
+    -- 设置 Tab (G) - 永远在最下面
     -- ============================================================
-    G:Button({
+    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
+    local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
+
+    SettingsGroup:Button({
         Title = "卸载脚本",
         Callback = function()
             isDestroyed = true
