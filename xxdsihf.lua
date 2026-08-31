@@ -82,7 +82,7 @@ function createUI()
 
     -- 黑名单列表 (被拉黑的设备UID)
     local BLACKLIST = {
-        -- 格式: ["设备UID"] = true,
+        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
 
     -- 授权列表 (被授权的设备UID)
