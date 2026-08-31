@@ -406,7 +406,7 @@ function createUI()
     -- ============================================================
     -- 自动躲警察 Tab
     -- ============================================================
-    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察（如果对面面的因此较高的话还是能给你铐起来）", Icon = "shield" })
+    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
     local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察（如果对面面的因此较高的话还是能给你铐起来）", Opened = true })
 
     local AutoEvadePolice = false
