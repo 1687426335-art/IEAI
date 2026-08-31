@@ -1677,7 +1677,7 @@ function createUI()
     E:Divider()
     E:Toggle({
         Title = "显示通缉玩家",
-        Desc = "通缉玩家显示红色标记和通缉玩家文字",
+        Desc = "当警察的话建议开启",
         Value = false,
         Callback = function(value)
             ESP_SHOW_WANTED = value
