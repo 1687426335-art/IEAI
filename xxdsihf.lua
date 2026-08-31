@@ -77,8 +77,8 @@ function createUI()
     local DEVICE_UID = getDeviceUID()
 
     -- ==================== 黑名单与授权系统 ====================
-    -- 作者UID (改成你自己的)
-    local AUTHOR_UID = "这里填你的设备UID"
+    -- 作者UID
+    local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPGRCBYAX"
 
     -- 黑名单列表 (被拉黑的设备UID)
     local BLACKLIST = {
