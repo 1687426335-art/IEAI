@@ -202,7 +202,7 @@ function createUI()
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
-        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复"
+        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
     })
 
     -- 通知 Tab
@@ -211,7 +211,7 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
