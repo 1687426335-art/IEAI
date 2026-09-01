@@ -1993,6 +1993,7 @@ function createUI()
         { name = "忘不掉的你", id = "91111816286323" },
         { name = "DearD", id = "139047831212058" },
         { name = "戒烟", id = "137671588958836" },
+        { name = "十年咕嘎无人知", id = "78729794283728" },
     }
 
     local selectedSong = SONG_LIST[1]
