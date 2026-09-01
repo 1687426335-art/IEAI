@@ -60,14 +60,14 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 统一设备UID检测 ====================
+    -- ==================== 统一设备UID检测（换服务器不变） ====================
     local function getDeviceUID()
         local userId = player.UserId
         local success, machineId = pcall(function()
             return game:GetService("HttpService"):GetMachineId()
         end)
         if not success then machineId = "unknown" end
-        local combined = userId .. "_" .. machineId .. "_" .. game.GameId
+        local combined = userId .. "_" .. machineId
         local uid = ""
         for i = 1, #combined do
             uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
@@ -84,8 +84,8 @@ function createUI()
     }
 
     local WHITELIST = {
-    ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-}
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+    }
 
     local function isBlacklisted(uid)
         return BLACKLIST[uid] == true
@@ -2003,7 +2003,7 @@ function createUI()
     local musicSound = nil
     local isMusicPlaying = false
     local currentPlayIndex = 1
-    local playMode = "顺序播放" -- 顺序播放 / 循环播放 / 随机播放
+    local playMode = "顺序播放"
     local endedConnection = nil
 
     local songNames = {}
@@ -2011,7 +2011,6 @@ function createUI()
         table.insert(songNames, song.name)
     end
 
-    -- 播放指定索引的歌曲
     local function PlaySongByIndex(index)
         if index < 1 or index > #SONG_LIST then
             if playMode == "顺序播放" then
@@ -2048,21 +2047,17 @@ function createUI()
             musicSound:Play()
             WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. song.name, Duration = 2 })
             
-            -- 监听歌曲结束
             endedConnection = musicSound.Ended:Connect(function()
                 if not isMusicPlaying then return end
                 if playMode == "循环播放" then
-                    -- 循环播放同一首
                     PlaySongByIndex(currentPlayIndex)
                 elseif playMode == "顺序播放" then
-                    -- 播放下一首
                     local nextIndex = currentPlayIndex + 1
                     if nextIndex > #SONG_LIST then
                         nextIndex = 1
                     end
                     PlaySongByIndex(nextIndex)
                 elseif playMode == "随机播放" then
-                    -- 随机播放一首
                     local randomIndex = math.random(1, #SONG_LIST)
                     while randomIndex == currentPlayIndex and #SONG_LIST > 1 do
                         randomIndex = math.random(1, #SONG_LIST)
@@ -2140,7 +2135,6 @@ function createUI()
         Callback = function(value)
             playMode = value
             WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
-            -- 如果正在播放，重新开始以应用新模式
             if isMusicPlaying then
                 PlaySongByIndex(currentPlayIndex)
             end
