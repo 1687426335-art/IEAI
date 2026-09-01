@@ -77,25 +77,20 @@ function createUI()
     local DEVICE_UID = getDeviceUID()
 
     -- ==================== 黑名单与授权系统 ====================
-    -- 作者UID
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPGRCBYAX"
 
-    -- 黑名单列表 (被拉黑的设备UID)
     local BLACKLIST = {
-        ["XXCWZAYDAXZRNGDGHPGRCBYAX"] = true,
+        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
 
-    -- 授权列表 (被授权的设备UID)
     local WHITELIST = {
         -- 格式: ["设备UID"] = true,
     }
 
-    -- 检查是否在黑名单
     local function isBlacklisted(uid)
         return BLACKLIST[uid] == true
     end
 
-    -- 检查是否已授权
     local function isAuthorized(uid)
         if uid == AUTHOR_UID then return true end
         return WHITELIST[uid] == true
@@ -308,6 +303,20 @@ function createUI()
         end
     end)
 
+    -- ==================== 播放音乐（悬浮窗出来后播放1秒） ====================
+    task.spawn(function()
+        pcall(function()
+            local sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://80701295792893"
+            sound.Volume = 0.5
+            sound.Parent = player:WaitForChild("PlayerGui")
+            sound:Play()
+            task.wait(1)
+            sound:Stop()
+            sound:Destroy()
+        end)
+    end)
+
     -- ==================== 其余原有功能 ====================
     local Settings = {
         HoldTime = 0,
@@ -407,7 +416,7 @@ function createUI()
     -- 自动躲警察 Tab
     -- ============================================================
     local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
-    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察（如果对面的延迟较高的话还是能给你铐起来）", Opened = true })
+    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
 
     local AutoEvadePolice = false
     local EvadeDistance = 50
@@ -536,7 +545,7 @@ function createUI()
     })
     PoliceEvadeGroup:Slider({
         Title = "触发距离",
-        Desc = "警察进入该距离时触发弹开",
+        Desc = "警察进入该距离时触发弹开（米）",
         Step = 1,
         Value = { Min = 10, Max = 100, Default = 50 },
         Callback = function(value)
