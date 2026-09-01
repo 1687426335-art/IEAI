@@ -31,7 +31,7 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex脚本</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
     Buttons = {
         {
             Title = "取消",
@@ -311,7 +311,7 @@ function createUI()
             sound.Volume = 0.5
             sound.Parent = player:WaitForChild("PlayerGui")
             sound:Play()
-            task.wait(7)
+            task.wait(3)
             sound:Stop()
             sound:Destroy()
         end)
@@ -370,7 +370,7 @@ function createUI()
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
         Title = "wdfex",
-        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启绕过反作弊祝您玩的愉快"
+        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
     })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
@@ -1937,131 +1937,294 @@ function createUI()
     -- 设置 Tab (G)
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
-    local AdminGroup = SettingsTab:Section({ Title = "管理员功能", Opened = true })
 
-    if DEVICE_UID == AUTHOR_UID then
-        AdminGroup:Divider({ Text = "黑名单管理" })
-        AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要拉黑的设备UID，点击拉黑即可"
-        })
+    -- ===== 卡密验证区域 =====
+    local AdminGroup = SettingsTab:Section({ Title = "管理员验证", Opened = true })
 
-        local blacklistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要拉黑的设备UID...",
-            Callback = function(value)
-                blacklistInput = value
+    local adminAuthorized = false
+    local adminType = ""
+
+    AdminGroup:Paragraph({
+        Title = "说明",
+        Desc = "输入管理员卡密以进入管理面板"
+    })
+
+    local keyInput = nil
+    AdminGroup:Input({
+        Title = "卡密",
+        Placeholder = "请输入卡密...",
+        Callback = function(value)
+            keyInput = value
+        end
+    })
+
+    AdminGroup:Button({
+        Title = "验证卡密",
+        Callback = function()
+            if not keyInput or keyInput == "" then
+                WindUI:Notify({ Title = "错误", Content = "请输入卡密", Duration = 2 })
+                return
             end
-        })
 
-        AdminGroup:Button({
-            Title = "拉黑设备",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    if blacklistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
-                        return
+            if keyInput == "作者卡-AFXD-wdfexNB" then
+                adminAuthorized = true
+                adminType = "作者"
+                WindUI:Notify({ Title = "验证成功", Content = "欢迎作者！", Duration = 3 })
+                AdminGroup:Clear()
+                AdminGroup:Paragraph({
+                    Title = "已授权",
+                    Desc = "当前身份: 作者"
+                })
+                AdminGroup:Divider()
+                AdminGroup:Paragraph({
+                    Title = "黑名单管理",
+                    Desc = "输入要拉黑的设备UID，点击拉黑即可"
+                })
+
+                local blacklistInput = nil
+                AdminGroup:Input({
+                    Title = "输入UID",
+                    Placeholder = "请输入要拉黑的设备UID...",
+                    Callback = function(value)
+                        blacklistInput = value
                     end
-                    BLACKLIST[blacklistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
+                })
 
-        AdminGroup:Button({
-            Title = "从黑名单移除",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    BLACKLIST[blacklistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Divider({ Text = "授权管理" })
-        AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要授权的设备UID，点击授权即可"
-        })
-
-        local whitelistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要授权的设备UID...",
-            Callback = function(value)
-                whitelistInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "授权设备",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    if whitelistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
-                        return
+                AdminGroup:Button({
+                    Title = "拉黑设备",
+                    Callback = function()
+                        if blacklistInput and blacklistInput ~= "" then
+                            if blacklistInput == DEVICE_UID then
+                                WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                                return
+                            end
+                            BLACKLIST[blacklistInput] = true
+                            WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
                     end
-                    WHITELIST[whitelistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
+                })
 
-        AdminGroup:Button({
-            Title = "移除授权",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    WHITELIST[whitelistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
+                AdminGroup:Button({
+                    Title = "从黑名单移除",
+                    Callback = function()
+                        if blacklistInput and blacklistInput ~= "" then
+                            BLACKLIST[blacklistInput] = nil
+                            WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
 
-        AdminGroup:Divider()
-        AdminGroup:Button({
-            Title = "查看当前黑名单",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(BLACKLIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
-            end
-        })
+                AdminGroup:Divider({ Text = "授权管理" })
+                AdminGroup:Paragraph({
+                    Title = "说明",
+                    Desc = "输入要授权的设备UID，点击授权即可"
+                })
 
-        AdminGroup:Button({
-            Title = "查看当前授权列表",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(WHITELIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
+                local whitelistInput = nil
+                AdminGroup:Input({
+                    Title = "输入UID",
+                    Placeholder = "请输入要授权的设备UID...",
+                    Callback = function(value)
+                        whitelistInput = value
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "授权设备",
+                    Callback = function()
+                        if whitelistInput and whitelistInput ~= "" then
+                            if whitelistInput == DEVICE_UID then
+                                WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
+                                return
+                            end
+                            WHITELIST[whitelistInput] = true
+                            WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "移除授权",
+                    Callback = function()
+                        if whitelistInput and whitelistInput ~= "" then
+                            WHITELIST[whitelistInput] = nil
+                            WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Divider()
+                AdminGroup:Button({
+                    Title = "查看当前黑名单",
+                    Callback = function()
+                        local list = {}
+                        for uid, _ in pairs(BLACKLIST) do
+                            table.insert(list, uid)
+                        end
+                        if #list == 0 then
+                            WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                        end
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "查看当前授权列表",
+                    Callback = function()
+                        local list = {}
+                        for uid, _ in pairs(WHITELIST) do
+                            table.insert(list, uid)
+                        end
+                        if #list == 0 then
+                            WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                        end
+                    end
+                })
+
+                return
+            elseif keyInput == "管理员卡-AZWQ-wdfexNB" then
+                adminAuthorized = true
+                adminType = "管理员"
+                WindUI:Notify({ Title = "验证成功", Content = "欢迎管理员！", Duration = 3 })
+                AdminGroup:Clear()
+                AdminGroup:Paragraph({
+                    Title = "已授权",
+                    Desc = "当前身份: 管理员"
+                })
+                AdminGroup:Divider()
+                AdminGroup:Paragraph({
+                    Title = "黑名单管理",
+                    Desc = "输入要拉黑的设备UID，点击拉黑即可"
+                })
+
+                local blacklistInput = nil
+                AdminGroup:Input({
+                    Title = "输入UID",
+                    Placeholder = "请输入要拉黑的设备UID...",
+                    Callback = function(value)
+                        blacklistInput = value
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "拉黑设备",
+                    Callback = function()
+                        if blacklistInput and blacklistInput ~= "" then
+                            if blacklistInput == DEVICE_UID then
+                                WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                                return
+                            end
+                            BLACKLIST[blacklistInput] = true
+                            WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "从黑名单移除",
+                    Callback = function()
+                        if blacklistInput and blacklistInput ~= "" then
+                            BLACKLIST[blacklistInput] = nil
+                            WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Divider({ Text = "授权管理" })
+                AdminGroup:Paragraph({
+                    Title = "说明",
+                    Desc = "输入要授权的设备UID，点击授权即可"
+                })
+
+                local whitelistInput = nil
+                AdminGroup:Input({
+                    Title = "输入UID",
+                    Placeholder = "请输入要授权的设备UID...",
+                    Callback = function(value)
+                        whitelistInput = value
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "授权设备",
+                    Callback = function()
+                        if whitelistInput and whitelistInput ~= "" then
+                            if whitelistInput == DEVICE_UID then
+                                WindUI:Notify({ Title = "提示", Content = "你已经是作者无需授权", Duration = 3 })
+                                return
+                            end
+                            WHITELIST[whitelistInput] = true
+                            WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "移除授权",
+                    Callback = function()
+                        if whitelistInput and whitelistInput ~= "" then
+                            WHITELIST[whitelistInput] = nil
+                            WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                        end
+                    end
+                })
+
+                AdminGroup:Divider()
+                AdminGroup:Button({
+                    Title = "查看当前黑名单",
+                    Callback = function()
+                        local list = {}
+                        for uid, _ in pairs(BLACKLIST) do
+                            table.insert(list, uid)
+                        end
+                        if #list == 0 then
+                            WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                        end
+                    end
+                })
+
+                AdminGroup:Button({
+                    Title = "查看当前授权列表",
+                    Callback = function()
+                        local list = {}
+                        for uid, _ in pairs(WHITELIST) do
+                            table.insert(list, uid)
+                        end
+                        if #list == 0 then
+                            WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                        else
+                            WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                        end
+                    end
+                })
+
+                return
+            else
+                WindUI:Notify({ Title = "验证失败", Content = "卡密错误，请重新输入", Duration = 2 })
             end
-        })
-    else
-        AdminGroup:Paragraph({
-            Title = "提示",
-            Desc = "只有作者才能访问管理功能"
-        })
-    end
+        end
+    })
 
     local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
     SettingsGroup:Button({
