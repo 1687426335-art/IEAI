@@ -317,6 +317,126 @@ function createUI()
         end)
     end)
 
+    -- ==================== 音乐播放器 ====================
+    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
+
+    -- 音乐列表
+    local MUSIC_LIST = {
+        { name = "半壶纱", id = "140168001118478" },
+        { name = "对你有感觉", id = "113476583412576" },
+        { name = "失眠", id = "124928120639248" },
+        { name = "中国人能飞", id = "79254667830418" },
+        { name = "忘情牛肉面", id = "72954292508946" },
+        { name = "无需多言", id = "114940361500053" },
+        { name = "出山", id = "108542841138539" },
+        { name = "来个好梗绷一绷", id = "120070812635771" },
+        { name = "孤独患者", id = "88257174439605" },
+        { name = "幻昼", id = "103093530102792" },
+        { name = "海屿你", id = "76421239273915" },
+        { name = "于是", id = "132959953803661" },
+        { name = "罗生门", id = "79952466129206" },
+        { name = "茫", id = "72194943092340" },
+        { name = "忘不掉的你", id = "91111816286323" },
+        { name = "DearD", id = "139047831212058" },
+        { name = "戒烟", id = "137671588958836" },
+    }
+
+    local musicNames = {}
+    for _, data in ipairs(MUSIC_LIST) do
+        table.insert(musicNames, data.name)
+    end
+
+    local selectedMusic = musicNames[1]
+    local selectedMusicId = MUSIC_LIST[1].id
+    local musicEnabled = false
+    local currentMusicSound = nil
+    local musicLoopThread = nil
+
+    local function stopMusic()
+        if musicLoopThread then
+            task.cancel(musicLoopThread)
+            musicLoopThread = nil
+        end
+        if currentMusicSound then
+            pcall(function()
+                currentMusicSound:Stop()
+                currentMusicSound:Destroy()
+            end)
+            currentMusicSound = nil
+        end
+    end
+
+    local function playMusic()
+        stopMusic()
+        if not musicEnabled then return end
+        musicLoopThread = task.spawn(function()
+            while musicEnabled and not isDestroyed do
+                pcall(function()
+                    currentMusicSound = Instance.new("Sound")
+                    currentMusicSound.SoundId = "rbxassetid://" .. selectedMusicId
+                    currentMusicSound.Volume = 0.5
+                    currentMusicSound.Looped = false
+                    currentMusicSound.Parent = player:WaitForChild("PlayerGui")
+                    currentMusicSound:Play()
+                    currentMusicSound.Ended:Wait()
+                    currentMusicSound:Destroy()
+                    currentMusicSound = nil
+                end)
+                task.wait(0.1)
+            end
+        end)
+    end
+
+    MusicGroup:Divider()
+    MusicGroup:Paragraph({
+        Title = "说明",
+        Desc = "选择歌曲后开启开关即可循环播放"
+    })
+
+    MusicGroup:Dropdown({
+        Title = "选择歌曲",
+        Values = musicNames,
+        Value = musicNames[1],
+        Callback = function(value)
+            selectedMusic = value
+            for _, data in ipairs(MUSIC_LIST) do
+                if data.name == value then
+                    selectedMusicId = data.id
+                    break
+                end
+            end
+            if musicEnabled then
+                playMusic()
+            end
+        end
+    })
+
+    MusicGroup:Toggle({
+        Title = "播放音乐",
+        Desc = "开启后循环播放选中的歌曲",
+        Value = false,
+        Callback = function(value)
+            musicEnabled = value
+            if value then
+                playMusic()
+                WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedMusic, Duration = 2 })
+            else
+                stopMusic()
+                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
+            end
+        end
+    })
+
+    MusicGroup:Button({
+        Title = "停止音乐",
+        Callback = function()
+            musicEnabled = false
+            stopMusic()
+            WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
+        end
+    })
+
     -- ==================== 其余原有功能 ====================
     local Settings = {
         HoldTime = 0,
@@ -406,23 +526,289 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- 主功能下的Tab
     local A = AddTab(MainSection, "玩家修改", "user")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
 
-    -- 玩家修改后面增加"飞天与速度"分类（作为主功能下的独立Tab）
-    local FlySpeedSection = Window:Section({
-        Title = "飞天与速度",
-        Opened = true,
+    -- ============================================================
+    -- 自动躲警察 Tab
+    -- ============================================================
+    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
+    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
+
+    local AutoEvadePolice = false
+    local EvadeDistance = 50
+    local EvadeStrength = 50
+    local EvadeConnection = nil
+
+    local function IsPolicePlayer(p)
+        if p == player then return false end
+        if p.Team then
+            local teamName = p.Team.Name or ""
+            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                return true
+            end
+        end
+        if p.Character then
+            for _, child in ipairs(p.Character:GetDescendants()) do
+                if child:IsA("StringValue") or child:IsA("BoolValue") then
+                    local name = child.Name:lower()
+                    if name:find("police") or name:find("cop") or name:find("警察") then
+                        return true
+                    end
+                end
+            end
+        end
+        for _, child in ipairs(p:GetChildren()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警察") then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function GetClosestPolice()
+        local char = player.Character
+        if not char then return nil, math.huge end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return nil, math.huge end
+        
+        local closest = nil
+        local closestDist = math.huge
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not IsPolicePlayer(p) then continue end
+            if not p.Character then continue end
+            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+            if not pRoot then continue end
+            local dist = (root.Position - pRoot.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closest = p
+            end
+        end
+        return closest, closestDist
+    end
+
+    local function StartEvadePolice()
+        if EvadeConnection then return end
+        local frameSkip = 0
+        EvadeConnection = RunService.Stepped:Connect(function()
+            if not AutoEvadePolice then return end
+            
+            frameSkip = frameSkip + 1
+            if frameSkip % 3 ~= 0 then return end
+            
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            local police, dist = GetClosestPolice()
+            if not police then return end
+            if dist > EvadeDistance then return end
+            
+            local policeRoot = police.Character:FindFirstChild("HumanoidRootPart")
+            if not policeRoot then return end
+            
+            local awayDir = (root.Position - policeRoot.Position).Unit
+            local forceStrength = EvadeStrength * (1 - (dist / EvadeDistance))
+            forceStrength = math.max(forceStrength, 5)
+            
+            local velocity = awayDir * forceStrength * 10
+            root.Velocity = velocity
+            root.AssemblyLinearVelocity = velocity
+            
+            for _, obj in ipairs(root:GetChildren()) do
+                if obj:IsA("BodyVelocity") and obj.Name ~= "EvadePolice" then
+                    obj:Destroy()
+                end
+            end
+        end)
+    end
+
+    local function StopEvadePolice()
+        if EvadeConnection then
+            EvadeConnection:Disconnect()
+            EvadeConnection = nil
+        end
+        local char = player.Character
+        if char then
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Velocity = Vector3.new(0, 0, 0)
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end
+
+    PoliceEvadeGroup:Divider()
+    PoliceEvadeGroup:Toggle({
+        Title = "启用自动躲警察",
+        Desc = "警察靠近时自动弹开远离",
+        Value = false,
+        Callback = function(value)
+            AutoEvadePolice = value
+            if value then
+                StartEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已开启，警察靠近将自动弹开", Duration = 2 })
+            else
+                StopEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已关闭", Duration = 2 })
+            end
+        end
     })
-    local H = AddTab(FlySpeedSection, "飞天与速度", "plane")
+    PoliceEvadeGroup:Slider({
+        Title = "触发距离",
+        Desc = "警察进入该距离时触发弹开（米）",
+        Step = 1,
+        Value = { Min = 10, Max = 100, Default = 50 },
+        Callback = function(value)
+            EvadeDistance = value
+        end
+    })
+    PoliceEvadeGroup:Slider({
+        Title = "弹开力度",
+        Desc = "数值越大弹开越远",
+        Step = 1,
+        Value = { Min = 10, Max = 200, Default = 50 },
+        Callback = function(value)
+            EvadeStrength = value
+        end
+    })
 
     -- ============================================================
-    -- 飞天与速度 Tab (H)
+    -- 玩家修改 Tab (A) - 完整修复版
     -- ============================================================
+    local function ApplyHitbox()
+        if isDestroyed or not Settings.HitboxEnabled then return end
+        local players = Players:GetPlayers()
+        local newAffected = {}
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player and p.Character then
+                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
+                else
+                    local char = p.Character
+                    local head = char:FindFirstChild("Head")
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 and head then
+                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                        head.Transparency = 1
+                        head.Color = Color3.fromRGB(255, 215, 0)
+                        head.Material = Enum.Material.Neon
+                        head.CanCollide = false
+                        newAffected[head] = true
+                    end
+                end
+            end
+        end
+        for head, _ in pairs(affectedHeads) do
+            if not newAffected[head] and head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = newAffected
+    end
+
+    local function ResetHitbox()
+        for head, _ in pairs(affectedHeads) do
+            if head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = {}
+    end
+
+    local function UpdateWhitelist()
+        if isDestroyed then return end
+        Whitelist = {}
+        local players = Players:GetPlayers()
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player then
+                pcall(function()
+                    if p:IsFriendsWith(player.UserId) then
+                        Whitelist[p.UserId] = true
+                    end
+                end)
+            end
+        end
+    end
+
+    local interactEnabled = false
+    A:Divider({ Text = "快速互动" })
+    A:Toggle({
+        Title = "启用快速互动",
+        Value = false,
+        Callback = function(value)
+            interactEnabled = value
+            if value then
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        obj.HoldDuration = Settings.HoldTime
+                        obj.MaxActivationDistance = Settings.Distance
+                    end
+                end
+            end
+        end
+    })
+    A:Slider({
+        Title = "按住时间",
+        Step = 0.1,
+        Value = { Min = 0, Max = 10, Default = 0 },
+        Callback = function(value)
+            Settings.HoldTime = value
+            if interactEnabled then
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        obj.HoldDuration = value
+                    end
+                end
+            end
+        end
+    })
+    A:Slider({
+        Title = "触发距离",
+        Step = 1,
+        Value = { Min = 5, Max = 150, Default = 25 },
+        Callback = function(value)
+            Settings.Distance = value
+            if interactEnabled then
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        obj.MaxActivationDistance = value
+                    end
+                end
+            end
+        end
+    })
+
+    A:Divider({ Text = "伤害免疫" })
+    local godOn = false
+    A:Toggle({
+        Title = "免疫部分伤害",
+        Value = false,
+        Callback = function(value)
+            godOn = value
+        end
+    })
+    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
+
+    A:Divider({ Text = "飞行" })
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -578,15 +964,14 @@ function createUI()
         end
     end)
 
-    H:Divider({ Text = "飞行" })
-    H:Toggle({
+    A:Toggle({
         Title = "飞行（绕过）",
         Value = false,
         Callback = function(value)
             if value then startFly() else stopFly() end
         end
     })
-    H:Slider({
+    A:Slider({
         Title = "飞行速度",
         Step = 1,
         Value = { Min = 10, Max = 620, Default = 35 },
@@ -595,7 +980,7 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关
+    -- 飞天快捷开关（移到飞行速度下面）
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -702,8 +1087,7 @@ function createUI()
         table.insert(connections, statusConn)
     end
 
-    H:Divider()
-    H:Toggle({
+    A:Toggle({
         Title = "飞天快捷开关",
         Desc = "开启后在屏幕显示可拖动的飞天开关",
         Value = false,
@@ -716,168 +1100,6 @@ function createUI()
             end
         end
     })
-
-    H:Divider({ Text = "防摔" })
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
-    H:Toggle({
-        Title = "防摔",
-        Desc = "从高处落地时速度平稳",
-        Value = false,
-        Callback = function(value)
-            antiFallEnabled = value
-            if value then
-                if antiFallConnection then antiFallConnection:Disconnect() end
-                antiFallConnection = RunService.Heartbeat:Connect(function()
-                    if not antiFallEnabled then return end
-                    local char = player.Character
-                    if not char then return end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if not hum then return end
-                    
-                    local vel = root.Velocity
-                    if vel.Y < -20 and hum.PlatformStand == false then
-                        local newY = math.clamp(vel.Y, -40, -10)
-                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
-                    end
-                end)
-            else
-                if antiFallConnection then
-                    antiFallConnection:Disconnect()
-                    antiFallConnection = nil
-                end
-            end
-        end
-    })
-
-    -- ============================================================
-    -- 玩家修改 Tab (A) - 移除了飞行相关功能
-    -- ============================================================
-    local function ApplyHitbox()
-        if isDestroyed or not Settings.HitboxEnabled then return end
-        local players = Players:GetPlayers()
-        local newAffected = {}
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player and p.Character then
-                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
-                else
-                    local char = p.Character
-                    local head = char:FindFirstChild("Head")
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 and head then
-                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
-                        head.Transparency = 1
-                        head.Color = Color3.fromRGB(255, 215, 0)
-                        head.Material = Enum.Material.Neon
-                        head.CanCollide = false
-                        newAffected[head] = true
-                    end
-                end
-            end
-        end
-        for head, _ in pairs(affectedHeads) do
-            if not newAffected[head] and head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = newAffected
-    end
-
-    local function ResetHitbox()
-        for head, _ in pairs(affectedHeads) do
-            if head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = {}
-    end
-
-    local function UpdateWhitelist()
-        if isDestroyed then return end
-        Whitelist = {}
-        local players = Players:GetPlayers()
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player then
-                pcall(function()
-                    if p:IsFriendsWith(player.UserId) then
-                        Whitelist[p.UserId] = true
-                    end
-                end)
-            end
-        end
-    end
-
-    local interactEnabled = false
-    A:Divider({ Text = "快速互动" })
-    A:Toggle({
-        Title = "启用快速互动",
-        Value = false,
-        Callback = function(value)
-            interactEnabled = value
-            if value then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.HoldDuration = Settings.HoldTime
-                        obj.MaxActivationDistance = Settings.Distance
-                    end
-                end
-            end
-        end
-    })
-    A:Slider({
-        Title = "按住时间",
-        Step = 0.1,
-        Value = { Min = 0, Max = 10, Default = 0 },
-        Callback = function(value)
-            Settings.HoldTime = value
-            if interactEnabled then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.HoldDuration = value
-                    end
-                end
-            end
-        end
-    })
-    A:Slider({
-        Title = "触发距离",
-        Step = 1,
-        Value = { Min = 5, Max = 150, Default = 25 },
-        Callback = function(value)
-            Settings.Distance = value
-            if interactEnabled then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.MaxActivationDistance = value
-                    end
-                end
-            end
-        end
-    })
-
-    A:Divider({ Text = "伤害免疫" })
-    local godOn = false
-    A:Toggle({
-        Title = "免疫部分伤害",
-        Value = false,
-        Callback = function(value)
-            godOn = value
-        end
-    })
-    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
     A:Divider({ Text = "穿墙" })
     A:Toggle({
@@ -983,6 +1205,42 @@ function createUI()
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
+        end
+    })
+
+    A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
+    A:Toggle({
+        Title = "防摔",
+        Desc = "从高处落地时速度平稳",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
+            if value then
+                if antiFallConnection then antiFallConnection:Disconnect() end
+                antiFallConnection = RunService.Heartbeat:Connect(function()
+                    if not antiFallEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    
+                    local vel = root.Velocity
+                    if vel.Y < -20 and hum.PlatformStand == false then
+                        local newY = math.clamp(vel.Y, -40, -10)
+                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    end
+                end)
+            else
+                if antiFallConnection then
+                    antiFallConnection:Disconnect()
+                    antiFallConnection = nil
+                end
+            end
         end
     })
 
@@ -1671,7 +1929,8 @@ function createUI()
         for _, p in ipairs(Players:GetPlayers()) do
             if p == player then continue end
             if not p.Character then
-                RemoveESP(p.UserId)
+                Remove]
+                if not dESP(p.UserId)
                 continue
             end
             if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
@@ -1685,8 +1944,7 @@ function createUI()
             if not d.Billboard or not d.Billboard.Parent then
                 ESP_LIST[p.UserId] = nil
                 BuildESP(p)
-                d = ESP_LIST[p.UserId]
-                if not d then continue end
+                d = ESP_LIST[p.UserId then continue end
             end
             d.Billboard.Enabled = true
 
@@ -1832,10 +2090,11 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 设置 Tab (G)
+    -- 设置 Tab (G) - 卡密验证修复版
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
+    -- 用Groupbox包裹验证区域
     local keyInput = nil
     local AdminGroup = SettingsTab:Section({ Title = "管理员验证", Opened = true })
 
@@ -1866,6 +2125,7 @@ function createUI()
 
                 WindUI:Notify({ Title = "验证成功", Content = "欢迎" .. identity .. "！", Duration = 3 })
 
+                -- 清空验证界面显示管理面板
                 AdminGroup:Clear()
                 AdminGroup:Paragraph({
                     Title = "已授权",
@@ -1873,6 +2133,7 @@ function createUI()
                 })
                 AdminGroup:Divider()
 
+                -- 黑名单管理
                 AdminGroup:Paragraph({
                     Title = "黑名单管理",
                     Desc = "输入要拉黑的设备UID，点击拉黑即可"
@@ -1996,6 +2257,7 @@ function createUI()
         end
     })
 
+    -- 脚本管理
     local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
     SettingsGroup:Button({
         Title = "卸载脚本",
