@@ -60,14 +60,14 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 统一设备UID检测（修复版：不含game.GameId） ====================
+    -- ==================== 统一设备UID检测 ====================
     local function getDeviceUID()
         local userId = player.UserId
         local success, machineId = pcall(function()
             return game:GetService("HttpService"):GetMachineId()
         end)
         if not success then machineId = "unknown" end
-        local combined = userId .. "_" .. machineId
+        local combined = userId .. "_" .. machineId .. "_" .. game.GameId
         local uid = ""
         for i = 1, #combined do
             uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
@@ -131,9 +131,8 @@ function createUI()
         blockDesc.Size = UDim2.new(1, -40, 0, 50)
         blockDesc.Position = UDim2.new(0, 20, 0, 60)
         blockDesc.BackgroundTransparency = 1
-        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本（如果你是被管理员恶意拉黑可以跟作者申诉）"
-        blockDesc.TextColor3 = Color3"
-        authTitle.fromRGB(255, 200, 200)
+        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
+        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
         blockDesc.TextSize = 18
         blockDesc.Font = Enum.Font.GothamBold
         blockDesc.TextXAlignment = Enum.TextXAlignment.Center
@@ -176,7 +175,8 @@ function createUI()
         authTitle.Size = UDim2.new(1, 0, 0, 40)
         authTitle.Position = UDim2.new(0, 0, 0, 10)
         authTitle.BackgroundTransparency = 1
-        authTitle.Text = "未授权.TextColor3 = Color3.fromRGB(255, 200, 0)
+        authTitle.Text = "未授权"
+        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
         authTitle.TextSize = 28
         authTitle.Font = Enum.Font.GothamBold
         authTitle.TextXAlignment = Enum.TextXAlignment.Center
@@ -860,7 +860,7 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关
+    -- 飞天快捷开关（移到飞行速度下面）
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -2080,7 +2080,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 设置 Tab (G) - 卡密验证
+    -- 设置 Tab (G) - 卡密验证修复版
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
