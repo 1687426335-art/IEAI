@@ -1970,10 +1970,10 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 音乐 Tab
+    -- 音乐 Tab（含播放模式）
     -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "有些音乐的前面都会有作者名字我也没办法删掉🤓", Opened = true })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
     local SONG_LIST = {
         { name = "半壶纱", id = "140168001118478" },
@@ -2002,10 +2002,75 @@ function createUI()
     local selectedSong = SONG_LIST[1]
     local musicSound = nil
     local isMusicPlaying = false
+    local currentPlayIndex = 1
+    local playMode = "顺序播放" -- 顺序播放 / 循环播放 / 随机播放
+    local endedConnection = nil
 
     local songNames = {}
     for _, song in ipairs(SONG_LIST) do
         table.insert(songNames, song.name)
+    end
+
+    -- 播放指定索引的歌曲
+    local function PlaySongByIndex(index)
+        if index < 1 or index > #SONG_LIST then
+            if playMode == "顺序播放" then
+                index = 1
+            elseif playMode == "循环播放" then
+                index = 1
+            elseif playMode == "随机播放" then
+                index = math.random(1, #SONG_LIST)
+            end
+        end
+        
+        if index < 1 or index > #SONG_LIST then return end
+        
+        local song = SONG_LIST[index]
+        selectedSong = song
+        currentPlayIndex = index
+        
+        if musicSound then
+            musicSound:Stop()
+            musicSound:Destroy()
+            musicSound = nil
+        end
+        if endedConnection then
+            endedConnection:Disconnect()
+            endedConnection = nil
+        end
+        
+        pcall(function()
+            musicSound = Instance.new("Sound")
+            musicSound.SoundId = "rbxassetid://" .. song.id
+            musicSound.Volume = 0.5
+            musicSound.Looped = false
+            musicSound.Parent = player:WaitForChild("PlayerGui")
+            musicSound:Play()
+            WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. song.name, Duration = 2 })
+            
+            -- 监听歌曲结束
+            endedConnection = musicSound.Ended:Connect(function()
+                if not isMusicPlaying then return end
+                if playMode == "循环播放" then
+                    -- 循环播放同一首
+                    PlaySongByIndex(currentPlayIndex)
+                elseif playMode == "顺序播放" then
+                    -- 播放下一首
+                    local nextIndex = currentPlayIndex + 1
+                    if nextIndex > #SONG_LIST then
+                        nextIndex = 1
+                    end
+                    PlaySongByIndex(nextIndex)
+                elseif playMode == "随机播放" then
+                    -- 随机播放一首
+                    local randomIndex = math.random(1, #SONG_LIST)
+                    while randomIndex == currentPlayIndex and #SONG_LIST > 1 do
+                        randomIndex = math.random(1, #SONG_LIST)
+                    end
+                    PlaySongByIndex(randomIndex)
+                end
+            end)
+        end)
     end
 
     MusicGroup:Dropdown({
@@ -2013,27 +2078,15 @@ function createUI()
         Values = songNames,
         Value = songNames[1],
         Callback = function(value)
-            for _, song in ipairs(SONG_LIST) do
+            for i, song in ipairs(SONG_LIST) do
                 if song.name == value then
                     selectedSong = song
+                    currentPlayIndex = i
                     break
                 end
             end
             if isMusicPlaying then
-                if musicSound then
-                    musicSound:Stop()
-                    musicSound:Destroy()
-                    musicSound = nil
-                end
-                pcall(function()
-                    musicSound = Instance.new("Sound")
-                    musicSound.SoundId = "rbxassetid://" .. selectedSong.id
-                    musicSound.Volume = 0.5
-                    musicSound.Looped = true
-                    musicSound.Parent = player:WaitForChild("PlayerGui")
-                    musicSound:Play()
-                    WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedSong.name, Duration = 2 })
-                end)
+                PlaySongByIndex(currentPlayIndex)
             end
         end
     })
@@ -2047,27 +2100,18 @@ function createUI()
         Callback = function(value)
             isMusicPlaying = value
             if value then
-                pcall(function()
-                    if musicSound then
-                        musicSound:Stop()
-                        musicSound:Destroy()
-                        musicSound = nil
-                    end
-                    musicSound = Instance.new("Sound")
-                    musicSound.SoundId = "rbxassetid://" .. selectedSong.id
-                    musicSound.Volume = 0.5
-                    musicSound.Looped = true
-                    musicSound.Parent = player:WaitForChild("PlayerGui")
-                    musicSound:Play()
-                    WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedSong.name, Duration = 2 })
-                end)
+                PlaySongByIndex(currentPlayIndex)
             else
                 if musicSound then
                     musicSound:Stop()
                     musicSound:Destroy()
                     musicSound = nil
-                    WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
                 end
+                if endedConnection then
+                    endedConnection:Disconnect()
+                    endedConnection = nil
+                end
+                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
             end
         end
     })
@@ -2083,13 +2127,32 @@ function createUI()
         end
     })
 
+    MusicGroup:Divider()
+    MusicGroup:Paragraph({
+        Title = "播放模式",
+        Desc = "选择音乐的播放方式"
+    })
+
+    MusicGroup:Dropdown({
+        Title = "播放模式",
+        Values = { "顺序播放", "循环播放", "随机播放" },
+        Value = "顺序播放",
+        Callback = function(value)
+            playMode = value
+            WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
+            -- 如果正在播放，重新开始以应用新模式
+            if isMusicPlaying then
+                PlaySongByIndex(currentPlayIndex)
+            end
+        end
+    })
+
     -- ============================================================
     -- 设置 Tab (G) - 仅作者可见
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
     if DEVICE_UID == AUTHOR_UID then
-        -- 作者看到管理面板
         local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         AdminGroup:Paragraph({
             Title = "已授权",
@@ -2213,7 +2276,6 @@ function createUI()
             end
         })
     else
-        -- 非作者显示禁止访问
         local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         BlockGroup:Paragraph({
             Title = "禁止访问",
