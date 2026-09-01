@@ -84,7 +84,7 @@ function createUI()
     }
 
     local WHITELIST = {
-        -- 格式: ["设备UID"] = true,
+    ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
     }
 
     local function isBlacklisted(uid)
