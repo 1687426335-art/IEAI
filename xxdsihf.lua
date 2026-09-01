@@ -2044,7 +2044,7 @@ function createUI()
         pcall(function()
             musicSound = Instance.new("Sound")
             musicSound.SoundId = "rbxassetid://" .. song.id
-            musicSound.Volume = 0.5
+            musicSound.Volume = 1
             musicSound.Looped = false
             musicSound.Parent = player:WaitForChild("PlayerGui")
             musicSound:Play()
@@ -2057,7 +2057,7 @@ function createUI()
                 elseif playMode == "顺序播放" then
                     local nextIndex = currentPlayIndex + 1
                     if nextIndex > #SONG_LIST then
-                        nextIndex = 1
+                        nextIndex = 7
                     end
                     PlaySongByIndex(nextIndex)
                 elseif playMode == "随机播放" then
