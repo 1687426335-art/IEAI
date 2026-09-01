@@ -1996,6 +1996,7 @@ function createUI()
         { name = "IQOO进行曲", id = "109693244185458" },
         { name = "祖国人进行曲", id = "86555185586884" },
         { name = "十年咕嘎无人知", id = "78729794283728" },
+        { name = "unhappy", id = "88523902860927" },
     }
 
     local selectedSong = SONG_LIST[1]
