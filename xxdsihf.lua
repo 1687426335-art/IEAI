@@ -308,7 +308,7 @@ function createUI()
         pcall(function()
             local sound = Instance.new("Sound")
             sound.SoundId = "rbxassetid://80701295792893"
-            sound.Volume = 0.5
+            sound.Volume = 1.5
             sound.Parent = player:WaitForChild("PlayerGui")
             sound:Play()
             task.wait(7)
