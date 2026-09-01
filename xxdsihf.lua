@@ -311,7 +311,7 @@ function createUI()
             sound.Volume = 0.5
             sound.Parent = player:WaitForChild("PlayerGui")
             sound:Play()
-            task.wait(1)
+            task.wait(7)
             sound:Stop()
             sound:Destroy()
         end)
