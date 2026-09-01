@@ -77,15 +77,12 @@ function createUI()
     local DEVICE_UID = getDeviceUID()
 
     -- ==================== 黑名单与授权系统 ====================
-    -- 作者UID（你的设备）
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
-    -- 黑名单列表
     local BLACKLIST = {
         ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
 
-    -- 授权列表（已授权的设备）
     local WHITELIST = {
         ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
     }
@@ -311,7 +308,7 @@ function createUI()
         pcall(function()
             local sound = Instance.new("Sound")
             sound.SoundId = "rbxassetid://80701295792893"
-            sound.Volume = 1.5
+            sound.Volume = 0.5
             sound.Parent = player:WaitForChild("PlayerGui")
             sound:Play()
             task.wait(7)
@@ -409,289 +406,74 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
+    -- ============================================================
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → ...
+    -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
+    local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
+    local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
 
     -- ============================================================
-    -- 自动躲警察 Tab
+    -- 互动 Tab（快速互动相关）
     -- ============================================================
-    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
-    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
-
-    local AutoEvadePolice = false
-    local EvadeDistance = 50
-    local EvadeStrength = 50
-    local EvadeConnection = nil
-
-    local function IsPolicePlayer(p)
-        if p == player then return false end
-        if p.Team then
-            local teamName = p.Team.Name or ""
-            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
-                return true
-            end
-        end
-        if p.Character then
-            for _, child in ipairs(p.Character:GetDescendants()) do
-                if child:IsA("StringValue") or child:IsA("BoolValue") then
-                    local name = child.Name:lower()
-                    if name:find("police") or name:find("cop") or name:find("警察") then
-                        return true
-                    end
-                end
-            end
-        end
-        for _, child in ipairs(p:GetChildren()) do
-            if child:IsA("StringValue") or child:IsA("BoolValue") then
-                local name = child.Name:lower()
-                if name:find("police") or name:find("cop") or name:find("警察") then
-                    return true
-                end
-            end
-        end
-        return false
-    end
-
-    local function GetClosestPolice()
-        local char = player.Character
-        if not char then return nil, math.huge end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if not root then return nil, math.huge end
-        
-        local closest = nil
-        local closestDist = math.huge
-        
-        for _, p in ipairs(Players:GetPlayers()) do
-            if not IsPolicePlayer(p) then continue end
-            if not p.Character then continue end
-            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-            if not pRoot then continue end
-            local dist = (root.Position - pRoot.Position).Magnitude
-            if dist < closestDist then
-                closestDist = dist
-                closest = p
-            end
-        end
-        return closest, closestDist
-    end
-
-    local function StartEvadePolice()
-        if EvadeConnection then return end
-        local frameSkip = 0
-        EvadeConnection = RunService.Stepped:Connect(function()
-            if not AutoEvadePolice then return end
-            
-            frameSkip = frameSkip + 1
-            if frameSkip % 3 ~= 0 then return end
-            
-            local char = player.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            
-            local police, dist = GetClosestPolice()
-            if not police then return end
-            if dist > EvadeDistance then return end
-            
-            local policeRoot = police.Character:FindFirstChild("HumanoidRootPart")
-            if not policeRoot then return end
-            
-            local awayDir = (root.Position - policeRoot.Position).Unit
-            local forceStrength = EvadeStrength * (1 - (dist / EvadeDistance))
-            forceStrength = math.max(forceStrength, 5)
-            
-            local velocity = awayDir * forceStrength * 10
-            root.Velocity = velocity
-            root.AssemblyLinearVelocity = velocity
-            
-            for _, obj in ipairs(root:GetChildren()) do
-                if obj:IsA("BodyVelocity") and obj.Name ~= "EvadePolice" then
-                    obj:Destroy()
-                end
-            end
-        end)
-    end
-
-    local function StopEvadePolice()
-        if EvadeConnection then
-            EvadeConnection:Disconnect()
-            EvadeConnection = nil
-        end
-        local char = player.Character
-        if char then
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.Velocity = Vector3.new(0, 0, 0)
-                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            end
-        end
-    end
-
-    PoliceEvadeGroup:Divider()
-    PoliceEvadeGroup:Toggle({
-        Title = "启用自动躲警察",
-        Desc = "警察靠近时自动弹开远离",
-        Value = false,
-        Callback = function(value)
-            AutoEvadePolice = value
-            if value then
-                StartEvadePolice()
-                WindUI:Notify({ Title = "自动躲警察", Content = "已开启，警察靠近将自动弹开", Duration = 2 })
-            else
-                StopEvadePolice()
-                WindUI:Notify({ Title = "自动躲警察", Content = "已关闭", Duration = 2 })
-            end
-        end
-    })
-    PoliceEvadeGroup:Slider({
-        Title = "触发距离",
-        Desc = "警察进入该距离时触发弹开（米）",
-        Step = 1,
-        Value = { Min = 10, Max = 100, Default = 50 },
-        Callback = function(value)
-            EvadeDistance = value
-        end
-    })
-    PoliceEvadeGroup:Slider({
-        Title = "弹开力度",
-        Desc = "数值越大弹开越远",
-        Step = 1,
-        Value = { Min = 10, Max = 200, Default = 50 },
-        Callback = function(value)
-            EvadeStrength = value
-        end
-    })
-
-    -- ============================================================
-    -- 玩家修改 Tab (A) - 修复版（含防摔）
-    -- ============================================================
-    local function ApplyHitbox()
-        if isDestroyed or not Settings.HitboxEnabled then return end
-        local players = Players:GetPlayers()
-        local newAffected = {}
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player and p.Character then
-                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
-                else
-                    local char = p.Character
-                    local head = char:FindFirstChild("Head")
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 and head then
-                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
-                        head.Transparency = 1
-                        head.Color = Color3.fromRGB(255, 215, 0)
-                        head.Material = Enum.Material.Neon
-                        head.CanCollide = false
-                        newAffected[head] = true
-                    end
-                end
-            end
-        end
-        for head, _ in pairs(affectedHeads) do
-            if not newAffected[head] and head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = newAffected
-    end
-
-    local function ResetHitbox()
-        for head, _ in pairs(affectedHeads) do
-            if head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = {}
-    end
-
-    local function UpdateWhitelist()
-        if isDestroyed then return end
-        Whitelist = {}
-        local players = Players:GetPlayers()
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player then
-                pcall(function()
-                    if p:IsFriendsWith(player.UserId) then
-                        Whitelist[p.UserId] = true
-                    end
-                end)
-            end
-        end
-    end
-
     local interactEnabled = false
-    A:Divider({ Text = "快速互动" })
-    A:Toggle({
+
+    local function ScanPrompts()
+        if isDestroyed or not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = Settings.HoldTime
+                obj.MaxActivationDistance = Settings.Distance
+            end
+        end
+    end
+
+    InteractTab:Divider({ Text = "快速互动" })
+    InteractTab:Toggle({
         Title = "启用快速互动",
         Value = false,
         Callback = function(value)
             interactEnabled = value
             if value then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.HoldDuration = Settings.HoldTime
-                        obj.MaxActivationDistance = Settings.Distance
-                    end
-                end
+                ScanPrompts()
             end
         end
     })
-    A:Slider({
+    InteractTab:Slider({
         Title = "按住时间",
         Step = 0.1,
         Value = { Min = 0, Max = 10, Default = 0 },
         Callback = function(value)
             Settings.HoldTime = value
-            if interactEnabled then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.HoldDuration = value
-                    end
-                end
-            end
+            if interactEnabled then ScanPrompts() end
         end
     })
-    A:Slider({
+    InteractTab:Slider({
         Title = "触发距离",
         Step = 1,
         Value = { Min = 5, Max = 150, Default = 25 },
         Callback = function(value)
             Settings.Distance = value
-            if interactEnabled then
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        obj.MaxActivationDistance = value
-                    end
-                end
-            end
+            if interactEnabled then ScanPrompts() end
         end
     })
 
-    A:Divider({ Text = "伤害免疫" })
-    local godOn = false
-    A:Toggle({
-        Title = "免疫部分伤害",
-        Value = false,
-        Callback = function(value)
-            godOn = value
+    -- workspace 监听
+    workspace.DescendantAdded:Connect(function(obj)
+        task.wait(0.1)
+        if obj:IsA("ProximityPrompt") and interactEnabled then
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
         end
-    })
-    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
+    end)
 
-    A:Divider({ Text = "飞行" })
+    -- ============================================================
+    -- 飞天与加速 Tab
+    -- ============================================================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -847,14 +629,15 @@ function createUI()
         end
     end)
 
-    A:Toggle({
+    FlyTab:Divider({ Text = "飞行" })
+    FlyTab:Toggle({
         Title = "飞行（绕过）",
         Value = false,
         Callback = function(value)
             if value then startFly() else stopFly() end
         end
     })
-    A:Slider({
+    FlyTab:Slider({
         Title = "飞行速度",
         Step = 1,
         Value = { Min = 10, Max = 620, Default = 35 },
@@ -863,7 +646,7 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关（移到飞行速度下面）
+    -- 飞天快捷开关
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -970,7 +753,7 @@ function createUI()
         table.insert(connections, statusConn)
     end
 
-    A:Toggle({
+    FlyTab:Toggle({
         Title = "飞天快捷开关",
         Desc = "开启后在屏幕显示可拖动的飞天开关",
         Value = false,
@@ -984,41 +767,111 @@ function createUI()
         end
     })
 
-    A:Divider({ Text = "防摔" })
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
-    A:Toggle({
-        Title = "防摔",
-        Desc = "从高处落地时速度平稳",
+    FlyTab:Divider({ Text = "移速" })
+    local speedBypassOn = false
+    local speedBypassValue = 20
+    FlyTab:Toggle({
+        Title = "修改移速（绕过）",
         Value = false,
         Callback = function(value)
-            antiFallEnabled = value
-            if value then
-                if antiFallConnection then antiFallConnection:Disconnect() end
-                antiFallConnection = RunService.Heartbeat:Connect(function()
-                    if not antiFallEnabled then return end
-                    local char = player.Character
-                    if not char then return end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
+            speedBypassOn = value
+        end
+    })
+    FlyTab:Slider({
+        Title = "移速",
+        Step = 1,
+        Value = { Min = 5, Max = 150, Default = 20 },
+        Callback = function(value)
+            speedBypassValue = value
+        end
+    })
+    RunService.Heartbeat:Connect(function(dt)
+        if not speedBypassOn then return end
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and root and hum.MoveDirection.Magnitude > 0 then
+            root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
+        end
+    end)
+
+    -- ============================================================
+    -- 玩家修改 Tab（剩余功能：伤害免疫、穿墙、体力、防甩飞、防摔）
+    -- ============================================================
+    local function ApplyHitbox()
+        if isDestroyed or not Settings.HitboxEnabled then return end
+        local players = Players:GetPlayers()
+        local newAffected = {}
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player and p.Character then
+                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
+                else
+                    local char = p.Character
+                    local head = char:FindFirstChild("Head")
                     local hum = char:FindFirstChildOfClass("Humanoid")
-                    if not hum then return end
-                    
-                    local vel = root.Velocity
-                    if vel.Y < -20 and hum.PlatformStand == false then
-                        local newY = math.clamp(vel.Y, -40, -10)
-                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    if hum and hum.Health > 0 and head then
+                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                        head.Transparency = 1
+                        head.Color = Color3.fromRGB(255, 215, 0)
+                        head.Material = Enum.Material.Neon
+                        head.CanCollide = false
+                        newAffected[head] = true
                     end
-                end)
-            else
-                if antiFallConnection then
-                    antiFallConnection:Disconnect()
-                    antiFallConnection = nil
                 end
             end
         end
+        for head, _ in pairs(affectedHeads) do
+            if not newAffected[head] and head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = newAffected
+    end
+
+    local function ResetHitbox()
+        for head, _ in pairs(affectedHeads) do
+            if head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = {}
+    end
+
+    local function UpdateWhitelist()
+        if isDestroyed then return end
+        Whitelist = {}
+        local players = Players:GetPlayers()
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player then
+                pcall(function()
+                    if p:IsFriendsWith(player.UserId) then
+                        Whitelist[p.UserId] = true
+                    end
+                end)
+            end
+        end
+    end
+
+    A:Divider({ Text = "伤害免疫" })
+    local godOn = false
+    A:Toggle({
+        Title = "免疫部分伤害",
+        Value = false,
+        Callback = function(value)
+            godOn = value
+        end
     })
+    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
     A:Divider({ Text = "穿墙" })
     A:Toggle({
@@ -1047,34 +900,6 @@ function createUI()
             end
         end
     })
-
-    A:Divider({ Text = "移速" })
-    local speedBypassOn = false
-    local speedBypassValue = 20
-    A:Toggle({
-        Title = "修改移速（绕过）",
-        Value = false,
-        Callback = function(value)
-            speedBypassOn = value
-        end
-    })
-    A:Slider({
-        Title = "移速",
-        Step = 1,
-        Value = { Min = 5, Max = 150, Default = 20 },
-        Callback = function(value)
-            speedBypassValue = value
-        end
-    })
-    RunService.Heartbeat:Connect(function(dt)
-        if not speedBypassOn then return end
-        local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if hum and root and hum.MoveDirection.Magnitude > 0 then
-            root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
-        end
-    end)
 
     A:Divider({ Text = "体力" })
     local staminaOn = false
@@ -1124,6 +949,42 @@ function createUI()
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
+        end
+    })
+
+    A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
+    A:Toggle({
+        Title = "防摔",
+        Desc = "从高处落地时速度平稳",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
+            if value then
+                if antiFallConnection then antiFallConnection:Disconnect() end
+                antiFallConnection = RunService.Heartbeat:Connect(function()
+                    if not antiFallEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    
+                    local vel = root.Velocity
+                    if vel.Y < -20 and hum.PlatformStand == false then
+                        local newY = math.clamp(vel.Y, -40, -10)
+                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    end
+                end)
+            else
+                if antiFallConnection then
+                    antiFallConnection:Disconnect()
+                    antiFallConnection = nil
+                end
+            end
         end
     })
 
@@ -2044,7 +1905,7 @@ function createUI()
         pcall(function()
             musicSound = Instance.new("Sound")
             musicSound.SoundId = "rbxassetid://" .. song.id
-            musicSound.Volume = 1
+            musicSound.Volume = 0.5
             musicSound.Looped = false
             musicSound.Parent = player:WaitForChild("PlayerGui")
             musicSound:Play()
@@ -2057,7 +1918,7 @@ function createUI()
                 elseif playMode == "顺序播放" then
                     local nextIndex = currentPlayIndex + 1
                     if nextIndex > #SONG_LIST then
-                        nextIndex = 7
+                        nextIndex = 1
                     end
                     PlaySongByIndex(nextIndex)
                 elseif playMode == "随机播放" then
