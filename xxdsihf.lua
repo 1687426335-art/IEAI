@@ -370,7 +370,7 @@ function createUI()
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
         Title = "wdfex",
-        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
+        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启绕过反作弊祝您玩的愉快"
     })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
