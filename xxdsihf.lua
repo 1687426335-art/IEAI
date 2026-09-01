@@ -311,7 +311,7 @@ function createUI()
             sound.Volume = 0.5
             sound.Parent = player:WaitForChild("PlayerGui")
             sound:Play()
-            task.wait(3)
+            task.wait(7)
             sound:Stop()
             sound:Destroy()
         end)
@@ -689,6 +689,7 @@ function createUI()
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
     A:Divider({ Text = "角色修改" })
+    -- 飞行功能
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -860,6 +861,138 @@ function createUI()
         end
     })
 
+    -- 飞天快捷开关（可拖动，带锁定）
+    local flyQuickToggle = false
+    local flyQuickLocked = false
+    local flyQuickScreenGui = nil
+    local flyQuickButton = nil
+    local flyQuickStatusLabel = nil
+    local isDragging = false
+    local dragStart = nil
+    local startPos = nil
+
+    local function DestroyFlyQuickToggle()
+        if flyQuickScreenGui then
+            flyQuickScreenGui:Destroy()
+            flyQuickScreenGui = nil
+            flyQuickButton = nil
+            flyQuickStatusLabel = nil
+        end
+    end
+
+    local function CreateFlyQuickToggle()
+        if flyQuickButton then return end
+        flyQuickScreenGui = Instance.new("ScreenGui")
+        flyQuickScreenGui.Name = "FlyQuickToggle"
+        flyQuickScreenGui.ResetOnSpawn = false
+        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://7734068321"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
+        button.Parent = flyQuickScreenGui
+        flyQuickButton = button
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = button
+
+        flyQuickStatusLabel = Instance.new("TextLabel")
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.BackgroundTransparency = 1
+        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.Font = Enum.Font.GothamBold
+        flyQuickStatusLabel.TextStrokeTransparency = 0.3
+        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        flyQuickStatusLabel.Text = "飞行: 关"
+        flyQuickStatusLabel.Parent = button
+
+        local function updateFlyStatus()
+            if flyQuickStatusLabel then
+                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                if flyQuickButton then
+                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                end
+            end
+        end
+
+        button.MouseButton1Click:Connect(function()
+            if flyState.enabled then stopFly() else startFly() end
+            updateFlyStatus()
+        end)
+
+        -- 拖动逻辑（受锁定开关控制）
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if flyQuickLocked then return end
+                isDragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
+
+        button.InputChanged:Connect(function(input)
+            if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                if flyQuickLocked then return end
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
+                    startPos.Y.Offset + delta.Y
+                )
+                button.Position = newPos
+            end
+        end)
+
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                isDragging = false
+            end
+        end)
+
+        updateFlyStatus()
+
+        local statusConn = RunService.Heartbeat:Connect(function()
+            if flyQuickToggle and flyQuickStatusLabel then
+                updateFlyStatus()
+            end
+        end)
+        table.insert(connections, statusConn)
+    end
+
+    A:Toggle({
+        Title = "飞天快捷开关",
+        Desc = "开启后在屏幕显示可拖动的飞天开关",
+        Value = false,
+        Callback = function(value)
+            flyQuickToggle = value
+            if value then
+                CreateFlyQuickToggle()
+            else
+                DestroyFlyQuickToggle()
+            end
+        end
+    })
+    A:Toggle({
+        Title = "锁定飞天快捷开关",
+        Desc = "开启后飞天快捷开关无法拖动",
+        Value = false,
+        Callback = function(value)
+            flyQuickLocked = value
+        end
+    })
+
     A:Divider({ Text = "穿墙" })
     A:Toggle({
         Title = "启用人物穿墙",
@@ -964,127 +1097,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
-        end
-    })
-
-    A:Divider({ Text = "飞天快捷开关" })
-    local flyQuickToggle = false
-    local flyQuickScreenGui = nil
-    local flyQuickButton = nil
-    local flyQuickStatusLabel = nil
-
-    local function DestroyFlyQuickToggle()
-        if flyQuickScreenGui then
-            flyQuickScreenGui:Destroy()
-            flyQuickScreenGui = nil
-            flyQuickButton = nil
-            flyQuickStatusLabel = nil
-        end
-    end
-
-    local function CreateFlyQuickToggle()
-        if flyQuickButton then return end
-        flyQuickScreenGui = Instance.new("ScreenGui")
-        flyQuickScreenGui.Name = "FlyQuickToggle"
-        flyQuickScreenGui.ResetOnSpawn = false
-        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-
-        local button = Instance.new("ImageButton")
-        button.Size = UDim2.new(0, 60, 0, 60)
-        button.Position = UDim2.new(0.5, -30, 0.15, 0)
-        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.15
-        button.BorderSizePixel = 2
-        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://7734068321"
-        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
-        button.ScaleType = Enum.ScaleType.Fit
-        button.Parent = flyQuickScreenGui
-        flyQuickButton = button
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = button
-
-        flyQuickStatusLabel = Instance.new("TextLabel")
-        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
-        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
-        flyQuickStatusLabel.BackgroundTransparency = 1
-        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flyQuickStatusLabel.TextSize = 12
-        flyQuickStatusLabel.Font = Enum.Font.GothamBold
-        flyQuickStatusLabel.TextStrokeTransparency = 0.3
-        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        flyQuickStatusLabel.Text = "飞行: 关"
-        flyQuickStatusLabel.Parent = button
-
-        local function updateFlyStatus()
-            if flyQuickStatusLabel then
-                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                if flyQuickButton then
-                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                end
-            end
-        end
-
-        button.MouseButton1Click:Connect(function()
-            if flyState.enabled then stopFly() else startFly() end
-            updateFlyStatus()
-        end)
-
-        local dragging = false
-        local dragStart = nil
-        local startPos = nil
-
-        button.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = button.Position
-            end
-        end)
-
-        button.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                local newPos = UDim2.new(
-                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
-                    startPos.Y.Offset + delta.Y
-                )
-                button.Position = newPos
-            end
-        end)
-
-        button.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
-        updateFlyStatus()
-
-        local statusConn = RunService.Heartbeat:Connect(function()
-            if flyQuickToggle and flyQuickStatusLabel then
-                updateFlyStatus()
-            end
-        end)
-        table.insert(connections, statusConn)
-    end
-
-    A:Toggle({
-        Title = "飞天快捷开关",
-        Desc = "开启后在屏幕显示可拖动的飞天开关",
-        Value = false,
-        Callback = function(value)
-            flyQuickToggle = value
-            if value then
-                CreateFlyQuickToggle()
-            else
-                DestroyFlyQuickToggle()
-            end
         end
     })
 
@@ -1934,11 +1946,10 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 设置 Tab (G) - 卡密验证修复版
+    -- 设置 Tab (G)
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
-    -- 用Groupbox包裹验证区域
     local keyInput = nil
     local AdminGroup = SettingsTab:Section({ Title = "管理员验证", Opened = true })
 
@@ -1969,7 +1980,6 @@ function createUI()
 
                 WindUI:Notify({ Title = "验证成功", Content = "欢迎" .. identity .. "！", Duration = 3 })
 
-                -- 清空验证界面显示管理面板
                 AdminGroup:Clear()
                 AdminGroup:Paragraph({
                     Title = "已授权",
@@ -1977,7 +1987,6 @@ function createUI()
                 })
                 AdminGroup:Divider()
 
-                -- 黑名单管理
                 AdminGroup:Paragraph({
                     Title = "黑名单管理",
                     Desc = "输入要拉黑的设备UID，点击拉黑即可"
@@ -2101,7 +2110,6 @@ function createUI()
         end
     })
 
-    -- 脚本管理
     local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
     SettingsGroup:Button({
         Title = "卸载脚本",
