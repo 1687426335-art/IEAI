@@ -317,126 +317,6 @@ function createUI()
         end)
     end)
 
-    -- ==================== 音乐播放器 ====================
-    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
-
-    -- 音乐列表
-    local MUSIC_LIST = {
-        { name = "半壶纱", id = "140168001118478" },
-        { name = "对你有感觉", id = "113476583412576" },
-        { name = "失眠", id = "124928120639248" },
-        { name = "中国人能飞", id = "79254667830418" },
-        { name = "忘情牛肉面", id = "72954292508946" },
-        { name = "无需多言", id = "114940361500053" },
-        { name = "出山", id = "108542841138539" },
-        { name = "来个好梗绷一绷", id = "120070812635771" },
-        { name = "孤独患者", id = "88257174439605" },
-        { name = "幻昼", id = "103093530102792" },
-        { name = "海屿你", id = "76421239273915" },
-        { name = "于是", id = "132959953803661" },
-        { name = "罗生门", id = "79952466129206" },
-        { name = "茫", id = "72194943092340" },
-        { name = "忘不掉的你", id = "91111816286323" },
-        { name = "DearD", id = "139047831212058" },
-        { name = "戒烟", id = "137671588958836" },
-    }
-
-    local musicNames = {}
-    for _, data in ipairs(MUSIC_LIST) do
-        table.insert(musicNames, data.name)
-    end
-
-    local selectedMusic = musicNames[1]
-    local selectedMusicId = MUSIC_LIST[1].id
-    local musicEnabled = false
-    local currentMusicSound = nil
-    local musicLoopThread = nil
-
-    local function stopMusic()
-        if musicLoopThread then
-            task.cancel(musicLoopThread)
-            musicLoopThread = nil
-        end
-        if currentMusicSound then
-            pcall(function()
-                currentMusicSound:Stop()
-                currentMusicSound:Destroy()
-            end)
-            currentMusicSound = nil
-        end
-    end
-
-    local function playMusic()
-        stopMusic()
-        if not musicEnabled then return end
-        musicLoopThread = task.spawn(function()
-            while musicEnabled and not isDestroyed do
-                pcall(function()
-                    currentMusicSound = Instance.new("Sound")
-                    currentMusicSound.SoundId = "rbxassetid://" .. selectedMusicId
-                    currentMusicSound.Volume = 0.5
-                    currentMusicSound.Looped = false
-                    currentMusicSound.Parent = player:WaitForChild("PlayerGui")
-                    currentMusicSound:Play()
-                    currentMusicSound.Ended:Wait()
-                    currentMusicSound:Destroy()
-                    currentMusicSound = nil
-                end)
-                task.wait(0.1)
-            end
-        end)
-    end
-
-    MusicGroup:Divider()
-    MusicGroup:Paragraph({
-        Title = "说明",
-        Desc = "选择歌曲后开启开关即可循环播放"
-    })
-
-    MusicGroup:Dropdown({
-        Title = "选择歌曲",
-        Values = musicNames,
-        Value = musicNames[1],
-        Callback = function(value)
-            selectedMusic = value
-            for _, data in ipairs(MUSIC_LIST) do
-                if data.name == value then
-                    selectedMusicId = data.id
-                    break
-                end
-            end
-            if musicEnabled then
-                playMusic()
-            end
-        end
-    })
-
-    MusicGroup:Toggle({
-        Title = "播放音乐",
-        Desc = "开启后循环播放选中的歌曲",
-        Value = false,
-        Callback = function(value)
-            musicEnabled = value
-            if value then
-                playMusic()
-                WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedMusic, Duration = 2 })
-            else
-                stopMusic()
-                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
-            end
-        end
-    })
-
-    MusicGroup:Button({
-        Title = "停止音乐",
-        Callback = function()
-            musicEnabled = false
-            stopMusic()
-            WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
-        end
-    })
-
     -- ==================== 其余原有功能 ====================
     local Settings = {
         HoldTime = 0,
@@ -683,7 +563,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 玩家修改 Tab (A) - 完整修复版
+    -- 玩家修改 Tab (A) - 修复版（含防摔）
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -1101,6 +981,42 @@ function createUI()
         end
     })
 
+    A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
+    A:Toggle({
+        Title = "防摔",
+        Desc = "从高处落地时速度平稳",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
+            if value then
+                if antiFallConnection then antiFallConnection:Disconnect() end
+                antiFallConnection = RunService.Heartbeat:Connect(function()
+                    if not antiFallEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    
+                    local vel = root.Velocity
+                    if vel.Y < -20 and hum.PlatformStand == false then
+                        local newY = math.clamp(vel.Y, -40, -10)
+                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    end
+                end)
+            else
+                if antiFallConnection then
+                    antiFallConnection:Disconnect()
+                    antiFallConnection = nil
+                end
+            end
+        end
+    })
+
     A:Divider({ Text = "穿墙" })
     A:Toggle({
         Title = "启用人物穿墙",
@@ -1205,42 +1121,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
-        end
-    })
-
-    A:Divider({ Text = "防摔" })
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
-    A:Toggle({
-        Title = "防摔",
-        Desc = "从高处落地时速度平稳",
-        Value = false,
-        Callback = function(value)
-            antiFallEnabled = value
-            if value then
-                if antiFallConnection then antiFallConnection:Disconnect() end
-                antiFallConnection = RunService.Heartbeat:Connect(function()
-                    if not antiFallEnabled then return end
-                    local char = player.Character
-                    if not char then return end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if not hum then return end
-                    
-                    local vel = root.Velocity
-                    if vel.Y < -20 and hum.PlatformStand == false then
-                        local newY = math.clamp(vel.Y, -40, -10)
-                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
-                    end
-                end)
-            else
-                if antiFallConnection then
-                    antiFallConnection:Disconnect()
-                    antiFallConnection = nil
-                end
-            end
         end
     })
 
@@ -1929,8 +1809,7 @@ function createUI()
         for _, p in ipairs(Players:GetPlayers()) do
             if p == player then continue end
             if not p.Character then
-                Remove]
-                if not dESP(p.UserId)
+                RemoveESP(p.UserId)
                 continue
             end
             if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
@@ -1944,7 +1823,8 @@ function createUI()
             if not d.Billboard or not d.Billboard.Parent then
                 ESP_LIST[p.UserId] = nil
                 BuildESP(p)
-                d = ESP_LIST[p.UserId then continue end
+                d = ESP_LIST[p.UserId]
+                if not d then continue end
             end
             d.Billboard.Enabled = true
 
@@ -2090,11 +1970,120 @@ function createUI()
     end)
 
     -- ============================================================
+    -- 音乐 Tab
+    -- ============================================================
+    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
+
+    local SONG_LIST = {
+        { name = "半壶纱", id = "140168001118478" },
+        { name = "对你有感觉", id = "113476583412576" },
+        { name = "失眠", id = "124928120639248" },
+        { name = "中国人能飞", id = "79254667830418" },
+        { name = "忘情牛肉面", id = "72954292508946" },
+        { name = "无需多言", id = "114940361500053" },
+        { name = "出山", id = "108542841138539" },
+        { name = "来个好梗绷一绷", id = "120070812635771" },
+        { name = "孤独患者", id = "88257174439605" },
+        { name = "幻昼", id = "103093530102792" },
+        { name = "海屿你", id = "76421239273915" },
+        { name = "于是", id = "132959953803661" },
+        { name = "罗生门", id = "79952466129206" },
+        { name = "茫", id = "72194943092340" },
+        { name = "忘不掉的你", id = "91111816286323" },
+        { name = "DearD", id = "139047831212058" },
+        { name = "戒烟", id = "137671588958836" },
+    }
+
+    local selectedSong = SONG_LIST[1]
+    local musicSound = nil
+    local isMusicPlaying = false
+
+    local songNames = {}
+    for _, song in ipairs(SONG_LIST) do
+        table.insert(songNames, song.name)
+    end
+
+    MusicGroup:Dropdown({
+        Title = "选择歌曲",
+        Values = songNames,
+        Value = songNames[1],
+        Callback = function(value)
+            for _, song in ipairs(SONG_LIST) do
+                if song.name == value then
+                    selectedSong = song
+                    break
+                end
+            end
+            if isMusicPlaying then
+                if musicSound then
+                    musicSound:Stop()
+                    musicSound:Destroy()
+                    musicSound = nil
+                end
+                pcall(function()
+                    musicSound = Instance.new("Sound")
+                    musicSound.SoundId = "rbxassetid://" .. selectedSong.id
+                    musicSound.Volume = 0.5
+                    musicSound.Looped = true
+                    musicSound.Parent = player:WaitForChild("PlayerGui")
+                    musicSound:Play()
+                    WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedSong.name, Duration = 2 })
+                end)
+            end
+        end
+    })
+
+    MusicGroup:Divider()
+
+    MusicGroup:Toggle({
+        Title = "播放音乐",
+        Desc = "开启播放当前选中的歌曲，关闭停止播放",
+        Value = false,
+        Callback = function(value)
+            isMusicPlaying = value
+            if value then
+                pcall(function()
+                    if musicSound then
+                        musicSound:Stop()
+                        musicSound:Destroy()
+                        musicSound = nil
+                    end
+                    musicSound = Instance.new("Sound")
+                    musicSound.SoundId = "rbxassetid://" .. selectedSong.id
+                    musicSound.Volume = 0.5
+                    musicSound.Looped = true
+                    musicSound.Parent = player:WaitForChild("PlayerGui")
+                    musicSound:Play()
+                    WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. selectedSong.name, Duration = 2 })
+                end)
+            else
+                if musicSound then
+                    musicSound:Stop()
+                    musicSound:Destroy()
+                    musicSound = nil
+                    WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
+                end
+            end
+        end
+    })
+
+    MusicGroup:Slider({
+        Title = "音量",
+        Step = 0.1,
+        Value = { Min = 0, Max = 1, Default = 0.5 },
+        Callback = function(value)
+            if musicSound then
+                musicSound.Volume = value
+            end
+        end
+    })
+
+    -- ============================================================
     -- 设置 Tab (G) - 卡密验证修复版
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
-    -- 用Groupbox包裹验证区域
     local keyInput = nil
     local AdminGroup = SettingsTab:Section({ Title = "管理员验证", Opened = true })
 
@@ -2125,7 +2114,6 @@ function createUI()
 
                 WindUI:Notify({ Title = "验证成功", Content = "欢迎" .. identity .. "！", Duration = 3 })
 
-                -- 清空验证界面显示管理面板
                 AdminGroup:Clear()
                 AdminGroup:Paragraph({
                     Title = "已授权",
@@ -2133,7 +2121,6 @@ function createUI()
                 })
                 AdminGroup:Divider()
 
-                -- 黑名单管理
                 AdminGroup:Paragraph({
                     Title = "黑名单管理",
                     Desc = "输入要拉黑的设备UID，点击拉黑即可"
@@ -2257,11 +2244,15 @@ function createUI()
         end
     })
 
-    -- 脚本管理
     local SettingsGroup = SettingsTab:Section({ Title = "脚本管理", Opened = true })
     SettingsGroup:Button({
         Title = "卸载脚本",
         Callback = function()
+            if musicSound then
+                musicSound:Stop()
+                musicSound:Destroy()
+                musicSound = nil
+            end
             isDestroyed = true
             stopFly()
             DestroyFlyQuickToggle()
