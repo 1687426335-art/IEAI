@@ -131,7 +131,7 @@ function createUI()
         blockDesc.Size = UDim2.new(1, -40, 0, 50)
         blockDesc.Position = UDim2.new(0, 20, 0, 60)
         blockDesc.BackgroundTransparency = 1
-        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
+        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本（如果你是被管理员恶意拉黑可以跟作者申诉）"
         blockDesc.TextColor3 = Color3"
         authTitle.fromRGB(255, 200, 200)
         blockDesc.TextSize = 18
