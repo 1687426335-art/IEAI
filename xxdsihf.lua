@@ -1973,7 +1973,7 @@ function createUI()
     -- 音乐 Tab
     -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
+    local MusicGroup = MusicTab:Section({ Title = "有些音乐的前面都会有作者名字我也没办法删掉🤓", Opened = true })
 
     local SONG_LIST = {
         { name = "半壶纱", id = "140168001118478" },
