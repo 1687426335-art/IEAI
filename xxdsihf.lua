@@ -1975,13 +1975,15 @@ function createUI()
         end
     })
 
-    MusicGroup:Slider({
+MusicGroup:Slider({
         Title = "音量",
         Step = 0.1,
-        Value = { Min = 0, Max = 1, Default = 0.5 },
+        Value = { Min = 0, Max = 7, Default = 0.5 },
         Callback = function(value)
             if musicSound then
-                musicSound.Volume = value
+                -- Roblox音量最大1，但滑块显示7，实际播放时限制
+                local actualVolume = math.min(value, 1)
+                musicSound.Volume = actualVolume
             end
         end
     })
