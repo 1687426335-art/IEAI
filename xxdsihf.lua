@@ -83,9 +83,11 @@ function createUI()
         ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
 
-    local WHITELIST = {
-        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-    }
+  local WHITELIST = {
+    ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+    ["另一个设备的UID"] = true,
+    ["再一个设备的UID"] = true,
+}
 
     local function isBlacklisted(uid)
         return BLACKLIST[uid] == true
