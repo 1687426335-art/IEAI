@@ -76,15 +76,6 @@ function createUI()
     end
     local DEVICE_UID = getDeviceUID()
 
-    -- ==================== 脚本执行次数统计 ====================
-    local scriptRunCount = 0
-    local countKey = "wdfex_runCount_" .. player.UserId
-    local savedCount = getgenv and getgenv()[countKey] or 0
-    scriptRunCount = savedCount + 1
-    if getgenv then
-        getgenv()[countKey] = scriptRunCount
-    end
-
     -- ==================== 黑名单与授权系统 ====================
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
@@ -302,7 +293,7 @@ function createUI()
     })
 
     Window:Tag({
-        Title = DEVICE_UID .. " | 执行次数: " .. scriptRunCount,
+        Title = DEVICE_UID,
         Color = Color3.fromHex("#00ffff") 
     })
 
@@ -338,6 +329,47 @@ function createUI()
             task.wait(7)
             sound:Stop()
             sound:Destroy()
+        end)
+    end)
+
+    -- ==================== 滚动文字横幅（wdfexnb） ====================
+    task.spawn(function()
+        pcall(function()
+            local bannerGui = Instance.new("ScreenGui")
+            bannerGui.Name = "BannerGui"
+            bannerGui.ResetOnSpawn = false
+            bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            bannerGui.Parent = player:WaitForChild("PlayerGui")
+            
+            local banner = Instance.new("TextLabel")
+            banner.Size = UDim2.new(0, 200, 0, 40)
+            banner.Position = UDim2.new(0, -200, 0, 5)
+            banner.BackgroundTransparency = 1
+            banner.Text = "wdfexnb"
+            banner.TextColor3 = Color3.fromRGB(255, 200, 100)
+            banner.TextSize = 28
+            banner.Font = Enum.Font.GothamBold
+            banner.TextScaled = true
+            banner.TextStrokeTransparency = 0.2
+            banner.TextStrokeColor3 = Color3.fromRGB(255, 150, 50)
+            banner.Parent = bannerGui
+            
+            local TweenService = game:GetService("TweenService")
+            local textWidth = 200
+            
+            local function startAnimation()
+                local tween1 = TweenService:Create(banner, TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(1, 10, 0, 5)
+                })
+                tween1:Play()
+                tween1.Completed:Connect(function()
+                    banner.Position = UDim2.new(0, -textWidth, 0, 5)
+                    startAnimation()
+                end)
+            end
+            
+            task.wait(0.5)
+            startAnimation()
         end)
     end)
 
@@ -1575,15 +1607,15 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己
+    -- 透视 Tab (E) - 含同行显示 + 透视自己（无通缉）
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
     local ESP_SHOW_HEALTH = true
     local ESP_SHOW_DIST = true
-    local ESP_SHOW_SELF = false  -- 默认关闭透视自己
-    local ESP_SHOW_PEERS = true   -- 同行显示默认开启
+    local ESP_SHOW_SELF = false
+    local ESP_SHOW_PEERS = true
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
