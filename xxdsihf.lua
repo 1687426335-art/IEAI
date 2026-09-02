@@ -84,7 +84,7 @@ function createUI()
     }
 
     local WHITELIST = {
-        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+        ["XXCXXFEXWXARNGDGHPG"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
     }
 
