@@ -1,5 +1,5 @@
--- ==================== 独立AI聊天助手（带分类） ====================
--- 复制这段代码单独执行即可
+-- ==================== AI聊天助手（wdfex风格） ====================
+-- 独立执行，UI风格与主脚本统一
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local HttpService = game:GetService("HttpService")
@@ -11,6 +11,27 @@ if not WindUI then
         Duration = 5,
     })
     return
+end
+
+-- ===== 颜色定义（跟主脚本一致） =====
+local gradientColors = {
+    "rgb(255, 230, 235)",
+    "rgb(255, 210, 220)",
+    "rgb(255, 190, 205)",
+    "rgb(255, 170, 190)",
+    "rgb(255, 150, 175)",
+    "rgb(245, 140, 180)",
+    "rgb(235, 130, 185)",
+    "rgb(225, 120, 190)",
+    "rgb(215, 110, 195)",
+    "rgb(205, 100, 200)"
+}
+
+local username = game.Players.LocalPlayer.Name
+local coloredUsername = ""
+for i = 1, #username do
+    local colorIndex = (i - 1) % #gradientColors + 1
+    coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
 -- ===== 创建悬浮窗 =====
@@ -29,11 +50,13 @@ local Window = WindUI:CreateWindow({
     SideBarWidth = 180,
 })
 
+-- 标签（类似主脚本的圣奥里）
 Window:Tag({
     Title = "AI助手",
     Color = Color3.fromRGB(100, 200, 255)
 })
 
+-- 彩虹边框按钮（跟主脚本一样）
 Window:EditOpenButton({
     Title = "AI助手",
     Icon = "message-circle",
@@ -42,6 +65,19 @@ Window:EditOpenButton({
     Color = ColorSequence.new(Color3.fromRGB(100, 200, 255)),
     Draggable = true,
 })
+
+-- 彩虹循环
+spawn(function()
+    while true do
+        for hue = 0, 1, 0.01 do
+            local color = Color3.fromHSV(hue, 0.8, 1)
+            Window:EditOpenButton({
+                Color = ColorSequence.new(color)
+            })
+            wait(0.04)
+        end
+    end
+end)
 
 -- ===== Tab分类 =====
 local Tabs = {
