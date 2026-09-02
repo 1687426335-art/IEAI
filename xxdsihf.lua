@@ -85,7 +85,7 @@ function createUI()
 
     local WHITELIST = {
         ["XXCXXFEXWXARNGDGHPG"] = true,
-        ["XXCWZZCACWARNGDGHPG"] = true,
+        ["XXCXXFEXWXARNGDGHPG"] = true,
     }
 
     local function isBlacklisted(uid)
