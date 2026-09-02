@@ -332,7 +332,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfexnb） ====================
+    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -342,23 +342,30 @@ function createUI()
             bannerGui.Parent = player:WaitForChild("PlayerGui")
             
             local banner = Instance.new("TextLabel")
-            banner.Size = UDim2.new(0, 200, 0, 40)
-            banner.Position = UDim2.new(0, -200, 0, 5)
+            banner.Size = UDim2.new(0, 160, 0, 28)
+            banner.Position = UDim2.new(0, -160, 0, 5)
             banner.BackgroundTransparency = 1
-            banner.Text = "wdfexnb"
-            banner.TextColor3 = Color3.fromRGB(255, 200, 100)
-            banner.TextSize = 28
+            banner.Text = "wdfex-Hub"
+            banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
-            banner.TextScaled = true
-            banner.TextStrokeTransparency = 0.2
-            banner.TextStrokeColor3 = Color3.fromRGB(255, 150, 50)
+            banner.TextScaled = false
+            banner.TextStrokeTransparency = 0.3
+            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
             
             local TweenService = game:GetService("TweenService")
-            local textWidth = 200
+            local textWidth = 160
+            
+            -- 彩色循环
+            local hue = 0
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hue = (hue + 0.005) % 1
+                banner.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
+            end)
+            table.insert(connections, colorConn)
             
             local function startAnimation()
-                local tween1 = TweenService:Create(banner, TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                local tween1 = TweenService:Create(banner, TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
                     Position = UDim2.new(1, 10, 0, 5)
                 })
                 tween1:Play()
