@@ -80,13 +80,13 @@ function createUI()
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
     local BLACKLIST = {
-        [""] = true,
+        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
 
-local WHITELIST = {
-    ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-    ["XXCWZZCACWARNGDGHPG"] = true,
-}
+    local WHITELIST = {
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+        ["XXCWZZCACWARNGDGHPG"] = true,
+    }
 
     local function isBlacklisted(uid)
         return BLACKLIST[uid] == true
@@ -398,7 +398,7 @@ local WHITELIST = {
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n但是我的能力也有限有些功能可能我无法制作",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
@@ -810,7 +810,7 @@ local WHITELIST = {
     end)
 
     -- ============================================================
-    -- 玩家修改 Tab（剩余功能：伤害免疫、穿墙、体力、防甩飞、防摔）
+    -- 玩家修改 Tab（含隐身、伤害免疫、穿墙、体力、防甩飞、防摔）
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -876,6 +876,235 @@ local WHITELIST = {
         end
     end
 
+    -- ============================================================
+    -- 隐身功能（放在玩家修改第一位）
+    -- ============================================================
+    _G.CatInvis_Enabled = false
+    _G.CatInvis_Running = false
+
+    local HIDE_Y = -20
+    local MOVE_SPEED = 16
+    local JUMP_VELOCITY = 50
+    local CAMERA_HEIGHT = 4
+    local RAY_LENGTH = 10
+    local noclipEnabled = true
+    local proxyPart = nil
+    local proxyVelocityY = 0
+    local shouldJump = false
+    local lastJumpRequestTime = 0
+    local followPlat = nil
+    local camera = Workspace.CurrentCamera
+
+    local function getGroundHeight(position, ignoreCharacter)
+        local rayOrigin = position + Vector3.new(0, 2, 0)
+        local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+        local ignoreList = {}
+        if proxyPart then table.insert(ignoreList, proxyPart) end
+        if ignoreCharacter then
+            for _, part in ipairs(ignoreCharacter:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    table.insert(ignoreList, part)
+                end
+            end
+        end
+        rayParams.FilterDescendantsInstances = ignoreList
+        local result = Workspace:Raycast(rayOrigin, rayDirection, rayParams)
+        if result then
+            return result.Position.Y
+        end
+        return nil
+    end
+
+    local function setNoclip(character, enabled)
+        if not character then return end
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = not enabled
+            end
+        end
+    end
+
+    local function cleanupInvis()
+        if proxyPart then
+            proxyPart:Destroy()
+            proxyPart = nil
+        end
+        if followPlat then
+            followPlat:Destroy()
+            followPlat = nil
+        end
+        pcall(function()
+            RunService:UnbindFromRenderStep("InvisMovementV5")
+        end)
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        local character = player.Character
+        if character then
+            setNoclip(character, false)
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = 16
+                humanoid.JumpPower = 50
+                humanoid.AutoRotate = true
+                humanoid.PlatformStand = false
+            end
+        end
+        camera.CameraSubject = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        camera.CameraType = Enum.CameraType.Custom
+    end
+
+    local function initInvis()
+        local character = player.Character or player.CharacterAdded:Wait()
+        local root = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+        local head = character:WaitForChild("Head")
+
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 50
+        humanoid.AutoRotate = false
+        humanoid.PlatformStand = false
+
+        proxyPart = Instance.new("Part")
+        proxyPart.Name = "LocalProxy"
+        proxyPart.Size = Vector3.new(2, 2, 2)
+        proxyPart.Transparency = 1
+        proxyPart.CanCollide = false
+        proxyPart.Anchored = true
+        proxyPart.Parent = Workspace
+
+        local headPos = head.Position
+        local groundY = getGroundHeight(headPos, character)
+        local initY = (groundY and (groundY + CAMERA_HEIGHT)) or headPos.Y
+        proxyPart.CFrame = CFrame.new(headPos.X, initY, headPos.Z)
+
+        camera.CameraSubject = proxyPart
+        camera.CameraType = Enum.CameraType.Custom
+
+        if not UserInputService.TouchEnabled then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        else
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        end
+
+        proxyVelocityY = 0
+        setNoclip(character, noclipEnabled)
+
+        followPlat = Instance.new("Part")
+        followPlat.Name = "CatFollowPlat"
+        followPlat.Size = Vector3.new(10, 1, 10)
+        followPlat.Anchored = true
+        followPlat.CanCollide = true
+        followPlat.Transparency = 0.3
+        followPlat.Parent = Workspace
+
+        RunService:BindToRenderStep("InvisMovementV5", Enum.RenderPriority.Camera.Value + 1, function(dt)
+            updateInvis(dt, character)
+        end)
+    end
+
+    function updateInvis(dt, character)
+        if not character or not character.Parent then
+            cleanupInvis()
+            return
+        end
+        local root = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not root or not humanoid then
+            cleanupInvis()
+            return
+        end
+
+        root.CFrame = CFrame.new(proxyPart.Position.X, HIDE_Y, proxyPart.Position.Z)
+        root.Velocity = Vector3.zero
+        root.RotVelocity = Vector3.zero
+
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part ~= root then
+                part.Velocity = Vector3.zero
+                part.RotVelocity = Vector3.zero
+            end
+        end
+
+        setNoclip(character, noclipEnabled)
+
+        if proxyPart and proxyPart.Parent then
+            camera.CameraSubject = proxyPart
+            camera.CameraType = Enum.CameraType.Custom
+        end
+
+        if not proxyPart or not proxyPart.Parent then return end
+
+        local horizontalMove = Vector3.zero
+        local moveDir = humanoid.MoveDirection
+        if moveDir.Magnitude > 0 then
+            local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+            horizontalMove = flatDir * MOVE_SPEED * dt
+        end
+
+        local currentPos = proxyPart.Position
+        local targetPos = currentPos + horizontalMove
+        local targetGroundY = getGroundHeight(targetPos, character)
+        local desiredGroundY = targetGroundY and (targetGroundY + CAMERA_HEIGHT) or nil
+        local isOnGround = (proxyVelocityY <= 0) and desiredGroundY and (currentPos.Y <= desiredGroundY + 0.2)
+
+        if shouldJump and isOnGround then
+            proxyVelocityY = JUMP_VELOCITY
+            shouldJump = false
+            isOnGround = false
+        end
+
+        if isOnGround then
+            if desiredGroundY then
+                targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+                proxyVelocityY = 0
+            end
+        else
+            proxyVelocityY = proxyVelocityY - Workspace.Gravity * dt
+            local newY = currentPos.Y + proxyVelocityY * dt
+            targetPos = Vector3.new(targetPos.X, newY, targetPos.Z)
+            if desiredGroundY and newY <= desiredGroundY then
+                targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+                proxyVelocityY = 0
+            end
+        end
+
+        proxyPart.CFrame = CFrame.new(targetPos)
+
+        pcall(function()
+            if followPlat and followPlat.Parent then
+                followPlat.CFrame = CFrame.new(targetPos.X, HIDE_Y - 2, targetPos.Z)
+            end
+        end)
+    end
+
+    UserInputService.JumpRequest:Connect(function()
+        local now = tick()
+        if now - lastJumpRequestTime > 0.2 then
+            lastJumpRequestTime = now
+            shouldJump = true
+        end
+    end)
+
+    -- 隐身开关（放在玩家修改Tab第一位）
+    A:Divider({ Text = "隐身" })
+    A:Toggle({
+        Title = "隐身",
+        Desc = "开启后隐藏角色，自由移动（类似飞行模式）",
+        Value = false,
+        Callback = function(value)
+            _G.CatInvis_Enabled = value
+            if value then
+                pcall(initInvis)
+            else
+                pcall(cleanupInvis)
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 玩家修改其他功能
+    -- ============================================================
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -1572,8 +1801,8 @@ local WHITELIST = {
     local ESP_SHOW_TEAM = true
     local ESP_SHOW_HEALTH = true
     local ESP_SHOW_DIST = true
-    local ESP_SHOW_SELF = false  -- 默认关闭透视自己
-    local ESP_SHOW_PEERS = true   -- 同行显示默认开启
+    local ESP_SHOW_SELF = false
+    local ESP_SHOW_PEERS = true
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
@@ -1652,7 +1881,6 @@ local WHITELIST = {
 
     local function BuildESP(p)
         if not p.Character then return end
-        -- 如果不透视自己，跳过自己
         if not ESP_SHOW_SELF and p == player then return end
         
         local head = p.Character:FindFirstChild("Head")
@@ -1774,7 +2002,6 @@ local WHITELIST = {
                 lines = lines + 1
             end
 
-            -- 同行显示（在队伍上方，名字下方）
             if ESP_SHOW_PEERS and isWdfexUser then
                 local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
                 local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
