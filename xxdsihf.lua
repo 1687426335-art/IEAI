@@ -1837,7 +1837,7 @@ function createUI()
     -- 音乐 Tab（含播放模式）
     -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器（此功能目前还是半成品）", Opened = true })
 
     local SONG_LIST = {
         { name = "半壶纱", id = "140168001118478" },
