@@ -80,7 +80,7 @@ function createUI()
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
     local BLACKLIST = {
-        ["XXCWZZCACWARNGDGHPG"] = true,
+        [""] = true,
     }
 
   local WHITELIST = {
