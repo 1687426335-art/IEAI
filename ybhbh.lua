@@ -1,19 +1,12 @@
--- ==================== AI聊天助手（wdfex风格） ====================
--- 独立执行，UI风格与主脚本统一
+-- ==================== AI聊天助手（独立AI回答区域） ====================
+-- 直接复制执行即可
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local HttpService = game:GetService("HttpService")
 
-if not WindUI then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "错误",
-        Text = "UI库加载失败，请检查网络",
-        Duration = 5,
-    })
-    return
-end
+if not WindUI then return end
 
--- ===== 颜色定义（跟主脚本一致） =====
+-- ===== 颜色定义 =====
 local gradientColors = {
     "rgb(255, 230, 235)",
     "rgb(255, 210, 220)",
@@ -41,7 +34,7 @@ local Window = WindUI:CreateWindow({
     IconThemed = true,
     Author = "wdfex",
     Folder = "AIChatHelper",
-    Size = UDim2.fromOffset(480, 580),
+    Size = UDim2.fromOffset(480, 620),
     Transparent = true,
     Theme = "Dark",
     HideSearchBar = false,
@@ -50,13 +43,8 @@ local Window = WindUI:CreateWindow({
     SideBarWidth = 180,
 })
 
--- 标签（类似主脚本的圣奥里）
-Window:Tag({
-    Title = "AI助手",
-    Color = Color3.fromRGB(100, 200, 255)
-})
+Window:Tag({ Title = "AI助手", Color = Color3.fromRGB(100, 200, 255) })
 
--- 彩虹边框按钮（跟主脚本一样）
 Window:EditOpenButton({
     Title = "AI助手",
     Icon = "message-circle",
@@ -66,14 +54,10 @@ Window:EditOpenButton({
     Draggable = true,
 })
 
--- 彩虹循环
 spawn(function()
     while true do
         for hue = 0, 1, 0.01 do
-            local color = Color3.fromHSV(hue, 0.8, 1)
-            Window:EditOpenButton({
-                Color = ColorSequence.new(color)
-            })
+            Window:EditOpenButton({ Color = ColorSequence.new(Color3.fromHSV(hue, 0.8, 1)) })
             wait(0.04)
         end
     end
@@ -91,106 +75,87 @@ local Tabs = {
 -- ============================================================
 local ChatGroup = Tabs.Chat:Section({ Title = "AI聊天", Opened = true })
 
--- 聊天记录
-local messages = {}
-local chatDesc = "欢迎使用AI助手，输入问题开始聊天吧！"
+-- AI回答内容（单独存储）
+local aiResponse = "等待你提问..."
+local userQuestion = ""
 
--- 添加消息
-local function AddMessage(sender, content)
-    local prefix = sender == "我" and "你" or "AI"
-    local color = sender == "我" and "rgb(100, 200, 255)" or "rgb(100, 255, 150)"
-    local msg = '<font color="' .. color .. '"><b>' .. prefix .. ':</b></font> ' .. content
-    table.insert(messages, msg)
-    if #messages > 30 then
-        table.remove(messages, 1)
-    end
-    local displayText = ""
-    for _, m in ipairs(messages) do
-        displayText = displayText .. m .. "\n\n"
-    end
-    chatDesc = displayText or "等待你开始对话..."
-    pcall(function()
-        if chatLabel then
-            chatLabel:SetDesc(chatDesc)
-        end
-    end)
-end
-
--- 对话显示区域
-local chatLabel = ChatGroup:Paragraph({
-    Title = "对话记录",
-    Desc = chatDesc
+-- 显示当前AI回答
+local responseLabel = ChatGroup:Paragraph({
+    Title = "🤖 AI 回答",
+    Desc = aiResponse
 })
 
--- AI请求
-local function AskAI(question)
-    if question == "" or not question then return end
-    
-    AddMessage("我", question)
-    AddMessage("AI", "思考中...")
-    
-    task.spawn(function()
-        local success, response = pcall(function()
-            local data = {
-                messages = {
-                    { role = "system", content = "你是一个有用的AI助手，可以回答任何问题，帮助用户了解脚本功能。" },
-                    { role = "user", content = question }
-                },
-                model = "gpt-3.5-turbo",
-                temperature = 0.7,
-                max_tokens = 500
-            }
-            
-            local headers = {
-                ["Content-Type"] = "application/json"
-            }
-            
-            local url = "https://api.itsapi.xyz/v1/chat/completions"
-            
-            local response = HttpService:PostAsync(url, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
-            local result = HttpService:JSONDecode(response)
-            
-            if result and result.choices and result.choices[1] and result.choices[1].message then
-                return result.choices[1].message.content
-            else
-                return "抱歉，我暂时无法回答，请稍后再试。"
-            end
-        end)
-        
-        for i = #messages, 1, -1 do
-            if string.find(messages[i], "思考中...") then
-                table.remove(messages, i)
-                break
-            end
-        end
-        
-        if success and response then
-            AddMessage("AI", response)
-        else
-            AddMessage("AI", "请求失败，请检查网络或稍后再试。")
-        end
-    end)
-end
+-- 显示我的问题
+local questionLabel = ChatGroup:Paragraph({
+    Title = "💬 我的问题",
+    Desc = "还没有提问..."
+})
+
+ChatGroup:Divider()
 
 -- 输入框
-local questionInput = ""
+local inputBox = ""
 ChatGroup:Input({
     Title = "输入问题",
     Placeholder = "输入你想问的问题...",
     Callback = function(value)
-        questionInput = value
+        inputBox = value
     end
 })
 
 ChatGroup:Divider()
 
+-- 发送按钮
 ChatGroup:Button({
-    Title = "发送",
+    Title = "🚀 发送",
     Callback = function()
-        if questionInput and questionInput ~= "" then
-            local q = questionInput
-            questionInput = ""
-            AskAI(q)
+        if inputBox and inputBox ~= "" then
+            local q = inputBox
+            inputBox = ""
+            
+            -- 更新我的问题显示
+            pcall(function()
+                questionLabel:SetDesc(q)
+            end)
+            
+            -- 显示AI思考中
+            pcall(function()
+                responseLabel:SetDesc("⏳ AI正在思考，请稍候...")
+            end)
+            
+            -- 请求AI
+            task.spawn(function()
+                local success, response = pcall(function()
+                    local data = {
+                        messages = {
+                            { role = "system", content = "你是一个有用的AI助手，简洁准确地回答问题。" },
+                            { role = "user", content = q }
+                        },
+                        model = "gpt-3.5-turbo",
+                        temperature = 0.7,
+                        max_tokens = 500
+                    }
+                    local headers = { ["Content-Type"] = "application/json" }
+                    local url = "https://api.itsapi.xyz/v1/chat/completions"
+                    local response = HttpService:PostAsync(url, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
+                    local result = HttpService:JSONDecode(response)
+                    if result and result.choices and result.choices[1] and result.choices[1].message then
+                        return result.choices[1].message.content
+                    else
+                        return "抱歉，我暂时无法回答。"
+                    end
+                end)
+                
+                if success and response then
+                    pcall(function()
+                        responseLabel:SetDesc(response)
+                    end)
+                else
+                    pcall(function()
+                        responseLabel:SetDesc("❌ 请求失败，请检查网络。")
+                    end)
+                end
+            end)
         else
             WindUI:Notify({ Title = "提示", Content = "请输入问题", Duration = 2 })
         end
@@ -198,15 +163,16 @@ ChatGroup:Button({
 })
 
 ChatGroup:Divider()
+
+-- 清空按钮
 ChatGroup:Button({
-    Title = "清空对话记录",
+    Title = "清空对话",
     Callback = function()
-        messages = {}
-        chatDesc = "对话已清空"
         pcall(function()
-            chatLabel:SetDesc(chatDesc)
+            questionLabel:SetDesc("还没有提问...")
+            responseLabel:SetDesc("等待你提问...")
         end)
-        WindUI:Notify({ Title = "提示", Content = "对话记录已清空", Duration = 2 })
+        WindUI:Notify({ Title = "提示", Content = "对话已清空", Duration = 2 })
     end
 })
 
@@ -215,9 +181,47 @@ ChatGroup:Button({
 -- ============================================================
 local QuickGroup = Tabs.Quick:Section({ Title = "快捷提问", Opened = true })
 
+local function QuickAsk(question)
+    if not question then return end
+    
+    pcall(function()
+        questionLabel:SetDesc(question)
+        responseLabel:SetDesc("⏳ AI正在思考，请稍候...")
+    end)
+    
+    task.spawn(function()
+        local success, response = pcall(function()
+            local data = {
+                messages = {
+                    { role = "system", content = "你是一个有用的AI助手，简洁准确地回答问题。" },
+                    { role = "user", content = question }
+                },
+                model = "gpt-3.5-turbo",
+                temperature = 0.7,
+                max_tokens = 500
+            }
+            local headers = { ["Content-Type"] = "application/json" }
+            local url = "https://api.itsapi.xyz/v1/chat/completions"
+            local response = HttpService:PostAsync(url, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
+            local result = HttpService:JSONDecode(response)
+            if result and result.choices and result.choices[1] and result.choices[1].message then
+                return result.choices[1].message.content
+            else
+                return "抱歉，我暂时无法回答。"
+            end
+        end)
+        
+        if success and response then
+            pcall(function() responseLabel:SetDesc(response) end)
+        else
+            pcall(function() responseLabel:SetDesc("❌ 请求失败，请检查网络。") end)
+        end
+    end)
+end
+
 QuickGroup:Paragraph({
-    Title = "点击下方按钮快速提问",
-    Desc = "AI会回答对应的问题"
+    Title = "点击下方快速提问",
+    Desc = "AI会直接回答对应的问题"
 })
 
 QuickGroup:Divider()
@@ -225,49 +229,49 @@ QuickGroup:Divider()
 QuickGroup:Button({
     Title = "这个脚本有什么功能？",
     Callback = function()
-        AskAI("这个wdfex脚本有什么功能？请详细介绍一下所有功能。")
+        QuickAsk("这个wdfex脚本有什么功能？请详细介绍一下所有功能。")
     end
 })
 
 QuickGroup:Button({
     Title = "杀戮光环怎么用？",
     Callback = function()
-        AskAI("杀戮光环功能怎么使用？需要装备什么武器？怎么设置攻击距离和伤害倍率？")
+        QuickAsk("杀戮光环功能怎么使用？需要装备什么武器？怎么设置攻击距离和伤害倍率？")
     end
 })
 
 QuickGroup:Button({
     Title = "透视怎么开？",
     Callback = function()
-        AskAI("透视功能怎么开启？可以看到哪些信息？怎么设置显示内容？")
+        QuickAsk("透视功能怎么开启？可以看到哪些信息？怎么设置显示内容？")
     end
 })
 
 QuickGroup:Button({
     Title = "飞行模式怎么用？",
     Callback = function()
-        AskAI("飞行模式怎么使用？怎么控制方向？怎么调整飞行速度？")
+        QuickAsk("飞行模式怎么使用？怎么控制方向？怎么调整飞行速度？")
     end
 })
 
 QuickGroup:Button({
     Title = "传送点怎么用？",
     Callback = function()
-        AskAI("传送功能怎么使用？需要先开启什么开关？有哪些传送点？")
+        QuickAsk("传送功能怎么使用？需要先开启什么开关？有哪些传送点？")
     end
 })
 
 QuickGroup:Button({
     Title = "自动躲警察怎么用？",
     Callback = function()
-        AskAI("自动躲警察功能怎么使用？触发距离和弹开力度怎么调？")
+        QuickAsk("自动躲警察功能怎么使用？触发距离和弹开力度怎么调？")
     end
 })
 
 QuickGroup:Button({
     Title = "如何授权设备？",
     Callback = function()
-        AskAI("设备授权系统怎么用？什么是设备UID？作者怎么授权其他设备？")
+        QuickAsk("设备授权系统怎么用？什么是设备UID？作者怎么授权其他设备？")
     end
 })
 
@@ -278,7 +282,7 @@ local SettingsGroup = Tabs.Settings:Section({ Title = "设置", Opened = true })
 
 SettingsGroup:Paragraph({
     Title = "关于AI助手",
-    Desc = "版本：v1.0\n使用免费的GPT-3.5 API\n每天有调用次数限制，请合理使用"
+    Desc = "版本：v1.0\n使用免费GPT-3.5 API\n有调用次数限制，请合理使用"
 })
 
 SettingsGroup:Divider()
@@ -287,13 +291,12 @@ SettingsGroup:Button({
     Title = "关闭AI助手",
     Callback = function()
         Window:Destroy()
-        WindUI:Notify({ Title = "AI助手", Content = "已关闭", Duration = 2 })
     end
 })
 
 -- ===== 启动通知 =====
 WindUI:Notify({
     Title = "AI助手",
-    Content = "已启动！输入问题即可开始聊天",
+    Content = "已启动！输入问题即可获取AI回答",
     Duration = 3,
 })
