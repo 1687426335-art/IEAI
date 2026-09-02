@@ -85,7 +85,7 @@ function createUI()
 
   local WHITELIST = {
     ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-    ["另一个设备的UID"] = true,
+    ["XXCWZZCACWARNGDGHPG"] = true,
     ["再一个设备的UID"] = true,
 }
 
