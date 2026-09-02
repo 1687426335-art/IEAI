@@ -1005,7 +1005,7 @@ function createUI()
     A:Divider({ Text = "隐身" })
     A:Toggle({
         Title = "隐身",
-        Desc = "开启后角色消失，移动和跳跃正常，按空格跳跃",
+        Desc = "隐身",
         Value = false,
         Callback = function(value)
             if value then
