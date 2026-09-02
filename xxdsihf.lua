@@ -31,9 +31,9 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex脚本</font> 当前版本是: " .. coloredVersion .. "\n脚本已就绪！",
-    Buttons = {
-        {
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. {
+ "\n脚本已就绪！",
+    Buttons =        {
             Title = "取消",
             Callback = function() end,
             Variant = "Secondary",
@@ -356,7 +356,6 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
-            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -479,6 +478,286 @@ function createUI()
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
+
+    -- ============================================================
+    -- 自动躲警察 Tab
+    -- ============================================================
+    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
+    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
+
+    local AutoEvadePolice = false
+    local EvadeDistance = 50
+    local EvadeStrength = 50
+    local EvadeConnection = nil
+
+    local function IsPolicePlayer(p)
+        if p == player then return false end
+        if p.Team then
+            local teamName = p.Team.Name or ""
+            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
+                return true
+            end
+        end
+        if p.Character then
+            for _, child in ipairs(p.Character:GetDescendants()) do
+                if child:IsA("StringValue") or child:IsA("BoolValue") then
+                    local name = child.Name:lower()
+                    if name:find("police") or name:find("cop") or name:find("警察") then
+                        return true
+                    end
+                end
+            end
+        end
+        for _, child in ipairs(p:GetChildren()) do
+            if child:IsA("StringValue") or child:IsA("BoolValue") then
+                local name = child.Name:lower()
+                if name:find("police") or name:find("cop") or name:find("警察") then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function GetClosestPolice()
+        local char = player.Character
+        if not char then return nil, math.huge end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return nil, math.huge end
+        
+        local closest = nil
+        local closestDist = math.huge
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not IsPolicePlayer(p) then continue end
+            if not p.Character then continue end
+            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+            if not pRoot then continue end
+            local dist = (root.Position - pRoot.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closest = p
+            end
+        end
+        return closest, closestDist
+    end
+
+    local function StartEvadePolice()
+        if EvadeConnection then return end
+        local frameSkip = 0
+        EvadeConnection = RunService.Stepped:Connect(function()
+            if not AutoEvadePolice then return end
+            
+            frameSkip = frameSkip + 1
+            if frameSkip % 3 ~= 0 then return end
+            
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            local police, dist = GetClosestPolice()
+            if not police then return end
+            if dist > EvadeDistance then return end
+            
+            local policeRoot = police.Character:FindFirstChild("HumanoidRootPart")
+            if not policeRoot then return end
+            
+            local awayDir = (root.Position - policeRoot.Position).Unit
+            local forceStrength = EvadeStrength * (1 - (dist / EvadeDistance))
+            forceStrength = math.max(forceStrength, 5)
+            
+            local velocity = awayDir * forceStrength * 10
+            root.Velocity = velocity
+            root.AssemblyLinearVelocity = velocity
+            
+            for _, obj in ipairs(root:GetChildren()) do
+                if obj:IsA("BodyVelocity") and obj.Name ~= "EvadePolice" then
+                    obj:Destroy()
+                end
+            end
+        end)
+    end
+
+    local function StopEvadePolice()
+        if EvadeConnection then
+            EvadeConnection:Disconnect()
+            EvadeConnection = nil
+        end
+        local char = player.Character
+        if char then
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Velocity = Vector3.new(0, 0, 0)
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end
+
+    PoliceEvadeGroup:Divider()
+    PoliceEvadeGroup:Toggle({
+        Title = "启用自动躲警察",
+        Desc = "警察靠近时自动弹开远离",
+        Value = false,
+        Callback = function(value)
+            AutoEvadePolice = value
+            if value then
+                StartEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已开启，警察靠近将自动弹开", Duration = 2 })
+            else
+                StopEvadePolice()
+                WindUI:Notify({ Title = "自动躲警察", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+    PoliceEvadeGroup:Slider({
+        Title = "触发距离",
+        Desc = "警察进入该距离时触发弹开（米）",
+        Step = 1,
+        Value = { Min = 10, Max = 100, Default = 50 },
+        Callback = function(value)
+            EvadeDistance = value
+        end
+    })
+    PoliceEvadeGroup:Slider({
+        Title = "弹开力度",
+        Desc = "数值越大弹开越远",
+        Step = 1,
+        Value = { Min = 10, Max = 200, Default = 50 },
+        Callback = function(value)
+            EvadeStrength = value
+        end
+    })
+
+    -- ============================================================
+    -- 警察功能 Tab（自动手铐）
+    -- ============================================================
+    local PoliceTab = Window:Tab({ Title = "警察功能", Icon = "target" })
+    local PoliceGroup = PoliceTab:Section({ Title = "执法工具", Opened = true })
+
+    local autoCuffEnabled = false
+    local autoCuffConnection = nil
+    local autoCuffRange = 8
+
+    PoliceGroup:Paragraph({
+        Title = "自动手铐",
+        Desc = "自动检测附近可铐的玩家并执行手铐互动"
+    })
+
+    PoliceGroup:Toggle({
+        Title = "启用自动手铐",
+        Value = false,
+        Callback = function(value)
+            autoCuffEnabled = value
+            if value then
+                if autoCuffConnection then autoCuffConnection:Disconnect() end
+                autoCuffConnection = RunService.Heartbeat:Connect(function()
+                    if not autoCuffEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    
+                    -- 扫描附近所有ProximityPrompt
+                    for _, prompt in ipairs(Workspace:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") then
+                            -- 检查是否是手铐相关
+                            local promptName = prompt.Name:lower()
+                            local promptText = prompt.ActionText and prompt.ActionText:lower() or ""
+                            
+                            if promptName:find("cuff") or promptName:find("手铐") or promptName:find("handcuff") or 
+                               promptText:find("cuff") or promptText:find("手铐") or promptText:find("handcuff") or
+                               promptName:find("arrest") or promptText:find("arrest") or promptName:find("逮捕") then
+                                
+                                -- 检查距离
+                                local parent = prompt.Parent
+                                local targetRoot = parent and parent:FindFirstChild("HumanoidRootPart")
+                                if targetRoot then
+                                    local dist = (root.Position - targetRoot.Position).Magnitude
+                                    if dist <= autoCuffRange then
+                                        -- 检查目标是否有效（有Humanoid且存活）
+                                        local hum = parent:FindFirstChildOfClass("Humanoid")
+                                        if hum and hum.Health > 0 then
+                                            -- 执行手铐
+                                            pcall(function()
+                                                prompt:InputHoldBegin()
+                                                task.wait(0.5)
+                                                prompt:InputHoldEnd()
+                                            end)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+                WindUI:Notify({ Title = "自动手铐", Content = "已开启，自动铐附近玩家", Duration = 2 })
+            else
+                if autoCuffConnection then
+                    autoCuffConnection:Disconnect()
+                    autoCuffConnection = nil
+                end
+                WindUI:Notify({ Title = "自动手铐", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+
+    PoliceGroup:Slider({
+        Title = "手铐距离",
+        Step = 1,
+        Value = { Min = 3, Max = 20, Default = 8 },
+        Callback = function(value)
+            autoCuffRange = value
+        end
+    })
+
+    PoliceGroup:Divider()
+    PoliceGroup:Button({
+        Title = "手铐最近玩家",
+        Desc = "手动铐住最近的玩家",
+        Callback = function()
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            local closestPrompt = nil
+            local closestDist = math.huge
+            
+            for _, prompt in ipairs(Workspace:GetDescendants()) do
+                if prompt:IsA("ProximityPrompt") then
+                    local promptName = prompt.Name:lower()
+                    local promptText = prompt.ActionText and prompt.ActionText:lower() or ""
+                    
+                    if promptName:find("cuff") or promptName:find("手铐") or promptName:find("handcuff") or 
+                       promptText:find("cuff") or promptText:find("手铐") or promptText:find("handcuff") or
+                       promptName:find("arrest") or promptText:find("arrest") or promptName:find("逮捕") then
+                        
+                        local parent = prompt.Parent
+                        local targetRoot = parent and parent:FindFirstChild("HumanoidRootPart")
+                        if targetRoot then
+                            local dist = (root.Position - targetRoot.Position).Magnitude
+                            if dist < closestDist then
+                                closestDist = dist
+                                closestPrompt = prompt
+                            end
+                        end
+                    end
+                end
+            end
+            
+            if closestPrompt then
+                pcall(function()
+                    closestPrompt:InputHoldBegin()
+                    task.wait(0.5)
+                    closestPrompt:InputHoldEnd()
+                    WindUI:Notify({ Title = "手铐", Content = "已执行手铐", Duration = 2 })
+                end)
+            else
+                WindUI:Notify({ Title = "手铐", Content = "附近没有可铐的玩家", Duration = 2 })
+            end
+        end
+    })
 
     -- ============================================================
     -- 互动 Tab（快速互动相关）
@@ -1614,7 +1893,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己（无通缉）
+    -- 透视 Tab (E) - 含同行显示 + 透视自己
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
