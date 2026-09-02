@@ -76,6 +76,15 @@ function createUI()
     end
     local DEVICE_UID = getDeviceUID()
 
+    -- ==================== 脚本执行次数统计 ====================
+    local scriptRunCount = 0
+    local countKey = "wdfex_runCount_" .. player.UserId
+    local savedCount = getgenv and getgenv()[countKey] or 0
+    scriptRunCount = savedCount + 1
+    if getgenv then
+        getgenv()[countKey] = scriptRunCount
+    end
+
     -- ==================== 黑名单与授权系统 ====================
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
@@ -84,10 +93,10 @@ function createUI()
     }
 
     local WHITELIST = {
-    ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-    ["XXCWZZCACWARNGDGHPG"] = true,
-    ["XXCXXFEXWXARNGDGHPG"] = true,
-}
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+        ["XXCWZZCACWARNGDGHPG"] = true,
+        ["XXCXXFEXWXARNGDGHPG"] = true,
+    }
 
     local function isBlacklisted(uid)
         return BLACKLIST[uid] == true
@@ -293,7 +302,7 @@ function createUI()
     })
 
     Window:Tag({
-        Title = DEVICE_UID,
+        Title = DEVICE_UID .. " | 执行次数: " .. scriptRunCount,
         Color = Color3.fromHex("#00ffff") 
     })
 
@@ -1566,16 +1575,15 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己 + 显示通缉
+    -- 透视 Tab (E) - 含同行显示 + 透视自己
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
     local ESP_SHOW_HEALTH = true
     local ESP_SHOW_DIST = true
-    local ESP_SHOW_SELF = false
-    local ESP_SHOW_PEERS = true
-    local ESP_SHOW_WANTED = false
+    local ESP_SHOW_SELF = false  -- 默认关闭透视自己
+    local ESP_SHOW_PEERS = true   -- 同行显示默认开启
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
@@ -1753,90 +1761,6 @@ function createUI()
                 end
             end
 
-            -- 检查是否被通缉
-            local isWanted = false
-            if ESP_SHOW_WANTED then
-                for _, child in ipairs(p:GetChildren()) do
-                    if child:IsA("BoolValue") and child.Value == true then
-                        local name = child.Name:lower()
-                        if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
-                            isWanted = true
-                            break
-                        end
-                    end
-                    if child:IsA("IntValue") and child.Value > 0 then
-                        local name = child.Name:lower()
-                        if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
-                            isWanted = true
-                            break
-                        end
-                    end
-                    if child:IsA("NumberValue") and child.Value > 0 then
-                        local name = child.Name:lower()
-                        if name:find("wanted") or name:find("通缉") or name:find("crime") then
-                            isWanted = true
-                            break
-                        end
-                    end
-                end
-                
-                if not isWanted and p.Character then
-                    for _, child in ipairs(p.Character:GetDescendants()) do
-                        if child:IsA("BoolValue") and child.Value == true then
-                            local name = child.Name:lower()
-                            if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
-                                isWanted = true
-                                break
-                            end
-                        end
-                        if child:IsA("IntValue") and child.Value > 0 then
-                            local name = child.Name:lower()
-                            if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
-                                isWanted = true
-                                break
-                            end
-                        end
-                        if child:IsA("NumberValue") and child.Value > 0 then
-                            local name = child.Name:lower()
-                            if name:find("wanted") or name:find("通缉") or name:find("crime") then
-                                isWanted = true
-                                break
-                            end
-                        end
-                    end
-                end
-                
-                if not isWanted then
-                    local ls = p:FindFirstChild("leaderstats")
-                    if ls then
-                        for _, child in ipairs(ls:GetChildren()) do
-                            if child:IsA("IntValue") and child.Value > 0 then
-                                local name = child.Name:lower()
-                                if name:find("wanted") or name:find("通缉") or name:find("crime") or name:find("bounty") then
-                                    isWanted = true
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                if not isWanted and p.Character then
-                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local attrs = hrp:GetAttributes()
-                        for name, value in pairs(attrs) do
-                            if name:lower():find("wanted") or name:lower():find("通缉") then
-                                if value == true or (type(value) == "number" and value > 0) then
-                                    isWanted = true
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
             if ESP_SHOW_NAME then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 20)
@@ -1873,24 +1797,6 @@ function createUI()
                 l.TextSize = 13
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
-                lines = lines + 1
-            end
-
-            -- 通缉显示
-            if ESP_SHOW_WANTED and isWanted then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                l.Text = "通缉"
-                l.TextColor3 = Color3.fromRGB(255, 50, 50)
-                l.TextSize = 14
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.2
                 l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                 l.TextXAlignment = Enum.TextXAlignment.Center
                 l.Parent = f
@@ -2011,15 +1917,6 @@ function createUI()
         Value = true,
         Callback = function(value)
             ESP_SHOW_PEERS = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示通缉玩家",
-        Desc = "在通缉玩家头上显示通缉标记",
-        Value = false,
-        Callback = function(value)
-            ESP_SHOW_WANTED = value
             if ESP_ENABLED then RefreshESP() end
         end
     })
