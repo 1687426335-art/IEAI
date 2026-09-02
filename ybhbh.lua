@@ -810,8 +810,223 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 玩家修改 Tab（含隐身功能，放在第一位）
+    -- 玩家修改 Tab（含隐身、伤害免疫、穿墙、体力、防甩飞、防摔）
     -- ============================================================
+    -- ===== 隐身功能（放到第一位） =====
+    local proxyPart = nil
+    local localPlatform = nil
+    local proxyVelocityY = 0
+    local shouldJump = false
+    local HIDE_Y = -20
+    local MOVE_SPEED = 16
+    local JUMP_VELOCITY = 50
+    local CAMERA_HEIGHT = 4
+    local RAY_LENGTH = 10
+    local invisEnabled = false
+    local invisCleanup = nil
+
+    local function getGroundHeight(position, ignoreCharacter)
+        local rayOrigin = position + Vector3.new(0, 2, 0)
+        local rayDirection = Vector3.new(0, -RAY_LENGTH, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+        local ignoreList = {}
+        if proxyPart then table.insert(ignoreList, proxyPart) end
+        if ignoreCharacter then
+            for _, part in ipairs(ignoreCharacter:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    table.insert(ignoreList, part)
+                end
+            end
+        end
+        rayParams.FilterDescendantsInstances = ignoreList
+        local result = Workspace:Raycast(rayOrigin, rayDirection, rayParams)
+        if result then
+            return result.Position.Y
+        end
+        return nil
+    end
+
+    local function invisCleanupFunc()
+        if proxyPart then
+            proxyPart:Destroy()
+            proxyPart = nil
+        end
+        if localPlatform then
+            localPlatform:Destroy()
+            localPlatform = nil
+        end
+        RunService:UnbindFromRenderStep("InvisMovement")
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        if player.Character then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = 16
+                hum.JumpPower = 50
+                hum.AutoRotate = true
+                hum.PlatformStand = false
+            end
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local restoreY = getGroundHeight(root.Position, player.Character) or (root.Position.Y - 2)
+                root.CFrame = CFrame.new(root.Position.X, restoreY, root.Position.Z)
+            end
+        end
+        local cam = Workspace.CurrentCamera
+        if cam then
+            cam.CameraSubject = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            cam.CameraType = Enum.CameraType.Custom
+        end
+        invisEnabled = false
+    end
+
+    local function invisInitFunc()
+        if invisEnabled then return end
+        local character = player.Character or player.CharacterAdded:Wait()
+        local root = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local head = character:FindFirstChild("Head")
+        if not root or not humanoid or not head then return end
+
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 50
+        humanoid.AutoRotate = false
+        humanoid.PlatformStand = false
+
+        localPlatform = Instance.new("Part")
+        localPlatform.Name = "LocalPlatform"
+        localPlatform.Size = Vector3.new(10, 1, 10)
+        localPlatform.CFrame = CFrame.new(root.Position.X, HIDE_Y - 2, root.Position.Z)
+        localPlatform.Anchored = true
+        localPlatform.CanCollide = true
+        localPlatform.Transparency = 1
+        localPlatform.Parent = Workspace
+
+        proxyPart = Instance.new("Part")
+        proxyPart.Name = "LocalProxy"
+        proxyPart.Size = Vector3.new(2, 2, 2)
+        proxyPart.Transparency = 1
+        proxyPart.CanCollide = false
+        proxyPart.Anchored = true
+        proxyPart.Parent = Workspace
+
+        local headPos = head.Position
+        local groundY = getGroundHeight(headPos, character)
+        local initY = (groundY and (groundY + CAMERA_HEIGHT)) or headPos.Y
+        proxyPart.CFrame = CFrame.new(headPos.X, initY, headPos.Z)
+
+        local cam = Workspace.CurrentCamera
+        if cam then
+            cam.CameraSubject = proxyPart
+            cam.CameraType = Enum.CameraType.Custom
+        end
+
+        if not UserInputService.TouchEnabled then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        else
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        end
+
+        proxyVelocityY = 0
+
+        local function update(dt)
+            if not proxyPart or not proxyPart.Parent then
+                invisCleanupFunc()
+                return
+            end
+            local char = player.Character
+            if not char or not char.Parent then
+                invisCleanupFunc()
+                return
+            end
+            local rootPart = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not rootPart or not hum then
+                invisCleanupFunc()
+                return
+            end
+
+            rootPart.CFrame = CFrame.new(rootPart.Position.X, HIDE_Y, rootPart.Position.Z)
+            rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 0, rootPart.Velocity.Z)
+            rootPart.RotVelocity = Vector3.zero
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part ~= rootPart then
+                    part.Velocity = Vector3.zero
+                    part.RotVelocity = Vector3.zero
+                end
+            end
+
+            if not proxyPart or not proxyPart.Parent then return end
+
+            local horizontalMove = Vector3.zero
+            local moveDir = hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                local flatDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+                horizontalMove = flatDir * MOVE_SPEED * dt
+            end
+
+            local currentPos = proxyPart.Position
+            local targetPos = currentPos + horizontalMove
+
+            local targetGroundY = getGroundHeight(targetPos, char)
+            local desiredGroundY = targetGroundY and (targetGroundY + CAMERA_HEIGHT) or nil
+
+            local isOnGround = (proxyVelocityY <= 0) and desiredGroundY and (currentPos.Y <= desiredGroundY + 0.2)
+
+            if shouldJump and isOnGround then
+                proxyVelocityY = JUMP_VELOCITY
+                shouldJump = false
+                isOnGround = false
+            end
+
+            if isOnGround then
+                if desiredGroundY then
+                    targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+                    proxyVelocityY = 0
+                end
+            else
+                proxyVelocityY = proxyVelocityY - Workspace.Gravity * dt
+                local newY = currentPos.Y + proxyVelocityY * dt
+                targetPos = Vector3.new(targetPos.X, newY, targetPos.Z)
+
+                if desiredGroundY and newY <= desiredGroundY then
+                    targetPos = Vector3.new(targetPos.X, desiredGroundY, targetPos.Z)
+                    proxyVelocityY = 0
+                end
+            end
+
+            proxyPart.CFrame = CFrame.new(targetPos)
+        end
+
+        RunService:BindToRenderStep("InvisMovement", Enum.RenderPriority.Camera.Value + 1, update)
+        invisEnabled = true
+    end
+
+    A:Divider({ Text = "隐身" })
+    A:Toggle({
+        Title = "隐身",
+        Desc = "开启后角色消失，移动和跳跃正常，按空格跳跃",
+        Value = false,
+        Callback = function(value)
+            if value then
+                invisInitFunc()
+                WindUI:Notify({ Title = "隐身", Content = "已开启，按空格跳跃", Duration = 2 })
+            else
+                invisCleanupFunc()
+                WindUI:Notify({ Title = "隐身", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+    A:Slider({
+        Title = "隐身移动速度",
+        Step = 1,
+        Value = { Min = 5, Max = 80, Default = 16 },
+        Callback = function(value)
+            MOVE_SPEED = value
+        end
+    })
+
+    -- ===== 其他玩家修改功能 =====
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
         local players = Players:GetPlayers()
@@ -875,55 +1090,6 @@ function createUI()
             end
         end
     end
-
-    -- ===== 隐身功能（放在第一位） =====
-    local invisibleEnabled = false
-    local invisibleConnection = nil
-
-    local function ApplyInvisibility(state)
-        local char = player.Character
-        if not char then return
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                if state then
-                    part.Transparency = 1
-                else
-                    part.Transparency = 0
-                end
-            end
-        end
-    end
-
-    local function onCharacterAdded()
-        if invisibleEnabled then
-            task.wait(0.1)
-            ApplyInvisibility(true)
-        end
-    end
-
-    A:Divider({ Text = "隐身" })
-    A:Toggle({
-        Title = "隐身",
-        Desc = "开启后别人看不到你，但你自己能看到自己",
-        Value = false,
-        Callback = function(value)
-            invisibleEnabled = value
-            if value then
-                ApplyInvisibility(true)
-                if not invisibleConnection then
-                    invisibleConnection = player.CharacterAdded:Connect(onCharacterAdded)
-                end
-                WindUI:Notify({ Title = "隐身", Content = "已开启，别人看不到你", Duration = 2 })
-            else
-                ApplyInvisibility(false)
-                if invisibleConnection then
-                    invisibleConnection:Disconnect()
-                    invisibleConnection = nil
-                end
-                WindUI:Notify({ Title = "隐身", Content = "已关闭，别人能看到你", Duration = 2 })
-            end
-        end
-    })
 
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
@@ -1614,7 +1780,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E)
+    -- 透视 Tab (E) - 含同行显示 + 透视自己
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
