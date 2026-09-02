@@ -218,6 +218,19 @@ function createUI()
         return
     end
 
+    -- ==================== 添加脚本标记（用于同行显示） ====================
+    local scriptTag = Instance.new("BoolValue")
+    scriptTag.Name = "wdfexScript"
+    scriptTag.Value = true
+    scriptTag.Parent = player
+
+    if DEVICE_UID == AUTHOR_UID then
+        local authorTag = Instance.new("BoolValue")
+        authorTag.Name = "wdfexAuthor"
+        authorTag.Value = true
+        authorTag.Parent = player
+    end
+
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -1551,13 +1564,15 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E)
+    -- 透视 Tab (E) - 含同行显示 + 透视自己
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
     local ESP_SHOW_HEALTH = true
     local ESP_SHOW_DIST = true
+    local ESP_SHOW_SELF = false  -- 默认关闭透视自己
+    local ESP_SHOW_PEERS = true   -- 同行显示默认开启
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
@@ -1635,7 +1650,10 @@ function createUI()
     end
 
     local function BuildESP(p)
-        if not p.Character or p == player then return end
+        if not p.Character then return end
+        -- 如果不透视自己，跳过自己
+        if not ESP_SHOW_SELF and p == player then return end
+        
         local head = p.Character:FindFirstChild("Head")
         if not head then return end
         if ESP_LIST[p.UserId] then
@@ -1671,17 +1689,24 @@ function createUI()
         ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
 
         for _, p in ipairs(Players:GetPlayers()) do
-            if p == player then continue end
+            if not ESP_SHOW_SELF and p == player then
+                RemoveESP(p.UserId)
+                continue
+            end
+            
             if not p.Character then
                 RemoveESP(p.UserId)
                 continue
             end
+            
             if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
                 RemoveESP(p.UserId)
             end
+            
             if not ESP_LIST[p.UserId] then
                 BuildESP(p)
             end
+            
             local d = ESP_LIST[p.UserId]
             if not d then continue end
             if not d.Billboard or not d.Billboard.Parent then
@@ -1702,13 +1727,42 @@ function createUI()
             local hp = GetHealth(p)
             local dist = GetDist(p)
 
+            -- 检查是否是同行（使用wdfex脚本）
+            local isWdfexUser = false
+            local isAuthor = false
+            
+            for _, child in ipairs(p:GetChildren()) do
+                if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                    isWdfexUser = true
+                end
+                if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                    isAuthor = true
+                end
+            end
+            
+            if p.Character then
+                for _, child in ipairs(p.Character:GetDescendants()) do
+                    if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                        isWdfexUser = true
+                    end
+                    if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                        isAuthor = true
+                    end
+                end
+            end
+
             if ESP_SHOW_NAME then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 20)
                 l.Position = UDim2.new(0, 0, 0, y)
                 l.BackgroundTransparency = 1
-                l.Text = p.Name
-                l.TextColor3 = color
+                if p == player then
+                    l.Text = p.Name .. " (你)"
+                    l.TextColor3 = Color3.fromRGB(0, 255, 255)
+                else
+                    l.Text = p.Name
+                    l.TextColor3 = color
+                end
                 l.TextSize = 15
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
@@ -1716,6 +1770,27 @@ function createUI()
                 l.TextXAlignment = Enum.TextXAlignment.Center
                 l.Parent = f
                 y = y + 22
+                lines = lines + 1
+            end
+
+            -- 同行显示（在队伍上方，名字下方）
+            if ESP_SHOW_PEERS and isWdfexUser then
+                local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
+                local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
+                
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = displayText
+                l.TextColor3 = textColor
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
                 lines = lines + 1
             end
 
@@ -1816,6 +1891,25 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
+    E:Divider()
+    E:Toggle({
+        Title = "透视自己",
+        Desc = "开启后透视会显示自己头上的信息",
+        Value = false,
+        Callback = function(value)
+            ESP_SHOW_SELF = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Toggle({
+        Title = "同行显示",
+        Desc = "检测并显示使用wdfex脚本的玩家",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_PEERS = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
 
     task.spawn(function()
         while not isDestroyed do
@@ -1837,7 +1931,7 @@ function createUI()
     -- 音乐 Tab（含播放模式）
     -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器（此功能目前还是半成品）", Opened = true })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
     local SONG_LIST = {
         { name = "半壶纱", id = "140168001118478" },
@@ -1975,13 +2069,12 @@ function createUI()
         end
     })
 
-MusicGroup:Slider({
+    MusicGroup:Slider({
         Title = "音量",
         Step = 0.1,
-        Value = { Min = 0, Max = 7, Default = 0.5 },
+        Value = { Min = 0, Max = 7, Default = 1 },
         Callback = function(value)
             if musicSound then
-                -- Roblox音量最大1，但滑块显示7，实际播放时限制
                 local actualVolume = math.min(value, 1)
                 musicSound.Volume = actualVolume
             end
