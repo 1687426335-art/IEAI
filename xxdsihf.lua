@@ -345,7 +345,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "wdfex-Hub"
+            banner.Text = "请勿将此脚本分享给任何一个人也不要广泛传播否则我将删除你的设备授权将你拉入黑名"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
