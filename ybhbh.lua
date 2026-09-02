@@ -398,7 +398,7 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\nwdfexnb",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
@@ -810,7 +810,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 玩家修改 Tab（含隐身、伤害免疫、穿墙、体力、防甩飞、防摔）
+    -- 玩家修改 Tab（含隐身功能，放在第一位）
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -876,96 +876,55 @@ function createUI()
         end
     end
 
-    -- ===== 隐身功能 =====
+    -- ===== 隐身功能（放在第一位） =====
+    local invisibleEnabled = false
+    local invisibleConnection = nil
+
+    local function ApplyInvisibility(state)
+        local char = player.Character
+        if not char then return
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                if state then
+                    part.Transparency = 1
+                else
+                    part.Transparency = 0
+                end
+            end
+        end
+    end
+
+    local function onCharacterAdded()
+        if invisibleEnabled then
+            task.wait(0.1)
+            ApplyInvisibility(true)
+        end
+    end
+
     A:Divider({ Text = "隐身" })
-    
-    -- 隐身功能1：人物不可见状态
     A:Toggle({
-        Title = "人物不可见状态(隐身)",
-        Desc = "开启后角色变透明，别人看不见你",
+        Title = "隐身",
+        Desc = "开启后别人看不到你，但你自己能看到自己",
         Value = false,
-        Callback = function(enabled)
-            local localPlayer = player
-            local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-            for _, child in pairs(char:GetChildren()) do
-                if child:IsA("BasePart") then
-                    child.Transparency = enabled and 1 or 0
-                    child.CanCollide = not enabled
-                elseif child:IsA("Accessory") then
-                    local handle = child:FindFirstChild("Handle")
-                    if handle then
-                        handle.Transparency = enabled and 1 or 0
-                    end
+        Callback = function(value)
+            invisibleEnabled = value
+            if value then
+                ApplyInvisibility(true)
+                if not invisibleConnection then
+                    invisibleConnection = player.CharacterAdded:Connect(onCharacterAdded)
                 end
-            end
-            if enabled then
-                WindUI:Notify({ Title = "隐身", Content = "人物不可见状态已开启", Duration = 2 })
+                WindUI:Notify({ Title = "隐身", Content = "已开启，别人看不到你", Duration = 2 })
             else
-                WindUI:Notify({ Title = "隐身", Content = "人物不可见状态已关闭", Duration = 2 })
+                ApplyInvisibility(false)
+                if invisibleConnection then
+                    invisibleConnection:Disconnect()
+                    invisibleConnection = nil
+                end
+                WindUI:Notify({ Title = "隐身", Content = "已关闭，别人能看到你", Duration = 2 })
             end
         end
     })
 
-    -- 隐身功能2：隐身〖实用】
-    local invisChair = nil
-    local savedCFrame = nil
-    
-    A:Toggle({
-        Title = "隐身〖实用】",
-        Desc = "开启后传送至隐蔽位置并半透明",
-        Value = false,
-        Callback = function(state)
-            local char = player.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            
-            if state then
-                savedCFrame = root.CFrame
-                wait()
-                char:MoveTo(Vector3.new(-25.95, 84, 3537.55))
-                wait(0.15)
-                
-                invisChair = Instance.new("Seat")
-                invisChair.Anchored = false
-                invisChair.CanCollide = false
-                invisChair.Name = "invischair"
-                invisChair.Transparency = 1
-                invisChair.Position = Vector3.new(-25.95, 84, 3537.55)
-                invisChair.Parent = Workspace
-                
-                local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-                if torso then
-                    local weld = Instance.new("Weld")
-                    weld.Part0 = invisChair
-                    weld.Part1 = torso
-                    weld.Parent = invisChair
-                end
-                wait()
-                invisChair.CFrame = savedCFrame
-                
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") or part:IsA("Decal") then
-                        part.Transparency = 0.5
-                    end
-                end
-                WindUI:Notify({ Title = "隐身", Content = "隐身〖实用】已开启", Duration = 2 })
-            else
-                if invisChair then
-                    invisChair:Destroy()
-                    invisChair = nil
-                end
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") or part:IsA("Decal") then
-                        part.Transparency = 0
-                    end
-                end
-                WindUI:Notify({ Title = "隐身", Content = "隐身〖实用】已关闭", Duration = 2 })
-            end
-        end
-    })
-
-    -- ===== 其他玩家修改功能 =====
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -1655,7 +1614,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己
+    -- 透视 Tab (E)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
