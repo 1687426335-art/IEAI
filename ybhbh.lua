@@ -1,12 +1,21 @@
--- ==================== 独立AI聊天助手 ====================
--- 复制这段代码单独执行即可，不需要主脚本
+-- ==================== 独立AI聊天助手（修复版） ====================
+-- 复制这段代码单独执行即可
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local HttpService = game:GetService("HttpService")
 
+if not WindUI then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "错误",
+        Text = "UI库加载失败，请检查网络",
+        Duration = 5,
+    })
+    return
+end
+
 -- ===== 创建悬浮窗 =====
 local Window = WindUI:CreateWindow({
-    Title = 'AI 聊天助手',
+    Title = 'AI聊天助手',
     Icon = "message-circle",
     IconThemed = true,
     Author = "wdfex",
@@ -25,29 +34,28 @@ Window:Tag({
     Color = Color3.fromRGB(100, 200, 255)
 })
 
--- ===== 主界面 =====
-local MainTab = Window:Tab({ Title = "聊天", Icon = "message-circle" })
-local ChatGroup = MainTab:Section({ Title = "AI 聊天助手", Opened = true })
-
--- 聊天显示区域（用Paragraph模拟聊天记录）
-local chatHistory = ""
-local chatDisplay = nil
-
--- 创建聊天显示区域
-ChatGroup:Paragraph({
-    Title = "对话记录",
-    Desc = "等待你开始对话..."
+Window:EditOpenButton({
+    Title = "AI助手",
+    Icon = "message-circle",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 4,
+    Color = ColorSequence.new(Color3.fromRGB(100, 200, 255)),
+    Draggable = true,
 })
 
--- 存储聊天消息的列表
-local messages = {}
+-- ===== 创建Tab和Section =====
+local MainTab = Window:Tab({ Title = "聊天", Icon = "message-circle" })
+local ChatGroup = MainTab:Section({ Title = "AI聊天助手", Opened = true })
 
--- 添加消息到显示
+-- 聊天记录变量
+local messages = {}
+local chatDesc = "等待你开始对话..."
+
+-- 添加消息函数
 local function AddMessage(sender, content)
-    local time = os.date("%H:%M")
     local prefix = sender == "我" and "你" or "AI"
     local color = sender == "我" and "rgb(100, 200, 255)" or "rgb(100, 255, 150)"
-    local msg = '<font color="' .. color .. '"><b>' .. prefix .. '</b></font> <font color="rgb(200,200,200)">' .. content .. '</font>'
+    local msg = '<font color="' .. color .. '"><b>' .. prefix .. ':</b></font> ' .. content
     table.insert(messages, msg)
     if #messages > 20 then
         table.remove(messages, 1)
@@ -56,24 +64,33 @@ local function AddMessage(sender, content)
     for _, m in ipairs(messages) do
         displayText = displayText .. m .. "\n\n"
     end
-    chatDisplay:SetDesc(displayText or "等待你开始对话...")
+    chatDesc = displayText or "等待你开始对话..."
+    -- 更新显示
+    pcall(function()
+        if chatLabel then
+            chatLabel:SetDesc(chatDesc)
+        end
+    end)
 end
 
--- AI回复函数
+-- 创建聊天显示区域
+local chatLabel = ChatGroup:Paragraph({
+    Title = "对话记录",
+    Desc = chatDesc
+})
+
+-- AI请求函数
 local function AskAI(question)
     if question == "" then return end
     
-    -- 显示用户消息
     AddMessage("我", question)
-    
-    -- 显示AI正在思考
-    chatDisplay:SetDesc(chatDisplay.Desc .. "\n\nAI正在思考...")
+    AddMessage("AI", "思考中...")
     
     task.spawn(function()
         local success, response = pcall(function()
             local data = {
                 messages = {
-                    { role = "system", content = "你是一个有用的AI助手，可以回答任何问题，帮助用户了解脚本功能。" },
+                    { role = "system", content = "你是一个有用的AI助手，可以回答任何问题。" },
                     { role = "user", content = question }
                 },
                 model = "gpt-3.5-turbo",
@@ -97,14 +114,15 @@ local function AskAI(question)
             end
         end)
         
-        if success and response then
-            -- 移除"AI正在思考..."
-            local currentDesc = chatDisplay.Desc
-            local index = string.find(currentDesc, "AI正在思考...")
-            if index then
-                currentDesc = string.sub(currentDesc, 1, index - 1)
-                chatDisplay:SetDesc(currentDesc)
+        -- 移除"思考中..."
+        for i = #messages, 1, -1 do
+            if string.find(messages[i], "思考中...") then
+                table.remove(messages, i)
+                break
             end
+        end
+        
+        if success and response then
             AddMessage("AI", response)
         else
             AddMessage("AI", "请求失败，请检查网络或稍后再试。")
@@ -113,7 +131,7 @@ local function AskAI(question)
 end
 
 -- 输入框
-local questionInput = nil
+local questionInput = ""
 ChatGroup:Input({
     Title = "输入问题",
     Placeholder = "输入你想问的问题...",
@@ -128,36 +146,16 @@ ChatGroup:Button({
     Title = "发送",
     Callback = function()
         if questionInput and questionInput ~= "" then
-            AskAI(questionInput)
+            local q = questionInput
             questionInput = ""
+            AskAI(q)
         else
             WindUI:Notify({ Title = "提示", Content = "请输入问题", Duration = 2 })
         end
     end
 })
 
--- 重新获取chatDisplay
-local function UpdateChatDisplay()
-    for _, child in ipairs(ChatGroup:GetChildren()) do
-        if child:IsA("Paragraph") and child.Title == "对话记录" then
-            chatDisplay = child
-            break
-        end
-    end
-end
-
-task.wait(0.5)
-UpdateChatDisplay()
-if not chatDisplay then
-    ChatGroup:Paragraph({
-        Title = "对话记录",
-        Desc = "等待你开始对话..."
-    })
-    task.wait(0.1)
-    UpdateChatDisplay()
-end
-
--- ===== 快捷问题按钮 =====
+-- 快捷问题
 ChatGroup:Divider()
 ChatGroup:Paragraph({
     Title = "快捷提问",
@@ -186,31 +184,26 @@ ChatGroup:Button({
 })
 
 ChatGroup:Button({
-    Title = "怎么快速传送？",
-    Callback = function()
-        AskAI("传送功能怎么使用？需要先开启什么开关？")
-    end
-})
-
-ChatGroup:Button({
     Title = "飞行模式怎么用？",
     Callback = function()
         AskAI("飞行模式怎么使用？怎么控制方向？")
     end
 })
 
--- ===== 清空对话 =====
 ChatGroup:Divider()
 ChatGroup:Button({
     Title = "清空对话记录",
     Callback = function()
         messages = {}
-        chatDisplay:SetDesc("对话已清空")
+        chatDesc = "对话已清空"
+        pcall(function()
+            chatLabel:SetDesc(chatDesc)
+        end)
         WindUI:Notify({ Title = "提示", Content = "对话记录已清空", Duration = 2 })
     end
 })
 
--- ===== 设置Tab =====
+-- 设置Tab
 local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 local SettingsGroup = SettingsTab:Section({ Title = "设置", Opened = true })
 
@@ -218,7 +211,6 @@ SettingsGroup:Button({
     Title = "关闭AI助手",
     Callback = function()
         Window:Destroy()
-        WindUI:Notify({ Title = "AI助手", Content = "已关闭", Duration = 2 })
     end
 })
 
@@ -226,14 +218,4 @@ WindUI:Notify({
     Title = "AI助手",
     Content = "已启动，输入问题即可开始聊天",
     Duration = 3,
-})
-
--- 悬浮窗按钮可以拖动
-Window:EditOpenButton({
-    Title = "AI助手",
-    Icon = "message-circle",
-    CornerRadius = UDim.new(0,16),
-    StrokeThickness = 4,
-    Color = ColorSequence.new(Color3.fromRGB(100, 200, 255)),
-    Draggable = true,
 })
