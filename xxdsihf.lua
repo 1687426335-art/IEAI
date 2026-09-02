@@ -365,7 +365,7 @@ function createUI()
             table.insert(connections, colorConn)
             
             local function startAnimation()
-                local tween1 = TweenService:Create(banner, TweenInfo.new(7, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                local tween1 = TweenService:Create(banner, TweenInfo.new(13, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
                     Position = UDim2.new(1, 10, 0, 2)
                 })
                 tween1:Play()
