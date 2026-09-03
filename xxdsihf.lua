@@ -794,7 +794,7 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关
+    -- 飞天快捷开关（第一种风格：炫酷渐变霓虹光效）
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -811,68 +811,95 @@ function createUI()
 
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
+        
         flyQuickScreenGui = Instance.new("ScreenGui")
         flyQuickScreenGui.Name = "FlyQuickToggle"
         flyQuickScreenGui.ResetOnSpawn = false
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-
-        local button = Instance.new("ImageButton")
-        button.Size = UDim2.new(0, 60, 0, 60)
-        button.Position = UDim2.new(0.5, -30, 0.15, 0)
-        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.15
-        button.BorderSizePixel = 2
-        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://7734068321"
-        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
-        button.ScaleType = Enum.ScaleType.Fit
-        button.Parent = flyQuickScreenGui
-        flyQuickButton = button
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = button
-
+        
+        local TweenService = game:GetService("TweenService")
+        
+        -- 光晕背景
+        local glow = Instance.new("Frame")
+        glow.Size = UDim2.new(0, 80, 0, 80)
+        glow.Position = UDim2.new(0.5, -40, 0.15, -10)
+        glow.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+        glow.BackgroundTransparency = 0.8
+        glow.BorderSizePixel = 0
+        glow.Parent = flyQuickScreenGui
+        
+        local glowCorner = Instance.new("UICorner")
+        glowCorner.CornerRadius = UDim.new(1, 0)
+        glowCorner.Parent = glow
+        
+        -- 呼吸动画
+        local glowTween = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+            BackgroundTransparency = 0.6,
+            Size = UDim2.new(0, 90, 0, 90)
+        })
+        glowTween:Play()
+        
+        -- 主按钮
+        local btn = Instance.new("ImageButton")
+        btn.Size = UDim2.new(0, 54, 0, 54)
+        btn.Position = UDim2.new(0.5, -27, 0.15, 3)
+        btn.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
+        btn.BackgroundTransparency = 0.2
+        btn.BorderSizePixel = 2
+        btn.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        btn.Image = "rbxassetid://7734068321"
+        btn.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        btn.ScaleType = Enum.ScaleType.Fit
+        btn.Parent = flyQuickScreenGui
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(1, 0)
+        btnCorner.Parent = btn
+        
+        flyQuickButton = btn
+        
         flyQuickStatusLabel = Instance.new("TextLabel")
-        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
-        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 18)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 2)
         flyQuickStatusLabel.BackgroundTransparency = 1
         flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.TextSize = 11
         flyQuickStatusLabel.Font = Enum.Font.GothamBold
         flyQuickStatusLabel.TextStrokeTransparency = 0.3
         flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         flyQuickStatusLabel.Text = "飞行: 关"
-        flyQuickStatusLabel.Parent = button
-
+        flyQuickStatusLabel.Parent = btn
+        
         local function updateFlyStatus()
             if flyQuickStatusLabel then
                 flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                if flyQuickButton then
-                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                if btn then
+                    btn.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    btn.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    glow.BackgroundColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
                 end
             end
         end
-
-        button.MouseButton1Click:Connect(function()
+        
+        btn.MouseButton1Click:Connect(function()
             if flyState.enabled then stopFly() else startFly() end
             updateFlyStatus()
         end)
-
+        
+        -- 拖动逻辑
         local dragging = false
         local dragStart = nil
         local startPos = nil
-
-        button.InputBegan:Connect(function(input)
+        
+        btn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
-                startPos = button.Position
+                startPos = btn.Position
             end
         end)
-
-        button.InputChanged:Connect(function(input)
+        
+        btn.InputChanged:Connect(function(input)
             if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local delta = input.Position - dragStart
                 local newPos = UDim2.new(
@@ -881,18 +908,19 @@ function createUI()
                     startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
                     startPos.Y.Offset + delta.Y
                 )
-                button.Position = newPos
+                btn.Position = newPos
+                glow.Position = UDim2.new(newPos.X.Scale, newPos.X.Offset - 13, newPos.Y.Scale, newPos.Y.Offset - 13)
             end
         end)
-
-        button.InputEnded:Connect(function(input)
+        
+        btn.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = false
             end
         end)
-
+        
         updateFlyStatus()
-
+        
         local statusConn = RunService.Heartbeat:Connect(function()
             if flyQuickToggle and flyQuickStatusLabel then
                 updateFlyStatus()
