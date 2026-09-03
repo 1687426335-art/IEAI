@@ -29,10 +29,10 @@ for i = 1, #version do
 end
 
 WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">SX</font><font color="' .. gradientColors[5] .. '">HUB</font>',
+    Title = '<font color="' .. gradientColors[1] .. '">wdfex</font><font color="' .. gradientColors[5] .. '">-Hub</font>',
     IconThemed = true,
     Icon = "crown",
-    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用SX HUB\n你的支持是我们更新的动力\nQQ主群566257944",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-Hub\n你的支持是我们更新的动力\nQQ主群566257944",
     Buttons = {
         {
             Title = "取消",
@@ -56,20 +56,20 @@ function createUI()
     local LocalPlayer = Players.LocalPlayer
     local player = LocalPlayer
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Workspace = game:GetService("Workspace")
-    local RunService = game:GetService("RunService")
+    local Workspace = game:GetService(("Workspace")
+    local Run580Service = game:GetService(",RunService ")
     local UserInputService = game:GetService("UserInputService")
     local isDestroyed = false
     local connections = {}
 
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
-        Title = 'SX HUB',
+        Title = 'wdfex-Hub',
         Icon = "crown",
         IconThemed = true,
         Author = "v3.0.1 by 神青",
         Folder = "CloudHub",
-        Size = UDim2.fromOffset(580, 440),
+        Size = UDim2.fromOffset440),
         Transparent = true,
         Theme = "Dark",
         HideSearchBar = false,
@@ -102,7 +102,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "SX HUB",
+                    Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -112,9 +112,9 @@ function createUI()
         }
     })
 
-    -- ===== 悬浮窗 =====
+    -- ===== 悬浮窗（全部改为 wdfex-Hub） =====
     Window:EditOpenButton({
-        Title = "SX HUB",
+        Title = "wdfex-Hub",
         Icon = "crown",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -123,17 +123,17 @@ function createUI()
     })
 
     Window:Tag({
-        Title = "SX HUB",
+        Title = "wdfex-Hub",
         Color = Color3.fromHex("#00008B") 
     })
 
     Window:Tag({
-        Title = "3.0.1",
+        Title = "v3.0.1",
         Color = Color3.fromHex("#32CD32")
     })
 
     Window:EditOpenButton({
-        Title = "SX HUB",
+        Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -169,7 +169,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- Tab 创建
+    -- Tab 创建（功能全部保留 SX HUB，只改品牌名）
     -- ============================================================
     local infoTab = Window:Tab({Title = "通知", Icon = "layout-grid", Locked = false})
     local infoSection = infoTab:Section({Title = "详情信息",Icon = "info", Opened = true})
@@ -477,9 +477,9 @@ function createUI()
     -- ============================================================
     -- 战斗功能 Tab
     -- ============================================================
-    local Main = Window:Tab({Title = "战斗功能", Icon = "swords"})
+    local BattleTab = Window:Tab({Title = "战斗功能", Icon = "swords"})
     local ForceLoadAll = false
-    Main:Toggle({
+    BattleTab:Toggle({
         Title = "强制加载所有数据",
         Default = ForceLoadAll,
         Callback = function(v)
@@ -545,7 +545,7 @@ function createUI()
     local OriginalShoot = nil
     local ShooterModule = nil
     
-    Main:Toggle({
+    BattleTab:Toggle({
         Title = "愤怒机器人[全枪]",
         Default = AutoShoot,
         Callback = function(v)
@@ -736,7 +736,7 @@ function createUI()
     })
     
     local AutoSell = false
-    Main:Toggle({
+    BattleTab:Toggle({
         Title = "出售物品光环",
         Default = AutoSell,
         Callback = function(v)
@@ -1448,7 +1448,6 @@ function createUI()
     local AimTab = Window:Tab({Title = "自瞄", Icon = "crosshair"})
     local isAiming = false
     local isPredicting = false 
-    local isLowHealthPriority = false 
     local fov = 50 
     local plr = game:GetService("Players").LocalPlayer
     local Cam = workspace.CurrentCamera
@@ -1456,27 +1455,17 @@ function createUI()
     local teamCheck = false
     local aliveCheck = false
     local predictionDistance = 1.5
-    local wallCheck = false
     local smoothness = 0.5
-    local aimKey = Enum.KeyCode.Q
     local aimLock = false
-    local aimLockSpeed = 0.2
-    local isAimingHead = false
     local aimStyle = "平滑"
-    local lockTime = 0.5
     local lastLockTime = 0
     local lockedPlayer = nil
     local lockDuration = 3
-    local lockExpire = 0
     local isSilentAim = false
     local silentFov = 30
     local isRageMode = false
     local silentAimChance = 100
-    local aimbotType = "传统"
     local aimbotPriority = "距离"
-    local isAutoShootOnAim = false
-    local isSmartAim = false
-    local smartAimThreshold = 0.8
     local isLagCompensation = false
     local lagCompensationTime = 0.1
 
@@ -1497,7 +1486,6 @@ function createUI()
     SilentFOVring.Position = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
 
     local aimConnection = nil
-    local silentAimConnection = nil
 
     local function updateDrawings()
         FOVring.Position = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
@@ -1507,12 +1495,9 @@ function createUI()
     local function getClosestPlayerInFOV()
         local nearest = nil
         local lastDistance = math.huge
-        local lowestHealthPlayer = nil
-        local lowestHealth = math.huge
         local nearestDistance = math.huge
         local playerMousePos = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
         local fovToUse = silentFov
-        local now = tick()
 
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= plr then
@@ -1535,20 +1520,10 @@ function createUI()
                         elseif aimbotPriority == "屏幕距离" and screenDistance < lastDistance then
                             lastDistance = screenDistance
                             nearest = player
-                        elseif aimbotPriority == "生命值" then
-                            local humanoid = character:FindFirstChildOfClass("Humanoid")
-                            if humanoid and humanoid.Health < lowestHealth then
-                                lowestHealth = humanoid.Health
-                                lowestHealthPlayer = player
-                            end
                         end
                     end
                 end
             end
-        end
-
-        if aimbotPriority == "生命值" and lowestHealthPlayer then
-            return lowestHealthPlayer
         end
 
         return nearest
@@ -1703,7 +1678,7 @@ function createUI()
 
     AimTab:Dropdown({
         Title = "瞄准优先级",
-        Values = {"距离", "屏幕距离", "生命值"},
+        Values = {"距离", "屏幕距离"},
         Default = "距离",
         Callback = function(v)
             aimbotPriority = v
@@ -1801,7 +1776,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab（使用 wdfex 的透视，已删除“显示队伍”）
+    -- 透视 Tab（wdfex 的透视，已删除“显示队伍”）
     -- ============================================================
     local EspTab = Window:Tab({Title = "透视", Icon = "eye"})
     local ESP_ENABLED = false
@@ -2237,9 +2212,9 @@ function createUI()
     -- ============================================================
     -- 地点传送 Tab
     -- ============================================================
-    local TeleportSection = Window:Tab({Title = "地点传送", Icon = "map-pin"})
+    local LocationTeleportTab = Window:Tab({Title = "地点传送", Icon = "map-pin"})
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到奥菲的价值兑换",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2249,7 +2224,7 @@ function createUI()
         end
     })
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到绿洲银行",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2259,7 +2234,7 @@ function createUI()
         end
     })
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到绿洲城警察",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2269,7 +2244,7 @@ function createUI()
         end
     })
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到金库",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2279,7 +2254,7 @@ function createUI()
         end
     })
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到犯罪基地",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2289,7 +2264,7 @@ function createUI()
         end
     })
     
-    TeleportSection:Button({
+    LocationTeleportTab:Button({
         Title = "传送到烈焰要塞",
         Callback = function()
             local p = game.Players.LocalPlayer
@@ -2407,7 +2382,7 @@ function createUI()
     -- ============================================================
     local EntertainmentTab = Window:Tab({Title = "娱乐", Icon = "settings"})
 
-    _G.AUTO_CHAT_TEXT = "SX HUB ！！！"
+    _G.AUTO_CHAT_TEXT = "wdfex-Hub 牛逼！！！"
     _G.AUTO_CHAT_ENABLED = false
     _G.AUTO_CHAT_INTERVAL = 1.5
     _G.AUTO_CHAT_MODE = "自定义"
@@ -2423,7 +2398,7 @@ function createUI()
             ["7字经"] = function() return {"来老弟", "你有啥实力", "你活着干啥呢", "臭底层", "快来打压你爹", "我在这等着呢", "快来打压我"} end,
             ["14字经"] = function() return {"你有啥用", "你活着干啥呢", "赶紧跳了吧", "老弟家里几位在哪里", "来吧赶紧让我口吃", "你爹等着你呢", "你个窝囊废", "孩子快来呀", "怎么不敢和你爹对话了？", "你有什么用处", "你活着当技女吗？", "一句话", "来打压我", "哈哈哈笑死我了"} end,
             ["糖人语言"] = function() return {"我是奶龙", "奶龙是我", "你是谁？？", "我是谁", "你干嘛啊？"} end,
-            ["宣传词"] = function() return {"SX HUB牛逼", "打败一切", "快来购买", "功能多多", "支持超多服务器"} end
+            ["宣传词"] = function() return {"wdfex-Hub牛逼", "打败一切", "快来购买", "功能多多", "支持超多服务器"} end
         },
         connections = {},
         active = false
@@ -2548,7 +2523,7 @@ function createUI()
     EntertainmentTab:Input({
         Title = "自定义发言内容",
         Placeholder = "输入要发送的消息",
-        Value = "SX HUB ！！！",
+        Value = "wdfex-Hub 牛逼！！！",
         Callback = function(value)
             _G.AUTO_CHAT_TEXT = value
             WindUI:Notify({ Title = "自定义内容", Content = "已设置: " .. value, Duration = 2, Icon = "edit" })
@@ -2748,7 +2723,7 @@ function createUI()
     end)
 
     WindUI:Notify({
-        Title = "SX HUB",
+        Title = "wdfex-Hub",
         Content = "脚本已加载成功，欢迎使用！",
         Duration = 3,
     })
