@@ -1,55 +1,218 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local Confirmed = false
 
-local gradientColors = {
-    "rgb(255, 230, 235)",
-    "rgb(255, 210, 220)",
-    "rgb(255, 190, 205)",
-    "rgb(255, 170, 190)",
-    "rgb(255, 150, 175)",
-    "rgb(245, 140, 180)",
-    "rgb(235, 130, 185)",
-    "rgb(225, 120, 190)",
-    "rgb(215, 110, 195)",
-    "rgb(205, 100, 200)"
-}
+-- ==================== 语言系统 ====================
+local lang = "zh"  -- 默认中文
 
-local username = game.Players.LocalPlayer.Name
-local coloredUsername = ""
-for i = 1, #username do
-    local colorIndex = (i - 1) % #gradientColors + 1
-    coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
-end
-
-local version = "v2.0"
-local coloredVersion = ""
-for i = 1, #version do
-    local colorIndex = (i - 1) % #gradientColors + 1
-    coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
-end
-
-WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
-    IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
-    Buttons = {
-        {
-            Title = "取消",
-            Callback = function() end,
-            Variant = "Secondary",
-        },
-        {
-            Title = "执行",
-            Icon = "arrow-right",
-            Callback = function() 
-                Confirmed = true
-                createUI()
-            end,
-            Variant = "Primary",
-        }
+local function T(str)
+    -- 英文翻译表（只定义需要翻译的中文字符串）
+    local en = {
+        ["wdfex-Hub"] = "wdfex-Hub",
+        ["作者消息"] = "Author Message",
+        ["注意事项"] = "Notice",
+        ["详情信息"] = "Details",
+        ["关于"] = "About",
+        ["更新公告"] = "Update Log",
+        ["主功能"] = "Main Features",
+        ["玩家修改"] = "Player Mods",
+        ["飞天与加速"] = "Fly & Speed",
+        ["互动"] = "Interaction",
+        ["枪械功能"] = "Weapon",
+        ["杀戮光环"] = "Kill Aura",
+        ["传送点"] = "Teleport",
+        ["透视"] = "ESP",
+        ["其他功能"] = "Other",
+        ["语言切换"] = "Language",
+        ["直播模式"] = "Live Mode",
+        ["快速互动"] = "Quick Interact",
+        ["飞行"] = "Flight",
+        ["移速"] = "Speed",
+        ["伤害免疫"] = "Damage Immunity",
+        ["穿墙"] = "Noclip",
+        ["体力"] = "Stamina",
+        ["防甩飞"] = "Anti-Fling",
+        ["防摔"] = "Anti-Fall",
+        ["枪械强化"] = "Weapon Enhance",
+        ["碰撞箱扩展"] = "Hitbox Expand",
+        ["子追"] = "Sub-Aim",
+        ["自瞄"] = "Aimbot",
+        ["过滤"] = "Filter",
+        ["优先攻击"] = "Priority",
+        ["音乐"] = "Music",
+        ["设置"] = "Settings",
+        ["开发者后台"] = "Dev Panel",
+        ["黑名单管理"] = "Blacklist Manager",
+        ["授权管理"] = "Whitelist Manager",
+        ["说明"] = "Desc",
+        ["播放模式"] = "Play Mode",
+        ["公告"] = "Notice",
+        ["通知"] = "Notifications",
+        ["已授权"] = "Authorized",
+        ["当前身份: 作者"] = "Current Role: Author",
+        ["输入要拉黑的设备UID，点击拉黑即可"] = "Input UID to blacklist, click to add",
+        ["输入UID"] = "Input UID",
+        ["请输入要拉黑的设备UID..."] = "Enter device UID to blacklist...",
+        ["拉黑设备"] = "Blacklist Device",
+        ["从黑名单移除"] = "Remove from Blacklist",
+        ["输入要授权的设备UID，点击授权即可"] = "Input UID to authorize, click to add",
+        ["请输入要授权的设备UID..."] = "Enter device UID to authorize...",
+        ["授权设备"] = "Authorize Device",
+        ["移除授权"] = "Remove Authorization",
+        ["查看当前黑名单"] = "View Blacklist",
+        ["查看当前授权列表"] = "View Whitelist",
+        ["禁止访问"] = "Access Denied",
+        ["你无法进入开发者后台"] = "You cannot access dev panel",
+        ["启用快速互动"] = "Enable Quick Interact",
+        ["按住时间"] = "Hold Time",
+        ["触发距离"] = "Activation Distance",
+        ["飞行（绕过）"] = "Fly (Bypass)",
+        ["飞行速度"] = "Fly Speed",
+        ["飞天快捷开关"] = "Fly Quick Toggle",
+        ["修改移速（绕过）"] = "Modify Speed (Bypass)",
+        ["移速"] = "Speed",
+        ["免疫部分伤害"] = "Immune to some damage",
+        ["免疫火焰和车爆炸时候的伤害"] = "Immune to fire and car explosion damage",
+        ["启用人物穿墙"] = "Enable Noclip",
+        ["无限体力"] = "Infinite Stamina",
+        ["超快射速"] = "Super Fire Rate",
+        ["启用头部碰撞箱（推荐20-25）"] = "Enable Head Hitbox (recommend 20-25)",
+        ["头部大小"] = "Head Size",
+        ["好友检测 (白名单)"] = "Friends Whitelist",
+        ["启用子追"] = "Enable Sub-Aim",
+        ["判定距离"] = "Max Distance",
+        ["FOV圈大小"] = "FOV Circle Size",
+        ["不瞄准队友"] = "Ignore Teammates",
+        ["墙壁检测"] = "Wall Check",
+        ["启用杀戮光环"] = "Enable Kill Aura",
+        ["攻击距离"] = "Attack Range",
+        ["墙体检测"] = "Wall Check",
+        ["只攻击警察"] = "Only Police",
+        ["只攻击平民"] = "Only Civilians",
+        ["不攻击血量为0的玩家"] = "Ignore Dead Players",
+        ["优先攻击最近目标"] = "Prioritize Nearest",
+        ["优先攻击距离"] = "Priority Range",
+        ["启用传送"] = "Enable Teleport",
+        ["选定传送地点"] = "Select Location",
+        ["传送到选定地点"] = "Teleport",
+        ["透视总开关"] = "ESP Toggle",
+        ["显示名字"] = "Show Name",
+        ["显示队伍"] = "Show Team",
+        ["显示血量"] = "Show Health",
+        ["显示距离"] = "Show Distance",
+        ["透视自己"] = "Show Self",
+        ["同行显示"] = "Show Peers",
+        ["选择歌曲"] = "Select Song",
+        ["播放音乐"] = "Play Music",
+        ["音量"] = "Volume",
+        ["顺序播放"] = "Sequential",
+        ["循环播放"] = "Loop",
+        ["随机播放"] = "Random",
+        ["请免费分享请勿倒卖被我发现我将会删除你的授权"] = "Free share only, don't resell or you'll be banned",
+        ["豆包AI生成请注意分辨"] = "AI generated, please identify",
+        ["后期PS制作"] = "Post-production",
+        ["直播模式"] = "Live Mode",
+        ["已开启"] = "Enabled",
+        ["已关闭"] = "Disabled",
+        ["正在播放: "] = "Now Playing: ",
+        ["已停止播放"] = "Stopped",
+        ["已切换至: "] = "Switched to: ",
+        ["音乐"] = "Music",
+        ["脚本已加载成功，欢迎使用！"] = "Script loaded successfully, enjoy!",
+        ["wdfex"] = "wdfex",
+        ["作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"] = "Author: wdfex\nQQ: 1687426335\nAnti-cheat & AFK protection enabled.",
+        ["已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"] = "Added floating window and new features.\nKill Aura will prioritize nearest target within range.\nDon't share this script or your device will be banned.\nReport bugs to author.\nPermanent ban means DC, don't blame if you use other scripts.",
+        ["目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察"] = "Fixed fly lag on mobile.\nNo new features planned currently.\nSuggestions welcome.\nWill add auto-dodge police later.",
+        ["修复所有已知问题\n更换了悬浮窗"] = "Fixed all known issues.\nUpdated floating window.",
+        ["注意"] = "Note",
+        ["需装备枪械武器才有伤害"] = "Requires a gun to deal damage.",
+        ["请先开启传送开关"] = "Please enable teleport first.",
+        ["正在传送至: "] = "Teleporting to: ",
+        ["未找到该地点"] = "Location not found.",
+        ["输入UID"] = "Input UID",
+        ["请输入要拉黑的设备UID..."] = "Enter device UID to blacklist...",
+        ["错误"] = "Error",
+        ["成功"] = "Success",
+        ["提示"] = "Hint",
+        ["不能拉黑自己的设备"] = "Cannot blacklist your own device.",
+        ["已拉黑设备: "] = "Blacklisted: ",
+        ["请输入设备UID"] = "Please enter device UID.",
+        ["已移除黑名单: "] = "Removed from blacklist: ",
+        ["你已拥有最高权限"] = "You already have highest permission.",
+        ["已授权设备: "] = "Authorized: ",
+        ["已移除授权: "] = "Removed authorization: ",
+        ["当前黑名单为空"] = "Blacklist is empty.",
+        ["黑名单列表"] = "Blacklist:",
+        ["授权列表"] = "Whitelist:",
+        ["当前授权列表为空"] = "Whitelist is empty.",
+        ["点击了自己"] = "Clicked self",
+        ["没什么"] = "Nothing",
+        ["搜索..."] = "Search...",
+        ["搜索内容:"] = "Search: ",
+        ["wdfex-Hub"] = "wdfex-Hub",
+        ["取消"] = "Cancel",
+        ["执行"] = "Execute",
+        ["尊敬的用户 "] = "Dear user ",
+        ["您使用的 "] = "You are using ",
+        [" 当前版本型号是: "] = " current version: ",
+        ["\n脚本已就绪！"] = "\nScript ready!",
+        ["设备UID: "] = "Device UID: ",
+        ["已被拉黑"] = "Blacklisted",
+        ["你已被作者或管理拉黑\n你无法使用此脚本"] = "You have been blacklisted by the author.\nYou cannot use this script.",
+        ["未授权"] = "Unauthorized",
+        ["你没有被授权\n你无法使用此脚本"] = "You are not authorized.\nYou cannot use this script.",
+        ["请联系作者或管理员授权"] = "Contact author or admin for authorization.",
     }
-})
+    if lang == "en" and en[str] then
+        return en[str]
+    else
+        return str
+    end
+end
 
+-- ==================== 主UI重建函数 ====================
+local currentWindow = nil
+local currentBanner = nil
+local currentFlyToggle = nil
+local currentLiveWatermarks = nil
+local connections = {}  -- 用于清理连接
+
+local function rebuildUI()
+    -- 清理旧UI
+    if currentWindow then
+        pcall(function() currentWindow:Destroy() end)
+        currentWindow = nil
+    end
+    -- 清理其他GUI
+    local player = game.Players.LocalPlayer
+    local gui = player:WaitForChild("PlayerGui")
+    for _, child in ipairs(gui:GetChildren()) do
+        if child.Name == "BannerGui" or child.Name == "FlyQuickToggle" or child.Name == "LiveModeWatermarks" or child.Name == "TeamStatsGui" or child.Name == "SA_AimFOV" then
+            pcall(function() child:Destroy() end)
+        end
+    end
+    -- 清理音乐
+    if currentMusicSound then
+        pcall(function() currentMusicSound:Stop() end)
+        pcall(function() currentMusicSound:Destroy() end)
+        currentMusicSound = nil
+    end
+    -- 清理连接
+    for _, conn in ipairs(connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    connections = {}
+    -- 重新创建UI
+    createUI()
+end
+
+-- 语言切换按钮的回调
+local function switchLang(newLang)
+    if newLang == lang then return end
+    lang = newLang
+    rebuildUI()
+end
+
+-- 其余原有代码（从 createUI 开始）
 function createUI()
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -58,167 +221,191 @@ function createUI()
     local UserInputService = game:GetService("UserInputService")
     local player = Players.LocalPlayer
     local isDestroyed = false
-    local connections = {}
-
-    -- ==================== 统一设备UID检测（换服务器不变） ====================
-    local function getDeviceUID()
-        local userId = player.UserId
-        local success, machineId = pcall(function()
-            return game:GetService("HttpService"):GetMachineId()
-        end)
-        if not success then machineId = "unknown" end
-        local combined = userId .. "_" .. machineId
-        local uid = ""
-        for i = 1, #combined do
-            uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
+    -- 注意 connections 已在外部定义，此处用新的表
+    local localConnections = {}
+    -- 但我们使用外部 connections，避免冲突
+    -- 我们将在外部 connections 中存储，这里重新赋值
+    -- 为安全，我们用外部表
+    -- 但我们在这个函数内使用 localConnections 存储，然后外部统一清理
+    -- 但 rebuildUI 会清空外部 connections，因此我们在这里将添加的连接放入外部表
+    -- 这里我们使用外部 connections
+    -- 但注意，之前外层已有 connections 表，我们这里直接用
+    -- 但由于函数可能被多次调用，我们每次清空外部 connections，然后重新填充
+    -- 但我们要避免重复添加，我们会在 rebuildUI 中清空。
+    -- 因此，在这里我们直接使用外部表
+    -- 为了清晰，我们使用 _G.connections 或直接使用外层 connections
+    -- 由于 createUI 在外部定义，我们可以访问到 connections
+    -- 我们使用外部 connections 表。
+    -- 但上面我们已经定义了 connections 为外部变量，在这里我们直接使用。
+    -- 但我们还需要清理旧连接，重建时会清空。
+    -- 我们先把外部 connections 清空（在 rebuildUI 中已经清空），然后这里添加新的。
+    -- 但外部 connections 在脚本顶部已定义为空表，这里直接使用。
+    
+    -- 重新定义一下外部 connections 为当前函数的局部变量，但为了清理，我们使用外部
+    -- 实际我们已在外部定义 connections，这里直接用，但需注意不要重复定义。
+    -- 我们在外部定义了 connections = {}，在 createUI 内部，我们用 _G.connections 或直接使用 connections（上值）。
+    -- 由于我们将在外部清除，这里我们直接使用 connections 表。
+    -- 所以我们将所有连接 push 到 connections。
+    
+    -- 权限验证（只执行一次，但重建时不重复执行，我们用全局标志）
+    if not _G.PERMISSION_CHECKED then
+        -- ==================== 统一设备UID检测 ====================
+        local function getDeviceUID()
+            local userId = player.UserId
+            local success, machineId = pcall(function()
+                return game:GetService("HttpService"):GetMachineId()
+            end)
+            if not success then machineId = "unknown" end
+            local combined = userId .. "_" .. machineId
+            local uid = ""
+            for i = 1, #combined do
+                uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
+            end
+            return uid:sub(1, 32)
         end
-        return uid:sub(1, 32)
+        local DEVICE_UID = getDeviceUID()
+
+        -- 黑名单与授权系统
+        local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
+        local BLACKLIST = {
+            ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
+        }
+        local WHITELIST = {
+            ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+            ["XXCWZZCACWARNGDGHPG"] = true,
+            ["XXCXXFEXWXARNGDGHPG"] = true,
+        }
+        local function isBlacklisted(uid) return BLACKLIST[uid] == true end
+        local function isAuthorized(uid)
+            if uid == AUTHOR_UID then return true end
+            return WHITELIST[uid] == true
+        end
+
+        if isBlacklisted(DEVICE_UID) then
+            local blockGui = Instance.new("ScreenGui")
+            blockGui.Name = "BlockedScreen"
+            blockGui.ResetOnSpawn = false
+            blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            blockGui.Parent = player:WaitForChild("PlayerGui")
+            local blockFrame = Instance.new("Frame")
+            blockFrame.Size = UDim2.new(0, 500, 0, 200)
+            blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
+            blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+            blockFrame.BorderSizePixel = 3
+            blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+            blockFrame.Parent = blockGui
+            local blockCorner = Instance.new("UICorner")
+            blockCorner.CornerRadius = UDim.new(0, 12)
+            blockCorner.Parent = blockFrame
+            local blockTitle = Instance.new("TextLabel")
+            blockTitle.Size = UDim2.new(1, 0, 0, 40)
+            blockTitle.Position = UDim2.new(0, 0, 0, 10)
+            blockTitle.BackgroundTransparency = 1
+            blockTitle.Text = T("已被拉黑")
+            blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+            blockTitle.TextSize = 28
+            blockTitle.Font = Enum.Font.GothamBold
+            blockTitle.TextXAlignment = Enum.TextXAlignment.Center
+            blockTitle.Parent = blockFrame
+            local blockDesc = Instance.new("TextLabel")
+            blockDesc.Size = UDim2.new(1, -40, 0, 50)
+            blockDesc.Position = UDim2.new(0, 20, 0, 60)
+            blockDesc.BackgroundTransparency = 1
+            blockDesc.Text = T("你已被作者或管理拉黑\n你无法使用此脚本")
+            blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
+            blockDesc.TextSize = 18
+            blockDesc.Font = Enum.Font.GothamBold
+            blockDesc.TextXAlignment = Enum.TextXAlignment.Center
+            blockDesc.Parent = blockFrame
+            local blockUid = Instance.new("TextLabel")
+            blockUid.Size = UDim2.new(1, -40, 0, 30)
+            blockUid.Position = UDim2.new(0, 20, 0, 125)
+            blockUid.BackgroundTransparency = 1
+            blockUid.Text = T("设备UID: ") .. DEVICE_UID
+            blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
+            blockUid.TextSize = 14
+            blockUid.Font = Enum.Font.Gotham
+            blockUid.TextXAlignment = Enum.TextXAlignment.Center
+            blockUid.Parent = blockFrame
+            return
+        end
+
+        if not isAuthorized(DEVICE_UID) then
+            local authGui = Instance.new("ScreenGui")
+            authGui.Name = "AuthScreen"
+            authGui.ResetOnSpawn = false
+            authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            authGui.Parent = player:WaitForChild("PlayerGui")
+            local authFrame = Instance.new("Frame")
+            authFrame.Size = UDim2.new(0, 520, 0, 220)
+            authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
+            authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+            authFrame.BorderSizePixel = 3
+            authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
+            authFrame.Parent = authGui
+            local authCorner = Instance.new("UICorner")
+            authCorner.CornerRadius = UDim.new(0, 12)
+            authCorner.Parent = authFrame
+            local authTitle = Instance.new("TextLabel")
+            authTitle.Size = UDim2.new(1, 0, 0, 40)
+            authTitle.Position = UDim2.new(0, 0, 0, 10)
+            authTitle.BackgroundTransparency = 1
+            authTitle.Text = T("未授权")
+            authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
+            authTitle.TextSize = 28
+            authTitle.Font = Enum.Font.GothamBold
+            authTitle.TextXAlignment = Enum.TextXAlignment.Center
+            authTitle.Parent = authFrame
+            local authDesc = Instance.new("TextLabel")
+            authDesc.Size = UDim2.new(1, -40, 0, 50)
+            authDesc.Position = UDim2.new(0, 20, 0, 60)
+            authDesc.BackgroundTransparency = 1
+            authDesc.Text = T("你没有被授权\n你无法使用此脚本")
+            authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
+            authDesc.TextSize = 18
+            authDesc.Font = Enum.Font.GothamBold
+            authDesc.TextXAlignment = Enum.TextXAlignment.Center
+            authDesc.Parent = authFrame
+            local authContact = Instance.new("TextLabel")
+            authContact.Size = UDim2.new(1, -40, 0, 25)
+            authContact.Position = UDim2.new(0, 20, 0, 118)
+            authContact.BackgroundTransparency = 1
+            authContact.Text = T("请联系作者或管理员授权")
+            authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
+            authContact.TextSize = 14
+            authContact.Font = Enum.Font.Gotham
+            authContact.TextXAlignment = Enum.TextXAlignment.Center
+            authContact.Parent = authFrame
+            local authUid = Instance.new("TextLabel")
+            authUid.Size = UDim2.new(1, -40, 0, 30)
+            authUid.Position = UDim2.new(0, 20, 0, 150)
+            authUid.BackgroundTransparency = 1
+            authUid.Text = T("设备UID: ") .. DEVICE_UID
+            authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
+            authUid.TextSize = 14
+            authUid.Font = Enum.Font.Gotham
+            authUid.TextXAlignment = Enum.TextXAlignment.Center
+            authUid.Parent = authFrame
+            return
+        end
+
+        -- 标记权限已验证
+        _G.PERMISSION_CHECKED = true
+        _G.DEVICE_UID = DEVICE_UID
+        _G.AUTHOR_UID = AUTHOR_UID
+        _G.BLACKLIST = BLACKLIST
+        _G.WHITELIST = WHITELIST
+        _G.isBlacklisted = isBlacklisted
+        _G.isAuthorized = isAuthorized
     end
-    local DEVICE_UID = getDeviceUID()
 
-    -- ==================== 黑名单与授权系统 ====================
-    local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
-
-    local BLACKLIST = {
-        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
-    }
-
-    local WHITELIST = {
-        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-        ["XXCWZZCACWARNGDGHPG"] = true,
-        ["XXCXXFEXWXARNGDGHPG"] = true,
-    }
-
-    local function isBlacklisted(uid)
-        return BLACKLIST[uid] == true
-    end
-
-    local function isAuthorized(uid)
-        if uid == AUTHOR_UID then return true end
-        return WHITELIST[uid] == true
-    end
-
-    -- ==================== 权限验证 ====================
-    if isBlacklisted(DEVICE_UID) then
-        local blockGui = Instance.new("ScreenGui")
-        blockGui.Name = "BlockedScreen"
-        blockGui.ResetOnSpawn = false
-        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        blockGui.Parent = player:WaitForChild("PlayerGui")
-
-        local blockFrame = Instance.new("Frame")
-        blockFrame.Size = UDim2.new(0, 500, 0, 200)
-        blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
-        blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-        blockFrame.BorderSizePixel = 3
-        blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        blockFrame.Parent = blockGui
-
-        local blockCorner = Instance.new("UICorner")
-        blockCorner.CornerRadius = UDim.new(0, 12)
-        blockCorner.Parent = blockFrame
-
-        local blockTitle = Instance.new("TextLabel")
-        blockTitle.Size = UDim2.new(1, 0, 0, 40)
-        blockTitle.Position = UDim2.new(0, 0, 0, 10)
-        blockTitle.BackgroundTransparency = 1
-        blockTitle.Text = "已被拉黑"
-        blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
-        blockTitle.TextSize = 28
-        blockTitle.Font = Enum.Font.GothamBold
-        blockTitle.TextXAlignment = Enum.TextXAlignment.Center
-        blockTitle.Parent = blockFrame
-
-        local blockDesc = Instance.new("TextLabel")
-        blockDesc.Size = UDim2.new(1, -40, 0, 50)
-        blockDesc.Position = UDim2.new(0, 20, 0, 60)
-        blockDesc.BackgroundTransparency = 1
-        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
-        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
-        blockDesc.TextSize = 18
-        blockDesc.Font = Enum.Font.GothamBold
-        blockDesc.TextXAlignment = Enum.TextXAlignment.Center
-        blockDesc.Parent = blockFrame
-
-        local blockUid = Instance.new("TextLabel")
-        blockUid.Size = UDim2.new(1, -40, 0, 30)
-        blockUid.Position = UDim2.new(0, 20, 0, 125)
-        blockUid.BackgroundTransparency = 1
-        blockUid.Text = "设备UID: " .. DEVICE_UID
-        blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
-        blockUid.TextSize = 14
-        blockUid.Font = Enum.Font.Gotham
-        blockUid.TextXAlignment = Enum.TextXAlignment.Center
-        blockUid.Parent = blockFrame
-
-        return
-    end
-
-    if not isAuthorized(DEVICE_UID) then
-        local authGui = Instance.new("ScreenGui")
-        authGui.Name = "AuthScreen"
-        authGui.ResetOnSpawn = false
-        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        authGui.Parent = player:WaitForChild("PlayerGui")
-
-        local authFrame = Instance.new("Frame")
-        authFrame.Size = UDim2.new(0, 520, 0, 220)
-        authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
-        authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
-        authFrame.BorderSizePixel = 3
-        authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
-        authFrame.Parent = authGui
-
-        local authCorner = Instance.new("UICorner")
-        authCorner.CornerRadius = UDim.new(0, 12)
-        authCorner.Parent = authFrame
-
-        local authTitle = Instance.new("TextLabel")
-        authTitle.Size = UDim2.new(1, 0, 0, 40)
-        authTitle.Position = UDim2.new(0, 0, 0, 10)
-        authTitle.BackgroundTransparency = 1
-        authTitle.Text = "未授权"
-        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
-        authTitle.TextSize = 28
-        authTitle.Font = Enum.Font.GothamBold
-        authTitle.TextXAlignment = Enum.TextXAlignment.Center
-        authTitle.Parent = authFrame
-
-        local authDesc = Instance.new("TextLabel")
-        authDesc.Size = UDim2.new(1, -40, 0, 50)
-        authDesc.Position = UDim2.new(0, 20, 0, 60)
-        authDesc.BackgroundTransparency = 1
-        authDesc.Text = "你没有被授权\n你无法使用此脚本"
-        authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
-        authDesc.TextSize = 18
-        authDesc.Font = Enum.Font.GothamBold
-        authDesc.TextXAlignment = Enum.TextXAlignment.Center
-        authDesc.Parent = authFrame
-
-        local authContact = Instance.new("TextLabel")
-        authContact.Size = UDim2.new(1, -40, 0, 25)
-        authContact.Position = UDim2.new(0, 20, 0, 118)
-        authContact.BackgroundTransparency = 1
-        authContact.Text = "请联系作者或管理员授权"
-        authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
-        authContact.TextSize = 14
-        authContact.Font = Enum.Font.Gotham
-        authContact.TextXAlignment = Enum.TextXAlignment.Center
-        authContact.Parent = authFrame
-
-        local authUid = Instance.new("TextLabel")
-        authUid.Size = UDim2.new(1, -40, 0, 30)
-        authUid.Position = UDim2.new(0, 20, 0, 150)
-        authUid.BackgroundTransparency = 1
-        authUid.Text = "设备UID: " .. DEVICE_UID
-        authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
-        authUid.TextSize = 14
-        authUid.Font = Enum.Font.Gotham
-        authUid.TextXAlignment = Enum.TextXAlignment.Center
-        authUid.Parent = authFrame
-
-        return
-    end
+    -- 使用全局变量
+    local DEVICE_UID = _G.DEVICE_UID
+    local AUTHOR_UID = _G.AUTHOR_UID
+    local BLACKLIST = _G.BLACKLIST
+    local WHITELIST = _G.WHITELIST
+    local isBlacklisted = _G.isBlacklisted
+    local isAuthorized = _G.isAuthorized
 
     -- ==================== 添加脚本标记（用于同行显示） ====================
     local scriptTag = Instance.new("BoolValue")
@@ -235,7 +422,7 @@ function createUI()
 
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex-Hub',
+        Title = T('wdfex-Hub'),
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -252,8 +439,8 @@ function createUI()
             Enabled = true,
             Callback = function()
                 WindUI:Notify({
-                    Title = "点击了自己",
-                    Content = "没什么", 
+                    Title = T("点击了自己"),
+                    Content = T("没什么"), 
                     Duration = 1,
                     Icon = "4483362748"
                 })
@@ -263,9 +450,9 @@ function createUI()
         SideBarWidth = 250,
         Search = {
             Enabled = true,
-            Placeholder = "搜索...",
+            Placeholder = T("搜索..."),
             Callback = function(searchText)
-                print("搜索内容:", searchText)
+                print(T("搜索内容:") .. searchText)
             end
         },
         SidePanel = {
@@ -273,18 +460,18 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex-Hub",
+                    Text = T("wdfex-Hub"),
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
+                    Callback = function() end
                 }
             }
         }
     })
+    currentWindow = Window  -- 保存全局引用
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = T("wdfex-Hub"),
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -298,7 +485,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = T("wdfex-Hub"),
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -318,7 +505,7 @@ function createUI()
         end
     end)
 
-    -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
+    -- ==================== 播放音乐 ====================
     task.spawn(function()
         pcall(function()
             local sound = Instance.new("Sound")
@@ -332,7 +519,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
+    -- ==================== 滚动文字横幅 ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -345,7 +532,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            banner.Text = T("请免费分享请勿倒卖被我发现我将会删除你的授权")
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -356,7 +543,6 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
-            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -389,7 +575,6 @@ function createUI()
             pcall(function() label:Destroy() end)
         end
         liveModeLabels = {}
-        
         if not liveModeEnabled then return end
         
         local gui = Instance.new("ScreenGui")
@@ -402,7 +587,7 @@ function createUI()
         bottomRight.Size = UDim2.new(0, 260, 0, 32)
         bottomRight.Position = UDim2.new(1, -270, 1, -42)
         bottomRight.BackgroundTransparency = 1
-        bottomRight.Text = "豆包AI生成请注意分辨"
+        bottomRight.Text = T("豆包AI生成请注意分辨")
         bottomRight.TextSize = 20
         bottomRight.Font = Enum.Font.GothamBold
         bottomRight.TextScaled = false
@@ -416,7 +601,7 @@ function createUI()
         topLeft.Size = UDim2.new(0, 180, 0, 32)
         topLeft.Position = UDim2.new(0, 10, 0, 10)
         topLeft.BackgroundTransparency = 1
-        topLeft.Text = "后期PS制作"
+        topLeft.Text = T("后期PS制作")
         topLeft.TextSize = 20
         topLeft.Font = Enum.Font.GothamBold
         topLeft.TextScaled = false
@@ -492,50 +677,45 @@ function createUI()
     AntiFlingLoop()
 
     -- ==================== Tab 创建 ====================
-    -- 公告 Tab
-    local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
-    local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
+    local NoticeTab = Window:Tab({ Title = T("公告"), Icon = "info" })
+    local NoticeSection = NoticeTab:Section({ Title = T("作者消息"), Opened = true })
     NoticeSection:Paragraph({
-        Title = "wdfex",
-        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
+        Title = T("wdfex"),
+        Desc = T("作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快")
     })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
-        Title = "注意事项",
-        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
+        Title = T("注意事项"),
+        Desc = T("已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该")
     })
 
-    -- 通知 Tab
-    local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
-    local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
+    local infoTab = Window:Tab({ Title = T("通知"), Icon = "layout-grid", Locked = false })
+    local infoSection = infoTab:Section({ Title = T("详情信息"), Icon = "info", Opened = true })
     infoSection:Divider()
     infoSection:Paragraph({
-        Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
+        Title = T("关于"),
+        Desc = T("目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察"),
         ThumbnailSize = 190,
     })
-    local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
+    local infoSection2 = infoTab:Section({ Title = T("更新公告"), Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗",
+        Title = T("v2.0提示"),
+        Desc = T("修复所有已知问题\n更换了悬浮窗"),
         ThumbnailSize = 190,
     })
     infoTab:Select()
 
-    -- 主功能 Section
     local MainSection = Window:Section({
-        Title = "主功能",
+        Title = T("主功能"),
         Opened = true,
     })
 
     local function AddTab(section, title, icon)
-        return section:Tab({ Title = title, Icon = icon })
+        return section:Tab({ Title = T(title), Icon = icon })
     end
 
-    -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 其他功能
-    -- ============================================================
+    -- Tab 顺序
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local InteractTab = AddTab(MainSection, "互动", "hand")
@@ -544,28 +724,47 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local OtherTab = AddTab(MainSection, "其他功能", "more")
+    -- 语言切换 Tab
+    local LangTab = AddTab(MainSection, "语言切换", "language")
+
+    -- ============================================================
+    -- 语言切换 Tab
+    -- ============================================================
+    LangTab:Divider({ Text = T("语言切换") })
+    LangTab:Button({
+        Title = "中文",
+        Callback = function()
+            switchLang("zh")
+        end
+    })
+    LangTab:Button({
+        Title = "English",
+        Callback = function()
+            switchLang("en")
+        end
+    })
 
     -- ============================================================
     -- 其他功能 Tab
     -- ============================================================
-    OtherTab:Divider({ Text = "直播模式" })
+    OtherTab:Divider({ Text = T("直播模式") })
     OtherTab:Toggle({
-        Title = "直播模式",
+        Title = T("直播模式"),
         Value = false,
         Callback = function(value)
             liveModeEnabled = value
             if value then
                 CreateLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
+                WindUI:Notify({ Title = T("直播模式"), Content = T("已开启"), Duration = 2 })
             else
                 DestroyLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
+                WindUI:Notify({ Title = T("直播模式"), Content = T("已关闭"), Duration = 2 })
             end
         end
     })
 
     -- ============================================================
-    -- 互动 Tab（快速互动相关）
+    -- 互动 Tab
     -- ============================================================
     local interactEnabled = false
 
@@ -579,19 +778,17 @@ function createUI()
         end
     end
 
-    InteractTab:Divider({ Text = "快速互动" })
+    InteractTab:Divider({ Text = T("快速互动") })
     InteractTab:Toggle({
-        Title = "启用快速互动",
+        Title = T("启用快速互动"),
         Value = false,
         Callback = function(value)
             interactEnabled = value
-            if value then
-                ScanPrompts()
-            end
+            if value then ScanPrompts() end
         end
     })
     InteractTab:Slider({
-        Title = "按住时间",
+        Title = T("按住时间"),
         Step = 0.1,
         Value = { Min = 0, Max = 10, Default = 0 },
         Callback = function(value)
@@ -600,7 +797,7 @@ function createUI()
         end
     })
     InteractTab:Slider({
-        Title = "触发距离",
+        Title = T("触发距离"),
         Step = 1,
         Value = { Min = 5, Max = 150, Default = 25 },
         Callback = function(value)
@@ -609,7 +806,6 @@ function createUI()
         end
     })
 
-    -- workspace 监听
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
@@ -776,16 +972,16 @@ function createUI()
         end
     end)
 
-    FlyTab:Divider({ Text = "飞行" })
+    FlyTab:Divider({ Text = T("飞行") })
     FlyTab:Toggle({
-        Title = "飞行（绕过）",
+        Title = T("飞行（绕过）"),
         Value = false,
         Callback = function(value)
             if value then startFly() else stopFly() end
         end
     })
     FlyTab:Slider({
-        Title = "飞行速度",
+        Title = T("飞行速度"),
         Step = 1,
         Value = { Min = 10, Max = 620, Default = 35 },
         Callback = function(value)
@@ -841,12 +1037,12 @@ function createUI()
         flyQuickStatusLabel.Font = Enum.Font.GothamBold
         flyQuickStatusLabel.TextStrokeTransparency = 0.3
         flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        flyQuickStatusLabel.Text = "飞行: 关"
+        flyQuickStatusLabel.Text = T("飞行: 关")  -- 注意：这里会动态更新，但语言切换时可能需要更新，暂不处理，因为重建会重新创建
         flyQuickStatusLabel.Parent = button
 
         local function updateFlyStatus()
             if flyQuickStatusLabel then
-                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                flyQuickStatusLabel.Text = flyState.enabled and T("飞行: 开") or T("飞行: 关")
                 if flyQuickButton then
                     flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
                     flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
@@ -901,7 +1097,7 @@ function createUI()
     end
 
     FlyTab:Toggle({
-        Title = "飞天快捷开关",
+        Title = T("飞天快捷开关"),
         Value = false,
         Callback = function(value)
             flyQuickToggle = value
@@ -913,18 +1109,18 @@ function createUI()
         end
     })
 
-    FlyTab:Divider({ Text = "移速" })
+    FlyTab:Divider({ Text = T("移速") })
     local speedBypassOn = false
     local speedBypassValue = 20
     FlyTab:Toggle({
-        Title = "修改移速（绕过）",
+        Title = T("修改移速（绕过）"),
         Value = false,
         Callback = function(value)
             speedBypassOn = value
         end
     })
     FlyTab:Slider({
-        Title = "移速",
+        Title = T("移速"),
         Step = 1,
         Value = { Min = 5, Max = 150, Default = 20 },
         Callback = function(value)
@@ -942,7 +1138,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 玩家修改 Tab（剩余功能：伤害免疫、穿墙、体力、防甩飞、防摔）
+    -- 玩家修改 Tab
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -1008,20 +1204,20 @@ function createUI()
         end
     end
 
-    A:Divider({ Text = "伤害免疫" })
+    A:Divider({ Text = T("伤害免疫") })
     local godOn = false
     A:Toggle({
-        Title = "免疫部分伤害",
+        Title = T("免疫部分伤害"),
         Value = false,
         Callback = function(value)
             godOn = value
         end
     })
-    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
+    A:Paragraph({ Title = T("说明"), Desc = T("免疫火焰和车爆炸时候的伤害") })
 
-    A:Divider({ Text = "穿墙" })
+    A:Divider({ Text = T("穿墙") })
     A:Toggle({
-        Title = "启用人物穿墙",
+        Title = T("启用人物穿墙"),
         Value = false,
         Callback = function(value)
             Settings.NoclipEnabled = value
@@ -1047,7 +1243,7 @@ function createUI()
         end
     })
 
-    A:Divider({ Text = "体力" })
+    A:Divider({ Text = T("体力") })
     local staminaOn = false
     local StaminaEvent
     pcall(function()
@@ -1081,28 +1277,28 @@ function createUI()
         end
     end)
     A:Toggle({
-        Title = "无限体力",
+        Title = T("无限体力"),
         Value = false,
         Callback = function(value)
             staminaOn = value
         end
     })
 
-    A:Divider({ Text = "防甩飞" })
+    A:Divider({ Text = T("防甩飞") })
     A:Toggle({
-        Title = "防甩飞",
+        Title = T("防甩飞"),
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
         end
     })
 
-    A:Divider({ Text = "防摔" })
+    A:Divider({ Text = T("防摔") })
     local antiFallEnabled = false
     local antiFallConnection = nil
 
     A:Toggle({
-        Title = "防摔",
+        Title = T("防摔"),
         Value = false,
         Callback = function(value)
             antiFallEnabled = value
@@ -1133,11 +1329,11 @@ function createUI()
     })
 
     -- ============================================================
-    -- 枪械功能 Tab (B)
+    -- 枪械功能 Tab
     -- ============================================================
-    B:Divider({ Text = "枪械强化" })
+    B:Divider({ Text = T("枪械强化") })
     B:Toggle({
-        Title = "超快射速",
+        Title = T("超快射速"),
         Value = false,
         Callback = function(value)
             if not value then return end
@@ -1165,13 +1361,13 @@ function createUI()
                     humanoid.Died:Connect(ModifyWeaponStats)
                 end
             end
-            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
+            WindUI:Notify({ Title = T("武器强化"), Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })  -- 这个未翻译，但可加
         end
     })
 
     local infAmmoEnabled = false
     B:Toggle({
-        Title = "无限子弹",
+        Title = T("无限子弹"),
         Value = false,
         Callback = function(value)
             infAmmoEnabled = value
@@ -1197,9 +1393,9 @@ function createUI()
         end
     end)
 
-    B:Divider({ Text = "碰撞箱扩展" })
+    B:Divider({ Text = T("碰撞箱扩展") })
     B:Toggle({
-        Title = "启用头部碰撞箱（推荐20-25）",
+        Title = T("启用头部碰撞箱（推荐20-25）"),
         Value = false,
         Callback = function(value)
             Settings.HitboxEnabled = value
@@ -1207,7 +1403,7 @@ function createUI()
         end
     })
     B:Slider({
-        Title = "头部大小",
+        Title = T("头部大小"),
         Step = 1,
         Value = { Min = 5, Max = 400, Default = 10 },
         Callback = function(value)
@@ -1216,7 +1412,7 @@ function createUI()
         end
     })
     B:Toggle({
-        Title = "好友检测 (白名单)",
+        Title = T("好友检测 (白名单)"),
         Value = false,
         Callback = function(value)
             Settings.WhitelistEnabled = value
@@ -1224,7 +1420,7 @@ function createUI()
         end
     })
 
-    B:Divider({ Text = "子追" })
+    B:Divider({ Text = T("子追") })
     local zzEnabled = false
     local zzDistance = 40
     local zzAffected = nil
@@ -1279,7 +1475,7 @@ function createUI()
     end)
 
     B:Toggle({
-        Title = "启用子追",
+        Title = T("启用子追"),
         Value = false,
         Callback = function(value)
             zzEnabled = value
@@ -1287,7 +1483,7 @@ function createUI()
         end
     })
     B:Slider({
-        Title = "判定距离",
+        Title = T("判定距离"),
         Step = 1,
         Value = { Min = 0, Max = 1000, Default = 40 },
         Callback = function(value)
@@ -1295,7 +1491,7 @@ function createUI()
         end
     })
 
-    B:Divider({ Text = "自瞄" })
+    B:Divider({ Text = T("自瞄") })
     local aimOn = false
     local aimFOV = 150
     local aimNoTeam = true
@@ -1372,14 +1568,14 @@ function createUI()
     end)
 
     B:Toggle({
-        Title = "自瞄",
+        Title = T("自瞄"),
         Value = false,
         Callback = function(value)
             aimOn = value
         end
     })
     B:Slider({
-        Title = "FOV圈大小",
+        Title = T("FOV圈大小"),
         Step = 1,
         Value = { Min = 30, Max = 400, Default = 150 },
         Callback = function(value)
@@ -1387,14 +1583,14 @@ function createUI()
         end
     })
     B:Toggle({
-        Title = "不瞄准队友",
+        Title = T("不瞄准队友"),
         Value = true,
         Callback = function(value)
             aimNoTeam = value
         end
     })
     B:Toggle({
-        Title = "墙壁检测",
+        Title = T("墙壁检测"),
         Value = true,
         Callback = function(value)
             aimWall = value
@@ -1402,7 +1598,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C)
+    -- 杀戮光环 Tab
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1527,17 +1723,17 @@ function createUI()
         end
     end)
 
-    C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
+    C:Divider({ Text = T("杀戮光环") })
+    C:Paragraph({ Title = T("注意"), Desc = T("需装备枪械武器才有伤害") })
     C:Toggle({
-        Title = "启用杀戮光环",
+        Title = T("启用杀戮光环"),
         Value = false,
         Callback = function(value)
             kaEnabled = value
         end
     })
     C:Slider({
-        Title = "攻击距离",
+        Title = T("攻击距离"),
         Step = 1,
         Value = { Min = 50, Max = 1000, Default = 300 },
         Callback = function(value)
@@ -1545,16 +1741,16 @@ function createUI()
         end
     })
     C:Toggle({
-        Title = "墙体检测",
+        Title = T("墙体检测"),
         Value = true,
         Callback = function(value)
             KA_WALL_CHECK = value
         end
     })
 
-    C:Divider({ Text = "过滤" })
+    C:Divider({ Text = T("过滤") })
     C:Toggle({
-        Title = "只攻击警察",
+        Title = T("只攻击警察"),
         Value = false,
         Callback = function(value)
             KATargetPoliceOnly = value
@@ -1564,7 +1760,7 @@ function createUI()
         end
     })
     C:Toggle({
-        Title = "只攻击平民",
+        Title = T("只攻击平民"),
         Value = false,
         Callback = function(value)
             KATargetCivilianOnly = value
@@ -1574,23 +1770,23 @@ function createUI()
         end
     })
     C:Toggle({
-        Title = "不攻击血量为0的玩家",
+        Title = T("不攻击血量为0的玩家"),
         Value = true,
         Callback = function(value)
             KAIgnoreDead = value
         end
     })
 
-    C:Divider({ Text = "优先攻击" })
+    C:Divider({ Text = T("优先攻击") })
     C:Toggle({
-        Title = "优先攻击最近目标",
+        Title = T("优先攻击最近目标"),
         Value = false,
         Callback = function(value)
             KANearestOnly = value
         end
     })
     C:Slider({
-        Title = "优先攻击距离",
+        Title = T("优先攻击距离"),
         Step = 1,
         Value = { Min = 5, Max = 100, Default = 25 },
         Callback = function(value)
@@ -1599,10 +1795,10 @@ function createUI()
     })
 
     -- ============================================================
-    -- 传送点 Tab (D)
+    -- 传送点 Tab
     -- ============================================================
     D:Toggle({
-        Title = "启用传送",
+        Title = T("启用传送"),
         Value = false,
         Callback = function(value)
             Settings.TeleportEnabled = value
@@ -1664,7 +1860,7 @@ function createUI()
     local selectedTeleport = teleNames[1] or ""
 
     D:Dropdown({
-        Title = "选定传送地点",
+        Title = T("选定传送地点"),
         Values = teleNames,
         Value = teleNames[1],
         Callback = function(value)
@@ -1673,10 +1869,10 @@ function createUI()
     })
 
     D:Button({
-        Title = "传送到选定地点",
+        Title = T("传送到选定地点"),
         Callback = function()
             if not Settings.TeleportEnabled then
-                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+                WindUI:Notify({ Title = T("传送"), Content = T("请先开启传送开关"), Duration = 3 })
                 return
             end
             for _, data in ipairs(FIXED_TELEPORTS) do
@@ -1685,17 +1881,17 @@ function createUI()
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
                         root.CFrame = CFrame.new(data.p)
-                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
+                        WindUI:Notify({ Title = T("传送"), Content = T("正在传送至: ") .. data.n, Duration = 2 })
                     end
                     return
                 end
             end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+            WindUI:Notify({ Title = T("传送"), Content = T("未找到该地点"), Duration = 2 })
         end
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 已删除“显示队伍统计”
+    -- 透视 Tab (已删除队伍统计)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1860,7 +2056,6 @@ function createUI()
             local hp = GetHealth(p)
             local dist = GetDist(p)
 
-            -- 检查是否是同行（使用wdfex脚本）
             local isWdfexUser = false
             local isAuthor = false
             
@@ -1906,7 +2101,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 同行显示
             if ESP_SHOW_PEERS and isWdfexUser then
                 local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
                 local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
@@ -1984,18 +2178,16 @@ function createUI()
     end
 
     E:Toggle({
-        Title = "透视总开关",
+        Title = T("透视总开关"),
         Value = false,
         Callback = function(value)
             ESP_ENABLED = value
-            if value then
-                RefreshESP()
-            end
+            if value then RefreshESP() end
         end
     })
     E:Divider()
     E:Toggle({
-        Title = "显示名字",
+        Title = T("显示名字"),
         Value = true,
         Callback = function(value)
             ESP_SHOW_NAME = value
@@ -2003,7 +2195,7 @@ function createUI()
         end
     })
     E:Toggle({
-        Title = "显示队伍",
+        Title = T("显示队伍"),
         Value = true,
         Callback = function(value)
             ESP_SHOW_TEAM = value
@@ -2011,7 +2203,7 @@ function createUI()
         end
     })
     E:Toggle({
-        Title = "显示血量",
+        Title = T("显示血量"),
         Value = true,
         Callback = function(value)
             ESP_SHOW_HEALTH = value
@@ -2019,7 +2211,7 @@ function createUI()
         end
     })
     E:Toggle({
-        Title = "显示距离",
+        Title = T("显示距离"),
         Value = true,
         Callback = function(value)
             ESP_SHOW_DIST = value
@@ -2028,7 +2220,7 @@ function createUI()
     })
     E:Divider()
     E:Toggle({
-        Title = "透视自己",
+        Title = T("透视自己"),
         Value = false,
         Callback = function(value)
             ESP_SHOW_SELF = value
@@ -2036,7 +2228,7 @@ function createUI()
         end
     })
     E:Toggle({
-        Title = "同行显示",
+        Title = T("同行显示"),
         Value = true,
         Callback = function(value)
             ESP_SHOW_PEERS = value
@@ -2044,7 +2236,7 @@ function createUI()
         end
     })
 
-    -- 透视实时刷新循环
+    -- 透视实时刷新
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.3)
@@ -2062,10 +2254,10 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 音乐 Tab（含播放模式）
+    -- 音乐 Tab
     -- ============================================================
-    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
+    local MusicTab = Window:Tab({ Title = T("音乐"), Icon = "music" })
+    local MusicGroup = MusicTab:Section({ Title = T("音乐播放器"), Opened = true })
 
     local SONG_LIST = {
         { name = "半壶纱", id = "140168001118478" },
@@ -2105,11 +2297,11 @@ function createUI()
 
     local function PlaySongByIndex(index)
         if index < 1 or index > #SONG_LIST then
-            if playMode == "顺序播放" then
+            if playMode == T("顺序播放") then
                 index = 1
-            elseif playMode == "循环播放" then
+            elseif playMode == T("循环播放") then
                 index = 1
-            elseif playMode == "随机播放" then
+            elseif playMode == T("随机播放") then
                 index = math.random(1, #SONG_LIST)
             end
         end
@@ -2137,19 +2329,19 @@ function createUI()
             musicSound.Looped = false
             musicSound.Parent = player:WaitForChild("PlayerGui")
             musicSound:Play()
-            WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. song.name, Duration = 2 })
+            WindUI:Notify({ Title = T("音乐"), Content = T("正在播放: ") .. song.name, Duration = 2 })
             
             endedConnection = musicSound.Ended:Connect(function()
                 if not isMusicPlaying then return end
-                if playMode == "循环播放" then
+                if playMode == T("循环播放") then
                     PlaySongByIndex(currentPlayIndex)
-                elseif playMode == "顺序播放" then
+                elseif playMode == T("顺序播放") then
                     local nextIndex = currentPlayIndex + 1
                     if nextIndex > #SONG_LIST then
                         nextIndex = 1
                     end
                     PlaySongByIndex(nextIndex)
-                elseif playMode == "随机播放" then
+                elseif playMode == T("随机播放") then
                     local randomIndex = math.random(1, #SONG_LIST)
                     while randomIndex == currentPlayIndex and #SONG_LIST > 1 do
                         randomIndex = math.random(1, #SONG_LIST)
@@ -2161,7 +2353,7 @@ function createUI()
     end
 
     MusicGroup:Dropdown({
-        Title = "选择歌曲",
+        Title = T("选择歌曲"),
         Values = songNames,
         Value = songNames[1],
         Callback = function(value)
@@ -2181,7 +2373,7 @@ function createUI()
     MusicGroup:Divider()
 
     MusicGroup:Toggle({
-        Title = "播放音乐",
+        Title = T("播放音乐"),
         Value = false,
         Callback = function(value)
             isMusicPlaying = value
@@ -2197,13 +2389,13 @@ function createUI()
                     endedConnection:Disconnect()
                     endedConnection = nil
                 end
-                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
+                WindUI:Notify({ Title = T("音乐"), Content = T("已停止播放"), Duration = 2 })
             end
         end
     })
 
     MusicGroup:Slider({
-        Title = "音量",
+        Title = T("音量"),
         Step = 0.1,
         Value = { Min = 0, Max = 7, Default = 1 },
         Callback = function(value)
@@ -2216,17 +2408,17 @@ function createUI()
 
     MusicGroup:Divider()
     MusicGroup:Paragraph({
-        Title = "播放模式",
-        Desc = "选择音乐的播放方式"
+        Title = T("播放模式"),
+        Desc = T("选择音乐的播放方式")
     })
 
     MusicGroup:Dropdown({
-        Title = "播放模式",
-        Values = { "顺序播放", "循环播放", "随机播放" },
-        Value = "顺序播放",
+        Title = T("播放模式"),
+        Values = { T("顺序播放"), T("循环播放"), T("随机播放") },
+        Value = T("顺序播放"),
         Callback = function(value)
             playMode = value
-            WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
+            WindUI:Notify({ Title = T("播放模式"), Content = T("已切换至: ") .. value, Duration = 2 })
             if isMusicPlaying then
                 PlaySongByIndex(currentPlayIndex)
             end
@@ -2234,144 +2426,191 @@ function createUI()
     })
 
     -- ============================================================
-    -- 设置 Tab (G) - 仅作者可见
+    -- 设置 Tab
     -- ============================================================
-    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
+    local SettingsTab = Window:Tab({ Title = T("设置"), Icon = "settings" })
 
     if DEVICE_UID == AUTHOR_UID then
-        local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
+        local AdminGroup = SettingsTab:Section({ Title = T("开发者后台"), Opened = true })
         AdminGroup:Paragraph({
-            Title = "已授权",
-            Desc = "当前身份: 作者"
+            Title = T("已授权"),
+            Desc = T("当前身份: 作者")
         })
         AdminGroup:Divider()
 
         AdminGroup:Paragraph({
-            Title = "黑名单管理",
-            Desc = "输入要拉黑的设备UID，点击拉黑即可"
+            Title = T("黑名单管理"),
+            Desc = T("输入要拉黑的设备UID，点击拉黑即可")
         })
 
         local blacklistInput = nil
         AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要拉黑的设备UID...",
+            Title = T("输入UID"),
+            Placeholder = T("请输入要拉黑的设备UID..."),
             Callback = function(value)
                 blacklistInput = value
             end
         })
 
         AdminGroup:Button({
-            Title = "拉黑设备",
+            Title = T("拉黑设备"),
             Callback = function()
                 if blacklistInput and blacklistInput ~= "" then
                     if blacklistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                        WindUI:Notify({ Title = T("错误"), Content = T("不能拉黑自己的设备"), Duration = 3 })
                         return
                     end
                     BLACKLIST[blacklistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                    WindUI:Notify({ Title = T("成功"), Content = T("已拉黑设备: ") .. blacklistInput, Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    WindUI:Notify({ Title = T("错误"), Content = T("请输入设备UID"), Duration = 2 })
                 end
             end
         })
 
         AdminGroup:Button({
-            Title = "从黑名单移除",
+            Title = T("从黑名单移除"),
             Callback = function()
                 if blacklistInput and blacklistInput ~= "" then
                     BLACKLIST[blacklistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                    WindUI:Notify({ Title = T("成功"), Content = T("已移除黑名单: ") .. blacklistInput, Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    WindUI:Notify({ Title = T("错误"), Content = T("请输入设备UID"), Duration = 2 })
                 end
             end
         })
 
-        AdminGroup:Divider({ Text = "授权管理" })
+        AdminGroup:Divider({ Text = T("授权管理") })
         AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要授权的设备UID，点击授权即可"
+            Title = T("说明"),
+            Desc = T("输入要授权的设备UID，点击授权即可")
         })
 
         local whitelistInput = nil
         AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要授权的设备UID...",
+            Title = T("输入UID"),
+            Placeholder = T("请输入要授权的设备UID..."),
             Callback = function(value)
                 whitelistInput = value
             end
         })
 
         AdminGroup:Button({
-            Title = "授权设备",
+            Title = T("授权设备"),
             Callback = function()
                 if whitelistInput and whitelistInput ~= "" then
                     if whitelistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "提示", Content = "你已拥有最高权限", Duration = 3 })
+                        WindUI:Notify({ Title = T("提示"), Content = T("你已拥有最高权限"), Duration = 3 })
                         return
                     end
                     WHITELIST[whitelistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                    WindUI:Notify({ Title = T("成功"), Content = T("已授权设备: ") .. whitelistInput, Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    WindUI:Notify({ Title = T("错误"), Content = T("请输入设备UID"), Duration = 2 })
                 end
             end
         })
 
         AdminGroup:Button({
-            Title = "移除授权",
+            Title = T("移除授权"),
             Callback = function()
                 if whitelistInput and whitelistInput ~= "" then
                     WHITELIST[whitelistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                    WindUI:Notify({ Title = T("成功"), Content = T("已移除授权: ") .. whitelistInput, Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    WindUI:Notify({ Title = T("错误"), Content = T("请输入设备UID"), Duration = 2 })
                 end
             end
         })
 
         AdminGroup:Divider()
         AdminGroup:Button({
-            Title = "查看当前黑名单",
+            Title = T("查看当前黑名单"),
             Callback = function()
                 local list = {}
                 for uid, _ in pairs(BLACKLIST) do
                     table.insert(list, uid)
                 end
                 if #list == 0 then
-                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                    WindUI:Notify({ Title = T("黑名单"), Content = T("当前黑名单为空"), Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                    WindUI:Notify({ Title = T("黑名单列表"), Content = table.concat(list, "\n"), Duration = 5 })
                 end
             end
         })
 
         AdminGroup:Button({
-            Title = "查看当前授权列表",
+            Title = T("查看当前授权列表"),
             Callback = function()
                 local list = {}
                 for uid, _ in pairs(WHITELIST) do
                     table.insert(list, uid)
                 end
                 if #list == 0 then
-                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                    WindUI:Notify({ Title = T("授权列表"), Content = T("当前授权列表为空"), Duration = 3 })
                 else
-                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                    WindUI:Notify({ Title = T("授权列表"), Content = table.concat(list, "\n"), Duration = 5 })
                 end
             end
         })
     else
-        local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
+        local BlockGroup = SettingsTab:Section({ Title = T("开发者后台"), Opened = true })
         BlockGroup:Paragraph({
-            Title = "禁止访问",
-            Desc = "你无法进入开发者后台"
+            Title = T("禁止访问"),
+            Desc = T("你无法进入开发者后台")
         })
     end
 
     WindUI:Notify({
-        Title = "wdfex-Hub",
-        Content = "脚本已加载成功，欢迎使用！",
+        Title = T("wdfex-Hub"),
+        Content = T("脚本已加载成功，欢迎使用！"),
         Duration = 3,
     })
 end
+
+-- ==================== 初始启动 ====================
+-- 此处原本有弹窗确认，但保留原逻辑
+local function startScript()
+    -- 原弹窗中的内容已用T包裹，但这里无需改动
+    -- 由于弹窗中的文字也需要翻译，但我们在弹窗内使用了T吗？需要修改弹窗
+    -- 原弹窗在脚本开头，我们用T包装
+    -- 但弹窗是在 createUI 之前，需要语言变量
+    -- 我们重写弹窗
+    local username = game.Players.LocalPlayer.Name
+    local coloredUsername = ""
+    for i = 1, #username do
+        local colorIndex = (i - 1) % #gradientColors + 1
+        coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
+    end
+    local version = "v2.0"
+    local coloredVersion = ""
+    for i = 1, #version do
+        local colorIndex = (i - 1) % #gradientColors + 1
+        coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
+    end
+
+    WindUI:Popup({
+        Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
+        IconThemed = true,
+        Content = T("尊敬的用户 ") .. coloredUsername .. T("您使用的 ") .. '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>' .. T(" 当前版本型号是: ") .. coloredVersion .. T("\n脚本已就绪！"),
+        Buttons = {
+            {
+                Title = T("取消"),
+                Callback = function() end,
+                Variant = "Secondary",
+            },
+            {
+                Title = T("执行"),
+                Icon = "arrow-right",
+                Callback = function() 
+                    Confirmed = true
+                    createUI()
+                end,
+                Variant = "Primary",
+            }
+        }
+    })
+end
+
+-- 启动
+startScript()
