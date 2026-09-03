@@ -381,9 +381,6 @@ function createUI()
     end)
 
     -- ==================== 直播模式水印 ====================
-    local liveModeEnabled = false
-    local liveModeLabels = {}
-
     local function CreateLiveModeWatermarks()
         -- 清理旧水印
         for _, label in ipairs(liveModeLabels) do
@@ -399,42 +396,46 @@ function createUI()
         gui.Parent = player:WaitForChild("PlayerGui")
         table.insert(liveModeLabels, gui)
         
-        -- 右下角文字
+        -- 右下角文字（彩色）
         local bottomRight = Instance.new("TextLabel")
-        bottomRight.Size = UDim2.new(0, 200, 0, 24)
-        bottomRight.Position = UDim2.new(1, -210, 1, -34)
+        bottomRight.Size = UDim2.new(0, 260, 0, 32)
+        bottomRight.Position = UDim2.new(1, -270, 1, -42)
         bottomRight.BackgroundTransparency = 1
         bottomRight.Text = "豆包AI生成请注意分辨"
-        bottomRight.TextColor3 = Color3.fromRGB(255, 255, 255)
-        bottomRight.TextSize = 14
-        bottomRight.Font = Enum.Font.GothamMedium
+        bottomRight.TextSize = 20
+        bottomRight.Font = Enum.Font.GothamBold
+        bottomRight.TextScaled = false
         bottomRight.TextStrokeTransparency = 0.2
         bottomRight.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         bottomRight.TextXAlignment = Enum.TextXAlignment.Right
         bottomRight.Parent = gui
         table.insert(liveModeLabels, bottomRight)
         
-        -- 左上角文字
+        -- 左上角文字（彩色）
         local topLeft = Instance.new("TextLabel")
-        topLeft.Size = UDim2.new(0, 130, 0, 24)
+        topLeft.Size = UDim2.new(0, 180, 0, 32)
         topLeft.Position = UDim2.new(0, 10, 0, 10)
         topLeft.BackgroundTransparency = 1
         topLeft.Text = "后期PS制作"
-        topLeft.TextColor3 = Color3.fromRGB(255, 255, 255)
-        topLeft.TextSize = 14
-        topLeft.Font = Enum.Font.GothamMedium
+        topLeft.TextSize = 20
+        topLeft.Font = Enum.Font.GothamBold
+        topLeft.TextScaled = false
         topLeft.TextStrokeTransparency = 0.2
         topLeft.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         topLeft.TextXAlignment = Enum.TextXAlignment.Left
         topLeft.Parent = gui
         table.insert(liveModeLabels, topLeft)
-    end
-
-    local function DestroyLiveModeWatermarks()
-        for _, label in ipairs(liveModeLabels) do
-            pcall(function() label:Destroy() end)
-        end
-        liveModeLabels = {}
+        
+        -- 彩色循环（两个文字同时变色）
+        local hue = 0
+        local colorConn = RunService.Heartbeat:Connect(function()
+            hue = (hue + 0.005) % 1
+            local color = Color3.fromHSV(hue, 0.9, 1)
+            bottomRight.TextColor3 = color
+            topLeft.TextColor3 = color
+        end)
+        table.insert(connections, colorConn)
+        table.insert(liveModeLabels, colorConn)
     end
 
     -- ==================== 其余原有功能 ====================
