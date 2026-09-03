@@ -56,9 +56,14 @@ function createUI()
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
+    local HttpService = game:GetService("HttpService")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
+
+    -- ==================== DeepSeek API配置 ====================
+    local API_KEY = "sk-26f1ffd62dbb42219237d7125aca151f"
+    local API_URL = "https://api.deepseek.com/chat/completions"
 
     -- ==================== 统一设备UID检测（换服务器不变） ====================
     local function getDeviceUID()
@@ -332,7 +337,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
+    -- ==================== 滚动文字横幅 ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -356,7 +361,6 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
-            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -482,368 +486,189 @@ function createUI()
     local AITab = AddTab(MainSection, "AI助手", "bot")
 
     -- ============================================================
-    -- AI助手 Tab
+    -- AI助手 Tab（DeepSeek版）
     -- ============================================================
+    local ChatGroup = AITab:Section({ Title = "AI聊天", Opened = true })
+    
+    local messages = {}
     local chatHistory = {}
-    local userInput = ""
+    local chatDisplay = nil
+    local isWaiting = false
+    local inputBoxValue = ""
 
-    local function addChatMessage(sender, text)
-        table.insert(chatHistory, { sender = sender, text = text })
-    end
-
-    -- 功能映射表
-    local function getFeatureInfo()
-        return {
-            { name = "飞行", tab = "飞天与加速", desc = "自由飞行，按空格上升，Ctrl下降" },
-            { name = "飞行速度", tab = "飞天与加速", desc = "调节飞行速度" },
-            { name = "飞天快捷开关", tab = "飞天与加速", desc = "屏幕上的飞行开关按钮" },
-            { name = "移速修改", tab = "飞天与加速", desc = "修改走路/跑步速度" },
-            { name = "快速互动", tab = "互动", desc = "自动快速完成互动动作" },
-            { name = "超快射速", tab = "枪械功能", desc = "武器射速提升到极限" },
-            { name = "无限子弹", tab = "枪械功能", desc = "子弹永不减少" },
-            { name = "头部碰撞箱", tab = "枪械功能", desc = "扩大敌人头部大小" },
-            { name = "子追", tab = "枪械功能", desc = "子弹自动追踪敌人" },
-            { name = "自瞄", tab = "枪械功能", desc = "自动瞄准敌人" },
-            { name = "杀戮光环", tab = "杀戮光环", desc = "自动攻击范围内的敌人" },
-            { name = "传送", tab = "传送点", desc = "传送到地图各个地点" },
-            { name = "透视", tab = "透视", desc = "显示玩家信息" },
-            { name = "透视自己", tab = "透视", desc = "显示自己的透视信息" },
-            { name = "同行显示", tab = "透视", desc = "显示使用wdfex脚本的玩家" },
-            { name = "防甩飞", tab = "玩家修改", desc = "防止被其他脚本甩飞" },
-            { name = "防摔", tab = "玩家修改", desc = "从高处落地速度平稳" },
-            { name = "无限体力", tab = "玩家修改", desc = "体力永不减少" },
-            { name = "穿墙", tab = "玩家修改", desc = "穿过墙壁和障碍物" },
-            { name = "自动躲警察", tab = "自动躲警察", desc = "警察靠近时自动弹开" },
-            { name = "音乐播放", tab = "音乐", desc = "播放歌单中的音乐" },
-            { name = "免疫伤害", tab = "玩家修改", desc = "免疫部分伤害" },
-        }
-    end
-
-    local function getFeatureByName(name)
-        local features = getFeatureInfo()
-        for _, f in ipairs(features) do
-            if f.name:lower():find(name:lower()) or name:lower():find(f.name:lower()) then
-                return f
-            end
-        end
-        return nil
-    end
-
-    -- 执行功能开关
-    local function executeFeatureAction(featureName, action)
-        local lowerName = featureName:lower()
+    local function AddMessage(sender, content)
+        local isAI = sender == "AI"
+        local prefix = isAI and "🤖 AI" or "🧑 我"
+        local color = isAI and "rgb(100, 255, 150)" or "rgb(100, 200, 255)"
         
-        -- 飞行
-        if lowerName:find("飞行") and not lowerName:find("速度") and not lowerName:find("快捷") then
-            if action == "开启" then
-                if flyState and flyState.enabled == false then
-                    startFly()
-                    return "✅ 飞行已开启"
-                else
-                    return "🔄 飞行已处于开启状态"
+        local msg = '<font color="' .. color .. '"><b>' .. prefix .. '</b></font>\n'
+        msg = msg .. '<font color="rgb(220, 220, 220)">' .. content .. '</font>'
+        local bubble = '━━━━━━━━━━━━━━━━━━━━━━━━\n' .. msg .. '\n━━━━━━━━━━━━━━━━━━━━━━━━'
+        
+        table.insert(messages, bubble)
+        if #messages > 30 then table.remove(messages, 1) end
+        
+        local displayText = ""
+        for _, m in ipairs(messages) do
+            displayText = displayText .. m .. "\n\n"
+        end
+        
+        pcall(function()
+            if chatDisplay then
+                chatDisplay:SetDesc(displayText)
+            end
+        end)
+    end
+
+    chatDisplay = ChatGroup:Paragraph({
+        Title = "对话记录",
+        Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\n🤖 AI助手已就绪（DeepSeek版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
+    })
+
+    local function AskAI(question)
+        if not question or question == "" then return end
+        if isWaiting then
+            WindUI:Notify({ Title = "提示", Content = "请等待上一条回复完成", Duration = 2 })
+            return
+        end
+        
+        AddMessage("我", question)
+        table.insert(chatHistory, { role = "user", content = question })
+        if #chatHistory > 20 then table.remove(chatHistory, 1) end
+        
+        AddMessage("AI", "🧐思考中...")
+        isWaiting = true
+        
+        task.spawn(function()
+            local success = false
+            local response = ""
+            
+            pcall(function()
+                local data = {
+                    messages = chatHistory,
+                    model = "deepseek-chat",
+                    temperature = 0.7,
+                    max_tokens = 500
+                }
+                local headers = {
+                    ["Content-Type"] = "application/json",
+                    ["Authorization"] = "Bearer " .. API_KEY
+                }
+                local res = HttpService:PostAsync(API_URL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
+                local result = HttpService:JSONDecode(res)
+                
+                if result and result.choices and result.choices[1] and result.choices[1].message then
+                    success = true
+                    response = result.choices[1].message.content
+                    table.insert(chatHistory, { role = "assistant", content = response })
                 end
-            elseif action == "关闭" then
-                if flyState and flyState.enabled == true then
-                    stopFly()
-                    return "✅ 飞行已关闭"
-                else
-                    return "🔄 飞行已处于关闭状态"
-                end
-            end
-        end
-        
-        -- 防甩飞
-        if lowerName:find("防甩飞") or lowerName:find("甩飞") then
-            if action == "开启" then
-                _G.CatAntiFling_Enabled = true
-                return "✅ 防甩飞已开启"
-            elseif action == "关闭" then
-                _G.CatAntiFling_Enabled = false
-                return "✅ 防甩飞已关闭"
-            end
-        end
-        
-        -- 防摔
-        if lowerName:find("防摔") then
-            if action == "开启" then
-                antiFallEnabled = true
-                return "✅ 防摔已开启"
-            elseif action == "关闭" then
-                antiFallEnabled = false
-                return "✅ 防摔已关闭"
-            end
-        end
-        
-        -- 透视总开关
-        if lowerName:find("透视") and not lowerName:find("自己") and not lowerName:find("同行") then
-            if action == "开启" then
-                ESP_ENABLED = true
-                RefreshESP()
-                return "✅ 透视已开启"
-            elseif action == "关闭" then
-                ESP_ENABLED = false
-                RefreshESP()
-                return "✅ 透视已关闭"
-            end
-        end
-        
-        -- 自动躲警察
-        if lowerName:find("躲警察") or lowerName:find("自动躲") then
-            if action == "开启" then
-                AutoEvadePolice = true
-                StartEvadePolice()
-                return "✅ 自动躲警察已开启"
-            elseif action == "关闭" then
-                AutoEvadePolice = false
-                StopEvadePolice()
-                return "✅ 自动躲警察已关闭"
-            end
-        end
-        
-        -- 自瞄
-        if lowerName:find("自瞄") then
-            if action == "开启" then
-                aimOn = true
-                return "✅ 自瞄已开启"
-            elseif action == "关闭" then
-                aimOn = false
-                return "✅ 自瞄已关闭"
-            end
-        end
-        
-        -- 杀戮光环
-        if lowerName:find("杀戮") or lowerName:find("光环") then
-            if action == "开启" then
-                kaEnabled = true
-                return "✅ 杀戮光环已开启"
-            elseif action == "关闭" then
-                kaEnabled = false
-                return "✅ 杀戮光环已关闭"
-            end
-        end
-        
-        -- 传送
-        if lowerName:find("传送") then
-            if action == "开启" then
-                Settings.TeleportEnabled = true
-                return "✅ 传送已开启"
-            elseif action == "关闭" then
-                Settings.TeleportEnabled = false
-                return "✅ 传送已关闭"
-            end
-        end
-        
-        -- 穿墙
-        if lowerName:find("穿墙") then
-            if action == "开启" then
-                Settings.NoclipEnabled = true
-                return "✅ 穿墙已开启"
-            elseif action == "关闭" then
-                Settings.NoclipEnabled = false
-                return "✅ 穿墙已关闭"
-            end
-        end
-        
-        -- 无限体力
-        if lowerName:find("体力") then
-            if action == "开启" then
-                staminaOn = true
-                return "✅ 无限体力已开启"
-            elseif action == "关闭" then
-                staminaOn = false
-                return "✅ 无限体力已关闭"
-            end
-        end
-        
-        return nil
-    end
-
-    -- AI处理函数
-    local function processAI(input)
-        local lower = input:lower()
-        
-        -- 问候语
-        if lower:find("你好") or lower:find("嗨") or lower:find("hello") or lower:find("hi") then
-            local greetings = {
-                "你好呀！😊 我是wdfex-Hub的AI助手，有什么可以帮你的吗？",
-                "嗨！👋 很高兴见到你，有什么问题尽管问我！",
-                "你好！💫 我可以帮你了解脚本功能、开启或关闭功能，也可以和你聊天。"
-            }
-            return greetings[math.random(1, #greetings)]
-        end
-        
-        -- 身份询问
-        if lower:find("你是谁") or lower:find("你是什么") then
-            return "我是wdfex-Hub的AI助手🤖，由wdfex创建。我可以帮你了解脚本的所有功能，教你如何使用，还能帮你开启或关闭功能。当然，我也可以陪你聊聊天！"
-        end
-        
-        -- 授权相关
-        if lower:find("授权") or lower:find("拉黑") then
-            return "关于授权：本脚本采用设备UID授权系统。作者可以授权或拉黑设备。如果你需要授权，请联系作者并提供你的设备UID（在悬浮窗左上角显示）。🔐 请勿倒卖本脚本，一经发现将删除授权。"
-        end
-        
-        -- 免费分享
-        if lower:find("免费") or lower:find("分享") or lower:find("倒卖") then
-            return "本脚本免费分享，请勿倒卖！🚫 如果发现倒卖行为，作者将删除该设备的授权。请尊重作者的劳动成果，免费分享给更多人使用。"
-        end
-        
-        -- 功能介绍
-        if lower:find("介绍") or lower:find("功能") or lower:find("有什么") or lower:find("包括") then
-            local features = getFeatureInfo()
-            local response = "📋 本脚本包含以下功能：\n"
-            local currentTab = ""
-            for _, f in ipairs(features) do
-                if f.tab ~= currentTab then
-                    currentTab = f.tab
-                    response = response .. "\n【" .. currentTab .. "】\n"
-                end
-                response = response .. "• " .. f.name .. "：" .. f.desc .. "\n"
-            end
-            response = response .. "\n💡 你可以说'开启XX'或'关闭XX'来操作功能，例如'开启飞行'。"
-            return response
-        end
-        
-        -- 帮助/怎么用
-        if lower:find("怎么用") or lower:find("如何使用") or lower:find("教程") or lower:find("帮助") then
-            return "📖 使用教程：\n1. 通过左侧Tab切换不同的功能分类\n2. 每个Tab里有对应的开关和设置\n3. 点开Toggle即可开启/关闭功能\n4. 滑块和下拉菜单可以调节参数\n5. 如果你不确定某个功能，可以问我！\n\n💡 例如：说'开启飞行'或'关闭透视'"
-        end
-        
-        -- 开启/关闭功能
-        if lower:find("开启") or lower:find("打开") or lower:find("启动") or lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
-            local action = "开启"
-            if lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
-                action = "关闭"
-            end
+            end)
             
-            -- 提取功能名称
-            local featureName = lower:gsub("开启", ""):gsub("打开", ""):gsub("启动", ""):gsub("关闭", ""):gsub("禁用", ""):gsub("关掉", ""):gsub("帮我", ""):gsub("请", ""):gsub("把", ""):gsub("一下", ""):gsub(" ", "")
-            
-            if featureName == "" then
-                return "请告诉我你要开启或关闭什么功能，例如：'开启飞行' ✈️"
-            end
-            
-            local result = executeFeatureAction(featureName, action)
-            if result then
-                return result
-            end
-            
-            -- 查找相似功能
-            local features = getFeatureInfo()
-            local suggestions = {}
-            for _, f in ipairs(features) do
-                if f.name:lower():find(featureName) or featureName:find(f.name:lower():sub(1, 3)) then
-                    table.insert(suggestions, f.name)
+            for i = #messages, 1, -1 do
+                if string.find(messages[i], "思考中...") then
+                    table.remove(messages, i)
+                    break
                 end
             end
             
-            if #suggestions > 0 then
-                return "❓ 我没有找到'" .. featureName .. "'这个功能。你是不是想操作：\n" .. table.concat(suggestions, "、") .. "？\n试试说'开启" .. suggestions[1] .. "'"
+            if success and response then
+                AddMessage("AI", response)
             else
-                return "❓ 我没有找到 '" .. featureName .. "' 这个功能。\n📋 你可以说'介绍功能'查看所有功能列表。"
+                AddMessage("AI", "请求失败，请检查网络。")
             end
-        end
-        
-        -- 特定功能询问
-        local features = getFeatureInfo()
-        for _, f in ipairs(features) do
-            if lower:find(f.name:lower()) then
-                return "📌 " .. f.name .. "：\n" .. f.desc .. "\n📍 位置：【" .. f.tab .. "】\n💡 你可以说'开启" .. f.name .. "'或'关闭" .. f.name .. "'来控制它。"
-            end
-        end
-        
-        -- 天气/闲聊
-        if lower:find("天气") then
-            return "🌤️ 我暂时查不了天气，但我知道今天的你特别棒！😄"
-        end
-        
-        if lower:find("你") and (lower:find("好") or lower:find("棒") or lower:find("厉害")) then
-            return "谢谢夸奖！😊 我会继续努力的！有什么需要我帮忙的吗？"
-        end
-        
-        if lower:find("加油") or lower:find("努力") then
-            return "💪 一起加油！你也是！有什么功能想了解的吗？"
-        end
-        
-        if lower:find("谢谢") or lower:find("感谢") then
-            return "不客气！😊 随时为你服务！"
-        end
-        
-        -- 默认回复
-        local defaultReplies = {
-            "🤔 我没太理解你的意思。你可以说'介绍功能'查看所有功能，或者直接问我某个功能的用法。",
-            "😅 我听不太懂。试试说'开启飞行'或'关闭透视'来操作功能？",
-            "💭 你可以问我功能相关的问题，比如'飞行有什么用？'或'怎么开启杀戮光环？'",
-            "🤖 我是AI助手，不是搜索引擎哦~ 不过关于脚本的功能，我都很了解！"
-        }
-        return defaultReplies[math.random(1, #defaultReplies)]
+            isWaiting = false
+        end)
     end
 
-    -- UI构建
-    local ChatSection = AITab:Section({ Title = "💬 对话", Opened = true })
-    local InputSection = AITab:Section({ Title = "📝 输入", Opened = true })
+    -- 快捷提问
+    local QuickGroup = AITab:Section({ Title = "快捷提问", Opened = true })
+    
+    QuickGroup:Paragraph({
+        Title = "点击下方快速提问",
+        Desc = "AI会直接回答对应的问题"
+    })
+    QuickGroup:Divider()
 
-    local function updateChatUI()
-        ChatSection:Clear()
-        
-        if #chatHistory == 0 then
-            ChatSection:Paragraph({
-                Title = "🤖 AI助手",
-                Desc = "你好！我是wdfex-Hub的AI助手。我可以帮你了解功能、开启/关闭功能，也可以陪你聊天。有什么需要帮助的吗？"
-            })
-            table.insert(chatHistory, { sender = "ai", text = "你好！我是wdfex-Hub的AI助手。我可以帮你了解功能、开启/关闭功能，也可以陪你聊天。有什么需要帮助的吗？" })
-        else
-            for _, msg in ipairs(chatHistory) do
-                local title = msg.sender == "user" and "🧑 你" or "🤖 AI助手"
-                local color = msg.sender == "user" and "rgb(100, 200, 255)" or "rgb(255, 200, 100)"
-                ChatSection:Paragraph({
-                    Title = title,
-                    Desc = msg.text,
-                    TitleColor = color,
-                })
-            end
-        end
-    end
+    local function QuickAsk(question) AskAI(question) end
 
-    -- 初始化对话
-    updateChatUI()
+    QuickGroup:Button({
+        Title = "脚本有什么功能？",
+        Callback = function() QuickAsk("这个wdfex脚本有什么功能？请详细介绍一下。") end
+    })
+    QuickGroup:Button({
+        Title = "杀戮光环怎么用？",
+        Callback = function() QuickAsk("杀戮光环功能怎么使用？需要装备什么武器？") end
+    })
+    QuickGroup:Button({
+        Title = "透视怎么开？",
+        Callback = function() QuickAsk("透视功能怎么开启？可以看到哪些信息？") end
+    })
+    QuickGroup:Button({
+        Title = "飞行模式怎么用？",
+        Callback = function() QuickAsk("飞行模式怎么使用？怎么控制方向？") end
+    })
+    QuickGroup:Button({
+        Title = "传送点怎么用？",
+        Callback = function() QuickAsk("传送功能怎么使用？需要先开启什么开关？") end
+    })
+    QuickGroup:Button({
+        Title = "自动躲警察怎么用？",
+        Callback = function() QuickAsk("自动躲警察功能怎么使用？") end
+    })
+    QuickGroup:Button({
+        Title = "怎么授权设备？",
+        Callback = function() QuickAsk("设备授权系统怎么用？什么是设备UID？") end
+    })
+    QuickGroup:Button({
+        Title = "你好！",
+        Callback = function() QuickAsk("你好，很高兴认识你") end
+    })
 
-    local userInputValue = ""
-    InputSection:Input({
-        Title = "输入消息",
-        Placeholder = "输入你想说的话或想问的问题...",
+    -- 输入区域
+    local InputGroup = AITab:Section({ Title = "输入", Opened = true })
+    
+    InputGroup:Input({
+        Title = "输入问题",
+        Placeholder = "输入你想问的问题...",
         Callback = function(value)
-            userInputValue = value
+            inputBoxValue = value
         end
     })
 
-    InputSection:Button({
+    InputGroup:Divider()
+
+    InputGroup:Button({
         Title = "🚀 发送",
         Callback = function()
-            if not userInputValue or userInputValue == "" then
-                WindUI:Notify({ Title = "AI助手", Content = "请输入消息", Duration = 2 })
-                return
+            if inputBoxValue and inputBoxValue ~= "" then
+                local q = inputBoxValue
+                inputBoxValue = ""
+                AskAI(q)
+            else
+                WindUI:Notify({ Title = "提示", Content = "请输入问题", Duration = 2 })
             end
-            
-            local userText = userInputValue
-            addChatMessage("user", userText)
-            updateChatUI()
-            
-            -- AI处理
-            local response = processAI(userText)
-            addChatMessage("ai", response)
-            updateChatUI()
-            
-            userInputValue = ""
         end
     })
 
-    InputSection:Button({
+    InputGroup:Divider()
+
+    InputGroup:Button({
         Title = "🗑️ 清空对话",
         Callback = function()
+            messages = {}
             chatHistory = {}
-            updateChatUI()
-            WindUI:Notify({ Title = "AI助手", Content = "对话已清空", Duration = 2 })
+            pcall(function()
+                chatDisplay:SetDesc("━━━━━━━━━━━━━━━━━━━━━━━━\n对话已清空\n━━━━━━━━━━━━━━━━━━━━━━━━")
+            end)
+            WindUI:Notify({ Title = "提示", Content = "对话已清空", Duration = 2 })
         end
+    })
+
+    -- AI助手设置
+    local SettingsGroup = AITab:Section({ Title = "设置", Opened = true })
+    SettingsGroup:Paragraph({
+        Title = "关于AI助手",
+        Desc = "版本：v2.0（DeepSeek版）\n已配置你的API Key\n注册送500万Token\n中文效果最好\n支持上下文记忆，可回答任何问题"
     })
 
     -- ============================================================
@@ -891,7 +716,6 @@ function createUI()
         end
     })
 
-    -- workspace 监听
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
