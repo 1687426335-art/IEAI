@@ -1801,7 +1801,7 @@ function createUI()
         bb.Size = UDim2.new(0, 200, 0, 100)
         bb.StudsOffset = Vector3.new(0, 3, 0)
         bb.AlwaysOnTop = true
-        bb.MaxDistance = 1000
+        bb.MaxDistance = 764
         bb.Parent = head
 
         local f = Instance.new("Frame")
