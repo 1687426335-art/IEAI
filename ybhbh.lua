@@ -32,7 +32,7 @@ WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdfex</font><font color="' .. gradientColors[5] .. '">-Hub</font>',
     IconThemed = true,
     Icon = "crown",
-    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-Hub\n你的支持是我们更新的动力\nQQ主群566257944",
+    Content = "欢迎尊重的用户 " .. coloredUsername .. " \n使用wdfex-Hub",
     Buttons = {
         {
             Title = "取消",
