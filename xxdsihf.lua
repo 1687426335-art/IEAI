@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v2.0.4"
+local version = "v2.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -517,7 +517,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.4提示",
+        Title = "v2.0提示",
         Desc = "修复所有已知问题\n更换了悬浮窗",
         ThumbnailSize = 190,
     })
@@ -1695,7 +1695,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 不含Desc
+    -- 透视 Tab (E) - 不含Desc，已删除队伍统计
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1704,81 +1704,8 @@ function createUI()
     local ESP_SHOW_DIST = true
     local ESP_SHOW_SELF = false
     local ESP_SHOW_PEERS = true
-    local ESP_SHOW_TEAM_STATS = true
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
-
-    -- 队伍统计UI
-    local teamStatsGui = nil
-    local teamStatsLabel = nil
-
-    local function CreateTeamStatsUI()
-        if teamStatsGui then return end
-        teamStatsGui = Instance.new("ScreenGui")
-        teamStatsGui.Name = "TeamStatsGui"
-        teamStatsGui.ResetOnSpawn = false
-        teamStatsGui.Parent = player:WaitForChild("PlayerGui")
-        
-        teamStatsLabel = Instance.new("TextLabel")
-        teamStatsLabel.Size = UDim2.new(0, 450, 0, 30)
-        teamStatsLabel.Position = UDim2.new(0.5, -225, 0, 50)
-        teamStatsLabel.BackgroundTransparency = 1
-        teamStatsLabel.Text = ""
-        teamStatsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        teamStatsLabel.TextSize = 16
-        teamStatsLabel.Font = Enum.Font.GothamBold
-        teamStatsLabel.TextStrokeTransparency = 0.2
-        teamStatsLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        teamStatsLabel.TextXAlignment = Enum.TextXAlignment.Center
-        teamStatsLabel.Parent = teamStatsGui
-    end
-
-    local function DestroyTeamStatsUI()
-        if teamStatsGui then
-            teamStatsGui:Destroy()
-            teamStatsGui = nil
-            teamStatsLabel = nil
-        end
-    end
-
-    local function UpdateTeamStats()
-        if not ESP_ENABLED or not ESP_SHOW_TEAM_STATS then
-            if teamStatsGui then teamStatsGui.Enabled = false end
-            return
-        end
-        if not teamStatsGui then CreateTeamStatsUI() end
-        teamStatsGui.Enabled = true
-        
-        local total = 0
-        local teamCounts = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p == player then continue end
-            total = total + 1
-            local teamName = p.Team and p.Team.Name or "平民"
-            if not teamCounts[teamName] then teamCounts[teamName] = 0 end
-            teamCounts[teamName] = teamCounts[teamName] + 1
-        end
-        
-        local parts = {}
-        for team, count in pairs(teamCounts) do
-            table.insert(parts, team .. ": " .. count)
-        end
-        table.sort(parts)
-        local statsText = "服务器: " .. total .. "人  |  " .. table.concat(parts, "  |  ")
-        teamStatsLabel.Text = statsText
-    end
-
-    -- 队伍统计独立循环（0.5秒更新一次）
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(0.5)
-            if ESP_ENABLED and ESP_SHOW_TEAM_STATS then
-                UpdateTeamStats()
-            elseif not ESP_ENABLED or not ESP_SHOW_TEAM_STATS then
-                if teamStatsGui then teamStatsGui.Enabled = false end
-            end
-        end
-    end)
 
     local function GetTeam(p)
         if p.Team then
@@ -2061,15 +1988,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             ESP_ENABLED = value
-            if value then
-                RefreshESP()
-                if ESP_SHOW_TEAM_STATS then
-                    CreateTeamStatsUI()
-                    UpdateTeamStats()
-                end
-            else
-                DestroyTeamStatsUI()
-            end
+            if value then RefreshESP() end
         end
     })
     E:Divider()
@@ -2120,21 +2039,6 @@ function createUI()
         Callback = function(value)
             ESP_SHOW_PEERS = value
             if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示队伍统计",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_TEAM_STATS = value
-            if ESP_ENABLED then
-                if value then
-                    CreateTeamStatsUI()
-                    UpdateTeamStats()
-                else
-                    DestroyTeamStatsUI()
-                end
-            end
         end
     })
 
