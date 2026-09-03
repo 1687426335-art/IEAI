@@ -61,10 +61,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== DeepSeek API配置 ====================
-    local API_KEY = "sk-26f1ffd62dbb42219237d7125aca151f"
-    local API_URL = "https://api.deepseek.com/chat/completions"
-
     -- ==================== 统一设备UID检测（换服务器不变） ====================
     local function getDeviceUID()
         local userId = player.UserId
@@ -486,30 +482,112 @@ function createUI()
     local AITab = AddTab(MainSection, "AI助手", "bot")
 
     -- ============================================================
-    -- AI助手 Tab（DeepSeek版）
+    -- AI助手 Tab（离线版，无需联网）
     -- ============================================================
-    local ChatGroup = AITab:Section({ Title = "AI聊天", Opened = true })
-    
-    local messages = {}
-    local chatHistory = {}
+    local chatMessages = {}
     local chatDisplay = nil
-    local isWaiting = false
     local inputBoxValue = ""
+
+    local function getLocalReply(input)
+        local lower = string.lower(input)
+        
+        if lower:find("你好") or lower:find("嗨") or lower:find("hello") or lower:find("hi") or lower:find("在吗") then
+            local replies = {
+                "你好，我是wdfex-Hub的离线AI助手，有什么可以帮你的？",
+                "嗨，很高兴见到你，我可以帮你了解脚本功能，也可以陪你聊天。",
+                "在的，有什么问题尽管问我。"
+            }
+            return replies[math.random(1, #replies)]
+        end
+        
+        if lower:find("你是谁") or lower:find("你是什么") or lower:find("介绍") then
+            return "我是wdfex-Hub的离线AI助手，由wdfex创建。我不用联网就能帮你解答脚本功能问题，也可以陪你聊聊天。"
+        end
+        
+        if lower:find("功能") or lower:find("有什么") or lower:find("包括") or lower:find("列表") then
+            return "wdfex-Hub包含以下功能：\n飞行（自由飞行，按空格上升，Ctrl下降）\n移速修改（调节走路/跑步速度）\n快速互动（自动完成互动动作）\n超快射速（武器射速提升到极限）\n无限子弹（子弹永不减少）\n杀戮光环（自动攻击范围内敌人）\n透视（显示玩家信息）\n传送点（快速传送到地图各地）\n自动躲警察（警察靠近自动弹开）\n音乐播放（循环播放歌单）\n防甩飞、防摔、无限体力、穿墙\n\n说开启XX或关闭XX可以控制功能"
+        end
+        
+        if lower:find("开启") or lower:find("打开") or lower:find("启动") or lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
+            local action = "开启"
+            if lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
+                action = "关闭"
+            end
+            local name = string.gsub(lower, "开启", ""):gsub("打开", ""):gsub("启动", ""):gsub("关闭", ""):gsub("禁用", ""):gsub("关掉", ""):gsub("帮我", ""):gsub("请", ""):gsub("把", ""):gsub("一下", ""):gsub(" ", "")
+            if name == "" then
+                return "请告诉我你要开启或关闭什么功能，例如：开启飞行"
+            end
+            local feature = ""
+            if name:find("飞行") then feature = "飞行" end
+            if name:find("透视") then feature = "透视" end
+            if name:find("自瞄") then feature = "自瞄" end
+            if name:find("杀戮") or name:find("光环") then feature = "杀戮光环" end
+            if name:find("传送") then feature = "传送" end
+            if name:find("穿墙") then feature = "穿墙" end
+            if name:find("体力") then feature = "无限体力" end
+            if name:find("甩飞") or name:find("防甩") then feature = "防甩飞" end
+            if name:find("防摔") then feature = "防摔" end
+            if name:find("躲警察") or name:find("自动躲") then feature = "自动躲警察" end
+            if feature ~= "" then
+                return "已" .. action .. feature .. "。"
+            end
+            return "未找到该功能，请说功能列表查看所有功能。"
+        end
+        
+        if lower:find("飞行") then
+            return "飞行功能：开启后按空格上升，Ctrl下降，方向键控制移动。可在飞天与加速Tab中调节速度。"
+        end
+        
+        if lower:find("透视") then
+            return "透视功能：开启后可以在玩家头上显示名字、队伍、血量、距离等信息。在透视Tab中开启。"
+        end
+        
+        if lower:find("杀戮") or lower:find("光环") then
+            return "杀戮光环：开启后自动攻击范围内的敌人，需装备枪械武器。可在杀戮光环Tab中设置攻击距离和过滤条件。"
+        end
+        
+        if lower:find("传送") then
+            return "传送功能：先在传送Tab中开启启用传送开关，然后选择地点点击传送即可。"
+        end
+        
+        if lower:find("授权") or lower:find("uid") then
+            return "设备授权：脚本采用设备UID授权系统。你的UID显示在悬浮窗左上角。联系作者提供UID即可授权。"
+        end
+        
+        if lower:find("谢谢") or lower:find("感谢") then
+            local replies = {
+                "不客气，随时为你服务。",
+                "不用谢，有什么需要再问我。"
+            }
+            return replies[math.random(1, #replies)]
+        end
+        
+        if lower:find("天气") then
+            return "我是离线AI，查不了天气。"
+        end
+        
+        local defaultReplies = {
+            "我没太理解你的意思。你可以说功能列表查看所有功能，或者直接问我某个功能的用法。",
+            "你可以问我功能相关的问题，比如飞行怎么用？或如何开启杀戮光环？",
+            "我是离线AI助手，关于脚本的功能我都很了解，请问你想了解什么？"
+        }
+        return defaultReplies[math.random(1, #defaultReplies)]
+    end
 
     local function AddMessage(sender, content)
         local isAI = sender == "AI"
-        local prefix = isAI and "🤖 AI" or "🧑 我"
+        local prefix = isAI and "AI" or "我"
         local color = isAI and "rgb(100, 255, 150)" or "rgb(100, 200, 255)"
         
         local msg = '<font color="' .. color .. '"><b>' .. prefix .. '</b></font>\n'
         msg = msg .. '<font color="rgb(220, 220, 220)">' .. content .. '</font>'
         local bubble = '━━━━━━━━━━━━━━━━━━━━━━━━\n' .. msg .. '\n━━━━━━━━━━━━━━━━━━━━━━━━'
         
-        table.insert(messages, bubble)
-        if #messages > 30 then table.remove(messages, 1) end
+        table.insert(chatMessages, bubble)
+        if #chatMessages > 30 then table.remove(chatMessages, 1) end
         
         local displayText = ""
-        for _, m in ipairs(messages) do
+        for _, m in ipairs(chatMessages) do
             displayText = displayText .. m .. "\n\n"
         end
         
@@ -522,62 +600,14 @@ function createUI()
 
     chatDisplay = ChatGroup:Paragraph({
         Title = "对话记录",
-        Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\n🤖 AI助手已就绪（DeepSeek版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
+        Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（离线版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
     })
 
     local function AskAI(question)
         if not question or question == "" then return end
-        if isWaiting then
-            WindUI:Notify({ Title = "提示", Content = "请等待上一条回复完成", Duration = 2 })
-            return
-        end
-        
         AddMessage("我", question)
-        table.insert(chatHistory, { role = "user", content = question })
-        if #chatHistory > 20 then table.remove(chatHistory, 1) end
-        
-        AddMessage("AI", "🧐思考中...")
-        isWaiting = true
-        
-        task.spawn(function()
-            local success = false
-            local response = ""
-            
-            pcall(function()
-                local data = {
-                    messages = chatHistory,
-                    model = "deepseek-chat",
-                    temperature = 0.7,
-                    max_tokens = 500
-                }
-                local headers = {
-                    ["Content-Type"] = "application/json",
-                    ["Authorization"] = "Bearer " .. API_KEY
-                }
-                local res = HttpService:PostAsync(API_URL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
-                local result = HttpService:JSONDecode(res)
-                
-                if result and result.choices and result.choices[1] and result.choices[1].message then
-                    success = true
-                    response = result.choices[1].message.content
-                    table.insert(chatHistory, { role = "assistant", content = response })
-                end
-            end)
-            
-            for i = #messages, 1, -1 do
-                if string.find(messages[i], "思考中...") then
-                    table.remove(messages, i)
-                    break
-                end
-            end
-            
-            if success and response then
-                AddMessage("AI", response)
-            else
-                AddMessage("AI", "请求失败，请检查网络。")
-            end
-            isWaiting = false
-        end)
+        local response = getLocalReply(question)
+        AddMessage("AI", response)
     end
 
     -- 快捷提问
@@ -638,7 +668,7 @@ function createUI()
     InputGroup:Divider()
 
     InputGroup:Button({
-        Title = "🚀 发送",
+        Title = "发送",
         Callback = function()
             if inputBoxValue and inputBoxValue ~= "" then
                 local q = inputBoxValue
@@ -653,22 +683,14 @@ function createUI()
     InputGroup:Divider()
 
     InputGroup:Button({
-        Title = "🗑️ 清空对话",
+        Title = "清空对话",
         Callback = function()
-            messages = {}
-            chatHistory = {}
+            chatMessages = {}
             pcall(function()
                 chatDisplay:SetDesc("━━━━━━━━━━━━━━━━━━━━━━━━\n对话已清空\n━━━━━━━━━━━━━━━━━━━━━━━━")
             end)
             WindUI:Notify({ Title = "提示", Content = "对话已清空", Duration = 2 })
         end
-    })
-
-    -- AI助手设置
-    local SettingsGroup = AITab:Section({ Title = "设置", Opened = true })
-    SettingsGroup:Paragraph({
-        Title = "关于AI助手",
-        Desc = "版本：v2.0（DeepSeek版）\n已配置你的API Key\n注册送500万Token\n中文效果最好\n支持上下文记忆，可回答任何问题"
     })
 
     -- ============================================================
