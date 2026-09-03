@@ -1,6 +1,5 @@
--- ==================== AI聊天助手（免费API版） ====================
--- 使用免费API，无需付费，开箱即用
--- 内置多个备用API，自动切换
+-- ==================== AI聊天助手（你的API Key版） ====================
+-- 使用你自己的API Key，稳定可靠
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local HttpService = game:GetService("HttpService")
@@ -14,31 +13,11 @@ if not WindUI then
     return
 end
 
--- ===== 免费API列表（自动切换） =====
-local API_LIST = {
-    {
-        url = "https://api.chatanywhere.tech/v1/chat/completions",
-        key = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  -- 去https://github.com/chatanywhere/GPT_API_free 领取
-        name = "ChatAnywhere"
-    },
-    {
-        url = "https://openai.good.hidns.vip/v1/chat/completions",
-        key = "sk-7YwvRqVTUJ4cYYW9B2E4A474E5A14c3fBc6bA7EaDfFgH9i",  -- 内置Key
-        name = "smanx免费API"
-    },
-    {
-        url = "https://gpt.qt.cool/v1/chat/completions",
-        key = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  -- 去https://gpt.qt.cool 注册领取
-        name = "晴辰AI"
-    },
-    {
-        url = "https://free.v36.cm/v1/chat/completions",
-        key = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  -- 去https://free.v36.cm/github 领取
-        name = "popjane免费API"
-    },
-}
+-- ===== 你的API配置 =====
+local API_KEY = "sk-G2e8w3ZrEMNnZWWk9bSNMyP5n2kswKF2QHlzyE4Ew6muAh9P"
+local API_URL = "https://api.openai.com/v1/chat/completions"
 
--- ===== 创建设置 =====
+-- ===== 创建悬浮窗 =====
 local Window = WindUI:CreateWindow({
     Title = 'AI聊天助手',
     Icon = "message-circle",
@@ -89,7 +68,6 @@ local ChatGroup = Tabs.Chat:Section({ Title = "AI聊天", Opened = true })
 local messages = {}
 local chatHistory = {}
 local chatDisplay = nil
-local currentApiIndex = 1
 local isWaiting = false
 
 local function AddMessage(sender, content)
@@ -118,10 +96,10 @@ end
 
 chatDisplay = ChatGroup:Paragraph({
     Title = "对话记录",
-    Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（免费API版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
+    Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（你的API Key）\n━━━━━━━━━━━━━━━━━━━━━━━━"
 })
 
--- ===== AI请求（自动切换备用API） =====
+-- ===== AI请求 =====
 local function AskAI(question)
     if not question or question == "" then return end
     if isWaiting then
@@ -133,41 +111,33 @@ local function AskAI(question)
     table.insert(chatHistory, { role = "user", content = question })
     if #chatHistory > 20 then table.remove(chatHistory, 1) end
     
-    AddMessage("AI", "思考中...")
+    AddMessage("AI", "🧐思考中...")
     isWaiting = true
     
     task.spawn(function()
         local success = false
         local response = ""
-        local usedApi = 1
         
-        for i = 1, #API_LIST do
-            local api = API_LIST[i]
-            if api.key and api.key ~= "" then
-                local ok, result = pcall(function()
-                    local data = {
-                        messages = chatHistory,
-                        model = "gpt-3.5-turbo",
-                        temperature = 0.7,
-                        max_tokens = 500
-                    }
-                    local headers = {
-                        ["Content-Type"] = "application/json",
-                        ["Authorization"] = "Bearer " .. api.key
-                    }
-                    local res = HttpService:PostAsync(api.url, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
-                    return HttpService:JSONDecode(res)
-                end)
-                
-                if ok and result and result.choices and result.choices[1] and result.choices[1].message then
-                    success = true
-                    response = result.choices[1].message.content
-                    usedApi = i
-                    table.insert(chatHistory, { role = "assistant", content = response })
-                    break
-                end
+        pcall(function()
+            local data = {
+                messages = chatHistory,
+                model = "gpt-3.5-turbo",
+                temperature = 0.7,
+                max_tokens = 500
+            }
+            local headers = {
+                ["Content-Type"] = "application/json",
+                ["Authorization"] = "Bearer " .. API_KEY
+            }
+            local res = HttpService:PostAsync(API_URL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false, headers)
+            local result = HttpService:JSONDecode(res)
+            
+            if result and result.choices and result.choices[1] and result.choices[1].message then
+                success = true
+                response = result.choices[1].message.content
+                table.insert(chatHistory, { role = "assistant", content = response })
             end
-        end
+        end)
         
         -- 移除思考中
         for i = #messages, 1, -1 do
@@ -180,7 +150,7 @@ local function AskAI(question)
         if success and response then
             AddMessage("AI", response)
         else
-            AddMessage("AI", "所有免费API都不可用，请稍后再试。")
+            AddMessage("AI", "请求失败，请检查网络或API Key是否有效。")
         end
         isWaiting = false
     end)
@@ -284,7 +254,7 @@ local SettingsGroup = Tabs.Settings:Section({ Title = "设置", Opened = true })
 
 SettingsGroup:Paragraph({
     Title = "关于AI助手",
-    Desc = "版本：v2.0（免费API版）\n内置多个免费API，自动切换\n支持上下文记忆，可回答任何问题\n需要联网使用\n\n免费API来源：\n• ChatAnywhere\n• smanx/free-api\n• 晴辰AI\n• popjane/free_chatgpt_api"
+    Desc = "版本：v2.0（你的API Key版）\n使用GPT-3.5模型\n支持上下文记忆，可回答任何问题\n需要联网使用"
 })
 
 SettingsGroup:Divider()
@@ -298,6 +268,6 @@ SettingsGroup:Button({
 
 WindUI:Notify({
     Title = "AI助手",
-    Content = "已启动！免费API版，可回答任何问题",
+    Content = "已启动！使用你自己的API Key，稳定可靠",
     Duration = 3,
 })
