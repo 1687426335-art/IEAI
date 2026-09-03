@@ -56,7 +56,6 @@ function createUI()
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
-    local HttpService = game:GetService("HttpService")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
@@ -333,7 +332,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅 ====================
+    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -346,7 +345,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿到卖被我发现我将会删除你的授权"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -357,6 +356,7 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
+            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -379,6 +379,63 @@ function createUI()
             startAnimation()
         end)
     end)
+
+    -- ==================== 直播模式水印 ====================
+    local liveModeEnabled = false
+    local liveModeLabels = {}
+
+    local function CreateLiveModeWatermarks()
+        -- 清理旧水印
+        for _, label in ipairs(liveModeLabels) do
+            pcall(function() label:Destroy() end)
+        end
+        liveModeLabels = {}
+        
+        if not liveModeEnabled then return end
+        
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "LiveModeWatermarks"
+        gui.ResetOnSpawn = false
+        gui.Parent = player:WaitForChild("PlayerGui")
+        table.insert(liveModeLabels, gui)
+        
+        -- 右下角文字
+        local bottomRight = Instance.new("TextLabel")
+        bottomRight.Size = UDim2.new(0, 200, 0, 24)
+        bottomRight.Position = UDim2.new(1, -210, 1, -34)
+        bottomRight.BackgroundTransparency = 1
+        bottomRight.Text = "豆包AI生成请注意分辨"
+        bottomRight.TextColor3 = Color3.fromRGB(255, 255, 255)
+        bottomRight.TextSize = 14
+        bottomRight.Font = Enum.Font.GothamMedium
+        bottomRight.TextStrokeTransparency = 0.2
+        bottomRight.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        bottomRight.TextXAlignment = Enum.TextXAlignment.Right
+        bottomRight.Parent = gui
+        table.insert(liveModeLabels, bottomRight)
+        
+        -- 左上角文字
+        local topLeft = Instance.new("TextLabel")
+        topLeft.Size = UDim2.new(0, 130, 0, 24)
+        topLeft.Position = UDim2.new(0, 10, 0, 10)
+        topLeft.BackgroundTransparency = 1
+        topLeft.Text = "后期PS制作"
+        topLeft.TextColor3 = Color3.fromRGB(255, 255, 255)
+        topLeft.TextSize = 14
+        topLeft.Font = Enum.Font.GothamMedium
+        topLeft.TextStrokeTransparency = 0.2
+        topLeft.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        topLeft.TextXAlignment = Enum.TextXAlignment.Left
+        topLeft.Parent = gui
+        table.insert(liveModeLabels, topLeft)
+    end
+
+    local function DestroyLiveModeWatermarks()
+        for _, label in ipairs(liveModeLabels) do
+            pcall(function() label:Destroy() end)
+        end
+        liveModeLabels = {}
+    end
 
     -- ==================== 其余原有功能 ====================
     local Settings = {
@@ -470,7 +527,7 @@ function createUI()
     end
 
     -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → ...
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 其他功能
     -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
@@ -479,217 +536,25 @@ function createUI()
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
-    local AITab = AddTab(MainSection, "AI助手", "bot")
+    local OtherTab = AddTab(MainSection, "其他功能", "more")
 
     -- ============================================================
-    -- AI助手 Tab（离线版，无需联网）
+    -- 其他功能 Tab
     -- ============================================================
-    local chatMessages = {}
-    local chatDisplay = nil
-    local inputBoxValue = ""
-
-    local function getLocalReply(input)
-        local lower = string.lower(input)
-        
-        if lower:find("你好") or lower:find("嗨") or lower:find("hello") or lower:find("hi") or lower:find("在吗") then
-            local replies = {
-                "你好，我是wdfex-Hub的离线AI助手，有什么可以帮你的？",
-                "嗨，很高兴见到你，我可以帮你了解脚本功能，也可以陪你聊天。",
-                "在的，有什么问题尽管问我。"
-            }
-            return replies[math.random(1, #replies)]
-        end
-        
-        if lower:find("你是谁") or lower:find("你是什么") or lower:find("介绍") then
-            return "我是wdfex-Hub的离线AI助手，由wdfex创建。我不用联网就能帮你解答脚本功能问题，也可以陪你聊聊天。"
-        end
-        
-        if lower:find("功能") or lower:find("有什么") or lower:find("包括") or lower:find("列表") then
-            return "wdfex-Hub包含以下功能：\n飞行（自由飞行，按空格上升，Ctrl下降）\n移速修改（调节走路/跑步速度）\n快速互动（自动完成互动动作）\n超快射速（武器射速提升到极限）\n无限子弹（子弹永不减少）\n杀戮光环（自动攻击范围内敌人）\n透视（显示玩家信息）\n传送点（快速传送到地图各地）\n自动躲警察（警察靠近自动弹开）\n音乐播放（循环播放歌单）\n防甩飞、防摔、无限体力、穿墙\n\n说开启XX或关闭XX可以控制功能"
-        end
-        
-        if lower:find("开启") or lower:find("打开") or lower:find("启动") or lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
-            local action = "开启"
-            if lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
-                action = "关闭"
-            end
-            local name = string.gsub(lower, "开启", ""):gsub("打开", ""):gsub("启动", ""):gsub("关闭", ""):gsub("禁用", ""):gsub("关掉", ""):gsub("帮我", ""):gsub("请", ""):gsub("把", ""):gsub("一下", ""):gsub(" ", "")
-            if name == "" then
-                return "请告诉我你要开启或关闭什么功能，例如：开启飞行"
-            end
-            local feature = ""
-            if name:find("飞行") then feature = "飞行" end
-            if name:find("透视") then feature = "透视" end
-            if name:find("自瞄") then feature = "自瞄" end
-            if name:find("杀戮") or name:find("光环") then feature = "杀戮光环" end
-            if name:find("传送") then feature = "传送" end
-            if name:find("穿墙") then feature = "穿墙" end
-            if name:find("体力") then feature = "无限体力" end
-            if name:find("甩飞") or name:find("防甩") then feature = "防甩飞" end
-            if name:find("防摔") then feature = "防摔" end
-            if name:find("躲警察") or name:find("自动躲") then feature = "自动躲警察" end
-            if feature ~= "" then
-                return "已" .. action .. feature .. "。"
-            end
-            return "未找到该功能，请说功能列表查看所有功能。"
-        end
-        
-        if lower:find("飞行") then
-            return "飞行功能：开启后按空格上升，Ctrl下降，方向键控制移动。可在飞天与加速Tab中调节速度。"
-        end
-        
-        if lower:find("透视") then
-            return "透视功能：开启后可以在玩家头上显示名字、队伍、血量、距离等信息。在透视Tab中开启。"
-        end
-        
-        if lower:find("杀戮") or lower:find("光环") then
-            return "杀戮光环：开启后自动攻击范围内的敌人，需装备枪械武器。可在杀戮光环Tab中设置攻击距离和过滤条件。"
-        end
-        
-        if lower:find("传送") then
-            return "传送功能：先在传送Tab中开启启用传送开关，然后选择地点点击传送即可。"
-        end
-        
-        if lower:find("授权") or lower:find("uid") then
-            return "设备授权：脚本采用设备UID授权系统。你的UID显示在悬浮窗左上角。联系作者提供UID即可授权。"
-        end
-        
-        if lower:find("谢谢") or lower:find("感谢") then
-            local replies = {
-                "不客气，随时为你服务。",
-                "不用谢，有什么需要再问我。"
-            }
-            return replies[math.random(1, #replies)]
-        end
-        
-        if lower:find("天气") then
-            return "我是离线AI，查不了天气。"
-        end
-        
-        local defaultReplies = {
-            "我没太理解你的意思。你可以说功能列表查看所有功能，或者直接问我某个功能的用法。",
-            "你可以问我功能相关的问题，比如飞行怎么用？或如何开启杀戮光环？",
-            "我是离线AI助手，关于脚本的功能我都很了解，请问你想了解什么？"
-        }
-        return defaultReplies[math.random(1, #defaultReplies)]
-    end
-
-    local function AddMessage(sender, content)
-        local isAI = sender == "AI"
-        local prefix = isAI and "AI" or "我"
-        local color = isAI and "rgb(100, 255, 150)" or "rgb(100, 200, 255)"
-        
-        local msg = '<font color="' .. color .. '"><b>' .. prefix .. '</b></font>\n'
-        msg = msg .. '<font color="rgb(220, 220, 220)">' .. content .. '</font>'
-        local bubble = '━━━━━━━━━━━━━━━━━━━━━━━━\n' .. msg .. '\n━━━━━━━━━━━━━━━━━━━━━━━━'
-        
-        table.insert(chatMessages, bubble)
-        if #chatMessages > 30 then table.remove(chatMessages, 1) end
-        
-        local displayText = ""
-        for _, m in ipairs(chatMessages) do
-            displayText = displayText .. m .. "\n\n"
-        end
-        
-        pcall(function()
-            if chatDisplay then
-                chatDisplay:SetDesc(displayText)
-            end
-        end)
-    end
-
-    chatDisplay = ChatGroup:Paragraph({
-        Title = "对话记录",
-        Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（离线版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
-    })
-
-    local function AskAI(question)
-        if not question or question == "" then return end
-        AddMessage("我", question)
-        local response = getLocalReply(question)
-        AddMessage("AI", response)
-    end
-
-    -- 快捷提问
-    local QuickGroup = AITab:Section({ Title = "快捷提问", Opened = true })
-    
-    QuickGroup:Paragraph({
-        Title = "点击下方快速提问",
-        Desc = "AI会直接回答对应的问题"
-    })
-    QuickGroup:Divider()
-
-    local function QuickAsk(question) AskAI(question) end
-
-    QuickGroup:Button({
-        Title = "脚本有什么功能？",
-        Callback = function() QuickAsk("这个wdfex脚本有什么功能？请详细介绍一下。") end
-    })
-    QuickGroup:Button({
-        Title = "杀戮光环怎么用？",
-        Callback = function() QuickAsk("杀戮光环功能怎么使用？需要装备什么武器？") end
-    })
-    QuickGroup:Button({
-        Title = "透视怎么开？",
-        Callback = function() QuickAsk("透视功能怎么开启？可以看到哪些信息？") end
-    })
-    QuickGroup:Button({
-        Title = "飞行模式怎么用？",
-        Callback = function() QuickAsk("飞行模式怎么使用？怎么控制方向？") end
-    })
-    QuickGroup:Button({
-        Title = "传送点怎么用？",
-        Callback = function() QuickAsk("传送功能怎么使用？需要先开启什么开关？") end
-    })
-    QuickGroup:Button({
-        Title = "自动躲警察怎么用？",
-        Callback = function() QuickAsk("自动躲警察功能怎么使用？") end
-    })
-    QuickGroup:Button({
-        Title = "怎么授权设备？",
-        Callback = function() QuickAsk("设备授权系统怎么用？什么是设备UID？") end
-    })
-    QuickGroup:Button({
-        Title = "你好！",
-        Callback = function() QuickAsk("你好，很高兴认识你") end
-    })
-
-    -- 输入区域
-    local InputGroup = AITab:Section({ Title = "输入", Opened = true })
-    
-    InputGroup:Input({
-        Title = "输入问题",
-        Placeholder = "输入你想问的问题...",
+    OtherTab:Divider({ Text = "直播模式" })
+    OtherTab:Toggle({
+        Title = "直播模式",
+        Desc = "开启后在屏幕四角显示水印文字",
+        Value = false,
         Callback = function(value)
-            inputBoxValue = value
-        end
-    })
-
-    InputGroup:Divider()
-
-    InputGroup:Button({
-        Title = "发送",
-        Callback = function()
-            if inputBoxValue and inputBoxValue ~= "" then
-                local q = inputBoxValue
-                inputBoxValue = ""
-                AskAI(q)
+            liveModeEnabled = value
+            if value then
+                CreateLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
             else
-                WindUI:Notify({ Title = "提示", Content = "请输入问题", Duration = 2 })
+                DestroyLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
             end
-        end
-    })
-
-    InputGroup:Divider()
-
-    InputGroup:Button({
-        Title = "清空对话",
-        Callback = function()
-            chatMessages = {}
-            pcall(function()
-                chatDisplay:SetDesc("━━━━━━━━━━━━━━━━━━━━━━━━\n对话已清空\n━━━━━━━━━━━━━━━━━━━━━━━━")
-            end)
-            WindUI:Notify({ Title = "提示", Content = "对话已清空", Duration = 2 })
         end
     })
 
@@ -738,6 +603,7 @@ function createUI()
         end
     })
 
+    -- workspace 监听
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
@@ -1137,10 +1003,6 @@ function createUI()
         end
     end
 
-    -- 防摔变量（供AI使用）
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -1232,6 +1094,9 @@ function createUI()
     })
 
     A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
     A:Toggle({
         Title = "防摔",
         Desc = "从高处落地时速度平稳",
