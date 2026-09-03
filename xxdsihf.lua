@@ -31,9 +31,9 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. {
- "\n脚本已就绪！",
-    Buttons =        {
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Buttons = {
+        {
             Title = "取消",
             Callback = function() end,
             Variant = "Secondary",
@@ -356,6 +356,7 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
+            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -478,284 +479,370 @@ function createUI()
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
+    local AITab = AddTab(MainSection, "AI助手", "bot")
 
     -- ============================================================
-    -- 自动躲警察 Tab
+    -- AI助手 Tab
     -- ============================================================
-    local PoliceEvadeTab = Window:Tab({ Title = "自动躲警察", Icon = "shield" })
-    local PoliceEvadeGroup = PoliceEvadeTab:Section({ Title = "自动躲警察", Opened = true })
+    local chatHistory = {}
+    local userInput = ""
 
-    local AutoEvadePolice = false
-    local EvadeDistance = 50
-    local EvadeStrength = 50
-    local EvadeConnection = nil
-
-    local function IsPolicePlayer(p)
-        if p == player then return false end
-        if p.Team then
-            local teamName = p.Team.Name or ""
-            if teamName:find("警察") or teamName:find("Police") or teamName:find("Cop") then
-                return true
-            end
-        end
-        if p.Character then
-            for _, child in ipairs(p.Character:GetDescendants()) do
-                if child:IsA("StringValue") or child:IsA("BoolValue") then
-                    local name = child.Name:lower()
-                    if name:find("police") or name:find("cop") or name:find("警察") then
-                        return true
-                    end
-                end
-            end
-        end
-        for _, child in ipairs(p:GetChildren()) do
-            if child:IsA("StringValue") or child:IsA("BoolValue") then
-                local name = child.Name:lower()
-                if name:find("police") or name:find("cop") or name:find("警察") then
-                    return true
-                end
-            end
-        end
-        return false
+    local function addChatMessage(sender, text)
+        table.insert(chatHistory, { sender = sender, text = text })
     end
 
-    local function GetClosestPolice()
-        local char = player.Character
-        if not char then return nil, math.huge end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if not root then return nil, math.huge end
+    -- 功能映射表
+    local function getFeatureInfo()
+        return {
+            { name = "飞行", tab = "飞天与加速", desc = "自由飞行，按空格上升，Ctrl下降" },
+            { name = "飞行速度", tab = "飞天与加速", desc = "调节飞行速度" },
+            { name = "飞天快捷开关", tab = "飞天与加速", desc = "屏幕上的飞行开关按钮" },
+            { name = "移速修改", tab = "飞天与加速", desc = "修改走路/跑步速度" },
+            { name = "快速互动", tab = "互动", desc = "自动快速完成互动动作" },
+            { name = "超快射速", tab = "枪械功能", desc = "武器射速提升到极限" },
+            { name = "无限子弹", tab = "枪械功能", desc = "子弹永不减少" },
+            { name = "头部碰撞箱", tab = "枪械功能", desc = "扩大敌人头部大小" },
+            { name = "子追", tab = "枪械功能", desc = "子弹自动追踪敌人" },
+            { name = "自瞄", tab = "枪械功能", desc = "自动瞄准敌人" },
+            { name = "杀戮光环", tab = "杀戮光环", desc = "自动攻击范围内的敌人" },
+            { name = "传送", tab = "传送点", desc = "传送到地图各个地点" },
+            { name = "透视", tab = "透视", desc = "显示玩家信息" },
+            { name = "透视自己", tab = "透视", desc = "显示自己的透视信息" },
+            { name = "同行显示", tab = "透视", desc = "显示使用wdfex脚本的玩家" },
+            { name = "防甩飞", tab = "玩家修改", desc = "防止被其他脚本甩飞" },
+            { name = "防摔", tab = "玩家修改", desc = "从高处落地速度平稳" },
+            { name = "无限体力", tab = "玩家修改", desc = "体力永不减少" },
+            { name = "穿墙", tab = "玩家修改", desc = "穿过墙壁和障碍物" },
+            { name = "自动躲警察", tab = "自动躲警察", desc = "警察靠近时自动弹开" },
+            { name = "音乐播放", tab = "音乐", desc = "播放歌单中的音乐" },
+            { name = "免疫伤害", tab = "玩家修改", desc = "免疫部分伤害" },
+        }
+    end
+
+    local function getFeatureByName(name)
+        local features = getFeatureInfo()
+        for _, f in ipairs(features) do
+            if f.name:lower():find(name:lower()) or name:lower():find(f.name:lower()) then
+                return f
+            end
+        end
+        return nil
+    end
+
+    -- 执行功能开关
+    local function executeFeatureAction(featureName, action)
+        local lowerName = featureName:lower()
         
-        local closest = nil
-        local closestDist = math.huge
-        
-        for _, p in ipairs(Players:GetPlayers()) do
-            if not IsPolicePlayer(p) then continue end
-            if not p.Character then continue end
-            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-            if not pRoot then continue end
-            local dist = (root.Position - pRoot.Position).Magnitude
-            if dist < closestDist then
-                closestDist = dist
-                closest = p
-            end
-        end
-        return closest, closestDist
-    end
-
-    local function StartEvadePolice()
-        if EvadeConnection then return end
-        local frameSkip = 0
-        EvadeConnection = RunService.Stepped:Connect(function()
-            if not AutoEvadePolice then return end
-            
-            frameSkip = frameSkip + 1
-            if frameSkip % 3 ~= 0 then return end
-            
-            local char = player.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            
-            local police, dist = GetClosestPolice()
-            if not police then return end
-            if dist > EvadeDistance then return end
-            
-            local policeRoot = police.Character:FindFirstChild("HumanoidRootPart")
-            if not policeRoot then return end
-            
-            local awayDir = (root.Position - policeRoot.Position).Unit
-            local forceStrength = EvadeStrength * (1 - (dist / EvadeDistance))
-            forceStrength = math.max(forceStrength, 5)
-            
-            local velocity = awayDir * forceStrength * 10
-            root.Velocity = velocity
-            root.AssemblyLinearVelocity = velocity
-            
-            for _, obj in ipairs(root:GetChildren()) do
-                if obj:IsA("BodyVelocity") and obj.Name ~= "EvadePolice" then
-                    obj:Destroy()
+        -- 飞行
+        if lowerName:find("飞行") and not lowerName:find("速度") and not lowerName:find("快捷") then
+            if action == "开启" then
+                if flyState and flyState.enabled == false then
+                    startFly()
+                    return "✅ 飞行已开启"
+                else
+                    return "🔄 飞行已处于开启状态"
+                end
+            elseif action == "关闭" then
+                if flyState and flyState.enabled == true then
+                    stopFly()
+                    return "✅ 飞行已关闭"
+                else
+                    return "🔄 飞行已处于关闭状态"
                 end
             end
-        end)
-    end
-
-    local function StopEvadePolice()
-        if EvadeConnection then
-            EvadeConnection:Disconnect()
-            EvadeConnection = nil
         end
-        local char = player.Character
-        if char then
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.Velocity = Vector3.new(0, 0, 0)
-                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        
+        -- 防甩飞
+        if lowerName:find("防甩飞") or lowerName:find("甩飞") then
+            if action == "开启" then
+                _G.CatAntiFling_Enabled = true
+                return "✅ 防甩飞已开启"
+            elseif action == "关闭" then
+                _G.CatAntiFling_Enabled = false
+                return "✅ 防甩飞已关闭"
             end
         end
-    end
-
-    PoliceEvadeGroup:Divider()
-    PoliceEvadeGroup:Toggle({
-        Title = "启用自动躲警察",
-        Desc = "警察靠近时自动弹开远离",
-        Value = false,
-        Callback = function(value)
-            AutoEvadePolice = value
-            if value then
+        
+        -- 防摔
+        if lowerName:find("防摔") then
+            if action == "开启" then
+                antiFallEnabled = true
+                return "✅ 防摔已开启"
+            elseif action == "关闭" then
+                antiFallEnabled = false
+                return "✅ 防摔已关闭"
+            end
+        end
+        
+        -- 透视总开关
+        if lowerName:find("透视") and not lowerName:find("自己") and not lowerName:find("同行") then
+            if action == "开启" then
+                ESP_ENABLED = true
+                RefreshESP()
+                return "✅ 透视已开启"
+            elseif action == "关闭" then
+                ESP_ENABLED = false
+                RefreshESP()
+                return "✅ 透视已关闭"
+            end
+        end
+        
+        -- 自动躲警察
+        if lowerName:find("躲警察") or lowerName:find("自动躲") then
+            if action == "开启" then
+                AutoEvadePolice = true
                 StartEvadePolice()
-                WindUI:Notify({ Title = "自动躲警察", Content = "已开启，警察靠近将自动弹开", Duration = 2 })
-            else
+                return "✅ 自动躲警察已开启"
+            elseif action == "关闭" then
+                AutoEvadePolice = false
                 StopEvadePolice()
-                WindUI:Notify({ Title = "自动躲警察", Content = "已关闭", Duration = 2 })
+                return "✅ 自动躲警察已关闭"
             end
         end
-    })
-    PoliceEvadeGroup:Slider({
-        Title = "触发距离",
-        Desc = "警察进入该距离时触发弹开（米）",
-        Step = 1,
-        Value = { Min = 10, Max = 100, Default = 50 },
-        Callback = function(value)
-            EvadeDistance = value
+        
+        -- 自瞄
+        if lowerName:find("自瞄") then
+            if action == "开启" then
+                aimOn = true
+                return "✅ 自瞄已开启"
+            elseif action == "关闭" then
+                aimOn = false
+                return "✅ 自瞄已关闭"
+            end
         end
-    })
-    PoliceEvadeGroup:Slider({
-        Title = "弹开力度",
-        Desc = "数值越大弹开越远",
-        Step = 1,
-        Value = { Min = 10, Max = 200, Default = 50 },
-        Callback = function(value)
-            EvadeStrength = value
+        
+        -- 杀戮光环
+        if lowerName:find("杀戮") or lowerName:find("光环") then
+            if action == "开启" then
+                kaEnabled = true
+                return "✅ 杀戮光环已开启"
+            elseif action == "关闭" then
+                kaEnabled = false
+                return "✅ 杀戮光环已关闭"
+            end
         end
-    })
+        
+        -- 传送
+        if lowerName:find("传送") then
+            if action == "开启" then
+                Settings.TeleportEnabled = true
+                return "✅ 传送已开启"
+            elseif action == "关闭" then
+                Settings.TeleportEnabled = false
+                return "✅ 传送已关闭"
+            end
+        end
+        
+        -- 穿墙
+        if lowerName:find("穿墙") then
+            if action == "开启" then
+                Settings.NoclipEnabled = true
+                return "✅ 穿墙已开启"
+            elseif action == "关闭" then
+                Settings.NoclipEnabled = false
+                return "✅ 穿墙已关闭"
+            end
+        end
+        
+        -- 无限体力
+        if lowerName:find("体力") then
+            if action == "开启" then
+                staminaOn = true
+                return "✅ 无限体力已开启"
+            elseif action == "关闭" then
+                staminaOn = false
+                return "✅ 无限体力已关闭"
+            end
+        end
+        
+        return nil
+    end
 
-    -- ============================================================
-    -- 警察功能 Tab（自动手铐）
-    -- ============================================================
-    local PoliceTab = Window:Tab({ Title = "警察功能", Icon = "target" })
-    local PoliceGroup = PoliceTab:Section({ Title = "执法工具", Opened = true })
-
-    local autoCuffEnabled = false
-    local autoCuffConnection = nil
-    local autoCuffRange = 8
-
-    PoliceGroup:Paragraph({
-        Title = "自动手铐",
-        Desc = "自动检测附近可铐的玩家并执行手铐互动"
-    })
-
-    PoliceGroup:Toggle({
-        Title = "启用自动手铐",
-        Value = false,
-        Callback = function(value)
-            autoCuffEnabled = value
-            if value then
-                if autoCuffConnection then autoCuffConnection:Disconnect() end
-                autoCuffConnection = RunService.Heartbeat:Connect(function()
-                    if not autoCuffEnabled then return end
-                    local char = player.Character
-                    if not char then return end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
-                    
-                    -- 扫描附近所有ProximityPrompt
-                    for _, prompt in ipairs(Workspace:GetDescendants()) do
-                        if prompt:IsA("ProximityPrompt") then
-                            -- 检查是否是手铐相关
-                            local promptName = prompt.Name:lower()
-                            local promptText = prompt.ActionText and prompt.ActionText:lower() or ""
-                            
-                            if promptName:find("cuff") or promptName:find("手铐") or promptName:find("handcuff") or 
-                               promptText:find("cuff") or promptText:find("手铐") or promptText:find("handcuff") or
-                               promptName:find("arrest") or promptText:find("arrest") or promptName:find("逮捕") then
-                                
-                                -- 检查距离
-                                local parent = prompt.Parent
-                                local targetRoot = parent and parent:FindFirstChild("HumanoidRootPart")
-                                if targetRoot then
-                                    local dist = (root.Position - targetRoot.Position).Magnitude
-                                    if dist <= autoCuffRange then
-                                        -- 检查目标是否有效（有Humanoid且存活）
-                                        local hum = parent:FindFirstChildOfClass("Humanoid")
-                                        if hum and hum.Health > 0 then
-                                            -- 执行手铐
-                                            pcall(function()
-                                                prompt:InputHoldBegin()
-                                                task.wait(0.5)
-                                                prompt:InputHoldEnd()
-                                            end)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                WindUI:Notify({ Title = "自动手铐", Content = "已开启，自动铐附近玩家", Duration = 2 })
-            else
-                if autoCuffConnection then
-                    autoCuffConnection:Disconnect()
-                    autoCuffConnection = nil
+    -- AI处理函数
+    local function processAI(input)
+        local lower = input:lower()
+        
+        -- 问候语
+        if lower:find("你好") or lower:find("嗨") or lower:find("hello") or lower:find("hi") then
+            local greetings = {
+                "你好呀！😊 我是wdfex-Hub的AI助手，有什么可以帮你的吗？",
+                "嗨！👋 很高兴见到你，有什么问题尽管问我！",
+                "你好！💫 我可以帮你了解脚本功能、开启或关闭功能，也可以和你聊天。"
+            }
+            return greetings[math.random(1, #greetings)]
+        end
+        
+        -- 身份询问
+        if lower:find("你是谁") or lower:find("你是什么") then
+            return "我是wdfex-Hub的AI助手🤖，由wdfex创建。我可以帮你了解脚本的所有功能，教你如何使用，还能帮你开启或关闭功能。当然，我也可以陪你聊聊天！"
+        end
+        
+        -- 授权相关
+        if lower:find("授权") or lower:find("拉黑") then
+            return "关于授权：本脚本采用设备UID授权系统。作者可以授权或拉黑设备。如果你需要授权，请联系作者并提供你的设备UID（在悬浮窗左上角显示）。🔐 请勿倒卖本脚本，一经发现将删除授权。"
+        end
+        
+        -- 免费分享
+        if lower:find("免费") or lower:find("分享") or lower:find("倒卖") then
+            return "本脚本免费分享，请勿倒卖！🚫 如果发现倒卖行为，作者将删除该设备的授权。请尊重作者的劳动成果，免费分享给更多人使用。"
+        end
+        
+        -- 功能介绍
+        if lower:find("介绍") or lower:find("功能") or lower:find("有什么") or lower:find("包括") then
+            local features = getFeatureInfo()
+            local response = "📋 本脚本包含以下功能：\n"
+            local currentTab = ""
+            for _, f in ipairs(features) do
+                if f.tab ~= currentTab then
+                    currentTab = f.tab
+                    response = response .. "\n【" .. currentTab .. "】\n"
                 end
-                WindUI:Notify({ Title = "自动手铐", Content = "已关闭", Duration = 2 })
+                response = response .. "• " .. f.name .. "：" .. f.desc .. "\n"
+            end
+            response = response .. "\n💡 你可以说'开启XX'或'关闭XX'来操作功能，例如'开启飞行'。"
+            return response
+        end
+        
+        -- 帮助/怎么用
+        if lower:find("怎么用") or lower:find("如何使用") or lower:find("教程") or lower:find("帮助") then
+            return "📖 使用教程：\n1. 通过左侧Tab切换不同的功能分类\n2. 每个Tab里有对应的开关和设置\n3. 点开Toggle即可开启/关闭功能\n4. 滑块和下拉菜单可以调节参数\n5. 如果你不确定某个功能，可以问我！\n\n💡 例如：说'开启飞行'或'关闭透视'"
+        end
+        
+        -- 开启/关闭功能
+        if lower:find("开启") or lower:find("打开") or lower:find("启动") or lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
+            local action = "开启"
+            if lower:find("关闭") or lower:find("禁用") or lower:find("关掉") then
+                action = "关闭"
+            end
+            
+            -- 提取功能名称
+            local featureName = lower:gsub("开启", ""):gsub("打开", ""):gsub("启动", ""):gsub("关闭", ""):gsub("禁用", ""):gsub("关掉", ""):gsub("帮我", ""):gsub("请", ""):gsub("把", ""):gsub("一下", ""):gsub(" ", "")
+            
+            if featureName == "" then
+                return "请告诉我你要开启或关闭什么功能，例如：'开启飞行' ✈️"
+            end
+            
+            local result = executeFeatureAction(featureName, action)
+            if result then
+                return result
+            end
+            
+            -- 查找相似功能
+            local features = getFeatureInfo()
+            local suggestions = {}
+            for _, f in ipairs(features) do
+                if f.name:lower():find(featureName) or featureName:find(f.name:lower():sub(1, 3)) then
+                    table.insert(suggestions, f.name)
+                end
+            end
+            
+            if #suggestions > 0 then
+                return "❓ 我没有找到'" .. featureName .. "'这个功能。你是不是想操作：\n" .. table.concat(suggestions, "、") .. "？\n试试说'开启" .. suggestions[1] .. "'"
+            else
+                return "❓ 我没有找到 '" .. featureName .. "' 这个功能。\n📋 你可以说'介绍功能'查看所有功能列表。"
             end
         end
-    })
+        
+        -- 特定功能询问
+        local features = getFeatureInfo()
+        for _, f in ipairs(features) do
+            if lower:find(f.name:lower()) then
+                return "📌 " .. f.name .. "：\n" .. f.desc .. "\n📍 位置：【" .. f.tab .. "】\n💡 你可以说'开启" .. f.name .. "'或'关闭" .. f.name .. "'来控制它。"
+            end
+        end
+        
+        -- 天气/闲聊
+        if lower:find("天气") then
+            return "🌤️ 我暂时查不了天气，但我知道今天的你特别棒！😄"
+        end
+        
+        if lower:find("你") and (lower:find("好") or lower:find("棒") or lower:find("厉害")) then
+            return "谢谢夸奖！😊 我会继续努力的！有什么需要我帮忙的吗？"
+        end
+        
+        if lower:find("加油") or lower:find("努力") then
+            return "💪 一起加油！你也是！有什么功能想了解的吗？"
+        end
+        
+        if lower:find("谢谢") or lower:find("感谢") then
+            return "不客气！😊 随时为你服务！"
+        end
+        
+        -- 默认回复
+        local defaultReplies = {
+            "🤔 我没太理解你的意思。你可以说'介绍功能'查看所有功能，或者直接问我某个功能的用法。",
+            "😅 我听不太懂。试试说'开启飞行'或'关闭透视'来操作功能？",
+            "💭 你可以问我功能相关的问题，比如'飞行有什么用？'或'怎么开启杀戮光环？'",
+            "🤖 我是AI助手，不是搜索引擎哦~ 不过关于脚本的功能，我都很了解！"
+        }
+        return defaultReplies[math.random(1, #defaultReplies)]
+    end
 
-    PoliceGroup:Slider({
-        Title = "手铐距离",
-        Step = 1,
-        Value = { Min = 3, Max = 20, Default = 8 },
+    -- UI构建
+    local ChatSection = AITab:Section({ Title = "💬 对话", Opened = true })
+    local InputSection = AITab:Section({ Title = "📝 输入", Opened = true })
+
+    local function updateChatUI()
+        ChatSection:Clear()
+        
+        if #chatHistory == 0 then
+            ChatSection:Paragraph({
+                Title = "🤖 AI助手",
+                Desc = "你好！我是wdfex-Hub的AI助手。我可以帮你了解功能、开启/关闭功能，也可以陪你聊天。有什么需要帮助的吗？"
+            })
+            table.insert(chatHistory, { sender = "ai", text = "你好！我是wdfex-Hub的AI助手。我可以帮你了解功能、开启/关闭功能，也可以陪你聊天。有什么需要帮助的吗？" })
+        else
+            for _, msg in ipairs(chatHistory) do
+                local title = msg.sender == "user" and "🧑 你" or "🤖 AI助手"
+                local color = msg.sender == "user" and "rgb(100, 200, 255)" or "rgb(255, 200, 100)"
+                ChatSection:Paragraph({
+                    Title = title,
+                    Desc = msg.text,
+                    TitleColor = color,
+                })
+            end
+        end
+    end
+
+    -- 初始化对话
+    updateChatUI()
+
+    local userInputValue = ""
+    InputSection:Input({
+        Title = "输入消息",
+        Placeholder = "输入你想说的话或想问的问题...",
         Callback = function(value)
-            autoCuffRange = value
+            userInputValue = value
         end
     })
 
-    PoliceGroup:Divider()
-    PoliceGroup:Button({
-        Title = "手铐最近玩家",
-        Desc = "手动铐住最近的玩家",
+    InputSection:Button({
+        Title = "🚀 发送",
         Callback = function()
-            local char = player.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            
-            local closestPrompt = nil
-            local closestDist = math.huge
-            
-            for _, prompt in ipairs(Workspace:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") then
-                    local promptName = prompt.Name:lower()
-                    local promptText = prompt.ActionText and prompt.ActionText:lower() or ""
-                    
-                    if promptName:find("cuff") or promptName:find("手铐") or promptName:find("handcuff") or 
-                       promptText:find("cuff") or promptText:find("手铐") or promptText:find("handcuff") or
-                       promptName:find("arrest") or promptText:find("arrest") or promptName:find("逮捕") then
-                        
-                        local parent = prompt.Parent
-                        local targetRoot = parent and parent:FindFirstChild("HumanoidRootPart")
-                        if targetRoot then
-                            local dist = (root.Position - targetRoot.Position).Magnitude
-                            if dist < closestDist then
-                                closestDist = dist
-                                closestPrompt = prompt
-                            end
-                        end
-                    end
-                end
+            if not userInputValue or userInputValue == "" then
+                WindUI:Notify({ Title = "AI助手", Content = "请输入消息", Duration = 2 })
+                return
             end
             
-            if closestPrompt then
-                pcall(function()
-                    closestPrompt:InputHoldBegin()
-                    task.wait(0.5)
-                    closestPrompt:InputHoldEnd()
-                    WindUI:Notify({ Title = "手铐", Content = "已执行手铐", Duration = 2 })
-                end)
-            else
-                WindUI:Notify({ Title = "手铐", Content = "附近没有可铐的玩家", Duration = 2 })
-            end
+            local userText = userInputValue
+            addChatMessage("user", userText)
+            updateChatUI()
+            
+            -- AI处理
+            local response = processAI(userText)
+            addChatMessage("ai", response)
+            updateChatUI()
+            
+            userInputValue = ""
+        end
+    })
+
+    InputSection:Button({
+        Title = "🗑️ 清空对话",
+        Callback = function()
+            chatHistory = {}
+            updateChatUI()
+            WindUI:Notify({ Title = "AI助手", Content = "对话已清空", Duration = 2 })
         end
     })
 
@@ -1204,6 +1291,10 @@ function createUI()
         end
     end
 
+    -- 防摔变量（供AI使用）
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -1295,9 +1386,6 @@ function createUI()
     })
 
     A:Divider({ Text = "防摔" })
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
     A:Toggle({
         Title = "防摔",
         Desc = "从高处落地时速度平稳",
@@ -1893,7 +1981,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己
+    -- 透视 Tab (E) - 含同行显示 + 透视自己（无通缉）
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
