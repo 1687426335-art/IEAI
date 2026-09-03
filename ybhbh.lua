@@ -1,21 +1,14 @@
--- ==================== AI聊天助手（你的API Key版） ====================
--- 使用你自己的API Key，稳定可靠
+-- ==================== AI聊天助手（DeepSeek版 - 已配置好Key） ====================
+-- 直接复制执行即可使用，你的Key已经填好了
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local HttpService = game:GetService("HttpService")
 
-if not WindUI then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "错误",
-        Text = "UI库加载失败，请检查网络",
-        Duration = 5,
-    })
-    return
-end
+if not WindUI then return end
 
--- ===== 你的API配置 =====
-local API_KEY = "sk-G2e8w3ZrEMNnZWWk9bSNMyP5n2kswKF2QHlzyE4Ew6muAh9P"
-local API_URL = "https://api.openai.com/v1/chat/completions"
+-- ===== 你的DeepSeek Key（已配置） =====
+local API_KEY = "sk-26f1ffd62dbb42219237d7125aca151f"
+local API_URL = "https://api.deepseek.com/chat/completions"
 
 -- ===== 创建悬浮窗 =====
 local Window = WindUI:CreateWindow({
@@ -96,7 +89,7 @@ end
 
 chatDisplay = ChatGroup:Paragraph({
     Title = "对话记录",
-    Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（你的API Key）\n━━━━━━━━━━━━━━━━━━━━━━━━"
+    Desc = "━━━━━━━━━━━━━━━━━━━━━━━━\nAI助手已就绪（DeepSeek版）\n━━━━━━━━━━━━━━━━━━━━━━━━"
 })
 
 -- ===== AI请求 =====
@@ -121,7 +114,7 @@ local function AskAI(question)
         pcall(function()
             local data = {
                 messages = chatHistory,
-                model = "gpt-3.5-turbo",
+                model = "deepseek-chat",
                 temperature = 0.7,
                 max_tokens = 500
             }
@@ -139,7 +132,6 @@ local function AskAI(question)
             end
         end)
         
-        -- 移除思考中
         for i = #messages, 1, -1 do
             if string.find(messages[i], "思考中...") then
                 table.remove(messages, i)
@@ -150,7 +142,7 @@ local function AskAI(question)
         if success and response then
             AddMessage("AI", response)
         else
-            AddMessage("AI", "请求失败，请检查网络或API Key是否有效。")
+            AddMessage("AI", "请求失败，请检查网络。")
         end
         isWaiting = false
     end)
@@ -254,7 +246,7 @@ local SettingsGroup = Tabs.Settings:Section({ Title = "设置", Opened = true })
 
 SettingsGroup:Paragraph({
     Title = "关于AI助手",
-    Desc = "版本：v2.0（你的API Key版）\n使用GPT-3.5模型\n支持上下文记忆，可回答任何问题\n需要联网使用"
+    Desc = "版本：v2.0（DeepSeek版）\n已配置你的API Key\n注册送500万Token\n中文效果最好\n支持上下文记忆，可回答任何问题"
 })
 
 SettingsGroup:Divider()
@@ -268,6 +260,6 @@ SettingsGroup:Button({
 
 WindUI:Notify({
     Title = "AI助手",
-    Content = "已启动！使用你自己的API Key，稳定可靠",
+    Content = "已启动！DeepSeek版，中文效果最好",
     Duration = 3,
 })
