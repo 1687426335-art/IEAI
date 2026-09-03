@@ -794,7 +794,7 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关（第一种风格：炫酷渐变霓虹光效）
+    -- 飞天快捷开关
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -811,95 +811,68 @@ function createUI()
 
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
-        
         flyQuickScreenGui = Instance.new("ScreenGui")
         flyQuickScreenGui.Name = "FlyQuickToggle"
         flyQuickScreenGui.ResetOnSpawn = false
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-        
-        local TweenService = game:GetService("TweenService")
-        
-        -- 光晕背景
-        local glow = Instance.new("Frame")
-        glow.Size = UDim2.new(0, 80, 0, 80)
-        glow.Position = UDim2.new(0.5, -40, 0.15, -10)
-        glow.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        glow.BackgroundTransparency = 0.8
-        glow.BorderSizePixel = 0
-        glow.Parent = flyQuickScreenGui
-        
-        local glowCorner = Instance.new("UICorner")
-        glowCorner.CornerRadius = UDim.new(1, 0)
-        glowCorner.Parent = glow
-        
-        -- 呼吸动画
-        local glowTween = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-            BackgroundTransparency = 0.6,
-            Size = UDim2.new(0, 90, 0, 90)
-        })
-        glowTween:Play()
-        
-        -- 主按钮
-        local btn = Instance.new("ImageButton")
-        btn.Size = UDim2.new(0, 54, 0, 54)
-        btn.Position = UDim2.new(0.5, -27, 0.15, 3)
-        btn.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
-        btn.BackgroundTransparency = 0.2
-        btn.BorderSizePixel = 2
-        btn.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        btn.Image = "rbxassetid://7734068321"
-        btn.ImageColor3 = Color3.fromRGB(100, 200, 255)
-        btn.ScaleType = Enum.ScaleType.Fit
-        btn.Parent = flyQuickScreenGui
-        
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(1, 0)
-        btnCorner.Parent = btn
-        
-        flyQuickButton = btn
-        
+
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://7734068321"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
+        button.Parent = flyQuickScreenGui
+        flyQuickButton = button
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = button
+
         flyQuickStatusLabel = Instance.new("TextLabel")
-        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 18)
-        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 2)
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
         flyQuickStatusLabel.BackgroundTransparency = 1
         flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flyQuickStatusLabel.TextSize = 11
+        flyQuickStatusLabel.TextSize = 12
         flyQuickStatusLabel.Font = Enum.Font.GothamBold
         flyQuickStatusLabel.TextStrokeTransparency = 0.3
         flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         flyQuickStatusLabel.Text = "飞行: 关"
-        flyQuickStatusLabel.Parent = btn
-        
+        flyQuickStatusLabel.Parent = button
+
         local function updateFlyStatus()
             if flyQuickStatusLabel then
                 flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                if btn then
-                    btn.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    btn.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    glow.BackgroundColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                if flyQuickButton then
+                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
                 end
             end
         end
-        
-        btn.MouseButton1Click:Connect(function()
+
+        button.MouseButton1Click:Connect(function()
             if flyState.enabled then stopFly() else startFly() end
             updateFlyStatus()
         end)
-        
-        -- 拖动逻辑
+
         local dragging = false
         local dragStart = nil
         local startPos = nil
-        
-        btn.InputBegan:Connect(function(input)
+
+        button.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
-                startPos = btn.Position
+                startPos = button.Position
             end
         end)
-        
-        btn.InputChanged:Connect(function(input)
+
+        button.InputChanged:Connect(function(input)
             if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local delta = input.Position - dragStart
                 local newPos = UDim2.new(
@@ -908,19 +881,18 @@ function createUI()
                     startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
                     startPos.Y.Offset + delta.Y
                 )
-                btn.Position = newPos
-                glow.Position = UDim2.new(newPos.X.Scale, newPos.X.Offset - 13, newPos.Y.Scale, newPos.Y.Offset - 13)
+                button.Position = newPos
             end
         end)
-        
-        btn.InputEnded:Connect(function(input)
+
+        button.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = false
             end
         end)
-        
+
         updateFlyStatus()
-        
+
         local statusConn = RunService.Heartbeat:Connect(function()
             if flyQuickToggle and flyQuickStatusLabel then
                 updateFlyStatus()
@@ -1727,7 +1699,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 修复卡顿版
+    -- 透视 Tab (E) - 增加队伍统计
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1736,8 +1708,79 @@ function createUI()
     local ESP_SHOW_DIST = true
     local ESP_SHOW_SELF = false
     local ESP_SHOW_PEERS = true
+    local ESP_SHOW_TEAM_STATS = true  -- 新增：显示队伍统计，默认开启
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
+
+    -- 队伍统计UI
+    local teamStatsGui = nil
+    local teamStatsLabel = nil
+
+    local function CreateTeamStatsUI()
+        if teamStatsGui then return end
+        teamStatsGui = Instance.new("ScreenGui")
+        teamStatsGui.Name = "TeamStatsGui"
+        teamStatsGui.ResetOnSpawn = false
+        teamStatsGui.Parent = player:WaitForChild("PlayerGui")
+        
+        teamStatsLabel = Instance.new("TextLabel")
+        teamStatsLabel.Size = UDim2.new(0, 400, 0, 30)
+        teamStatsLabel.Position = UDim2.new(0.5, -200, 0, 50)
+        teamStatsLabel.BackgroundTransparency = 1
+        teamStatsLabel.Text = ""
+        teamStatsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        teamStatsLabel.TextSize = 16
+        teamStatsLabel.Font = Enum.Font.GothamBold
+        teamStatsLabel.TextStrokeTransparency = 0.2
+        teamStatsLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        teamStatsLabel.TextXAlignment = Enum.TextXAlignment.Center
+        teamStatsLabel.Parent = teamStatsGui
+    end
+
+    local function DestroyTeamStatsUI()
+        if teamStatsGui then
+            teamStatsGui:Destroy()
+            teamStatsGui = nil
+            teamStatsLabel = nil
+        end
+    end
+
+    local function UpdateTeamStats()
+        if not ESP_ENABLED or not ESP_SHOW_TEAM_STATS then
+            if teamStatsGui then teamStatsGui.Enabled = false end
+            return
+        end
+        if not teamStatsGui then CreateTeamStatsUI() end
+        teamStatsGui.Enabled = true
+        
+        local total = #Players:GetPlayers()
+        local teamCounts = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            local teamName = p.Team and p.Team.Name or "平民"
+            if not teamCounts[teamName] then teamCounts[teamName] = 0 end
+            teamCounts[teamName] = teamCounts[teamName] + 1
+        end
+        
+        local parts = {}
+        for team, count in pairs(teamCounts) do
+            table.insert(parts, team .. ": " .. count)
+        end
+        table.sort(parts)
+        local statsText = "服务器: " .. total .. "人  |  " .. table.concat(parts, "  |  ")
+        teamStatsLabel.Text = statsText
+    end
+
+    -- 队伍统计独立循环（0.5秒更新一次）
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.5)
+            if ESP_ENABLED and ESP_SHOW_TEAM_STATS then
+                UpdateTeamStats()
+            elseif not ESP_ENABLED or not ESP_SHOW_TEAM_STATS then
+                if teamStatsGui then teamStatsGui.Enabled = false end
+            end
+        end
+    end)
 
     local function GetTeam(p)
         if p.Team then
@@ -1848,7 +1891,6 @@ function createUI()
             return
         end
 
-        -- 每3帧才执行一次完整刷新，大幅降低CPU占用
         ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
         if ESP_REFRESH_COUNT % 3 ~= 0 then
             return
@@ -1939,7 +1981,7 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 同行显示（在队伍上方，名字下方）
+            -- 同行显示
             if ESP_SHOW_PEERS and isWdfexUser then
                 local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
                 local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
@@ -2021,7 +2063,15 @@ function createUI()
         Value = false,
         Callback = function(value)
             ESP_ENABLED = value
-            if value then RefreshESP() end
+            if value then
+                RefreshESP()
+                if ESP_SHOW_TEAM_STATS then
+                    CreateTeamStatsUI()
+                    UpdateTeamStats()
+                end
+            else
+                DestroyTeamStatsUI()
+            end
         end
     })
     E:Divider()
@@ -2076,8 +2126,24 @@ function createUI()
             if ESP_ENABLED then RefreshESP() end
         end
     })
+    E:Toggle({
+        Title = "显示队伍统计",
+        Desc = "在屏幕中上方显示服务器人数和各队伍人数",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_TEAM_STATS = value
+            if ESP_ENABLED then
+                if value then
+                    CreateTeamStatsUI()
+                    UpdateTeamStats()
+                else
+                    DestroyTeamStatsUI()
+                end
+            end
+        end
+    })
 
-    -- 透视实时刷新循环（降低频率，减少卡顿）
+    -- 透视实时刷新循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.3)
