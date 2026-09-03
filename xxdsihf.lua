@@ -551,7 +551,6 @@ function createUI()
     OtherTab:Divider({ Text = "直播模式" })
     OtherTab:Toggle({
         Title = "直播模式",
-        Desc = "开启后在屏幕四角显示水印文字",
         Value = false,
         Callback = function(value)
             liveModeEnabled = value
@@ -903,7 +902,6 @@ function createUI()
 
     FlyTab:Toggle({
         Title = "飞天快捷开关",
-        Desc = "开启后在屏幕显示可拖动的飞天开关",
         Value = false,
         Callback = function(value)
             flyQuickToggle = value
@@ -1093,7 +1091,6 @@ function createUI()
     A:Divider({ Text = "防甩飞" })
     A:Toggle({
         Title = "防甩飞",
-        Desc = "防止被其他脚本甩飞",
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
@@ -1106,7 +1103,6 @@ function createUI()
 
     A:Toggle({
         Title = "防摔",
-        Desc = "从高处落地时速度平稳",
         Value = false,
         Callback = function(value)
             antiFallEnabled = value
@@ -1699,7 +1695,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 增加队伍统计
+    -- 透视 Tab (E) - 不含Desc
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1708,7 +1704,7 @@ function createUI()
     local ESP_SHOW_DIST = true
     local ESP_SHOW_SELF = false
     local ESP_SHOW_PEERS = true
-    local ESP_SHOW_TEAM_STATS = true  -- 新增：显示队伍统计，默认开启
+    local ESP_SHOW_TEAM_STATS = true
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
@@ -1724,8 +1720,8 @@ function createUI()
         teamStatsGui.Parent = player:WaitForChild("PlayerGui")
         
         teamStatsLabel = Instance.new("TextLabel")
-        teamStatsLabel.Size = UDim2.new(0, 400, 0, 30)
-        teamStatsLabel.Position = UDim2.new(0.5, -200, 0, 50)
+        teamStatsLabel.Size = UDim2.new(0, 450, 0, 30)
+        teamStatsLabel.Position = UDim2.new(0.5, -225, 0, 50)
         teamStatsLabel.BackgroundTransparency = 1
         teamStatsLabel.Text = ""
         teamStatsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1753,9 +1749,11 @@ function createUI()
         if not teamStatsGui then CreateTeamStatsUI() end
         teamStatsGui.Enabled = true
         
-        local total = #Players:GetPlayers()
+        local total = 0
         local teamCounts = {}
         for _, p in ipairs(Players:GetPlayers()) do
+            if p == player then continue end
+            total = total + 1
             local teamName = p.Team and p.Team.Name or "平民"
             if not teamCounts[teamName] then teamCounts[teamName] = 0 end
             teamCounts[teamName] = teamCounts[teamName] + 1
@@ -2110,7 +2108,6 @@ function createUI()
     E:Divider()
     E:Toggle({
         Title = "透视自己",
-        Desc = "开启后透视会显示自己头上的信息",
         Value = false,
         Callback = function(value)
             ESP_SHOW_SELF = value
@@ -2119,7 +2116,6 @@ function createUI()
     })
     E:Toggle({
         Title = "同行显示",
-        Desc = "检测并显示使用wdfex脚本的玩家",
         Value = true,
         Callback = function(value)
             ESP_SHOW_PEERS = value
@@ -2128,7 +2124,6 @@ function createUI()
     })
     E:Toggle({
         Title = "显示队伍统计",
-        Desc = "在屏幕中上方显示服务器人数和各队伍人数",
         Value = true,
         Callback = function(value)
             ESP_SHOW_TEAM_STATS = value
@@ -2281,7 +2276,6 @@ function createUI()
 
     MusicGroup:Toggle({
         Title = "播放音乐",
-        Desc = "开启播放当前选中的歌曲，关闭停止播放",
         Value = false,
         Callback = function(value)
             isMusicPlaying = value
