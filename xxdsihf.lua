@@ -381,8 +381,10 @@ function createUI()
     end)
 
     -- ==================== 直播模式水印 ====================
+    local liveModeEnabled = false
+    local liveModeLabels = {}
+
     local function CreateLiveModeWatermarks()
-        -- 清理旧水印
         for _, label in ipairs(liveModeLabels) do
             pcall(function() label:Destroy() end)
         end
@@ -396,7 +398,6 @@ function createUI()
         gui.Parent = player:WaitForChild("PlayerGui")
         table.insert(liveModeLabels, gui)
         
-        -- 右下角文字（彩色）
         local bottomRight = Instance.new("TextLabel")
         bottomRight.Size = UDim2.new(0, 260, 0, 32)
         bottomRight.Position = UDim2.new(1, -270, 1, -42)
@@ -411,7 +412,6 @@ function createUI()
         bottomRight.Parent = gui
         table.insert(liveModeLabels, bottomRight)
         
-        -- 左上角文字（彩色）
         local topLeft = Instance.new("TextLabel")
         topLeft.Size = UDim2.new(0, 180, 0, 32)
         topLeft.Position = UDim2.new(0, 10, 0, 10)
@@ -426,7 +426,6 @@ function createUI()
         topLeft.Parent = gui
         table.insert(liveModeLabels, topLeft)
         
-        -- 彩色循环（两个文字同时变色）
         local hue = 0
         local colorConn = RunService.Heartbeat:Connect(function()
             hue = (hue + 0.005) % 1
@@ -436,6 +435,13 @@ function createUI()
         end)
         table.insert(connections, colorConn)
         table.insert(liveModeLabels, colorConn)
+    end
+
+    local function DestroyLiveModeWatermarks()
+        for _, label in ipairs(liveModeLabels) do
+            pcall(function() label:Destroy() end)
+        end
+        liveModeLabels = {}
     end
 
     -- ==================== 其余原有功能 ====================
@@ -1693,7 +1699,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 含同行显示 + 透视自己（无通缉）
+    -- 透视 Tab (E) - 修复卡顿版
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -1814,7 +1820,11 @@ function createUI()
             return
         end
 
+        -- 每3帧才执行一次完整刷新，大幅降低CPU占用
         ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
+        if ESP_REFRESH_COUNT % 3 ~= 0 then
+            return
+        end
 
         for _, p in ipairs(Players:GetPlayers()) do
             if not ESP_SHOW_SELF and p == player then
@@ -2039,9 +2049,10 @@ function createUI()
         end
     })
 
+    -- 透视实时刷新循环（降低频率，减少卡顿）
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.15)
+            task.wait(0.3)
             if ESP_ENABLED then RefreshESP() end
         end
     end)
