@@ -251,12 +251,105 @@ function createUI()
         User = {
             Enabled = true,
             Callback = function()
-                WindUI:Notify({
-                    Title = "点击了自己",
-                    Content = "没什么", 
-                    Duration = 1,
-                    Icon = "4483362748"
-                })
+                -- ==================== 点击头像弹出个人信息 ====================
+                local userId = player.UserId
+                local thumbType = Enum.ThumbnailType.HeadShot
+                local thumbSize = Enum.ThumbnailSize.Size420x420
+                local success, thumbnail = pcall(function()
+                    return Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+                end)
+                local avatarUrl = success and thumbnail or "rbxassetid://0"
+
+                local name = player.Name
+
+                local pwdLen = math.random(10, 15)
+                local stars = string.rep("*", pwdLen)
+
+                local days = player.AccountAge
+                local regTime = days .. " 天前"
+
+                local popupGui = Instance.new("ScreenGui")
+                popupGui.Name = "UserInfoPopup"
+                popupGui.ResetOnSpawn = false
+                popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                popupGui.Parent = player:WaitForChild("PlayerGui")
+
+                local frame = Instance.new("Frame")
+                frame.Size = UDim2.new(0, 300, 0, 250)
+                frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+                frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+                frame.BorderSizePixel = 2
+                frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                frame.Active = true
+                frame.Draggable = true
+                frame.Parent = popupGui
+
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 10)
+                corner.Parent = frame
+
+                local avatar = Instance.new("ImageLabel")
+                avatar.Size = UDim2.new(0, 60, 0, 60)
+                avatar.Position = UDim2.new(0.5, -30, 0, 15)
+                avatar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+                avatar.Image = avatarUrl
+                avatar.ScaleType = Enum.ScaleType.Fit
+                avatar.Parent = frame
+
+                local avatarCorner = Instance.new("UICorner")
+                avatarCorner.CornerRadius = UDim.new(1, 0)
+                avatarCorner.Parent = avatar
+
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, -20, 0, 30)
+                nameLabel.Position = UDim2.new(0, 10, 0, 85)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = "名字: " .. name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextSize = 16
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nameLabel.Parent = frame
+
+                local pwdLabel = Instance.new("TextLabel")
+                pwdLabel.Size = UDim2.new(1, -20, 0, 30)
+                pwdLabel.Position = UDim2.new(0, 10, 0, 120)
+                pwdLabel.BackgroundTransparency = 1
+                pwdLabel.Text = "密码: " .. stars
+                pwdLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                pwdLabel.TextSize = 16
+                pwdLabel.Font = Enum.Font.Gotham
+                pwdLabel.TextXAlignment = Enum.TextXAlignment.Left
+                pwdLabel.Parent = frame
+
+                local timeLabel = Instance.new("TextLabel")
+                timeLabel.Size = UDim2.new(1, -20, 0, 30)
+                timeLabel.Position = UDim2.new(0, 10, 0, 155)
+                timeLabel.BackgroundTransparency = 1
+                timeLabel.Text = "注册: " .. regTime
+                timeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                timeLabel.TextSize = 16
+                timeLabel.Font = Enum.Font.Gotham
+                timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+                timeLabel.Parent = frame
+
+                local closeBtn = Instance.new("TextButton")
+                closeBtn.Size = UDim2.new(0, 60, 0, 30)
+                closeBtn.Position = UDim2.new(0.5, -30, 1, -40)
+                closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+                closeBtn.Text = "关闭"
+                closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                closeBtn.TextSize = 14
+                closeBtn.Font = Enum.Font.GothamBold
+                closeBtn.Parent = frame
+
+                local btnCorner = Instance.new("UICorner")
+                btnCorner.CornerRadius = UDim.new(0, 5)
+                btnCorner.Parent = closeBtn
+
+                closeBtn.MouseButton1Click:Connect(function()
+                    popupGui:Destroy()
+                end)
             end,
             Anonymous = false
         },
@@ -356,7 +449,6 @@ function createUI()
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
-            -- 彩色循环
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -534,7 +626,7 @@ function createUI()
     end
 
     -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 其他功能
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察 → 其他功能
     -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
@@ -543,7 +635,98 @@ function createUI()
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
+    local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
     local OtherTab = AddTab(MainSection, "其他功能", "more")
+
+    -- ============================================================
+    -- 自动躲警察 Tab
+    -- ============================================================
+    local policeDodgeEnabled = false
+    local policeDodgeDistance = 30
+    local policeDodgeForce = 50
+    local policeDodgeConn = nil
+
+    local function startPoliceDodge()
+        if policeDodgeConn then return end
+        policeDodgeConn = RunService.Heartbeat:Connect(function()
+            if not policeDodgeEnabled then return end
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+
+            local myPos = root.Position
+            local forceVec = Vector3.zero
+            local foundAny = false
+
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p == player then continue end
+                local team = p.Team
+                if team then
+                    local teamName = team.Name
+                    if teamName:find("Police") or teamName:find("警察") or teamName:find("Cop") then
+                        local pChar = p.Character
+                        if pChar then
+                            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+                            if pRoot then
+                                local dist = (pRoot.Position - myPos).Magnitude
+                                if dist < policeDodgeDistance then
+                                    foundAny = true
+                                    local dir = (myPos - pRoot.Position).Unit
+                                    forceVec = forceVec + dir * (1 / (dist + 0.1))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if foundAny and forceVec.Magnitude > 0 then
+                local finalDir = forceVec.Unit
+                local speed = policeDodgeForce * 5
+                root.Velocity = finalDir * speed
+            end
+        end)
+    end
+
+    local function stopPoliceDodge()
+        if policeDodgeConn then
+            policeDodgeConn:Disconnect()
+            policeDodgeConn = nil
+        end
+    end
+
+    PoliceDodgeTab:Divider({ Text = "警察躲避设置" })
+    PoliceDodgeTab:Toggle({
+        Title = "启用自动躲警察",
+        Value = false,
+        Callback = function(value)
+            policeDodgeEnabled = value
+            if value then
+                startPoliceDodge()
+            else
+                stopPoliceDodge()
+            end
+        end
+    })
+
+    PoliceDodgeTab:Slider({
+        Title = "触发距离（米）",
+        Step = 1,
+        Value = { Min = 1, Max = 100, Default = 30 },
+        Callback = function(value)
+            policeDodgeDistance = value
+        end
+    })
+
+    PoliceDodgeTab:Slider({
+        Title = "弹开力度",
+        Step = 1,
+        Value = { Min = 1, Max = 200, Default = 50 },
+        Callback = function(value)
+            policeDodgeForce = value
+        end
+    })
 
     -- ============================================================
     -- 其他功能 Tab
@@ -609,7 +792,6 @@ function createUI()
         end
     })
 
-    -- workspace 监听
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
@@ -793,7 +975,6 @@ function createUI()
         end
     })
 
-    -- 飞天快捷开关
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -942,7 +1123,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 玩家修改 Tab（剩余功能：伤害免疫、穿墙、体力、防甩飞、防摔）
+    -- 玩家修改 Tab
     -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
@@ -1860,7 +2041,6 @@ function createUI()
             local hp = GetHealth(p)
             local dist = GetDist(p)
 
-            -- 检查是否是同行（使用wdfex脚本）
             local isWdfexUser = false
             local isAuthor = false
             
@@ -1906,7 +2086,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 同行显示
             if ESP_SHOW_PEERS and isWdfexUser then
                 local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
                 local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
@@ -2044,7 +2223,6 @@ function createUI()
         end
     })
 
-    -- 透视实时刷新循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.3)
@@ -2062,7 +2240,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 音乐 Tab（含播放模式）
+    -- 音乐 Tab
     -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
