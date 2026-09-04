@@ -720,9 +720,9 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "弹开力度（不建议拉太高）",
+        Title = "弹开力度",
         Step = 1,
-        Value = { Min = 1, Max = 200, Default = 50 },
+        Value = { Min = 1, Max = 100, Default = 50 },
         Callback = function(value)
             policeDodgeForce = value
         end
