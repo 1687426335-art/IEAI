@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v2.0.4"
+local version = "v2.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -603,14 +603,14 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",  -- 删掉了“凌晨我将更新自动躲警察”
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
+        Title = "v2.0.5版本更新提示",
+        Desc = "优化杀戮光环部分问题\n正在尝试解决一些功能的问题",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -644,7 +644,7 @@ function createUI()
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
     local policeDodgeForce = 50
-    local policeDodgeWallCheck = true
+    local policeDodgeWallCheck = true   -- 新增：墙体检测开关，默认开启
     local policeDodgeConn = nil
 
     local function isVisible(fromPos, toPos, ignoreInstances)
@@ -687,11 +687,12 @@ function createUI()
                             if targetPart then
                                 local dist = (targetPart.Position - myPos).Magnitude
                                 if dist < policeDodgeDistance then
+                                    -- 墙体检测
                                     if policeDodgeWallCheck then
                                         local ignoreList = {char, pChar}
                                         local visible = isVisible(myPos, targetPart.Position, ignoreList)
                                         if not visible then
-                                            continue
+                                            continue  -- 被墙挡住，跳过这个警察
                                         end
                                     end
                                     foundAny = true
@@ -734,7 +735,7 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "触发距离（米）",
+        Title = "触发距离",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 30 },
         Callback = function(value)
@@ -743,7 +744,7 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "弹开力度",
+        Title = "弹开力度（不要拉太高20-30就刚刚好，",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 50 },
         Callback = function(value)
@@ -751,6 +752,7 @@ function createUI()
         end
     })
 
+    -- 新增：墙体检测开关（默认开启）
     PoliceDodgeTab:Toggle({
         Title = "墙体检测",
         Value = true,
@@ -799,13 +801,13 @@ function createUI()
         Value = false,
         Callback = function(value)
             interactEnabled = value
-            ifAnchor value then
+            if value then
                 ScanPrompts()
             end
-.h        end
+        end
     })
-    InteractrpTab:Slider({
-        Title = "按住 or时间",
+    InteractTab:Slider({
+        Title = "按住时间",
         Step = 0.1,
         Value = { Min = 0, Max = 10, Default = 0 },
         Callback = function(value)
@@ -879,7 +881,7 @@ function createUI()
 
     local function flyEnterAnchor()
         if flyAnchor.active then return end
-        if not flyAnchor.head or not fly not flyAnchor.hum then return end
+        if not flyAnchor.head or not flyAnchor.hrp or not flyAnchor.hum then return end
         flyAnchor.head.Anchored = true
         flyAnchor.hum.PlatformStand = true
         flyAnchor.active = true
