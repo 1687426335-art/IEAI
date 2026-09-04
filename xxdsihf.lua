@@ -609,7 +609,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.5版本更新提示",
+        Title = "更新提示",
         Desc = "优化杀戮光环部分问题\n正在尝试解决一些功能的问题",
         ThumbnailSize = 190,
     })
