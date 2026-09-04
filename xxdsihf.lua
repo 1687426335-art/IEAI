@@ -603,7 +603,7 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新\n凌晨我将更新自动躲警察",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",  -- 删掉了“凌晨我将更新自动躲警察”
         ThumbnailSize = 190,
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
@@ -644,7 +644,19 @@ function createUI()
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
     local policeDodgeForce = 50
+    local policeDodgeWallCheck = true   -- 新增：墙体检测开关，默认开启
     local policeDodgeConn = nil
+
+    local function isVisible(fromPos, toPos, ignoreInstances)
+        local direction = (toPos - fromPos).Unit
+        local distance = (toPos - fromPos).Magnitude
+        if distance < 0.1 then return true end
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = ignoreInstances or {}
+        local result = workspace:Raycast(fromPos, direction * distance, params)
+        return result == nil
+    end
 
     local function startPoliceDodge()
         if policeDodgeConn then return end
@@ -654,8 +666,10 @@ function createUI()
             if not char then return end
             local root = char:FindFirstChild("HumanoidRootPart")
             if not root then return end
+            local myHead = char:FindFirstChild("Head")
+            if not myHead then myHead = root end
 
-            local myPos = root.Position
+            local myPos = myHead.Position
             local forceVec = Vector3.zero
             local foundAny = false
 
@@ -668,11 +682,21 @@ function createUI()
                         local pChar = p.Character
                         if pChar then
                             local pRoot = pChar:FindFirstChild("HumanoidRootPart")
-                            if pRoot then
-                                local dist = (pRoot.Position - myPos).Magnitude
+                            local pHead = pChar:FindFirstChild("Head")
+                            local targetPart = pHead or pRoot
+                            if targetPart then
+                                local dist = (targetPart.Position - myPos).Magnitude
                                 if dist < policeDodgeDistance then
+                                    -- 墙体检测
+                                    if policeDodgeWallCheck then
+                                        local ignoreList = {char, pChar}
+                                        local visible = isVisible(myPos, targetPart.Position, ignoreList)
+                                        if not visible then
+                                            continue  -- 被墙挡住，跳过这个警察
+                                        end
+                                    end
                                     foundAny = true
-                                    local dir = (myPos - pRoot.Position).Unit
+                                    local dir = (myPos - targetPart.Position).Unit
                                     forceVec = forceVec + dir * (1 / (dist + 0.1))
                                 end
                             end
@@ -720,11 +744,20 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "弹开力度",
+        Title = "弹开力度（不要拉太高20-30就刚刚好，",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 50 },
         Callback = function(value)
             policeDodgeForce = value
+        end
+    })
+
+    -- 新增：墙体检测开关（默认开启）
+    PoliceDodgeTab:Toggle({
+        Title = "墙体检测",
+        Value = true,
+        Callback = function(value)
+            policeDodgeWallCheck = value
         end
     })
 
