@@ -711,7 +711,7 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "触发距离（米）",
+        Title = "触发距离",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 30 },
         Callback = function(value)
@@ -720,7 +720,7 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "弹开力度",
+        Title = "弹开力度（不建议拉太高）",
         Step = 1,
         Value = { Min = 1, Max = 200, Default = 50 },
         Callback = function(value)
