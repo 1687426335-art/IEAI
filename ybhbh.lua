@@ -220,6 +220,61 @@ function createUI()
         return
     end
 
+    -- ==================== 右上角弹窗（显示wdfex脚本信息） ====================
+    task.spawn(function()
+        pcall(function()
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "WdfexBanner"
+            gui.ResetOnSpawn = false
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.Parent = player:WaitForChild("PlayerGui")
+
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 300, 0, 100)
+            frame.Position = UDim2.new(1, -310, 0, 10)
+            frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+            frame.BorderSizePixel = 0
+            frame.BackgroundTransparency = 0.1
+            frame.ClipsDescendants = true
+            frame.Parent = gui
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 12)
+            corner.Parent = frame
+
+            local icon = Instance.new("ImageLabel")
+            icon.Size = UDim2.new(0, 40, 0, 40)
+            icon.Position = UDim2.new(0, 10, 0, 10)
+            icon.BackgroundTransparency = 1
+            icon.Image = "rbxassetid://74369447499630"
+            icon.ScaleType = Enum.ScaleType.Fit
+            icon.Parent = frame
+
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, -60, 0, 30)
+            title.Position = UDim2.new(0, 60, 0, 10)
+            title.BackgroundTransparency = 1
+            title.Text = "wdfex脚本"
+            title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.TextSize = 20
+            title.Font = Enum.Font.GothamBold
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = frame
+
+            local desc = Instance.new("TextLabel")
+            desc.Size = UDim2.new(1, -20, 0, 50)
+            desc.Position = UDim2.new(0, 10, 0, 50)
+            desc.BackgroundTransparency = 1
+            desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本\n祝您使用愉快玩的开心"
+            desc.TextColor3 = Color3.fromRGB(200, 200, 200)
+            desc.TextSize = 14
+            desc.Font = Enum.Font.Gotham
+            desc.TextXAlignment = Enum.TextXAlignment.Left
+            desc.TextYAlignment = Enum.TextYAlignment.Top
+            desc.Parent = frame
+        end)
+    end)
+
     -- ==================== 添加脚本标记（用于同行显示） ====================
     local scriptTag = Instance.new("BoolValue")
     scriptTag.Name = "wdfexScript"
