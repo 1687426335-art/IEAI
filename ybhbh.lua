@@ -220,67 +220,6 @@ function createUI()
         return
     end
 
-    -- ==================== 右上角弹窗（动态滑入、半透明） ====================
-    task.spawn(function()
-        pcall(function()
-            local TweenService = game:GetService("TweenService")
-            local gui = Instance.new("ScreenGui")
-            gui.Name = "WdfexBanner"
-            gui.ResetOnSpawn = false
-            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            gui.Parent = player:WaitForChild("PlayerGui")
-
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 260, 0, 110)
-            frame.Position = UDim2.new(1, 10, 0, 10)
-            frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-            frame.BackgroundTransparency = 0.35
-            frame.BorderSizePixel = 0
-            frame.ClipsDescendants = true
-            frame.Parent = gui
-
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 12)
-            corner.Parent = frame
-
-            local icon = Instance.new("ImageLabel")
-            icon.Size = UDim2.new(0, 35, 0, 35)
-            icon.Position = UDim2.new(0, 10, 0, 8)
-            icon.BackgroundTransparency = 1
-            icon.Image = "rbxassetid://74369447499630"
-            icon.ScaleType = Enum.ScaleType.Fit
-            icon.Parent = frame
-
-            local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, -55, 0, 26)
-            title.Position = UDim2.new(0, 52, 0, 6)
-            title.BackgroundTransparency = 1
-            title.Text = "wdfex脚本"
-            title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            title.TextSize = 18
-            title.Font = Enum.Font.GothamBold
-            title.TextXAlignment = Enum.TextXAlignment.Left
-            title.Parent = frame
-
-            local desc = Instance.new("TextLabel")
-            desc.Size = UDim2.new(1, -15, 0, 50)
-            desc.Position = UDim2.new(0, 12, 0, 50)
-            desc.BackgroundTransparency = 1
-            desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本"
-            desc.TextColor3 = Color3.fromRGB(200, 200, 200)
-            desc.TextSize = 13
-            desc.Font = Enum.Font.Gotham
-            desc.TextXAlignment = Enum.TextXAlignment.Left
-            desc.TextYAlignment = Enum.TextYAlignment.Top
-            desc.Parent = frame
-
-            local targetPos = UDim2.new(1, -270, 0, 10)
-            local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            local tween = TweenService:Create(frame, tweenInfo, { Position = targetPos })
-            tween:Play()
-        end)
-    end)
-
     -- ==================== 添加脚本标记（用于同行显示） ====================
     local scriptTag = Instance.new("BoolValue")
     scriptTag.Name = "wdfexScript"
@@ -293,6 +232,113 @@ function createUI()
         authorTag.Value = true
         authorTag.Parent = player
     end
+
+    -- ==================== 通知队列（右上角依次显示，不重叠，半透明黑色背景+彩色发光边框） ====================
+    local notificationComplete = false
+    task.spawn(function()
+        pcall(function()
+            local TweenService = game:GetService("TweenService")
+            local notificationGui = Instance.new("ScreenGui")
+            notificationGui.Name = "NotificationQueue"
+            notificationGui.ResetOnSpawn = false
+            notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            notificationGui.Parent = player:WaitForChild("PlayerGui")
+
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(0, 280, 0, 0)
+            container.Position = UDim2.new(1, -290, 0, 10)
+            container.BackgroundTransparency = 1
+            container.AutomaticSize = Enum.AutomaticSize.Y
+            container.Parent = notificationGui
+
+            local layout = Instance.new("UIListLayout")
+            layout.FillDirection = Enum.FillDirection.Vertical
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+            layout.VerticalAlignment = Enum.VerticalAlignment.Top
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 8)
+            layout.Parent = container
+
+            local notifications = {
+                "欢迎使用wdfex脚本",
+                "此脚本为wdfex脚本单独的圣奥里脚本",
+                "正在为您打开圣奥里功能",
+                "已为你自动开启绕过反作弊祝你玩的开心"
+            }
+
+            local borderStrokes = {}  -- 用于存储边框对象以便更新颜色
+
+            for i, text in ipairs(notifications) do
+                local frame = Instance.new("Frame")
+                frame.Size = UDim2.new(1, 0, 0, 75)
+                frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- 黑色背景
+                frame.BackgroundTransparency = 0.35               -- 半透明
+                frame.BorderSizePixel = 2
+                frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+                frame.ClipsDescendants = true
+                frame.Parent = container
+
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 12)
+                corner.Parent = frame
+
+                -- 彩色发光边框（使用UIStroke实现）
+                local stroke = Instance.new("UIStroke")
+                stroke.Thickness = 3
+                stroke.Color = Color3.fromRGB(255, 0, 100)
+                stroke.Transparency = 0.6
+                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                stroke.Parent = frame
+                table.insert(borderStrokes, stroke)
+
+                local icon = Instance.new("ImageLabel")
+                icon.Size = UDim2.new(0, 35, 0, 35)
+                icon.Position = UDim2.new(0, 10, 0, 20)
+                icon.BackgroundTransparency = 1
+                icon.Image = "rbxassetid://74369447499630"
+                icon.ScaleType = Enum.ScaleType.Fit
+                icon.Parent = frame
+
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, -55, 1, 0)
+                label.Position = UDim2.new(0, 52, 0, 0)
+                label.BackgroundTransparency = 1
+                label.Text = text
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextSize = 14
+                label.Font = Enum.Font.Gotham
+                label.TextXAlignment = Enum.TextXAlignment.Left
+                label.TextYAlignment = Enum.TextYAlignment.Center
+                label.TextWrapped = true
+                label.Parent = frame
+
+                -- 3秒后销毁
+                task.delay(3, function()
+                    frame:Destroy()
+                end)
+
+                if i < #notifications then
+                    task.wait(1)
+                end
+            end
+
+            -- 彩色发光边框动态循环
+            task.spawn(function()
+                local hue = 0
+                while true do
+                    hue = (hue + 0.01) % 1
+                    local color = Color3.fromHSV(hue, 0.9, 1)
+                    for _, stroke in ipairs(borderStrokes) do
+                        pcall(function()
+                            stroke.Color = color
+                        end)
+                    end
+                    task.wait(0.05)
+                end
+            end)
+
+        end)
+    end)
 
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
