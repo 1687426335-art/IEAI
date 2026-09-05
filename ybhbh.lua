@@ -60,7 +60,7 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 启动动画：图片从最小到最大，持续7秒，完成后才继续 ====================
+    -- ==================== 启动全屏图片，持续3秒 ====================
     pcall(function()
         local splashGui = Instance.new("ScreenGui")
         splashGui.Name = "SplashScreen"
@@ -69,20 +69,14 @@ function createUI()
         splashGui.Parent = player:WaitForChild("PlayerGui")
 
         local image = Instance.new("ImageLabel")
-        image.Size = UDim2.new(0, 0, 0, 0)
-        image.Position = UDim2.new(0.5, 0, 0.5, 0)
-        image.AnchorPoint = Vector2.new(0.5, 0.5)
+        image.Size = UDim2.new(1, 0, 1, 0)
+        image.Position = UDim2.new(0, 0, 0, 0)
         image.BackgroundTransparency = 1
         image.Image = "rbxassetid://74369447499630"
         image.ScaleType = Enum.ScaleType.Fit
         image.Parent = splashGui
 
-        local TweenService = game:GetService("TweenService")
-        local tweenInfo = TweenInfo.new(7, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        local goal = { Size = UDim2.new(1, 0, 1, 0) }
-        local tween = TweenService:Create(image, tweenInfo, goal)
-        tween:Play()
-        tween.Completed:Wait()
+        task.wait(3)
         splashGui:Destroy()
     end)
 
