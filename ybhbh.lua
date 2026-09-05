@@ -619,7 +619,7 @@ function createUI()
     imgSection:Paragraph({
         Title = "",
         Desc = "",
-        Thumbnail = "rbxassetid://76578153833452",
+        Thumbnail = "rbxassetid://74369447499630",
         ThumbnailSize = 150,
     })
 
