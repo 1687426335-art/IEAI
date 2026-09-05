@@ -606,7 +606,7 @@ function createUI()
         Title = "",
         Desc = "",
         Thumbnail = "rbxassetid://74369447499630",
-        ThumbnailSize = 150,
+        ThumbnailSize = 99,
         ThumbnailShape = "Square",
     })
 
