@@ -233,114 +233,122 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 通知队列（右上角依次显示，不重叠，半透明黑色背景+彩色发光边框） ====================
-    local notificationComplete = false
-    task.spawn(function()
+    -- ==================== 通知队列（动态滑入，每次一个，持续5秒） ====================
+    local function ShowNotification(text, duration, onComplete)
         pcall(function()
             local TweenService = game:GetService("TweenService")
-            local notificationGui = Instance.new("ScreenGui")
-            notificationGui.Name = "NotificationQueue"
-            notificationGui.ResetOnSpawn = false
-            notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            notificationGui.Parent = player:WaitForChild("PlayerGui")
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "NotificationSingle"
+            gui.ResetOnSpawn = false
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.Parent = player:WaitForChild("PlayerGui")
 
+            -- 主容器（用于定位）
             local container = Instance.new("Frame")
-            container.Size = UDim2.new(0, 280, 0, 0)
-            container.Position = UDim2.new(1, -290, 0, 10)
+            container.Size = UDim2.new(0, 300, 0, 85)      -- 整体变高以容纳大图标
+            container.Position = UDim2.new(1, 10, 0, 10)   -- 初始在屏幕右侧外部
             container.BackgroundTransparency = 1
-            container.AutomaticSize = Enum.AutomaticSize.Y
-            container.Parent = notificationGui
+            container.Parent = gui
 
-            local layout = Instance.new("UIListLayout")
-            layout.FillDirection = Enum.FillDirection.Vertical
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-            layout.VerticalAlignment = Enum.VerticalAlignment.Top
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.Padding = UDim.new(0, 8)
-            layout.Parent = container
+            -- 背景框（半透明黑色+蓝色发光边框）
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            frame.BackgroundTransparency = 0.35
+            frame.BorderSizePixel = 0
+            frame.ClipsDescendants = true
+            frame.Parent = container
 
-            local notifications = {
-                "欢迎使用wdfex脚本",
-                "此脚本为wdfex脚本单独的圣奥里脚本",
-                "正在为您打开圣奥里功能",
-                "已为你自动开启绕过反作弊祝你玩的开心"
-            }
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 12)
+            corner.Parent = frame
 
-            local borderStrokes = {}  -- 用于存储边框对象以便更新颜色
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 3
+            stroke.Color = Color3.fromRGB(0, 150, 255)    -- 蓝色
+            stroke.Transparency = 0.5
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.Parent = frame
 
-            for i, text in ipairs(notifications) do
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(1, 0, 0, 75)
-                frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- 黑色背景
-                frame.BackgroundTransparency = 0.35               -- 半透明
-                frame.BorderSizePixel = 2
-                frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
-                frame.ClipsDescendants = true
-                frame.Parent = container
+            -- 图标（放大到50x50）
+            local icon = Instance.new("ImageLabel")
+            icon.Size = UDim2.new(0, 50, 0, 50)
+            icon.Position = UDim2.new(0, 12, 0, 17)      -- 居中偏上
+            icon.BackgroundTransparency = 1
+            icon.Image = "rbxassetid://74369447499630"
+            icon.ScaleType = Enum.ScaleType.Fit
+            icon.Parent = frame
 
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 12)
-                corner.Parent = frame
+            -- 文字标签
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -75, 1, 0)          -- 宽度留出图标+边距
+            label.Position = UDim2.new(0, 70, 0, 0)       -- 左边缘在图标右侧
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextSize = 15
+            label.Font = Enum.Font.Gotham
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.TextYAlignment = Enum.TextYAlignment.Center
+            label.TextWrapped = true
+            label.Parent = frame
 
-                -- 彩色发光边框（使用UIStroke实现）
-                local stroke = Instance.new("UIStroke")
-                stroke.Thickness = 3
-                stroke.Color = Color3.fromRGB(255, 0, 100)
-                stroke.Transparency = 0.6
-                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-                stroke.Parent = frame
-                table.insert(borderStrokes, stroke)
+            -- 滑入动画
+            local targetPos = UDim2.new(1, -310, 0, 10)
+            local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(container, tweenInfo, { Position = targetPos })
+            tween:Play()
 
-                local icon = Instance.new("ImageLabel")
-                icon.Size = UDim2.new(0, 35, 0, 35)
-                icon.Position = UDim2.new(0, 10, 0, 20)
-                icon.BackgroundTransparency = 1
-                icon.Image = "rbxassetid://74369447499630"
-                icon.ScaleType = Enum.ScaleType.Fit
-                icon.Parent = frame
+            -- 指定时间后销毁
+            task.delay(duration, function()
+                -- 滑出动画（可选）
+                local outPos = UDim2.new(1, 10, 0, 10)
+                local outTween = TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = outPos })
+                outTween:Play()
+                outTween.Completed:Wait()
+                gui:Destroy()
+                if onComplete then onComplete() end
+            end)
+        end)
+    end
 
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, -55, 1, 0)
-                label.Position = UDim2.new(0, 52, 0, 0)
-                label.BackgroundTransparency = 1
-                label.Text = text
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 14
-                label.Font = Enum.Font.Gotham
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.TextYAlignment = Enum.TextYAlignment.Center
-                label.TextWrapped = true
-                label.Parent = frame
+    -- 通知内容列表
+    local notifications = {
+        "欢迎使用wdfex脚本",
+        "此脚本为wdfex脚本单独的圣奥里脚本",
+        "正在为您打开圣奥里功能",
+        "已为你自动开启绕过反作弊祝你玩的开心"
+    }
 
-                -- 3秒后销毁
-                task.delay(3, function()
-                    frame:Destroy()
-                end)
+    -- 用于标记是否已显示主悬浮窗
+    local mainWindowShown = false
 
-                if i < #notifications then
-                    task.wait(1)
-                end
-            end
-
-            -- 彩色发光边框动态循环
-            task.spawn(function()
-                local hue = 0
-                while true do
-                    hue = (hue + 0.01) % 1
-                    local color = Color3.fromHSV(hue, 0.9, 1)
-                    for _, stroke in ipairs(borderStrokes) do
-                        pcall(function()
-                            stroke.Color = color
-                        end)
-                    end
-                    task.wait(0.05)
+    -- 顺序显示通知，每个持续5秒，间隔1秒，最后一个显示完才显示主窗口
+    task.spawn(function()
+        for i, text in ipairs(notifications) do
+            local isLast = (i == #notifications)
+            ShowNotification(text, 5, function()
+                -- 每个通知销毁后的回调
+                if isLast and not mainWindowShown then
+                    mainWindowShown = true
+                    -- 在这里创建主UI（但主UI已预先创建，我们需要让它显示出来）
+                    -- 实际上主UI在下面已经创建并默认显示，我们需要控制其可见性
+                    -- 这里通过设置Window的Visible属性来控制
+                    pcall(function()
+                        if Window then
+                            Window:SetVisible(true)
+                        end
+                    end)
                 end
             end)
-
-        end)
+            -- 间隔1秒再显示下一个
+            if not isLast then
+                task.wait(1)
+            end
+        end
     end)
 
-    -- ==================== 主UI ====================
+    -- ==================== 主UI（默认隐藏，通知完成后显示） ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -482,6 +490,9 @@ function createUI()
             }
         }
     })
+
+    -- 默认隐藏主窗口（直到所有通知完成）
+    Window:SetVisible(false)
 
     Window:EditOpenButton({
         Title = "wdfex-Hub",
