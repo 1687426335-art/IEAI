@@ -606,7 +606,7 @@ function createUI()
         Title = "",
         Desc = "",
         Thumbnail = "rbxassetid://74369447499630",
-        ThumbnailSize = 300,
+        ThumbnailSize = 150,
         ThumbnailShape = "Square",
     })
 
@@ -622,7 +622,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
 
