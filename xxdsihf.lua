@@ -625,7 +625,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
+        Desc = "修复所有已知问题\n修复透视卡顿问题\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
