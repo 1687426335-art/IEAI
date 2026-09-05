@@ -606,11 +606,6 @@ function createUI()
         Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
         ThumbnailSize = 190,
     })
-    -- 添加图片（ID: 95063352999056，大小中等）
-    infoSection:Image({
-        Image = "rbxassetid://95063352999056",
-        Size = "Medium",
-    })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
@@ -618,6 +613,16 @@ function createUI()
         Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
         ThumbnailSize = 190,
     })
+
+    -- 图片（通知分类最下面，无文字）
+    local imgSection = infoTab:Section({ Title = "", Opened = true })
+    imgSection:Paragraph({
+        Title = "",
+        Desc = "",
+        Thumbnail = "rbxassetid://95063352999056",
+        ThumbnailSize = 150,
+    })
+
     infoTab:Select()
 
     -- 主功能 Section
