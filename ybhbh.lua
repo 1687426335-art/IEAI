@@ -44,14 +44,14 @@ WindUI:Popup({
             Callback = function() 
                 Confirmed = true
                 createUI()
-            end,
-            Variant = "Primary",
+            end()
+,
+            Variant = "Primary   ",
         }
     }
 })
 
-function createUI()
-    local Players = game:GetService("Players")
+function createUI local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
@@ -220,7 +220,7 @@ function createUI()
         return
     end
 
-    -- ==================== 右上角弹窗（动态滑入、半透明、小尺寸） ====================
+    -- ==================== 右上角弹窗（动态滑入、半透明、宽度236） ====================
     task.spawn(function()
         pcall(function()
             local TweenService = game:GetService("TweenService")
@@ -231,10 +231,10 @@ function createUI()
             gui.Parent = player:WaitForChild("PlayerGui")
 
             local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 220, 0, 80)
-            frame.Position = UDim2.new(1, 10, 0, 10) -- 初始在屏幕右侧外部（稍微可见）
+            frame.Size = UDim2.new(0, 236, 0, 90)
+            frame.Position = UDim2.new(1, 10, 0, 10)
             frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-            frame.BackgroundTransparency = 0.35  -- 半透明
+            frame.BackgroundTransparency = 0.35
             frame.BorderSizePixel = 0
             frame.ClipsDescendants = true
             frame.Parent = gui
@@ -243,42 +243,38 @@ function createUI()
             corner.CornerRadius = UDim.new(0, 12)
             corner.Parent = frame
 
-            -- 图标
             local icon = Instance.new("ImageLabel")
-            icon.Size = UDim2.new(0, 30, 0, 30)
+            icon.Size = UDim2.new(0, 32, 0, 32)
             icon.Position = UDim2.new(0, 8, 0, 8)
             icon.BackgroundTransparency = 1
             icon.Image = "rbxassetid://74369447499630"
             icon.ScaleType = Enum.ScaleType.Fit
             icon.Parent = frame
 
-            -- 标题
             local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, -45, 0, 24)
-            title.Position = UDim2.new(0, 45, 0, 6)
+            title.Size = UDim2.new(1, -48, 0, 26)
+            title.Position = UDim2.new(0, 48, 0, 6)
             title.BackgroundTransparency = 1
             title.Text = "wdfex脚本"
             title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            title.TextSize = 16
+            title.TextSize = 17
             title.Font = Enum.Font.GothamBold
             title.TextXAlignment = Enum.TextXAlignment.Left
             title.Parent = frame
 
-            -- 描述
             local desc = Instance.new("TextLabel")
-            desc.Size = UDim2.new(1, -10, 0, 40)
-            desc.Position = UDim2.new(0, 10, 0, 35)
+            desc.Size = UDim2.new(1, -12, 0, 42)
+            desc.Position = UDim2.new(0, 10, 0, 38)
             desc.BackgroundTransparency = 1
             desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本"
             desc.TextColor3 = Color3.fromRGB(200, 200, 200)
-            desc.TextSize = 12
+            desc.TextSize = 13
             desc.Font = Enum.Font.Gotham
             desc.TextXAlignment = Enum.TextXAlignment.Left
             desc.TextYAlignment = Enum.TextYAlignment.Top
             desc.Parent = frame
 
-            -- 滑入动画
-            local targetPos = UDim2.new(1, -230, 0, 10)  -- 最终位置
+            local targetPos = UDim2.new(1, -246, 0, 10)
             local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
             local tween = TweenService:Create(frame, tweenInfo, { Position = targetPos })
             tween:Play()
