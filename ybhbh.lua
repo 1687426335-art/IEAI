@@ -231,7 +231,7 @@ function createUI()
             gui.Parent = player:WaitForChild("PlayerGui")
 
             local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 260, 0, 95)
+            frame.Size = UDim2.new(0, 260, 0, 110)
             frame.Position = UDim2.new(1, 10, 0, 10)
             frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
             frame.BackgroundTransparency = 0.35
@@ -264,7 +264,7 @@ function createUI()
 
             local desc = Instance.new("TextLabel")
             desc.Size = UDim2.new(1, -15, 0, 50)
-            desc.Position = UDim2.new(0, 12, 0, 40)
+            desc.Position = UDim2.new(0, 12, 0, 50)
             desc.BackgroundTransparency = 1
             desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本"
             desc.TextColor3 = Color3.fromRGB(200, 200, 200)
