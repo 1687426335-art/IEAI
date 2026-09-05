@@ -584,7 +584,7 @@ function createUI()
     AntiFlingLoop()
 
     -- ==================== Tab 创建 ====================
-    -- 作者信息 Tab（第一位）
+    -- 作者信息 Tab（第一位，默认选中）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -592,10 +592,10 @@ function createUI()
         Desc = "",
         Thumbnail = "rbxassetid://74369447499630",
         ThumbnailSize = 150,
-        ThumbnailShape = "Rounded",
+        ThumbnailShape = "Square",
     })
     AuthorSection:Paragraph({
-        Title = "作者QQ：2131869117",
+        Title = "作者QQ：1687426335",
         Desc = "",
     })
 
@@ -629,6 +629,9 @@ function createUI()
         ThumbnailSize = 190,
     })
     infoTab:Select()
+
+    -- 默认选中作者信息
+    AuthorTab:Select()
 
     -- 主功能 Section
     local MainSection = Window:Section({
