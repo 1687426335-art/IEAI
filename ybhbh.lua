@@ -220,9 +220,10 @@ function createUI()
         return
     end
 
-    -- ==================== 右上角弹窗（显示wdfex脚本信息） ====================
+    -- ==================== 右上角弹窗（动态滑入、半透明、小尺寸） ====================
     task.spawn(function()
         pcall(function()
+            local TweenService = game:GetService("TweenService")
             local gui = Instance.new("ScreenGui")
             gui.Name = "WdfexBanner"
             gui.ResetOnSpawn = false
@@ -230,11 +231,11 @@ function createUI()
             gui.Parent = player:WaitForChild("PlayerGui")
 
             local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 300, 0, 100)
-            frame.Position = UDim2.new(1, -310, 0, 10)
+            frame.Size = UDim2.new(0, 220, 0, 80)
+            frame.Position = UDim2.new(1, 10, 0, 10) -- 初始在屏幕右侧外部（稍微可见）
             frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+            frame.BackgroundTransparency = 0.35  -- 半透明
             frame.BorderSizePixel = 0
-            frame.BackgroundTransparency = 0.1
             frame.ClipsDescendants = true
             frame.Parent = gui
 
@@ -242,36 +243,45 @@ function createUI()
             corner.CornerRadius = UDim.new(0, 12)
             corner.Parent = frame
 
+            -- 图标
             local icon = Instance.new("ImageLabel")
-            icon.Size = UDim2.new(0, 40, 0, 40)
-            icon.Position = UDim2.new(0, 10, 0, 10)
+            icon.Size = UDim2.new(0, 30, 0, 30)
+            icon.Position = UDim2.new(0, 8, 0, 8)
             icon.BackgroundTransparency = 1
             icon.Image = "rbxassetid://74369447499630"
             icon.ScaleType = Enum.ScaleType.Fit
             icon.Parent = frame
 
+            -- 标题
             local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, -60, 0, 30)
-            title.Position = UDim2.new(0, 60, 0, 10)
+            title.Size = UDim2.new(1, -45, 0, 24)
+            title.Position = UDim2.new(0, 45, 0, 6)
             title.BackgroundTransparency = 1
             title.Text = "wdfex脚本"
             title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            title.TextSize = 20
+            title.TextSize = 16
             title.Font = Enum.Font.GothamBold
             title.TextXAlignment = Enum.TextXAlignment.Left
             title.Parent = frame
 
+            -- 描述
             local desc = Instance.new("TextLabel")
-            desc.Size = UDim2.new(1, -20, 0, 50)
-            desc.Position = UDim2.new(0, 10, 0, 50)
+            desc.Size = UDim2.new(1, -10, 0, 40)
+            desc.Position = UDim2.new(0, 10, 0, 35)
             desc.BackgroundTransparency = 1
-            desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本\n祝您使用愉快玩的开心"
+            desc.Text = "已自动开启防挂机与绕过反作弊\n感谢您使用wdfex脚本"
             desc.TextColor3 = Color3.fromRGB(200, 200, 200)
-            desc.TextSize = 14
+            desc.TextSize = 12
             desc.Font = Enum.Font.Gotham
             desc.TextXAlignment = Enum.TextXAlignment.Left
             desc.TextYAlignment = Enum.TextYAlignment.Top
             desc.Parent = frame
+
+            -- 滑入动画
+            local targetPos = UDim2.new(1, -230, 0, 10)  -- 最终位置
+            local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(frame, tweenInfo, { Position = targetPos })
+            tween:Play()
         end)
     end)
 
