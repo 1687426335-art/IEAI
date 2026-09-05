@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v2.0"
+local version = "v2.0.4"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -390,10 +390,9 @@ function createUI()
         Color = Color3.fromHex("#00ffff") 
     })
 
-    -- ==================== 修改悬浮窗图标为你的 ID ====================
     Window:EditOpenButton({
         Title = "wdfex-Hub",
-        Icon = "rbxassetid://6034095630",   -- 已改为你的图标 ID
+        Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
@@ -604,14 +603,19 @@ function createUI()
     infoSection:Divider()
     infoSection:Paragraph({
         Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",  -- 删掉了“凌晨我将更新自动躲警察”
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
         ThumbnailSize = 190,
+    })
+    -- 添加图片（ID: 95063352999056，大小中等）
+    infoSection:Image({
+        Image = "rbxassetid://95063352999056",
+        Size = "Medium",
     })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗",
+        Title = "v2.0.4提示",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -645,7 +649,7 @@ function createUI()
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
     local policeDodgeForce = 50
-    local policeDodgeWallCheck = true   -- 墙体检测，默认开启
+    local policeDodgeWallCheck = true
     local policeDodgeConn = nil
 
     local function isVisible(fromPos, toPos, ignoreInstances)
