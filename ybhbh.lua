@@ -60,7 +60,7 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 启动全屏图片，持续3秒 ====================
+    -- ==================== 启动全屏图片，持续3秒（Stretch强制拉伸撑满） ====================
     pcall(function()
         local splashGui = Instance.new("ScreenGui")
         splashGui.Name = "SplashScreen"
@@ -73,7 +73,7 @@ function createUI()
         image.Position = UDim2.new(0, 0, 0, 0)
         image.BackgroundTransparency = 1
         image.Image = "rbxassetid://74369447499630"
-        image.ScaleType = Enum.ScaleType.Fit
+        image.ScaleType = Enum.ScaleType.Stretch  -- 强制拉伸填满屏幕
         image.Parent = splashGui
 
         task.wait(3)
