@@ -51,35 +51,6 @@ WindUI:Popup({
 })
 
 function createUI()
-    -- ==================== 启动动画：图片从最小到最大，持续7秒 ====================
-    task.spawn(function()
-        pcall(function()
-            local player = game.Players.LocalPlayer
-            local splashGui = Instance.new("ScreenGui")
-            splashGui.Name = "SplashScreen"
-            splashGui.ResetOnSpawn = false
-            splashGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            splashGui.Parent = player:WaitForChild("PlayerGui")
-
-            local image = Instance.new("ImageLabel")
-            image.Size = UDim2.new(0, 0, 0, 0)
-            image.Position = UDim2.new(0.5, 0, 0.5, 0)
-            image.AnchorPoint = Vector2.new(0.5, 0.5)
-            image.BackgroundTransparency = 1
-            image.Image = "rbxassetid://74369447499630"
-            image.ScaleType = Enum.ScaleType.Fit
-            image.Parent = splashGui
-
-            local TweenService = game:GetService("TweenService")
-            local tweenInfo = TweenInfo.new(7, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-            local goal = { Size = UDim2.new(1, 0, 1, 0) }
-            local tween = TweenService:Create(image, tweenInfo, goal)
-            tween:Play()
-            tween.Completed:Wait()
-            splashGui:Destroy()
-        end)
-    end)
-
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local Workspace = game:GetService("Workspace")
@@ -88,6 +59,32 @@ function createUI()
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
+
+    -- ==================== 启动动画：图片从最小到最大，持续7秒，完成后才继续 ====================
+    pcall(function()
+        local splashGui = Instance.new("ScreenGui")
+        splashGui.Name = "SplashScreen"
+        splashGui.ResetOnSpawn = false
+        splashGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        splashGui.Parent = player:WaitForChild("PlayerGui")
+
+        local image = Instance.new("ImageLabel")
+        image.Size = UDim2.new(0, 0, 0, 0)
+        image.Position = UDim2.new(0.5, 0, 0.5, 0)
+        image.AnchorPoint = Vector2.new(0.5, 0.5)
+        image.BackgroundTransparency = 1
+        image.Image = "rbxassetid://74369447499630"
+        image.ScaleType = Enum.ScaleType.Fit
+        image.Parent = splashGui
+
+        local TweenService = game:GetService("TweenService")
+        local tweenInfo = TweenInfo.new(7, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        local goal = { Size = UDim2.new(1, 0, 1, 0) }
+        local tween = TweenService:Create(image, tweenInfo, goal)
+        tween:Play()
+        tween.Completed:Wait()
+        splashGui:Destroy()
+    end)
 
     -- ==================== 统一设备UID检测（换服务器不变） ====================
     local function getDeviceUID()
