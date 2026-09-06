@@ -233,7 +233,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 主UI（先创建，默认隐藏） ====================
+    -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -376,8 +376,6 @@ function createUI()
         }
     })
 
-    Window:SetVisible(false)  -- 默认隐藏，直到最后一个通知出现
-
     Window:EditOpenButton({
         Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
@@ -401,6 +399,40 @@ function createUI()
         Draggable = true,
     })
 
+    -- ==================== 添加彩色描边（两条反向环绕） ====================
+    task.wait(0.1) -- 等待UI渲染
+    local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
+    if mainGui then
+        local mainFrame = mainGui:FindFirstChildOfClass("Frame")
+        if mainFrame then
+            -- 创建两条描边
+            local stroke1 = Instance.new("UIStroke")
+            stroke1.Thickness = 3
+            stroke1.Color = Color3.fromHSV(0, 1, 1)
+            stroke1.Transparency = 0.5
+            stroke1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke1.Parent = mainFrame
+
+            local stroke2 = Instance.new("UIStroke")
+            stroke2.Thickness = 5
+            stroke2.Color = Color3.fromHSV(0.5, 1, 1)
+            stroke2.Transparency = 0.3
+            stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke2.Parent = mainFrame
+
+            -- 反向颜色循环
+            local hue1 = 0
+            local hue2 = 0.5
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hue1 = (hue1 + 0.01) % 1
+                hue2 = (hue2 - 0.01) % 1
+                stroke1.Color = Color3.fromHSV(hue1, 1, 1)
+                stroke2.Color = Color3.fromHSV(hue2, 1, 1)
+            end)
+            table.insert(connections, colorConn)
+        end
+    end
+
     spawn(function()
         while true do
             for hue = 0, 1, 0.01 do  
@@ -412,120 +444,6 @@ function createUI()
             end
         end
     end)
-
-    -- ==================== 通知队列（不重叠，自动排列） ====================
-    local function ShowNotificationQueue()
-        pcall(function()
-            local TweenService = game:GetService("TweenService")
-            
-            -- 创建容器（固定位置，自动排列）
-            local container = Instance.new("Frame")
-            container.Size = UDim2.new(0, 300, 0, 0)
-            container.Position = UDim2.new(1, -310, 0, 10)
-            container.BackgroundTransparency = 1
-            container.AutomaticSize = Enum.AutomaticSize.Y
-            container.Parent = player:WaitForChild("PlayerGui")
-
-            local layout = Instance.new("UIListLayout")
-            layout.FillDirection = Enum.FillDirection.Vertical
-            layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-            layout.VerticalAlignment = Enum.VerticalAlignment.Top
-            layout.SortOrder = Enum.SortOrder.LayoutOrder
-            layout.Padding = UDim.new(0, 8)
-            layout.Parent = container
-
-            -- 通知列表
-            local notifications = {
-                "欢迎使用wdfex脚本",
-                "此脚本为wdfex脚本单独的圣奥里脚本",
-                "正在为您打开圣奥里功能",
-                "已为你自动开启绕过反作弊祝你玩的开心"
-            }
-
-            local mainWindowShown = false
-
-            -- 创建单个通知的函数
-            local function createNotification(text)
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(1, 0, 0, 75)
-                frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                frame.BackgroundTransparency = 0.35
-                frame.BorderSizePixel = 0
-                frame.ClipsDescendants = true
-                frame.Parent = container
-
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 12)
-                corner.Parent = frame
-
-                local stroke = Instance.new("UIStroke")
-                stroke.Thickness = 3
-                stroke.Color = Color3.fromRGB(0, 150, 255)  -- 蓝色发光
-                stroke.Transparency = 0.5
-                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-                stroke.Parent = frame
-
-                -- 图标 (50x50)
-                local icon = Instance.new("ImageLabel")
-                icon.Size = UDim2.new(0, 50, 0, 50)
-                icon.Position = UDim2.new(0, 12, 0, 12)
-                icon.BackgroundTransparency = 1
-                icon.Image = "rbxassetid://74369447499630"
-                icon.ScaleType = Enum.ScaleType.Fit
-                icon.Parent = frame
-
-                -- 文字
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, -75, 1, 0)
-                label.Position = UDim2.new(0, 70, 0, 0)
-                label.BackgroundTransparency = 1
-                label.Text = text
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextSize = 15
-                label.Font = Enum.Font.Gotham
-                label.TextXAlignment = Enum.TextXAlignment.Left
-                label.TextYAlignment = Enum.TextYAlignment.Center
-                label.TextWrapped = true
-                label.Parent = frame
-
-                -- 滑入动画 (从右侧滑入)
-                frame.Position = UDim2.new(1, 0, 0, 0)  -- 初始在右侧外部
-                local targetPos = UDim2.new(0, 0, 0, 0)
-                local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                local tween = TweenService:Create(frame, tweenInfo, { Position = targetPos })
-                tween:Play()
-
-                -- 5秒后滑出并销毁
-                task.delay(5, function()
-                    local outPos = UDim2.new(1, 0, 0, 0)
-                    local outTween = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = outPos })
-                    outTween:Play()
-                    outTween.Completed:Wait()
-                    frame:Destroy()
-                end)
-            end
-
-            -- 逐个创建通知，间隔2.5秒
-            for i, text in ipairs(notifications) do
-                createNotification(text)
-                if i == #notifications then
-                    -- 最后一个通知出现时，显示主窗口
-                    task.wait(0.6)  -- 等待滑入动画完成
-                    if not mainWindowShown then
-                        mainWindowShown = true
-                        pcall(function()
-                            Window:SetVisible(true)
-                        end)
-                    end
-                else
-                    task.wait(2.5)  -- 间隔2.5秒
-                end
-            end
-        end)
-    end
-
-    -- 启动通知队列（在主UI创建之后）
-    task.spawn(ShowNotificationQueue)
 
     -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
     task.spawn(function()
