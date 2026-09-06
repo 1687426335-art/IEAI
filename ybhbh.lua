@@ -56,7 +56,6 @@ function createUI()
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
-    local VirtualInputManager = game:GetService("VirtualInputManager")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
@@ -616,24 +615,6 @@ function createUI()
     end
     AntiFlingLoop()
 
-    -- ==================== 杀戮光环目标显示（右上角） ====================
-    local kaTargetName = "未检测到目标"
-    local targetDisplayGui = Instance.new("ScreenGui")
-    targetDisplayGui.Name = "KillAuraTargetDisplay"
-    targetDisplayGui.ResetOnSpawn = false
-    targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
-
-    local targetLabel = Instance.new("TextLabel")
-    targetLabel.Size = UDim2.new(0, 200, 0, 30)
-    targetLabel.Position = UDim2.new(1, -210, 0, 10)
-    targetLabel.BackgroundTransparency = 1
-    targetLabel.Text = "目标: 未检测到"
-    targetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    targetLabel.TextSize = 18
-    targetLabel.Font = Enum.Font.GothamBold
-    targetLabel.TextXAlignment = Enum.TextXAlignment.Right
-    targetLabel.Parent = targetDisplayGui
-
     -- ==================== Tab 创建 ====================
     -- 作者信息 Tab（第一位，默认选中）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
@@ -653,10 +634,7 @@ function createUI()
     -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
-    NoticeSection:Paragraph({
-        Title = "wdfex",
-        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
-    })
+    -- 作者消息里的文字已删除（只保留空的Section标题）
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
@@ -843,105 +821,6 @@ function createUI()
             else
                 DestroyLiveModeWatermarks()
                 WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
-            end
-        end
-    })
-
-    -- ==================== 一键破解黑客小游戏 ====================
-    local hackAutoSolveEnabled = false
-    local hackAutoSolveConn = nil
-
-    -- 尝试破解ATM/撬锁等小游戏的通用函数
-    local function tryAutoSolveMinigame()
-        -- 查找当前玩家GUI中可能存在的小游戏界面
-        local playerGui = player:WaitForChild("PlayerGui")
-        if not playerGui then return end
-
-        -- 1. 尝试破解 "ATM Hack"
-        local atmGui = playerGui:FindFirstChild("ScreenGui")
-        if atmGui then
-            atmGui = atmGui:FindFirstChild("Center")
-            if atmGui then
-                atmGui = atmGui:FindFirstChild("Middle")
-                if atmGui then
-                    atmGui = atmGui:FindFirstChild("HackingMinigames")
-                    if atmGui then
-                        atmGui = atmGui:FindFirstChild("ATM Hack")
-                    end
-                end
-            end
-        end
-
-        if atmGui and atmGui.Parent then
-            -- 获取密码字符（通常显示在Sequence1中）
-            local seq = atmGui:FindFirstChild("Sequence1")
-            local codes = {}
-            if seq and seq:IsA("TextLabel") then
-                local text = seq.Text
-                for code in string.gmatch(text, '([^%s]+)') do
-                    table.insert(codes, code)
-                end
-            end
-
-            -- 查找按钮列表
-            local list = atmGui:FindFirstChild("List")
-            if list then
-                for _, v in pairs(list:GetDescendants()) do
-                    if v:IsA("ImageButton") then
-                        -- 检查按钮是否匹配密码
-                        local matched = false
-                        for _, label in pairs(v:GetDescendants()) do
-                            if label:IsA("TextLabel") then
-                                for _, code in ipairs(codes) do
-                                    if label.Text == code then
-                                        matched = true
-                                        break
-                                    end
-                                end
-                            end
-                            if matched then break end
-                        end
-                        if matched then
-                            -- 模拟点击
-                            local absPos = v.AbsolutePosition
-                            local absSize = v.AbsoluteSize
-                            local x = absPos.X + absSize.X / 2
-                            local y = absPos.Y + absSize.Y / 2
-                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
-                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
-                            task.wait(0.05)
-                        end
-                    end
-                end
-            end
-        end
-
-        -- 2. 尝试其他常见小游戏（撬锁、入侵等） - 由于无法确定路径，留空供用户自行添加
-        -- 例如：
-        -- local lockpickGui = playerGui:FindFirstChild("Lockpick")
-        -- if lockpickGui then ... end
-    end
-
-    OtherTab:Divider({ Text = "黑客辅助" })
-    OtherTab:Toggle({
-        Title = "一键破解小游戏",
-        Value = false,
-        Callback = function(value)
-            hackAutoSolveEnabled = value
-            if value then
-                if hackAutoSolveConn then hackAutoSolveConn:Disconnect() end
-                hackAutoSolveConn = RunService.Heartbeat:Connect(function()
-                    if hackAutoSolveEnabled then
-                        tryAutoSolveMinigame()
-                    end
-                end)
-                WindUI:Notify({ Title = "黑客辅助", Content = "已开启，将自动破解小游戏", Duration = 2 })
-            else
-                if hackAutoSolveConn then
-                    hackAutoSolveConn:Disconnect()
-                    hackAutoSolveConn = nil
-                end
-                WindUI:Notify({ Title = "黑客辅助", Content = "已关闭", Duration = 2 })
             end
         end
     })
@@ -1782,7 +1661,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 伤害已拉满
+    -- 杀戮光环 Tab (C) - 伤害已拉满 + 显示攻击目标
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1792,6 +1671,57 @@ function createUI()
     local KATargetPoliceOnly = false
     local KATargetCivilianOnly = false
     local KAIgnoreDead = true
+    local showTarget = true  -- 默认开启显示攻击目标
+    local currentTarget = nil
+    local targetDisplayGui = nil
+    local targetDisplayLabel = nil
+
+    -- 创建右上角目标显示
+    local function CreateTargetDisplay()
+        if targetDisplayGui then return end
+        targetDisplayGui = Instance.new("ScreenGui")
+        targetDisplayGui.Name = "KillAuraTargetDisplay"
+        targetDisplayGui.ResetOnSpawn = false
+        targetDisplayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+
+        targetDisplayLabel = Instance.new("TextLabel")
+        targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
+        targetDisplayLabel.Position = UDim2.new(1, -230, 0, 10)
+        targetDisplayLabel.BackgroundTransparency = 1
+        targetDisplayLabel.Text = "未检测到目标"
+        targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        targetDisplayLabel.TextSize = 18
+        targetDisplayLabel.Font = Enum.Font.GothamBold
+        targetDisplayLabel.TextStrokeTransparency = 0.2
+        targetDisplayLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        targetDisplayLabel.TextXAlignment = Enum.TextXAlignment.Right
+        targetDisplayLabel.Parent = targetDisplayGui
+    end
+
+    local function DestroyTargetDisplay()
+        if targetDisplayGui then
+            targetDisplayGui:Destroy()
+            targetDisplayGui = nil
+            targetDisplayLabel = nil
+        end
+    end
+
+    local function UpdateTargetDisplay()
+        if not showTarget then
+            if targetDisplayGui then targetDisplayGui.Enabled = false end
+            return
+        end
+        if not targetDisplayGui then CreateTargetDisplay() end
+        targetDisplayGui.Enabled = true
+        if currentTarget then
+            targetDisplayLabel.Text = "🎯 " .. currentTarget.Name
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        else
+            targetDisplayLabel.Text = "未检测到目标"
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+        end
+    end
 
     local function kaIsVisible(targetHead)
         local char = player.Character
@@ -1876,38 +1806,43 @@ function createUI()
         return bestPlayer
     end
 
+    -- 主循环
     RunService.Heartbeat:Connect(function()
         if not isDestroyed and kaEnabled then
             local target = kaGetNearestEnemy()
+            currentTarget = target
             if target then
-                kaTargetName = target.Name
-            else
-                kaTargetName = "未检测到目标"
-            end
-            local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
-            if targetHead then
-                local myHead = player.Character and player.Character:FindFirstChild("Head")
-                if myHead then
-                    local origin = myHead.Position
-                    local hitPos = targetHead.Position
-                    local direction = (hitPos - origin).Unit
-                    local damage = 999999
-                    pcall(function()
-                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
-                            bodyParts = { { "Head", damage } },
-                            shotCode = { origin, direction },
-                            target = target,
-                            pos = hitPos
-                        })
-                    end)
-                    pcall(function()
-                        local handleShots = ReplicatedStorage:FindFirstChild("Events")
-                        handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
-                        if handleShots then
-                            handleShots:FireServer("2", "Shoot")
-                        end
-                    end)
+                local targetHead = target.Character and target.Character:FindFirstChild("Head")
+                if targetHead then
+                    local myHead = player.Character and player.Character:FindFirstChild("Head")
+                    if myHead then
+                        local origin = myHead.Position
+                        local hitPos = targetHead.Position
+                        local direction = (hitPos - origin).Unit
+                        local damage = 999999
+                        pcall(function()
+                            ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                                bodyParts = { { "Head", damage } },
+                                shotCode = { origin, direction },
+                                target = target,
+                                pos = hitPos
+                            })
+                        end)
+                        pcall(function()
+                            local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                            handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                            if handleShots then
+                                handleShots:FireServer("2", "Shoot")
+                            end
+                        end)
+                    end
                 end
+            end
+            UpdateTargetDisplay()
+        else
+            if not kaEnabled then
+                currentTarget = nil
+                if showTarget then UpdateTargetDisplay() end
             end
         end
     end)
@@ -1919,6 +1854,12 @@ function createUI()
         Value = false,
         Callback = function(value)
             kaEnabled = value
+            if value then
+                if showTarget then CreateTargetDisplay() end
+            else
+                currentTarget = nil
+                if showTarget then UpdateTargetDisplay() end
+            end
         end
     })
     C:Slider({
@@ -1934,6 +1875,21 @@ function createUI()
         Value = true,
         Callback = function(value)
             KA_WALL_CHECK = value
+        end
+    })
+
+    C:Divider({ Text = "显示设置" })
+    C:Toggle({
+        Title = "显示攻击目标",
+        Value = true,
+        Callback = function(value)
+            showTarget = value
+            if value then
+                CreateTargetDisplay()
+                UpdateTargetDisplay()
+            else
+                DestroyTargetDisplay()
+            end
         end
     })
 
@@ -1982,14 +1938,6 @@ function createUI()
             KA_NEAREST_DISTANCE = value
         end
     })
-
-    -- 更新目标显示循环
-    task.spawn(function()
-        while not isDestroyed do
-            targetLabel.Text = "目标: " .. kaTargetName
-            task.wait(0.1)
-        end
-    end)
 
     -- ============================================================
     -- 传送点 Tab (D)
