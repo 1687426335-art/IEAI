@@ -634,7 +634,6 @@ function createUI()
     -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
-    -- 作者消息里的文字已删除（只保留空的Section标题）
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
@@ -1661,7 +1660,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 伤害已拉满 + 显示攻击目标
+    -- 杀戮光环 Tab (C)
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1671,12 +1670,12 @@ function createUI()
     local KATargetPoliceOnly = false
     local KATargetCivilianOnly = false
     local KAIgnoreDead = true
-    local showTarget = true  -- 默认开启显示攻击目标
+    local showTarget = true
+    local onlyGunTarget = false
     local currentTarget = nil
     local targetDisplayGui = nil
     local targetDisplayLabel = nil
 
-    -- 创建右上角目标显示
     local function CreateTargetDisplay()
         if targetDisplayGui then return end
         targetDisplayGui = Instance.new("ScreenGui")
@@ -1715,12 +1714,38 @@ function createUI()
         if not targetDisplayGui then CreateTargetDisplay() end
         targetDisplayGui.Enabled = true
         if currentTarget then
-            targetDisplayLabel.Text = "🎯 " .. currentTarget.Name
+            targetDisplayLabel.Text = currentTarget.Name
             targetDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
         else
             targetDisplayLabel.Text = "未检测到目标"
             targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
         end
+    end
+
+    local function playerHasGun(targetPlayer)
+        if not targetPlayer or not targetPlayer.Character then return false end
+        local char = targetPlayer.Character
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("Tool") then
+                local nameLower = string.lower(child.Name)
+                local gunKeywords = {"gun", "rifle", "pistol", "shotgun", "sniper", "smg", "ak", "m4", "ar", "手枪", "步枪", "狙击", "霰弹", "冲锋"}
+                for _, keyword in ipairs(gunKeywords) do
+                    if string.find(nameLower, keyword) then
+                        return true
+                    end
+                end
+                if child:FindFirstChild("Handle") or child:FindFirstChild("Gun") or child:FindFirstChild("Weapon") then
+                    return true
+                end
+                if child:FindFirstChildWhichIsA("AnimationTrack") then
+                    return true
+                end
+            end
+            if child:IsA("Model") and child.Name:lower():find("gun") then
+                return true
+            end
+        end
+        return false
     end
 
     local function kaIsVisible(targetHead)
@@ -1757,6 +1782,9 @@ function createUI()
             if KAIgnoreDead then
                 local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
                 if not hum or hum.Health <= 0 then return false end
+            end
+            if onlyGunTarget and not playerHasGun(p) then
+                return false
             end
             return true
         end
@@ -1806,7 +1834,6 @@ function createUI()
         return bestPlayer
     end
 
-    -- 主循环
     RunService.Heartbeat:Connect(function()
         if not isDestroyed and kaEnabled then
             local target = kaGetNearestEnemy()
@@ -1890,6 +1917,13 @@ function createUI()
             else
                 DestroyTargetDisplay()
             end
+        end
+    })
+    C:Toggle({
+        Title = "只攻击有枪标的玩家",
+        Value = false,
+        Callback = function(value)
+            onlyGunTarget = value
         end
     })
 
