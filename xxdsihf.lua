@@ -399,6 +399,38 @@ function createUI()
         Draggable = true,
     })
 
+    -- ==================== 添加彩色描边（两条反向环绕） ====================
+    task.wait(0.1)
+    local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
+    if mainGui then
+        local mainFrame = mainGui:FindFirstChildOfClass("Frame")
+        if mainFrame then
+            local stroke1 = Instance.new("UIStroke")
+            stroke1.Thickness = 3
+            stroke1.Color = Color3.fromHSV(0, 1, 1)
+            stroke1.Transparency = 0.5
+            stroke1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke1.Parent = mainFrame
+
+            local stroke2 = Instance.new("UIStroke")
+            stroke2.Thickness = 5
+            stroke2.Color = Color3.fromHSV(0.5, 1, 1)
+            stroke2.Transparency = 0.3
+            stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke2.Parent = mainFrame
+
+            local hue1 = 0
+            local hue2 = 0.5
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hue1 = (hue1 + 0.01) % 1
+                hue2 = (hue2 - 0.01) % 1
+                stroke1.Color = Color3.fromHSV(hue1, 1, 1)
+                stroke2.Color = Color3.fromHSV(hue2, 1, 1)
+            end)
+            table.insert(connections, colorConn)
+        end
+    end
+
     spawn(function()
         while true do
             for hue = 0, 1, 0.01 do  
@@ -625,7 +657,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n修复透视卡顿问题\n新增自动躲警察功能",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -1632,7 +1664,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C)
+    -- 杀戮光环 Tab (C) - 伤害已拉满
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1736,7 +1768,7 @@ function createUI()
                     local origin = myHead.Position
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 300
+                    local damage = 999999  -- 伤害拉满，秒杀
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
@@ -1758,7 +1790,7 @@ function createUI()
     end)
 
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
