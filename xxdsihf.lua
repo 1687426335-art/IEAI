@@ -1079,7 +1079,7 @@ function createUI()
         button.BackgroundTransparency = 0.15
         button.BorderSizePixel = 2
         button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://7734068321"
+        button.Image = "rbxassetid://74369447499630"
         button.ImageColor3 = Color3.fromRGB(100, 200, 255)
         button.ScaleType = Enum.ScaleType.Fit
         button.Parent = flyQuickScreenGui
