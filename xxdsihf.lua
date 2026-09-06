@@ -652,7 +652,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -1659,10 +1659,9 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 已修复拿枪延迟问题
+    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满
     -- ============================================================
     local KA_MAX_DISTANCE = 300
-    local KA_WALL_CHECK = true
     local kaEnabled = false
     local KANearestOnly = false
     local KA_NEAREST_DISTANCE = 25
@@ -1721,20 +1720,6 @@ function createUI()
         end
     end
 
-    local function kaIsVisible(targetHead)
-        local char = player.Character
-        if not char then return false end
-        local myHead = char:FindFirstChild("Head")
-        if not myHead then return false end
-        local direction = targetHead.Position - myHead.Position
-        local distance = direction.Magnitude
-        if distance < 0.1 then return true end
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
-        rayParams.FilterType = Enum.RaycastFilterType.Exclude
-        return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
-    end
-
     local function kaGetNearestEnemy()
         local char = player.Character
         if not char then return nil end
@@ -1777,11 +1762,11 @@ function createUI()
                         local head = p.Character:FindFirstChild("Head")
                         if head and isTargetAllowed(p) then
                             local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            if dist < anyDist then
                                 anyDist = dist
                                 anyEnemy = p
                             end
-                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange then
                                 nearestDistInRange = dist
                                 nearestInRange = p
                             end
@@ -1799,7 +1784,7 @@ function createUI()
                     local head = p.Character:FindFirstChild("Head")
                     if head and isTargetAllowed(p) then
                         local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                        if dist < bestDist then
                             bestDist = dist
                             bestPlayer = p
                         end
@@ -1826,7 +1811,7 @@ function createUI()
                     local origin = myHead.Position
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 999999
+                    local damage = 99999999
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
@@ -1924,13 +1909,6 @@ function createUI()
         Value = { Min = 50, Max = 1000, Default = 300 },
         Callback = function(value)
             KA_MAX_DISTANCE = value
-        end
-    })
-    C:Toggle({
-        Title = "墙体检测",
-        Value = true,
-        Callback = function(value)
-            KA_WALL_CHECK = value
         end
     })
 
