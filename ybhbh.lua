@@ -1,1190 +1,2767 @@
---[[
-    ANSN破解脚本（Real注入器·终极增强版·防封整合·全图透视·防护升级）
-    功能：犯罪透 + 自瞄 + 透视 + 起飞 + 传送 + 不会饿 + 快速互动(E) + 修车加油 + 跑得快(可设置) + 改车速(可设置)
-    按键：F1犯罪透 F2自瞄 F3透视 F4起飞 F5鼠标传送 F6防饿 E快速互动 F8修车加油 F9跑得快 F10改车速
-    菜单：可拖动、可收缩、支持按键绑定
-    透视距离：自动覆盖整个地图
-    防护：随机实例名、随机更新间隔、受保护父级、静默运行、随机延迟启动、参数随机化、低频率操作
-]]
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
+local Confirmed = false
 
--- ==================== 防封：静默模式 ====================
-local DEBUG = false
-if not DEBUG then
-    print = function() end
-    warn = function() end
-end
-
--- ==================== 防封：随机字符串 ====================
-local function randomString(length)
-    local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    local result = ""
-    for i = 1, length do
-        local index = math.random(1, #chars)
-        result = result .. string.sub(chars, index, index)
-    end
-    return result
-end
-
--- ==================== 安全父级获取 ====================
-local function getSafeParent()
-    local candidates = {}
-    if gethui then
-        table.insert(candidates, gethui)
-    end
-    table.insert(candidates, function() return game:GetService("CoreGui") end)
-    table.insert(candidates, function() return LocalPlayer:WaitForChild("PlayerGui") end)
-    for _, getParent in ipairs(candidates) do
-        local ok, p = pcall(getParent)
-        if ok and p then
-            return p
-        end
-    end
-    return game:GetService("CoreGui")
-end
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-
--- ==================== 配置 ====================
-local Config = {
-    CrimeESPKey = Enum.KeyCode.F1,
-    AimbotKey = Enum.KeyCode.F2,
-    ESPKey = Enum.KeyCode.F3,
-    FlyKey = Enum.KeyCode.F4,
-    TeleportMouseKey = Enum.KeyCode.F5,
-    NoHungerKey = Enum.KeyCode.F6,
-    FastInteractKey = Enum.KeyCode.E,          -- 快速互动固定为E
-    RepairCarKey = Enum.KeyCode.F8,
-    SpeedRunKey = Enum.KeyCode.F9,
-    CarBoostKey = Enum.KeyCode.F10,
-    CollapseKey = Enum.KeyCode.LeftAlt,
-
-    AimPart = "Head",
-    AimFOV = 200,
-    AimSmoothness = 0.25,
-    AimPrediction = false,
-    AimThroughWalls = false,
-    MaxESP_Distance = 1000000,          -- 启动时自动覆盖全图
-    HighlightFillTransparency = 0.5,
-    HighlightOutlineTransparency = 0,
-
-    FlySpeed = 60,
-    TeleportDistance = 300,
-    NoHungerValue = 100,
-    WalkSpeed = 50,                     -- 默认跑速
-    CarBoostMultiplier = 2.5,           -- 默认车速倍率
-
-    NavPoint = nil,
-
-    -- 防护参数
-    FlySpeedMultiplier = 1.0,           -- 飞行速度随机因子
+local gradientColors = {
+    "rgb(255, 230, 235)",
+    "rgb(255, 210, 220)",
+    "rgb(255, 190, 205)",
+    "rgb(255, 170, 190)",
+    "rgb(255, 150, 175)",
+    "rgb(245, 140, 180)",
+    "rgb(235, 130, 185)",
+    "rgb(225, 120, 190)",
+    "rgb(215, 110, 195)",
+    "rgb(205, 100, 200)"
 }
 
--- 按键绑定列表（快速互动已移除，固定E键）
-local Bindings = {
-    { name = "犯罪透", keyRef = "CrimeESPKey" },
-    { name = "自瞄", keyRef = "AimbotKey" },
-    { name = "透视", keyRef = "ESPKey" },
-    { name = "起飞", keyRef = "FlyKey" },
-    { name = "鼠标传送", keyRef = "TeleportMouseKey" },
-    { name = "不会饿", keyRef = "NoHungerKey" },
-    { name = "修车加油", keyRef = "RepairCarKey" },
-    { name = "跑得快", keyRef = "SpeedRunKey" },
-    { name = "改车速", keyRef = "CarBoostKey" },
-    { name = "折叠菜单", keyRef = "CollapseKey" },
-}
+local username = game.Players.LocalPlayer.Name
+local coloredUsername = ""
+for i = 1, #username do
+    local colorIndex = (i - 1) % #gradientColors + 1
+    coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
+end
 
-local isBinding = false
-local bindingTarget = nil
+local version = "v2.0.4"
+local coloredVersion = ""
+for i = 1, #version do
+    local colorIndex = (i - 1) % #gradientColors + 1
+    coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
+end
 
--- ==================== 动态计算地图距离 ====================
-local function calculateMapDistance()
-    local mapParts = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Anchored then
-            table.insert(mapParts, obj)
+WindUI:Popup({
+    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
+    IconThemed = true,
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Buttons = {
+        {
+            Title = "取消",
+            Callback = function() end,
+            Variant = "Secondary",
+        },
+        {
+            Title = "执行",
+            Icon = "arrow-right",
+            Callback = function() 
+                Confirmed = true
+                createUI()
+            end,
+            Variant = "Primary",
+        }
+    }
+})
+
+function createUI()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local player = Players.LocalPlayer
+    local isDestroyed = false
+    local connections = {}
+
+    -- ==================== 统一设备UID检测（换服务器不变） ====================
+    local function getDeviceUID()
+        local userId = player.UserId
+        local success, machineId = pcall(function()
+            return game:GetService("HttpService"):GetMachineId()
+        end)
+        if not success then machineId = "unknown" end
+        local combined = userId .. "_" .. machineId
+        local uid = ""
+        for i = 1, #combined do
+            uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
         end
+        return uid:sub(1, 32)
     end
-    if #mapParts == 0 then return 1000000 end
+    local DEVICE_UID = getDeviceUID()
 
-    local minX, minY, minZ = math.huge, math.huge, math.huge
-    local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
-    for _, part in ipairs(mapParts) do
-        local pos = part.Position
-        local size = part.Size
-        local half = size / 2
-        minX = math.min(minX, pos.X - half.X)
-        minY = math.min(minY, pos.Y - half.Y)
-        minZ = math.min(minZ, pos.Z - half.Z)
-        maxX = math.max(maxX, pos.X + half.X)
-        maxY = math.max(maxY, pos.Y + half.Y)
-        maxZ = math.max(maxZ, pos.Z + half.Z)
-    end
-    local center = Vector3.new((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
-    local radius = (Vector3.new(maxX, maxY, maxZ) - Vector3.new(minX, minY, minZ)).Magnitude / 2
-    return radius * 2
-end
+    -- ==================== 黑名单与授权系统 ====================
+    local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
 
--- ==================== 职业颜色/名称 ====================
-local TEAM_COLORS = {
-    Police = Color3.fromRGB(80, 150, 255),
-    Civilian = Color3.fromRGB(255, 255, 255),
-    Chef = Color3.fromRGB(255, 200, 100),
-    Delivery = Color3.fromRGB(255, 255, 100),
-    Farmer = Color3.fromRGB(150, 255, 150),
-    Fire = Color3.fromRGB(255, 100, 100),
-    Medical = Color3.fromRGB(255, 150, 255),
-    Prisoner = Color3.fromRGB(200, 200, 200),
-    Criminal = Color3.fromRGB(255, 80, 80),
-    ["Road Service"] = Color3.fromRGB(180, 180, 180),
-    Transit = Color3.fromRGB(100, 200, 200),
-    Default = Color3.fromRGB(255, 255, 255),
-}
-local TEAM_CN = {
-    Police = "警察", Civilian = "平民", Chef = "厨师", Delivery = "外卖",
-    Farmer = "农民", Fire = "消防", Medical = "医疗", Prisoner = "囚犯",
-    Criminal = "罪犯", ["Road Service"] = "道路救援", Transit = "运输",
-}
+    local BLACKLIST = {
+        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
+    }
 
--- ==================== 状态 ====================
-local CrimeESPEnabled = true
-local AimbotEnabled = false
-local ESPEnabled = true
-local FlyEnabled = false
-local NoHungerEnabled = false
-local SpeedRunEnabled = false
-local CarBoostEnabled = false
-local CurrentTarget = nil
-local GUICollapsed = false
+    local WHITELIST = {
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+        ["XXCWZZCACWARNGDGHPG"] = true,
+        ["XXCXXFEXWXARNGDGHPG"] = true,
+    }
 
--- ==================== 工具 ====================
-local function clamp(v, min, max)
-    if v < min then return min end
-    if v > max then return max end
-    return v
-end
-
--- ==================== 犯罪判定 ====================
-local function getWantedLevel(pl)
-    local wl = pl:GetAttribute("WantedLevel")
-    if wl == nil then return 0 end
-    return tonumber(wl) or 0
-end
-local function isCriminal(pl)
-    if getWantedLevel(pl) > 0 then return true end
-    return pl:GetAttribute("Pursuit") == true
-end
-local function getProfession(pl)
-    local team = pl.Team
-    if not team then return "未知" end
-    return TEAM_CN[team.Name] or team.Name
-end
-local function getTeamColor(pl)
-    local team = pl.Team
-    local teamName = team and team.Name or "Default"
-    return TEAM_COLORS[teamName] or TEAM_COLORS.Default
-end
-
--- ==================== ESP系统 ====================
-local ESPHighlights = {}
-local ESPBillboards = {}
-local ESPLabels = {}
-
-local function getHighlight(pl, character)
-    local hl = ESPHighlights[pl]
-    if hl and hl.Parent ~= character then
-        pcall(function() hl:Destroy() end)
-        hl = nil
-    end
-    if not hl then
-        hl = Instance.new("Highlight")
-        hl.Name = randomString(10)
-        hl.Adornee = character
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Enabled = false
-        hl.Parent = character
-        ESPHighlights[pl] = hl
-    end
-    return hl
-end
-
-local function getBillboard(pl, character)
-    local bb = ESPBillboards[pl]
-    if bb and bb.Parent ~= character then
-        pcall(function() bb:Destroy() end)
-        bb = nil
-        ESPLabels[pl] = nil
-    end
-    if not bb then
-        bb = Instance.new("BillboardGui")
-        bb.Name = randomString(10)
-        bb.Size = UDim2.new(0, 300, 0, 60)
-        bb.StudsOffset = Vector3.new(0, 2.5, 0)
-        bb.AlwaysOnTop = true
-        bb.MaxDistance = Config.MaxESP_Distance
-        bb.ResetOnSpawn = false
-
-        local mainLabel = Instance.new("TextLabel")
-        mainLabel.Name = randomString(8)
-        mainLabel.Size = UDim2.new(1, 0, 0, 18)
-        mainLabel.Position = UDim2.new(0, 0, 0, 0)
-        mainLabel.BackgroundTransparency = 1
-        mainLabel.Font = Enum.Font.Legacy
-        mainLabel.TextSize = 14
-        mainLabel.TextStrokeTransparency = 0
-        mainLabel.TextColor3 = Color3.fromRGB(255,255,255)
-        mainLabel.TextXAlignment = Enum.TextXAlignment.Center
-        mainLabel.Parent = bb
-
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Name = randomString(8)
-        distLabel.Size = UDim2.new(0, 80, 0, 16)
-        distLabel.Position = UDim2.new(-0.3, -80, 0, 2)
-        distLabel.BackgroundTransparency = 1
-        distLabel.Font = Enum.Font.Legacy
-        distLabel.TextSize = 12
-        distLabel.TextStrokeTransparency = 0
-        distLabel.TextColor3 = Color3.fromRGB(255,255,255)
-        distLabel.TextXAlignment = Enum.TextXAlignment.Right
-        distLabel.Parent = bb
-
-        local hpLabel = Instance.new("TextLabel")
-        hpLabel.Name = randomString(8)
-        hpLabel.Size = UDim2.new(0, 80, 0, 16)
-        hpLabel.Position = UDim2.new(1.3, 0, 0, 2)
-        hpLabel.BackgroundTransparency = 1
-        hpLabel.Font = Enum.Font.Legacy
-        hpLabel.TextSize = 12
-        hpLabel.TextStrokeTransparency = 0
-        hpLabel.TextColor3 = Color3.fromRGB(255,255,255)
-        hpLabel.TextXAlignment = Enum.TextXAlignment.Left
-        hpLabel.Parent = bb
-
-        bb.Parent = character
-        ESPBillboards[pl] = bb
-        ESPLabels[pl] = {mainLabel, distLabel, hpLabel}
-    end
-    return bb
-end
-
-local function cleanupPlayerESP(pl)
-    if ESPHighlights[pl] then pcall(function() ESPHighlights[pl]:Destroy() end) end
-    if ESPBillboards[pl] then pcall(function() ESPBillboards[pl]:Destroy() end) end
-    ESPHighlights[pl] = nil
-    ESPBillboards[pl] = nil
-    ESPLabels[pl] = nil
-end
-
-local function updateESP()
-    if not Camera then Camera = Workspace.CurrentCamera return end
-    local camPos = Camera.CFrame.Position
-    local activePlayers = {}
-
-    for _, pl in ipairs(Players:GetPlayers()) do
-        if pl ~= LocalPlayer then
-            local char = pl.Character
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hum and hrp and hum.Health > 0 then
-                    local dist = (camPos - hrp.Position).Magnitude
-                    if dist <= Config.MaxESP_Distance then
-                        activePlayers[pl] = true
-                        local criminal = isCriminal(pl)
-
-                        local hl = getHighlight(pl, char)
-                        if CrimeESPEnabled and criminal then
-                            hl.Enabled = true
-                            hl.FillColor = Color3.fromRGB(255, 30, 30)
-                            hl.OutlineColor = Color3.fromRGB(255, 30, 30)
-                            hl.FillTransparency = Config.HighlightFillTransparency
-                            hl.OutlineTransparency = Config.HighlightOutlineTransparency
-                        else
-                            hl.Enabled = false
-                        end
-
-                        local showInfo = ESPEnabled or (CrimeESPEnabled and criminal)
-                        if showInfo then
-                            local bb = getBillboard(pl, char)
-                            bb.Enabled = true
-                            local labels = ESPLabels[pl]
-                            if labels then
-                                local mainLabel, distLabel, hpLabel = labels[1], labels[2], labels[3]
-                                if mainLabel then
-                                    mainLabel.Text = pl.Name .. " [" .. getProfession(pl) .. "]"
-                                    if criminal then
-                                        mainLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-                                    else
-                                        mainLabel.TextColor3 = getTeamColor(pl)
-                                    end
-                                end
-                                if distLabel then
-                                    distLabel.Text = string.format("%.0fm", dist / 10)
-                                end
-                                if hpLabel then
-                                    hpLabel.Text = string.format("HP:%.0f", hum.Health)
-                                end
-                            end
-                        else
-                            if ESPBillboards[pl] then ESPBillboards[pl].Enabled = false end
-                        end
-                    else
-                        if ESPHighlights[pl] then ESPHighlights[pl].Enabled = false end
-                        if ESPBillboards[pl] then ESPBillboards[pl].Enabled = false end
-                    end
-                else
-                    if ESPHighlights[pl] then ESPHighlights[pl].Enabled = false end
-                    if ESPBillboards[pl] then ESPBillboards[pl].Enabled = false end
-                end
-            else
-                if ESPHighlights[pl] then ESPHighlights[pl].Enabled = false end
-                if ESPBillboards[pl] then ESPBillboards[pl].Enabled = false end
-            end
-        end
+    local function isBlacklisted(uid)
+        return BLACKLIST[uid] == true
     end
 
-    for pl in pairs(ESPHighlights) do
-        if not activePlayers[pl] then cleanupPlayerESP(pl) end
+    local function isAuthorized(uid)
+        if uid == AUTHOR_UID then return true end
+        return WHITELIST[uid] == true
     end
-    for pl in pairs(ESPBillboards) do
-        if not activePlayers[pl] then cleanupPlayerESP(pl) end
-    end
-end
 
--- ==================== 自瞄 ====================
-local hasMouseMove = false
-pcall(function() mousemoverel(0,0); hasMouseMove = true end)
+    -- ==================== 权限验证 ====================
+    if isBlacklisted(DEVICE_UID) then
+        local blockGui = Instance.new("ScreenGui")
+        blockGui.Name = "BlockedScreen"
+        blockGui.ResetOnSpawn = false
+        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        blockGui.Parent = player:WaitForChild("PlayerGui")
 
-local function isEnemy(pl)
-    if pl == LocalPlayer then return false end
-    local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name or ""
-    local plTeam = pl.Team and pl.Team.Name or ""
-    local myWanted = getWantedLevel(LocalPlayer)
-    local plWanted = getWantedLevel(pl)
-    if myTeam ~= "" and plTeam == myTeam then return false end
-    if myTeam == "Police" then return plWanted > 0 end
-    if myWanted > 0 then return plTeam == "Police" end
-    return plTeam == "Police" or plWanted > 0
-end
+        local blockFrame = Instance.new("Frame")
+        blockFrame.Size = UDim2.new(0, 500, 0, 200)
+        blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
+        blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+        blockFrame.BorderSizePixel = 3
+        blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+        blockFrame.Parent = blockGui
 
-local function getAimPoint(character)
-    local part = character:FindFirstChild(Config.AimPart) or character:FindFirstChild("Head")
-    if not part then return nil end
-    local pos = part.Position
-    if Config.AimPrediction and character:FindFirstChild("HumanoidRootPart") then
-        pos = pos + character.HumanoidRootPart.AssemblyLinearVelocity * 0.1
-    end
-    return pos
-end
+        local blockCorner = Instance.new("UICorner")
+        blockCorner.CornerRadius = UDim.new(0, 12)
+        blockCorner.Parent = blockFrame
 
-local function isOccluded(character, partPos)
-    if not Camera then return true end
-    local origin = Camera.CFrame.Position
-    local dir = (partPos - origin).Unit
-    local dist = (partPos - origin).Magnitude
-    local rp = RaycastParams.new()
-    rp.FilterType = Enum.RaycastFilterType.Blacklist
-    rp.FilterDescendantsInstances = {character, LocalPlayer.Character or {}}
-    local result = Workspace:Raycast(origin, dir * dist, rp)
-    return result ~= nil
-end
+        local blockTitle = Instance.new("TextLabel")
+        blockTitle.Size = UDim2.new(1, 0, 0, 40)
+        blockTitle.Position = UDim2.new(0, 0, 0, 10)
+        blockTitle.BackgroundTransparency = 1
+        blockTitle.Text = "已被拉黑"
+        blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+        blockTitle.TextSize = 28
+        blockTitle.Font = Enum.Font.GothamBold
+        blockTitle.TextXAlignment = Enum.TextXAlignment.Center
+        blockTitle.Parent = blockFrame
 
-local function findTarget()
-    if not Camera then return nil end
-    local vp = Camera.ViewportSize
-    local center = Vector2.new(vp.X / 2, vp.Y / 2)
-    local bestDist = Config.AimFOV
-    local bestPl = nil
-    for _, pl in ipairs(Players:GetPlayers()) do
-        if isEnemy(pl) and pl.Character then
-            local char = pl.Character
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hum and hrp and hum.Health > 0 then
-                local aimPos = getAimPoint(char)
-                if aimPos then
-                    local sp, on = Camera:WorldToViewportPoint(aimPos)
-                    if on and sp.Z > 0 then
-                        if Config.AimThroughWalls or not isOccluded(char, aimPos) then
-                            local screenDist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                            local worldDist = (Camera.CFrame.Position - hrp.Position).Magnitude
-                            if screenDist < bestDist and worldDist <= Config.MaxESP_Distance then
-                                bestDist = screenDist
-                                bestPl = pl
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return bestPl
-end
+        local blockDesc = Instance.new("TextLabel")
+        blockDesc.Size = UDim2.new(1, -40, 0, 50)
+        blockDesc.Position = UDim2.new(0, 20, 0, 60)
+        blockDesc.BackgroundTransparency = 1
+        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
+        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
+        blockDesc.TextSize = 18
+        blockDesc.Font = Enum.Font.GothamBold
+        blockDesc.TextXAlignment = Enum.TextXAlignment.Center
+        blockDesc.Parent = blockFrame
 
-local function aimAt(pl, dt)
-    if not pl or not pl.Character or not Camera then return end
-    local aimPos = getAimPoint(pl.Character)
-    if not aimPos then return end
-    local sp, on = Camera:WorldToViewportPoint(aimPos)
-    if not on or sp.Z <= 0 then return end
-    local vp = Camera.ViewportSize
-    local center = Vector2.new(vp.X / 2, vp.Y / 2)
-    local dx = sp.X - center.X
-    local dy = sp.Y - center.Y
-    if math.sqrt(dx*dx + dy*dy) < 3 then return end
-    local k = clamp(Config.AimSmoothness * (dt * 60), 0.05, 1)
-    if hasMouseMove then
-        mousemoverel(dx * k, dy * k)
-    end
-end
+        local blockUid = Instance.new("TextLabel")
+        blockUid.Size = UDim2.new(1, -40, 0, 30)
+        blockUid.Position = UDim2.new(0, 20, 0, 125)
+        blockUid.BackgroundTransparency = 1
+        blockUid.Text = "设备UID: " .. DEVICE_UID
+        blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
+        blockUid.TextSize = 14
+        blockUid.Font = Enum.Font.Gotham
+        blockUid.TextXAlignment = Enum.TextXAlignment.Center
+        blockUid.Parent = blockFrame
 
-local function updateAimbot(dt)
-    if not AimbotEnabled then CurrentTarget = nil return end
-    if CurrentTarget then
-        local char = CurrentTarget.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not char or not hum or hum.Health <= 0 or not isEnemy(CurrentTarget) then
-            CurrentTarget = nil
-        end
-    end
-    if not CurrentTarget then CurrentTarget = findTarget() end
-    if CurrentTarget then aimAt(CurrentTarget, dt) end
-end
-
--- ==================== 起飞 ====================
-local flyBodyVelocity = nil
-local flyBodyGyro = nil
-local flyTargetRoot = nil
-
-local function getCharacterRoot()
-    if not LocalPlayer.Character then return nil end
-    return LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-end
-
-local function getVehicleRoot()
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if hum and hum.SeatPart then
-        local model = hum.SeatPart:FindFirstAncestorOfClass("Model")
-        if model and model ~= LocalPlayer.Character then
-            return model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Base") or model.PrimaryPart
-        end
-    end
-    return nil
-end
-
-local function enableFly()
-    local root = getVehicleRoot() or getCharacterRoot()
-    if not root then return end
-    flyTargetRoot = root
-
-    -- 随机化飞行速度因子 0.8~1.2
-    Config.FlySpeedMultiplier = 0.8 + math.random() * 0.4
-
-    flyBodyVelocity = Instance.new("BodyVelocity")
-    flyBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-    flyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    flyBodyVelocity.Parent = root
-
-    flyBodyGyro = Instance.new("BodyGyro")
-    flyBodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-    flyBodyGyro.CFrame = root.CFrame
-    flyBodyGyro.Parent = root
-end
-
-local function disableFly()
-    if flyBodyVelocity then flyBodyVelocity:Destroy() end
-    if flyBodyGyro then flyBodyGyro:Destroy() end
-    flyBodyVelocity = nil
-    flyBodyGyro = nil
-    flyTargetRoot = nil
-end
-
-local function updateFly()
-    if not FlyEnabled then return end
-    if not flyTargetRoot or not flyBodyVelocity or not flyBodyVelocity.Parent then
-        enableFly()
-    end
-    if not flyBodyVelocity then return end
-
-    local moveDirection = Vector3.new(0, 0, 0)
-    local cam = Camera
-    if cam then
-        local forward = UserInputService:IsKeyDown(Enum.KeyCode.W) and 1 or 0
-        local backward = UserInputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0
-        local left = UserInputService:IsKeyDown(Enum.KeyCode.A) and 1 or 0
-        local right = UserInputService:IsKeyDown(Enum.KeyCode.D) and 1 or 0
-        local up = UserInputService:IsKeyDown(Enum.KeyCode.Space) and 1 or 0
-        local down = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and 1 or 0
-
-        local camCF = cam.CFrame
-        moveDirection = (camCF.LookVector * (forward - backward) + camCF.RightVector * (right - left)) * (Config.FlySpeed * Config.FlySpeedMultiplier)
-        moveDirection = moveDirection + Vector3.new(0, (up - down) * (Config.FlySpeed * Config.FlySpeedMultiplier), 0)
-    end
-    flyBodyVelocity.Velocity = moveDirection
-end
-
--- ==================== 传送 ====================
-local function teleportToMouse()
-    local root = getCharacterRoot()
-    if not root then return end
-    local cam = Camera
-    if not cam then return end
-    local mousePos = UserInputService:GetMouseLocation()
-    local ray = cam:ScreenPointToRay(mousePos.X, mousePos.Y)
-    local rp = RaycastParams.new()
-    rp.FilterType = Enum.RaycastFilterType.Blacklist
-    rp.FilterDescendantsInstances = {LocalPlayer.Character}
-    -- 随机化传送距离 0.9~1.1
-    local actualDist = Config.TeleportDistance * (0.9 + math.random() * 0.2)
-    local result = Workspace:Raycast(ray.Origin, ray.Direction * actualDist, rp)
-    if result then
-        root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
-    else
-        root.CFrame = CFrame.new(ray.Origin + ray.Direction * actualDist)
-    end
-end
-
-local function setNavPoint()
-    local root = getCharacterRoot()
-    if root then Config.NavPoint = root.Position end
-end
-
-local function teleportToNav()
-    local root = getCharacterRoot()
-    if root and Config.NavPoint then
-        root.CFrame = CFrame.new(Config.NavPoint + Vector3.new(0, 3, 0))
-    end
-end
-
-local function teleportCarToMe()
-    local root = getCharacterRoot()
-    if not root then return end
-    local nearestVehicle = nil
-    local minDist = math.huge
-    for _, model in ipairs(Workspace:GetDescendants()) do
-        if model:IsA("Model") and model ~= LocalPlayer.Character then
-            if model:FindFirstChildOfClass("VehicleSeat") then
-                local vehicleRoot = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Base") or model.PrimaryPart
-                if vehicleRoot then
-                    local dist = (root.Position - vehicleRoot.Position).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        nearestVehicle = vehicleRoot
-                    end
-                end
-            end
-        end
-    end
-    if nearestVehicle then
-        nearestVehicle.CFrame = CFrame.new(root.Position + Vector3.new(0, 3, 0))
-    end
-end
-
--- ==================== 不会饿（降低频率） ====================
-local noHungerTimer = 0
-local function updateNoHunger(dt)
-    if not NoHungerEnabled then
-        noHungerTimer = 0
         return
     end
-    noHungerTimer = noHungerTimer + dt
-    if noHungerTimer < 5 then return end
-    noHungerTimer = 0
 
-    pcall(function()
-        local hungerNames = {"Hunger", "HungerLevel", "Stamina", "Thirst", "HungerValue"}
-        for _, name in ipairs(hungerNames) do
-            pcall(function()
-                if LocalPlayer:GetAttribute(name) ~= nil then
-                    LocalPlayer:SetAttribute(name, Config.NoHungerValue)
-                end
+    if not isAuthorized(DEVICE_UID) then
+        local authGui = Instance.new("ScreenGui")
+        authGui.Name = "AuthScreen"
+        authGui.ResetOnSpawn = false
+        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        authGui.Parent = player:WaitForChild("PlayerGui")
+
+        local authFrame = Instance.new("Frame")
+        authFrame.Size = UDim2.new(0, 520, 0, 220)
+        authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
+        authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+        authFrame.BorderSizePixel = 3
+        authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
+        authFrame.Parent = authGui
+
+        local authCorner = Instance.new("UICorner")
+        authCorner.CornerRadius = UDim.new(0, 12)
+        authCorner.Parent = authFrame
+
+        local authTitle = Instance.new("TextLabel")
+        authTitle.Size = UDim2.new(1, 0, 0, 40)
+        authTitle.Position = UDim2.new(0, 0, 0, 10)
+        authTitle.BackgroundTransparency = 1
+        authTitle.Text = "未授权"
+        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
+        authTitle.TextSize = 28
+        authTitle.Font = Enum.Font.GothamBold
+        authTitle.TextXAlignment = Enum.TextXAlignment.Center
+        authTitle.Parent = authFrame
+
+        local authDesc = Instance.new("TextLabel")
+        authDesc.Size = UDim2.new(1, -40, 0, 50)
+        authDesc.Position = UDim2.new(0, 20, 0, 60)
+        authDesc.BackgroundTransparency = 1
+        authDesc.Text = "你没有被授权\n你无法使用此脚本"
+        authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
+        authDesc.TextSize = 18
+        authDesc.Font = Enum.Font.GothamBold
+        authDesc.TextXAlignment = Enum.TextXAlignment.Center
+        authDesc.Parent = authFrame
+
+        local authContact = Instance.new("TextLabel")
+        authContact.Size = UDim2.new(1, -40, 0, 25)
+        authContact.Position = UDim2.new(0, 20, 0, 118)
+        authContact.BackgroundTransparency = 1
+        authContact.Text = "请联系作者或管理员授权"
+        authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
+        authContact.TextSize = 14
+        authContact.Font = Enum.Font.Gotham
+        authContact.TextXAlignment = Enum.TextXAlignment.Center
+        authContact.Parent = authFrame
+
+        local authUid = Instance.new("TextLabel")
+        authUid.Size = UDim2.new(1, -40, 0, 30)
+        authUid.Position = UDim2.new(0, 20, 0, 150)
+        authUid.BackgroundTransparency = 1
+        authUid.Text = "设备UID: " .. DEVICE_UID
+        authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
+        authUid.TextSize = 14
+        authUid.Font = Enum.Font.Gotham
+        authUid.TextXAlignment = Enum.TextXAlignment.Center
+        authUid.Parent = authFrame
+
+        return
+    end
+
+    -- ==================== 添加脚本标记（用于同行显示） ====================
+    local scriptTag = Instance.new("BoolValue")
+    scriptTag.Name = "wdfexScript"
+    scriptTag.Value = true
+    scriptTag.Parent = player
+
+    if DEVICE_UID == AUTHOR_UID then
+        local authorTag = Instance.new("BoolValue")
+        authorTag.Name = "wdfexAuthor"
+        authorTag.Value = true
+        authorTag.Parent = player
+    end
+
+    -- ==================== 主UI ====================
+    local Window = WindUI:CreateWindow({
+        Title = 'wdfex-Hub',
+        Icon = "heart",
+        IconThemed = true,
+        Author = version,
+        Folder = "CloudHub",
+        Size = UDim2.fromOffset(580, 440),
+        Transparent = true,
+        Theme = "Dark",
+        HideSearchBar = false,
+        ScrollBarEnabled = true,
+        Resizable = true,
+        Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
+        BackgroundImageTransparency = 0.5,
+        User = {
+            Enabled = true,
+            Callback = function()
+                -- ==================== 点击头像弹出个人信息 ====================
+                local userId = player.UserId
+                local thumbType = Enum.ThumbnailType.HeadShot
+                local thumbSize = Enum.ThumbnailSize.Size420x420
+                local success, thumbnail = pcall(function()
+                    return Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+                end)
+                local avatarUrl = success and thumbnail or "rbxassetid://0"
+
+                local name = player.Name
+
+                local pwdLen = math.random(10, 15)
+                local stars = string.rep("*", pwdLen)
+
+                local days = player.AccountAge
+                local regTime = days .. " 天前"
+
+                local popupGui = Instance.new("ScreenGui")
+                popupGui.Name = "UserInfoPopup"
+                popupGui.ResetOnSpawn = false
+                popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                popupGui.Parent = player:WaitForChild("PlayerGui")
+
+                local frame = Instance.new("Frame")
+                frame.Size = UDim2.new(0, 300, 0, 250)
+                frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+                frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+                frame.BorderSizePixel = 2
+                frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                frame.Active = true
+                frame.Draggable = true
+                frame.Parent = popupGui
+
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 10)
+                corner.Parent = frame
+
+                local avatar = Instance.new("ImageLabel")
+                avatar.Size = UDim2.new(0, 60, 0, 60)
+                avatar.Position = UDim2.new(0.5, -30, 0, 15)
+                avatar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+                avatar.Image = avatarUrl
+                avatar.ScaleType = Enum.ScaleType.Fit
+                avatar.Parent = frame
+
+                local avatarCorner = Instance.new("UICorner")
+                avatarCorner.CornerRadius = UDim.new(1, 0)
+                avatarCorner.Parent = avatar
+
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, -20, 0, 30)
+                nameLabel.Position = UDim2.new(0, 10, 0, 85)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = "名字: " .. name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextSize = 16
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nameLabel.Parent = frame
+
+                local pwdLabel = Instance.new("TextLabel")
+                pwdLabel.Size = UDim2.new(1, -20, 0, 30)
+                pwdLabel.Position = UDim2.new(0, 10, 0, 120)
+                pwdLabel.BackgroundTransparency = 1
+                pwdLabel.Text = "密码: " .. stars
+                pwdLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                pwdLabel.TextSize = 16
+                pwdLabel.Font = Enum.Font.Gotham
+                pwdLabel.TextXAlignment = Enum.TextXAlignment.Left
+                pwdLabel.Parent = frame
+
+                local timeLabel = Instance.new("TextLabel")
+                timeLabel.Size = UDim2.new(1, -20, 0, 30)
+                timeLabel.Position = UDim2.new(0, 10, 0, 155)
+                timeLabel.BackgroundTransparency = 1
+                timeLabel.Text = "注册: " .. regTime
+                timeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                timeLabel.TextSize = 16
+                timeLabel.Font = Enum.Font.Gotham
+                timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+                timeLabel.Parent = frame
+
+                local closeBtn = Instance.new("TextButton")
+                closeBtn.Size = UDim2.new(0, 60, 0, 30)
+                closeBtn.Position = UDim2.new(0.5, -30, 1, -40)
+                closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+                closeBtn.Text = "关闭"
+                closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                closeBtn.TextSize = 14
+                closeBtn.Font = Enum.Font.GothamBold
+                closeBtn.Parent = frame
+
+                local btnCorner = Instance.new("UICorner")
+                btnCorner.CornerRadius = UDim.new(0, 5)
+                btnCorner.Parent = closeBtn
+
+                closeBtn.MouseButton1Click:Connect(function()
+                    popupGui:Destroy()
+                end)
+            end,
+            Anonymous = false
+        },
+        SideBarWidth = 250,
+        Search = {
+            Enabled = true,
+            Placeholder = "搜索...",
+            Callback = function(searchText)
+                print("搜索内容:", searchText)
+            end
+        },
+        SidePanel = {
+            Enabled = true,
+            Content = {
+                {
+                    Type = "Button", 
+                    Text = "wdfex-Hub",
+                    Style = "Subtle", 
+                    Size = UDim2.new(1, -20, 0, 30),
+                    Callback = function()
+                    end
+                }
+            }
+        }
+    })
+
+    Window:EditOpenButton({
+        Title = "wdfex-Hub",
+        Icon = "rbxassetid://105677776902677",
+        CornerRadius = UDim.new(0,16),
+        StrokeThickness = 4,
+        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
+        Draggable = true,
+    })
+
+    Window:Tag({
+        Title = DEVICE_UID,
+        Color = Color3.fromHex("#00ffff") 
+    })
+
+    Window:EditOpenButton({
+        Title = "wdfex-Hub",
+        Icon = "heart",
+        CornerRadius = UDim.new(0,16),
+        StrokeThickness = 4,
+        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
+        Draggable = true,
+    })
+
+    -- ==================== 添加彩色描边（两条反向环绕） ====================
+    task.wait(0.1)
+    local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
+    if mainGui then
+        local mainFrame = mainGui:FindFirstChildOfClass("Frame")
+        if mainFrame then
+            local stroke1 = Instance.new("UIStroke")
+            stroke1.Thickness = 3
+            stroke1.Color = Color3.fromHSV(0, 1, 1)
+            stroke1.Transparency = 0.5
+            stroke1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke1.Parent = mainFrame
+
+            local stroke2 = Instance.new("UIStroke")
+            stroke2.Thickness = 5
+            stroke2.Color = Color3.fromHSV(0.5, 1, 1)
+            stroke2.Transparency = 0.3
+            stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke2.Parent = mainFrame
+
+            local hue1 = 0
+            local hue2 = 0.5
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hue1 = (hue1 + 0.01) % 1
+                hue2 = (hue2 - 0.01) % 1
+                stroke1.Color = Color3.fromHSV(hue1, 1, 1)
+                stroke2.Color = Color3.fromHSV(hue2, 1, 1)
             end)
+            table.insert(connections, colorConn)
         end
-        if LocalPlayer:FindFirstChild("leaderstats") then
-            for _, stat in ipairs(LocalPlayer.leaderstats:GetChildren()) do
-                local lowerName = string.lower(stat.Name)
-                if lowerName:find("hunger") or lowerName:find("thirst") or lowerName:find("饱") then
-                    if stat:IsA("IntValue") or stat:IsA("NumberValue") then
-                        stat.Value = Config.NoHungerValue
-                    end
-                end
+    end
+
+    spawn(function()
+        while true do
+            for hue = 0, 1, 0.01 do  
+                local color = Color3.fromHSV(hue, 0.8, 1)  
+                Window:EditOpenButton({
+                    Color = ColorSequence.new(color)
+                })
+                wait(0.04)  
             end
         end
     end)
-end
 
--- ==================== 快速互动（固定E键，无开关） ====================
-local function findNearestVehicleSeat()
-    local root = getCharacterRoot()
-    if not root then return nil end
-    local nearestSeat = nil
-    local minDist = 20
-    for _, model in ipairs(Workspace:GetDescendants()) do
-        if model:IsA("Model") and model ~= LocalPlayer.Character then
-            local seat = model:FindFirstChildOfClass("VehicleSeat") or model:FindFirstChildOfClass("Seat")
-            if seat then
-                local seatPart = seat:IsA("BasePart") and seat or seat.Parent
-                if seatPart and seatPart:IsA("BasePart") then
-                    local dist = (root.Position - seatPart.Position).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        nearestSeat = seat
-                    end
-                end
-            end
-        end
-    end
-    return nearestSeat
-end
-
-local function findNearestCriminal()
-    local root = getCharacterRoot()
-    if not root then return nil end
-    local nearestCriminal = nil
-    local minDist = 20
-    for _, pl in ipairs(Players:GetPlayers()) do
-        if pl ~= LocalPlayer and isCriminal(pl) and pl.Character and pl.Character:FindFirstChild("HumanoidRootPart") then
-            local dist = (root.Position - pl.Character.HumanoidRootPart.Position).Magnitude
-            if dist < minDist then
-                minDist = dist
-                nearestCriminal = pl
-            end
-        end
-    end
-    return nearestCriminal
-end
-
-local function fastInteract()
-    pcall(function()
-        local seat = findNearestVehicleSeat()
-        if seat then
-            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                local seatPart = seat:IsA("BasePart") and seat or seat.Parent
-                if seatPart and seatPart:IsA("BasePart") then
-                    hum.Sit = true
-                    hum.Jump = false
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = seatPart.CFrame + Vector3.new(0, 2, 0)
-                end
-            end
-            return
-        end
-        local target = findNearestCriminal()
-        if target and target.Character then
-            target:SetAttribute("Handcuffed", true)
-            target:SetAttribute("Arrested", true)
-            target:SetAttribute("Cuffed", true)
-        end
+    -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
+    task.spawn(function()
+        pcall(function()
+            local sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://80701295792893"
+            sound.Volume = 0.5
+            sound.Parent = player:WaitForChild("PlayerGui")
+            sound:Play()
+            task.wait(7)
+            sound:Stop()
+            sound:Destroy()
+        end)
     end)
-end
 
--- ==================== 修车+加油 ====================
-local function repairAndRefuelCar()
-    pcall(function()
-        local root = getCharacterRoot()
-        if not root then return end
-        local targetModel = nil
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum and hum.SeatPart then
-            targetModel = hum.SeatPart:FindFirstAncestorOfClass("Model")
-        else
-            local minDist = 80
-            for _, model in ipairs(Workspace:GetDescendants()) do
-                if model:IsA("Model") and model ~= LocalPlayer.Character then
-                    if model:FindFirstChildOfClass("VehicleSeat") or model:FindFirstChildOfClass("Seat") then
-                        local vehicleRoot = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Base") or model.PrimaryPart
-                        if vehicleRoot then
-                            local dist = (root.Position - vehicleRoot.Position).Magnitude
-                            if dist < minDist then
-                                minDist = dist
-                                targetModel = model
+    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
+    task.spawn(function()
+        pcall(function()
+            local bannerGui = Instance.new("ScreenGui")
+            bannerGui.Name = "BannerGui"
+            bannerGui.ResetOnSpawn = false
+            bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            bannerGui.Parent = player:WaitForChild("PlayerGui")
+            
+            local banner = Instance.new("TextLabel")
+            banner.Size = UDim2.new(0, 160, 0, 28)
+            banner.Position = UDim2.new(0, -160, 0, 2)
+            banner.BackgroundTransparency = 1
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            banner.TextSize = 18
+            banner.Font = Enum.Font.GothamBold
+            banner.TextScaled = false
+            banner.TextStrokeTransparency = 0.3
+            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            banner.Parent = bannerGui
+            
+            local TweenService = game:GetService("TweenService")
+            local textWidth = 160
+            
+            local hue = 0
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hue = (hue + 0.005) % 1
+                banner.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
+            end)
+            table.insert(connections, colorConn)
+            
+            local function startAnimation()
+                local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(1, 10, 0, 2)
+                })
+                tween1:Play()
+                tween1.Completed:Connect(function()
+                    banner.Position = UDim2.new(0, -textWidth, 0, 2)
+                    startAnimation()
+                end)
+            end
+            
+            task.wait(0.5)
+            startAnimation()
+        end)
+    end)
+
+    -- ==================== 直播模式水印 ====================
+    local liveModeEnabled = false
+    local liveModeLabels = {}
+
+    local function CreateLiveModeWatermarks()
+        for _, label in ipairs(liveModeLabels) do
+            pcall(function() label:Destroy() end)
+        end
+        liveModeLabels = {}
+        
+        if not liveModeEnabled then return end
+        
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "LiveModeWatermarks"
+        gui.ResetOnSpawn = false
+        gui.Parent = player:WaitForChild("PlayerGui")
+        table.insert(liveModeLabels, gui)
+        
+        local bottomRight = Instance.new("TextLabel")
+        bottomRight.Size = UDim2.new(0, 260, 0, 32)
+        bottomRight.Position = UDim2.new(1, -270, 1, -42)
+        bottomRight.BackgroundTransparency = 1
+        bottomRight.Text = "豆包AI生成请注意分辨"
+        bottomRight.TextSize = 20
+        bottomRight.Font = Enum.Font.GothamBold
+        bottomRight.TextScaled = false
+        bottomRight.TextStrokeTransparency = 0.2
+        bottomRight.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        bottomRight.TextXAlignment = Enum.TextXAlignment.Right
+        bottomRight.Parent = gui
+        table.insert(liveModeLabels, bottomRight)
+        
+        local topLeft = Instance.new("TextLabel")
+        topLeft.Size = UDim2.new(0, 180, 0, 32)
+        topLeft.Position = UDim2.new(0, 10, 0, 10)
+        topLeft.BackgroundTransparency = 1
+        topLeft.Text = "后期PS制作"
+        topLeft.TextSize = 20
+        topLeft.Font = Enum.Font.GothamBold
+        topLeft.TextScaled = false
+        topLeft.TextStrokeTransparency = 0.2
+        topLeft.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        topLeft.TextXAlignment = Enum.TextXAlignment.Left
+        topLeft.Parent = gui
+        table.insert(liveModeLabels, topLeft)
+        
+        local hue = 0
+        local colorConn = RunService.Heartbeat:Connect(function()
+            hue = (hue + 0.005) % 1
+            local color = Color3.fromHSV(hue, 0.9, 1)
+            bottomRight.TextColor3 = color
+            topLeft.TextColor3 = color
+        end)
+        table.insert(connections, colorConn)
+        table.insert(liveModeLabels, colorConn)
+    end
+
+    local function DestroyLiveModeWatermarks()
+        for _, label in ipairs(liveModeLabels) do
+            pcall(function() label:Destroy() end)
+        end
+        liveModeLabels = {}
+    end
+
+    -- ==================== 其余原有功能 ====================
+    local Settings = {
+        HoldTime = 0,
+        Distance = 25,
+        HitboxEnabled = false,
+        HitboxSize = 10,
+        WhitelistEnabled = false,
+        TeleportEnabled = false,
+        NoclipEnabled = false,
+    }
+    local Whitelist = {}
+    local affectedHeads = {}
+    local frameCount = 0
+
+    -- 防甩飞
+    _G.CatAntiFling_Enabled = false
+    _G.CatAntiFling_Running = false
+    local function AntiFlingLoop()
+        if _G.CatAntiFling_Running then return end
+        _G.CatAntiFling_Running = true
+        task.spawn(function()
+            while not isDestroyed do
+                if _G.CatAntiFling_Enabled then
+                    pcall(function()
+                        local char = player.Character
+                        if not char then return end
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if not root then return end
+                        local vel = root.Velocity
+                        if vel.Magnitude > 500 or math.abs(vel.Y) > 300 then
+                            root.Velocity = Vector3.new(0, 0, 0)
+                            root.RotVelocity = Vector3.new(0, 0, 0)
+                        end
+                        for _, obj in ipairs(root:GetChildren()) do
+                            if (obj:IsA("BodyVelocity") or obj:IsA("BodyAngularVelocity")) and obj.Name ~= "CatAntiFling" and obj.Name ~= "CatAntiFlingAngular" then
+                                obj:Destroy()
+                            end
+                        end
+                    end)
+                end
+                task.wait()
+            end
+            _G.CatAntiFling_Running = false
+        end)
+    end
+    AntiFlingLoop()
+
+    -- ==================== 杀戮光环目标显示（右上角） ====================
+    local kaTargetName = "未检测到目标"
+    local targetDisplayGui = Instance.new("ScreenGui")
+    targetDisplayGui.Name = "KillAuraTargetDisplay"
+    targetDisplayGui.ResetOnSpawn = false
+    targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+
+    local targetLabel = Instance.new("TextLabel")
+    targetLabel.Size = UDim2.new(0, 200, 0, 30)
+    targetLabel.Position = UDim2.new(1, -210, 0, 10)
+    targetLabel.BackgroundTransparency = 1
+    targetLabel.Text = "目标: 未检测到"
+    targetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    targetLabel.TextSize = 18
+    targetLabel.Font = Enum.Font.GothamBold
+    targetLabel.TextXAlignment = Enum.TextXAlignment.Right
+    targetLabel.Parent = targetDisplayGui
+
+    -- ==================== Tab 创建 ====================
+    -- 作者信息 Tab（第一位，默认选中）
+    local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
+    local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
+    AuthorSection:Paragraph({
+        Title = "",
+        Desc = "",
+        Thumbnail = "rbxassetid://74369447499630",
+        ThumbnailSize = 150,
+        ThumbnailShape = "Square",
+    })
+    AuthorSection:Paragraph({
+        Title = "作者QQ：1687426335",
+        Desc = "",
+    })
+
+    -- 公告 Tab
+    local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
+    local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
+    NoticeSection:Paragraph({
+        Title = "wdfex",
+        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
+    })
+    NoticeSection:Divider()
+    NoticeSection:Paragraph({
+        Title = "注意事项",
+        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
+    })
+
+    -- 通知 Tab
+    local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
+    local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
+    infoSection:Divider()
+    infoSection:Paragraph({
+        Title = "关于",
+        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
+        ThumbnailSize = 190,
+    })
+    local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
+    infoSection2:Divider()
+    infoSection2:Paragraph({
+        Title = "v2.0.4提示",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能（含墙体检测）",
+        ThumbnailSize = 190,
+    })
+    infoTab:Select()
+
+    -- 默认选中作者信息
+    AuthorTab:Select()
+
+    -- 主功能 Section
+    local MainSection = Window:Section({
+        Title = "主功能",
+        Opened = true,
+    })
+
+    local function AddTab(section, title, icon)
+        return section:Tab({ Title = title, Icon = icon })
+    end
+
+    -- ============================================================
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察 → 其他功能
+    -- ============================================================
+    local A = AddTab(MainSection, "玩家修改", "user")
+    local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
+    local InteractTab = AddTab(MainSection, "互动", "hand")
+    local B = AddTab(MainSection, "枪械功能", "target")
+    local C = AddTab(MainSection, "杀戮光环", "skull")
+    local D = AddTab(MainSection, "传送点", "map-pin")
+    local E = AddTab(MainSection, "透视", "eye")
+    local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
+    local OtherTab = AddTab(MainSection, "其他功能", "more")
+
+    -- ============================================================
+    -- 自动躲警察 Tab
+    -- ============================================================
+    local policeDodgeEnabled = false
+    local policeDodgeDistance = 30
+    local policeDodgeForce = 50
+    local policeDodgeWallCheck = true
+    local policeDodgeConn = nil
+
+    local function isVisible(fromPos, toPos, ignoreInstances)
+        local direction = (toPos - fromPos).Unit
+        local distance = (toPos - fromPos).Magnitude
+        if distance < 0.1 then return true end
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = ignoreInstances or {}
+        local result = workspace:Raycast(fromPos, direction * distance, params)
+        return result == nil
+    end
+
+    local function startPoliceDodge()
+        if policeDodgeConn then return end
+        policeDodgeConn = RunService.Heartbeat:Connect(function()
+            if not policeDodgeEnabled then return end
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            local myHead = char:FindFirstChild("Head")
+            if not myHead then myHead = root end
+
+            local myPos = myHead.Position
+            local forceVec = Vector3.zero
+            local foundAny = false
+
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p == player then continue end
+                local team = p.Team
+                if team then
+                    local teamName = team.Name
+                    if teamName:find("Police") or teamName:find("警察") or teamName:find("Cop") then
+                        local pChar = p.Character
+                        if pChar then
+                            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+                            local pHead = pChar:FindFirstChild("Head")
+                            local targetPart = pHead or pRoot
+                            if targetPart then
+                                local dist = (targetPart.Position - myPos).Magnitude
+                                if dist < policeDodgeDistance then
+                                    if policeDodgeWallCheck then
+                                        local ignoreList = {char, pChar}
+                                        local visible = isVisible(myPos, targetPart.Position, ignoreList)
+                                        if not visible then
+                                            continue
+                                        end
+                                    end
+                                    foundAny = true
+                                    local dir = (myPos - targetPart.Position).Unit
+                                    forceVec = forceVec + dir * (1 / (dist + 0.1))
+                                end
                             end
                         end
                     end
                 end
             end
-        end
-        if not targetModel then return end
-        for _, part in ipairs(targetModel:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Health = part.MaxHealth or 1000
-                part.Material = Enum.Material.Metal
-            end
-        end
-        local fuelNames = {"Fuel", "Gas", "Oil", "FuelLevel", "GasLevel"}
-        for _, name in ipairs(fuelNames) do
-            pcall(function()
-                if targetModel:GetAttribute(name) ~= nil then
-                    targetModel:SetAttribute(name, 100)
-                end
-            end)
-        end
-        for _, v in ipairs(targetModel:GetDescendants()) do
-            if v:IsA("IntValue") or v:IsA("NumberValue") then
-                local lower = string.lower(v.Name)
-                if lower:find("fuel") or lower:find("gas") or lower:find("油") then
-                    v.Value = 100
-                end
-            end
-        end
-        local seat = targetModel:FindFirstChildOfClass("VehicleSeat") or targetModel:FindFirstChildOfClass("Seat")
-        if seat then
-            seat.Disabled = false
-        end
-    end)
-end
 
--- ==================== 跑得快 ====================
-local function applyWalkSpeed()
-    if not LocalPlayer.Character then return end
-    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.WalkSpeed = SpeedRunEnabled and Config.WalkSpeed or 16
+            if foundAny and forceVec.Magnitude > 0 then
+                local finalDir = forceVec.Unit
+                local speed = policeDodgeForce * 5
+                root.Velocity = finalDir * speed
+            end
+        end)
     end
-end
 
--- ==================== 改车速（开关 + 输入倍率，随机化实际倍率） ====================
-local function applyCarBoost()
-    if not CarBoostEnabled then return end
-    pcall(function()
-        local root = getCharacterRoot()
-        if not root then return end
-        local seat = nil
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum and hum.SeatPart then
-            seat = hum.SeatPart
-        else
-            local minDist = 30
-            for _, model in ipairs(Workspace:GetDescendants()) do
-                if model:IsA("Model") and model ~= LocalPlayer.Character then
-                    local vSeat = model:FindFirstChildOfClass("VehicleSeat") or model:FindFirstChildOfClass("Seat")
-                    if vSeat then
-                        local seatPart = vSeat:IsA("BasePart") and vSeat or vSeat.Parent
-                        if seatPart and seatPart:IsA("BasePart") then
-                            local dist = (root.Position - seatPart.Position).Magnitude
-                            if dist < minDist then
-                                minDist = dist
-                                seat = vSeat
+    local function stopPoliceDodge()
+        if policeDodgeConn then
+            policeDodgeConn:Disconnect()
+            policeDodgeConn = nil
+        end
+    end
+
+    PoliceDodgeTab:Divider({ Text = "警察躲避设置" })
+    PoliceDodgeTab:Toggle({
+        Title = "启用自动躲警察",
+        Value = false,
+        Callback = function(value)
+            policeDodgeEnabled = value
+            if value then
+                startPoliceDodge()
+            else
+                stopPoliceDodge()
+            end
+        end
+    })
+
+    PoliceDodgeTab:Slider({
+        Title = "触发距离（米）",
+        Step = 1,
+        Value = { Min = 1, Max = 100, Default = 30 },
+        Callback = function(value)
+            policeDodgeDistance = value
+        end
+    })
+
+    PoliceDodgeTab:Slider({
+        Title = "弹开力度",
+        Step = 1,
+        Value = { Min = 1, Max = 100, Default = 50 },
+        Callback = function(value)
+            policeDodgeForce = value
+        end
+    })
+
+    PoliceDodgeTab:Toggle({
+        Title = "墙体检测",
+        Value = true,
+        Callback = function(value)
+            policeDodgeWallCheck = value
+        end
+    })
+
+    -- ============================================================
+    -- 其他功能 Tab
+    -- ============================================================
+    OtherTab:Divider({ Text = "直播模式" })
+    OtherTab:Toggle({
+        Title = "直播模式",
+        Value = false,
+        Callback = function(value)
+            liveModeEnabled = value
+            if value then
+                CreateLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
+            else
+                DestroyLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+
+    -- ==================== 一键破解黑客小游戏 ====================
+    local hackAutoSolveEnabled = false
+    local hackAutoSolveConn = nil
+
+    -- 尝试破解ATM/撬锁等小游戏的通用函数
+    local function tryAutoSolveMinigame()
+        -- 查找当前玩家GUI中可能存在的小游戏界面
+        local playerGui = player:WaitForChild("PlayerGui")
+        if not playerGui then return end
+
+        -- 1. 尝试破解 "ATM Hack"
+        local atmGui = playerGui:FindFirstChild("ScreenGui")
+        if atmGui then
+            atmGui = atmGui:FindFirstChild("Center")
+            if atmGui then
+                atmGui = atmGui:FindFirstChild("Middle")
+                if atmGui then
+                    atmGui = atmGui:FindFirstChild("HackingMinigames")
+                    if atmGui then
+                        atmGui = atmGui:FindFirstChild("ATM Hack")
+                    end
+                end
+            end
+        end
+
+        if atmGui and atmGui.Parent then
+            -- 获取密码字符（通常显示在Sequence1中）
+            local seq = atmGui:FindFirstChild("Sequence1")
+            local codes = {}
+            if seq and seq:IsA("TextLabel") then
+                local text = seq.Text
+                for code in string.gmatch(text, '([^%s]+)') do
+                    table.insert(codes, code)
+                end
+            end
+
+            -- 查找按钮列表
+            local list = atmGui:FindFirstChild("List")
+            if list then
+                for _, v in pairs(list:GetDescendants()) do
+                    if v:IsA("ImageButton") then
+                        -- 检查按钮是否匹配密码
+                        local matched = false
+                        for _, label in pairs(v:GetDescendants()) do
+                            if label:IsA("TextLabel") then
+                                for _, code in ipairs(codes) do
+                                    if label.Text == code then
+                                        matched = true
+                                        break
+                                    end
+                                end
                             end
+                            if matched then break end
+                        end
+                        if matched then
+                            -- 模拟点击
+                            local absPos = v.AbsolutePosition
+                            local absSize = v.AbsoluteSize
+                            local x = absPos.X + absSize.X / 2
+                            local y = absPos.Y + absSize.Y / 2
+                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+                            task.wait(0.05)
                         end
                     end
                 end
             end
         end
-        if seat then
-            local vehicleSeat = seat:IsA("VehicleSeat") and seat or seat:FindFirstAncestorOfClass("VehicleSeat")
-            -- 随机化倍率 0.9~1.1
-            local boostRandom = 0.9 + math.random() * 0.2
-            local finalMultiplier = Config.CarBoostMultiplier * boostRandom
-            if vehicleSeat then
-                vehicleSeat.MaxSpeed = (vehicleSeat.MaxSpeed or 100) * finalMultiplier
-                vehicleSeat.Torque = (vehicleSeat.Torque or 100) * finalMultiplier
-            end
-            local model = seat:FindFirstAncestorOfClass("Model")
-            if model then
-                for _, part in ipairs(model:GetDescendants()) do
-                    if part:IsA("Motor") or part:IsA("Motor6D") then
-                        part.MaxVelocity = part.MaxVelocity * finalMultiplier
+
+        -- 2. 尝试其他常见小游戏（撬锁、入侵等） - 由于无法确定路径，留空供用户自行添加
+        -- 例如：
+        -- local lockpickGui = playerGui:FindFirstChild("Lockpick")
+        -- if lockpickGui then ... end
+    end
+
+    OtherTab:Divider({ Text = "黑客辅助" })
+    OtherTab:Toggle({
+        Title = "一键破解小游戏",
+        Value = false,
+        Callback = function(value)
+            hackAutoSolveEnabled = value
+            if value then
+                if hackAutoSolveConn then hackAutoSolveConn:Disconnect() end
+                hackAutoSolveConn = RunService.Heartbeat:Connect(function()
+                    if hackAutoSolveEnabled then
+                        tryAutoSolveMinigame()
                     end
+                end)
+                WindUI:Notify({ Title = "黑客辅助", Content = "已开启，将自动破解小游戏", Duration = 2 })
+            else
+                if hackAutoSolveConn then
+                    hackAutoSolveConn:Disconnect()
+                    hackAutoSolveConn = nil
+                end
+                WindUI:Notify({ Title = "黑客辅助", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 互动 Tab（快速互动相关）
+    -- ============================================================
+    local interactEnabled = false
+
+    local function ScanPrompts()
+        if isDestroyed or not interactEnabled then return end
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                obj.HoldDuration = Settings.HoldTime
+                obj.MaxActivationDistance = Settings.Distance
+            end
+        end
+    end
+
+    InteractTab:Divider({ Text = "快速互动" })
+    InteractTab:Toggle({
+        Title = "启用快速互动",
+        Value = false,
+        Callback = function(value)
+            interactEnabled = value
+            if value then
+                ScanPrompts()
+            end
+        end
+    })
+    InteractTab:Slider({
+        Title = "按住时间",
+        Step = 0.1,
+        Value = { Min = 0, Max = 10, Default = 0 },
+        Callback = function(value)
+            Settings.HoldTime = value
+            if interactEnabled then ScanPrompts() end
+        end
+    })
+    InteractTab:Slider({
+        Title = "触发距离",
+        Step = 1,
+        Value = { Min = 5, Max = 150, Default = 25 },
+        Callback = function(value)
+            Settings.Distance = value
+            if interactEnabled then ScanPrompts() end
+        end
+    })
+
+    workspace.DescendantAdded:Connect(function(obj)
+        task.wait(0.1)
+        if obj:IsA("ProximityPrompt") and interactEnabled then
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
+        end
+    end)
+
+    -- ============================================================
+    -- 飞天与加速 Tab
+    -- ============================================================
+    local FlySpeed = 35
+    local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
+    local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
+    local FlyControl
+    task.spawn(function()
+        pcall(function()
+            local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
+            if pm then FlyControl = require(pm):GetControls() end
+        end)
+    end)
+
+    local function flyRefreshParts()
+        local char = player.Character
+        if not char then flyState.hrp = nil flyState.hum = nil flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil return end
+        flyState.hrp = char:FindFirstChild("HumanoidRootPart")
+        flyState.hum = char:FindFirstChildOfClass("Humanoid")
+        flyAnchor.hrp = flyState.hrp
+        flyAnchor.head = char:FindFirstChild("Head")
+        flyAnchor.hum = flyState.hum
+    end
+
+    local function flyDetectWall()
+        local hrp = flyAnchor.hrp
+        if not hrp then return false end
+        local pos = hrp.Position
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = { player.Character }
+        for i = 1, flyAnchor.rayCount do
+            local angle = (i / flyAnchor.rayCount) * 2 * math.pi
+            local dx = math.cos(angle)
+            local dz = math.sin(angle)
+            for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
+                local dir = Vector3.new(dx, j * 0.5, dz).Unit
+                local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
+                if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
+                    return true
                 end
             end
         end
+        return false
+    end
+
+    local function flyEnterAnchor()
+        if flyAnchor.active then return end
+        if not flyAnchor.head or not flyAnchor.hrp or not flyAnchor.hum then return end
+        flyAnchor.head.Anchored = true
+        flyAnchor.hum.PlatformStand = true
+        flyAnchor.active = true
+    end
+
+    local function flyExitAnchor()
+        if not flyAnchor.active then return end
+        if flyAnchor.head and flyAnchor.hum then
+            flyAnchor.head.Anchored = false
+            flyAnchor.hum.PlatformStand = false
+        end
+        flyAnchor.active = false
+    end
+
+    local function flyMicroStepLoop()
+        flyState.targetPos = flyState.hrp.Position
+        flyState.lastTime = tick()
+        while flyState.enabled do
+            local now = tick()
+            local dt = now - flyState.lastTime
+            flyState.lastTime = now
+            if not flyState.hrp or not flyState.hrp.Parent then break end
+            local inWall = flyDetectWall()
+            if inWall and not flyAnchor.active then
+                flyEnterAnchor()
+            elseif not inWall and flyAnchor.active then
+                flyExitAnchor()
+            end
+            local moveDir
+            if FlyControl then
+                local mv = FlyControl:GetMoveVector()
+                local cf = workspace.CurrentCamera.CFrame
+                moveDir = (cf.LookVector * -mv.Z) + (cf.RightVector * mv.X)
+            else
+                moveDir = (flyState.hum and flyState.hum.MoveDirection) or Vector3.zero
+            end
+            local vertical = 0
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                vertical = 1
+            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                vertical = -1
+            end
+            local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
+            flyState.targetPos = flyState.targetPos + delta
+            local currentPos = flyState.hrp.Position
+            local remaining = flyState.targetPos - currentPos
+            local distance = remaining.Magnitude
+            if distance > 0 then
+                local steps = math.ceil(distance / 10)
+                local stepVec = remaining / steps
+                for i = 1, steps do
+                    if not flyState.enabled then break end
+                    currentPos = currentPos + stepVec
+                    flyState.hrp.CFrame = CFrame.new(currentPos) * flyState.hrp.CFrame.Rotation
+                    flyState.hrp.Velocity = Vector3.zero
+                end
+            else
+                flyState.hrp.CFrame = CFrame.new(flyState.targetPos) * flyState.hrp.CFrame.Rotation
+                flyState.hrp.Velocity = Vector3.zero
+            end
+            if flyState.hum then
+                flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+            end
+            task.wait(0.001)
+        end
+    end
+
+    local function flyHealthLockLoop()
+        while flyState.enabled do
+            if flyState.hum and flyState.hum.Health <= 0 then
+                flyState.hum.Health = flyState.hum.MaxHealth
+            end
+            task.wait(0.1)
+        end
+    end
+
+    local function startFly()
+        if flyState.enabled then return end
+        flyRefreshParts()
+        if not flyState.hrp or not flyState.hum then return end
+        flyState.enabled = true
+        flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+        flyState.microThread = task.spawn(flyMicroStepLoop)
+        flyState.healthThread = task.spawn(flyHealthLockLoop)
+        flyState.diedConn = flyState.hum.Died:Connect(function()
+            if flyState.hum and flyState.enabled then
+                flyState.hum.Health = flyState.hum.MaxHealth
+                flyState.hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end)
+    end
+
+    local function stopFly()
+        flyState.enabled = false
+        flyExitAnchor()
+        if flyState.microThread then task.cancel(flyState.microThread) flyState.microThread = nil end
+        if flyState.healthThread then task.cancel(flyState.healthThread) flyState.healthThread = nil end
+        if flyState.diedConn then flyState.diedConn:Disconnect() flyState.diedConn = nil end
+        if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
+    end
+
+    player.CharacterAdded:Connect(function()
+        if flyState.enabled then
+            stopFly()
+            task.wait(0.2)
+            startFly()
+        end
     end)
-end
 
--- ==================== 自瞄HUD ====================
-local AimHUD = nil
-local function createAimHUD()
-    if AimHUD then return end
-    local gui = Instance.new("ScreenGui")
-    gui.Name = randomString(12)
-    gui.ResetOnSpawn = false
-    gui.Parent = getSafeParent()
-    if syn and syn.protect_gui then
-        pcall(function() syn.protect_gui(gui) end)
+    FlyTab:Divider({ Text = "飞行" })
+    FlyTab:Toggle({
+        Title = "飞行（绕过）",
+        Value = false,
+        Callback = function(value)
+            if value then startFly() else stopFly() end
+        end
+    })
+    FlyTab:Slider({
+        Title = "飞行速度",
+        Step = 1,
+        Value = { Min = 10, Max = 620, Default = 35 },
+        Callback = function(value)
+            FlySpeed = value
+        end
+    })
+
+    local flyQuickToggle = false
+    local flyQuickScreenGui = nil
+    local flyQuickButton = nil
+    local flyQuickStatusLabel = nil
+
+    local function DestroyFlyQuickToggle()
+        if flyQuickScreenGui then
+            flyQuickScreenGui:Destroy()
+            flyQuickScreenGui = nil
+            flyQuickButton = nil
+            flyQuickStatusLabel = nil
+        end
     end
 
-    local hLine = Instance.new("Frame")
-    hLine.Name = randomString(8)
-    hLine.Size = UDim2.new(0, 20, 0, 2)
-    hLine.Position = UDim2.new(0.5, -10, 0.5, -1)
-    hLine.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    hLine.BorderSizePixel = 0
-    hLine.Parent = gui
+    local function CreateFlyQuickToggle()
+        if flyQuickButton then return end
+        flyQuickScreenGui = Instance.new("ScreenGui")
+        flyQuickScreenGui.Name = "FlyQuickToggle"
+        flyQuickScreenGui.ResetOnSpawn = false
+        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
 
-    local vLine = Instance.new("Frame")
-    vLine.Name = randomString(8)
-    vLine.Size = UDim2.new(0, 2, 0, 20)
-    vLine.Position = UDim2.new(0.5, -1, 0.5, -10)
-    vLine.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    vLine.BorderSizePixel = 0
-    vLine.Parent = gui
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://7734068321"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
+        button.Parent = flyQuickScreenGui
+        flyQuickButton = button
 
-    local circleLabel = Instance.new("TextLabel")
-    circleLabel.Name = randomString(8)
-    circleLabel.Size = UDim2.new(0, Config.AimFOV*2, 0, Config.AimFOV*2)
-    circleLabel.Position = UDim2.new(0.5, -Config.AimFOV, 0.5, -Config.AimFOV)
-    circleLabel.BackgroundTransparency = 1
-    circleLabel.Text = "O"
-    circleLabel.Font = Enum.Font.Legacy
-    circleLabel.TextSize = Config.AimFOV*2
-    circleLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    circleLabel.TextTransparency = 0.5
-    circleLabel.Visible = false
-    circleLabel.Parent = gui
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = button
 
-    AimHUD = gui
-end
+        flyQuickStatusLabel = Instance.new("TextLabel")
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.BackgroundTransparency = 1
+        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.Font = Enum.Font.GothamBold
+        flyQuickStatusLabel.TextStrokeTransparency = 0.3
+        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        flyQuickStatusLabel.Text = "飞行: 关"
+        flyQuickStatusLabel.Parent = button
 
-local function updateAimHUD()
-    if not AimHUD then return end
-    local circle = AimHUD:FindFirstChildOfClass("TextLabel")
-    if circle then
-        circle.Visible = AimbotEnabled
-        circle.TextColor3 = CurrentTarget and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,255,255)
-    end
-end
+        local function updateFlyStatus()
+            if flyQuickStatusLabel then
+                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                if flyQuickButton then
+                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                end
+            end
+        end
 
--- ==================== GUI（可收缩 + 按键绑定管理） ====================
-local guiFrame = nil
-local collapsibleContent = nil
-local toggleCollapse = nil
-
-local function createGUI()
-    local gui = Instance.new("ScreenGui")
-    gui.Name = randomString(12)
-    gui.ResetOnSpawn = false
-    gui.Parent = getSafeParent()
-    if syn and syn.protect_gui then
-        pcall(function() syn.protect_gui(gui) end)
-    end
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = randomString(10)
-    mainFrame.Size = UDim2.new(0, 300, 0, 800)
-    mainFrame.Position = UDim2.new(0, 20, 0.5, -400)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    mainFrame.Parent = gui
-    guiFrame = mainFrame
-
-    local titleBar = Instance.new("Frame")
-    titleBar.Name = randomString(8)
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
-    titleBar.Position = UDim2.new(0, 0, 0, 0)
-    titleBar.BackgroundColor3 = Color3.fromRGB(30,30,35)
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = mainFrame
-
-    local title = Instance.new("TextLabel")
-    title.Name = randomString(8)
-    title.Size = UDim2.new(1, -40, 0, 30)
-    title.Position = UDim2.new(0, 10, 0, 0)
-    title.Text = "San Aurie 辅助"
-    title.TextColor3 = Color3.fromRGB(255,255,255)
-    title.Font = Enum.Font.Legacy
-    title.TextSize = 15
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.BackgroundTransparency = 1
-    title.Parent = mainFrame
-
-    local collapseBtn = Instance.new("TextButton")
-    collapseBtn.Name = randomString(8)
-    collapseBtn.Size = UDim2.new(0, 30, 0, 30)
-    collapseBtn.Position = UDim2.new(1, -35, 0, 0)
-    collapseBtn.Text = "−"
-    collapseBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    collapseBtn.Font = Enum.Font.Legacy
-    collapseBtn.TextSize = 20
-    collapseBtn.BackgroundColor3 = Color3.fromRGB(50,50,60)
-    collapseBtn.BorderSizePixel = 0
-    collapseBtn.AutoButtonColor = false
-    collapseBtn.Parent = mainFrame
-
-    local content = Instance.new("Frame")
-    content.Name = randomString(8)
-    content.Size = UDim2.new(1, 0, 1, -30)
-    content.Position = UDim2.new(0, 0, 0, 30)
-    content.BackgroundTransparency = 1
-    content.Parent = mainFrame
-    collapsibleContent = content
-
-    local function makeButton(parent, text, y, color)
-        local btn = Instance.new("TextButton")
-        btn.Name = randomString(8)
-        btn.Size = UDim2.new(1, -20, 0, 28)
-        btn.Position = UDim2.new(0, 10, 0, y)
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Font = Enum.Font.Legacy
-        btn.TextSize = 13
-        btn.BackgroundColor3 = color
-        btn.BorderSizePixel = 0
-        btn.AutoButtonColor = false
-        btn.Parent = parent
-        return btn
-    end
-
-    local function makeLabel(parent, text, y)
-        local lbl = Instance.new("TextLabel")
-        lbl.Name = randomString(8)
-        lbl.Size = UDim2.new(1, -20, 0, 18)
-        lbl.Position = UDim2.new(0, 10, 0, y)
-        lbl.Text = text
-        lbl.TextColor3 = Color3.fromRGB(200,200,200)
-        lbl.Font = Enum.Font.Legacy
-        lbl.TextSize = 12
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.BackgroundTransparency = 1
-        lbl.Parent = parent
-        return lbl
-    end
-
-    local function makeTextBox(parent, y, defaultText)
-        local box = Instance.new("TextBox")
-        box.Name = randomString(8)
-        box.Size = UDim2.new(0, 60, 0, 22)
-        box.Position = UDim2.new(0, 150, 0, y)
-        box.Text = defaultText
-        box.TextColor3 = Color3.fromRGB(255,255,255)
-        box.BackgroundColor3 = Color3.fromRGB(40,40,45)
-        box.BorderSizePixel = 0
-        box.Font = Enum.Font.Legacy
-        box.TextSize = 13
-        box.Parent = parent
-        return box
-    end
-
-    -- 功能按钮（调整Y坐标）
-    local crimeBtn = makeButton(content, "犯罪透 [F1]: 开", 0, Color3.fromRGB(50,180,50))
-    local aimBtn = makeButton(content, "自瞄 [F2]: 关", 32, Color3.fromRGB(200,50,50))
-    local espBtn = makeButton(content, "透视 [F3]: 开", 64, Color3.fromRGB(50,180,50))
-    local flyBtn = makeButton(content, "起飞 [F4]: 关", 96, Color3.fromRGB(200,50,50))
-
-    makeLabel(content, "传送：", 128)
-    local teleMouseBtn = makeButton(content, "鼠标传送 [F5]", 146, Color3.fromRGB(50,50,200))
-    local setNavBtn = makeButton(content, "设置导航点", 178, Color3.fromRGB(50,50,200))
-    local teleNavBtn = makeButton(content, "传送到导航点", 210, Color3.fromRGB(50,50,200))
-    local teleCarBtn = makeButton(content, "把我的车传送过来", 242, Color3.fromRGB(50,50,200))
-
-    local noHungerBtn = makeButton(content, "不会饿 [F6]: 关", 274, Color3.fromRGB(200,50,50))
-    local repairBtn = makeButton(content, "修车加油 [F8]", 306, Color3.fromRGB(50,50,200))
-
-    -- 跑得快
-    makeLabel(content, "跑得快速度：", 338)
-    local walkSpeedBox = makeTextBox(content, 336, tostring(Config.WalkSpeed))
-    local speedBtn = makeButton(content, "跑得快 [F9]: 关", 368, Color3.fromRGB(200,50,50))
-
-    -- 改车速
-    makeLabel(content, "车速倍率：", 400)
-    local carBoostBox = makeTextBox(content, 398, tostring(Config.CarBoostMultiplier))
-    local carBoostBtn = makeButton(content, "改车速 [F10]: 关", 430, Color3.fromRGB(200,50,50))
-
-    -- 按键绑定区域
-    makeLabel(content, "--- 按键绑定 ---", 462)
-    local bindY = 482
-    local bindButtons = {}
-
-    for _, binding in ipairs(Bindings) do
-        local name = binding.name
-        local keyRef = binding.keyRef
-        local currentKey = Config[keyRef]
-
-        local label = makeLabel(content, name .. "： " .. tostring(currentKey), bindY)
-        local bindBtn = makeButton(content, "绑定", bindY, Color3.fromRGB(80,80,80))
-        bindBtn.Size = UDim2.new(0, 70, 0, 22)
-        bindBtn.Position = UDim2.new(0, 200, 0, bindY)
-        bindBtn.Parent = content
-
-        table.insert(bindButtons, { label = label, btn = bindBtn, keyRef = keyRef })
-
-        bindBtn.MouseButton1Click:Connect(function()
-            isBinding = true
-            bindingTarget = keyRef
-            bindBtn.Text = "请按键..."
+        button.MouseButton1Click:Connect(function()
+            if flyState.enabled then stopFly() else startFly() end
+            updateFlyStatus()
         end)
 
-        bindY = bindY + 26
+        local dragging = false
+        local dragStart = nil
+        local startPos = nil
+
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
+
+        button.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
+                    startPos.Y.Offset + delta.Y
+                )
+                button.Position = newPos
+            end
+        end)
+
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
+        updateFlyStatus()
+
+        local statusConn = RunService.Heartbeat:Connect(function()
+            if flyQuickToggle and flyQuickStatusLabel then
+                updateFlyStatus()
+            end
+        end)
+        table.insert(connections, statusConn)
     end
 
-    local function refreshUI()
-        crimeBtn.Text = "犯罪透 [" .. tostring(Config.CrimeESPKey.Name) .. "]: " .. (CrimeESPEnabled and "开" or "关")
-        crimeBtn.BackgroundColor3 = CrimeESPEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        aimBtn.Text = "自瞄 [" .. tostring(Config.AimbotKey.Name) .. "]: " .. (AimbotEnabled and "开" or "关")
-        aimBtn.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        espBtn.Text = "透视 [" .. tostring(Config.ESPKey.Name) .. "]: " .. (ESPEnabled and "开" or "关")
-        espBtn.BackgroundColor3 = ESPEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        flyBtn.Text = "起飞 [" .. tostring(Config.FlyKey.Name) .. "]: " .. (FlyEnabled and "开" or "关")
-        flyBtn.BackgroundColor3 = FlyEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        teleMouseBtn.Text = "鼠标传送 [" .. tostring(Config.TeleportMouseKey.Name) .. "]"
-        noHungerBtn.Text = "不会饿 [" .. tostring(Config.NoHungerKey.Name) .. "]: " .. (NoHungerEnabled and "开" or "关")
-        noHungerBtn.BackgroundColor3 = NoHungerEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        repairBtn.Text = "修车加油 [" .. tostring(Config.RepairCarKey.Name) .. "]"
-        speedBtn.Text = "跑得快 [" .. tostring(Config.SpeedRunKey.Name) .. "]: " .. (SpeedRunEnabled and "开" or "关")
-        speedBtn.BackgroundColor3 = SpeedRunEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-        carBoostBtn.Text = "改车速 [" .. tostring(Config.CarBoostKey.Name) .. "]: " .. (CarBoostEnabled and "开" or "关")
-        carBoostBtn.BackgroundColor3 = CarBoostEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(200,50,50)
-
-        walkSpeedBox.Text = tostring(Config.WalkSpeed)
-        carBoostBox.Text = tostring(Config.CarBoostMultiplier)
-
-        for _, item in ipairs(bindButtons) do
-            item.label.Text = item.keyRef .. "： " .. tostring(Config[item.keyRef])
-            item.btn.Text = "绑定"
+    FlyTab:Toggle({
+        Title = "飞天快捷开关",
+        Value = false,
+        Callback = function(value)
+            flyQuickToggle = value
+            if value then
+                CreateFlyQuickToggle()
+            else
+                DestroyFlyQuickToggle()
+            end
         end
-    end
+    })
 
-    toggleCollapse = function()
-        GUICollapsed = not GUICollapsed
-        if GUICollapsed then
-            content.Visible = false
-            mainFrame.Size = UDim2.new(0, 300, 0, 30)
-            collapseBtn.Text = "+"
-        else
-            content.Visible = true
-            mainFrame.Size = UDim2.new(0, 300, 0, 800)
-            collapseBtn.Text = "−"
+    FlyTab:Divider({ Text = "移速" })
+    local speedBypassOn = false
+    local speedBypassValue = 20
+    FlyTab:Toggle({
+        Title = "修改移速（绕过）",
+        Value = false,
+        Callback = function(value)
+            speedBypassOn = value
         end
-    end
-    collapseBtn.MouseButton1Click:Connect(toggleCollapse)
-
-    local function buttonAction(func)
-        return function(...)
-            if isBinding then return end
-            func(...)
+    })
+    FlyTab:Slider({
+        Title = "移速",
+        Step = 1,
+        Value = { Min = 5, Max = 150, Default = 20 },
+        Callback = function(value)
+            speedBypassValue = value
         end
-    end
-
-    crimeBtn.MouseButton1Click:Connect(buttonAction(function() CrimeESPEnabled = not CrimeESPEnabled refreshUI() end))
-    aimBtn.MouseButton1Click:Connect(buttonAction(function() AimbotEnabled = not AimbotEnabled if not AimbotEnabled then CurrentTarget = nil end refreshUI() end))
-    espBtn.MouseButton1Click:Connect(buttonAction(function() ESPEnabled = not ESPEnabled refreshUI() end))
-    flyBtn.MouseButton1Click:Connect(buttonAction(function() FlyEnabled = not FlyEnabled if FlyEnabled then enableFly() else disableFly() end refreshUI() end))
-    teleMouseBtn.MouseButton1Click:Connect(buttonAction(teleportToMouse))
-    setNavBtn.MouseButton1Click:Connect(buttonAction(setNavPoint))
-    teleNavBtn.MouseButton1Click:Connect(buttonAction(teleportToNav))
-    teleCarBtn.MouseButton1Click:Connect(buttonAction(teleportCarToMe))
-    noHungerBtn.MouseButton1Click:Connect(buttonAction(function() NoHungerEnabled = not NoHungerEnabled refreshUI() end))
-    repairBtn.MouseButton1Click:Connect(buttonAction(repairAndRefuelCar))
-
-    speedBtn.MouseButton1Click:Connect(buttonAction(function()
-        SpeedRunEnabled = not SpeedRunEnabled
-        applyWalkSpeed()
-        refreshUI()
-    end))
-
-    carBoostBtn.MouseButton1Click:Connect(buttonAction(function()
-        CarBoostEnabled = not CarBoostEnabled
-        if CarBoostEnabled then
-            applyCarBoost()
+    })
+    RunService.Heartbeat:Connect(function(dt)
+        if not speedBypassOn then return end
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and root and hum.MoveDirection.Magnitude > 0 then
+            root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
         end
-        refreshUI()
-    end))
-
-    walkSpeedBox.FocusLost:Connect(function()
-        local val = tonumber(walkSpeedBox.Text)
-        if val and val > 0 then Config.WalkSpeed = val if SpeedRunEnabled then applyWalkSpeed() end end
-        refreshUI()
-    end)
-    carBoostBox.FocusLost:Connect(function()
-        local val = tonumber(carBoostBox.Text)
-        if val and val > 0 then Config.CarBoostMultiplier = val end
-        refreshUI()
     end)
 
-    refreshUI()
-    return refreshUI, toggleCollapse
-end
-
--- ==================== 按键处理（含绑定逻辑 + 快速互动固定E） ====================
-local function setupHotkeys(refreshUI, toggleCollapse)
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        local key = input.KeyCode
-
-        if isBinding then
-            if key ~= Enum.KeyCode.Unknown then
-                if bindingTarget then
-                    Config[bindingTarget] = key
+    -- ============================================================
+    -- 玩家修改 Tab
+    -- ============================================================
+    local function ApplyHitbox()
+        if isDestroyed or not Settings.HitboxEnabled then return end
+        local players = Players:GetPlayers()
+        local newAffected = {}
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player and p.Character then
+                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
+                else
+                    local char = p.Character
+                    local head = char:FindFirstChild("Head")
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 and head then
+                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                        head.Transparency = 1
+                        head.Color = Color3.fromRGB(255, 215, 0)
+                        head.Material = Enum.Material.Neon
+                        head.CanCollide = false
+                        newAffected[head] = true
+                    end
                 end
-                isBinding = false
-                bindingTarget = nil
-                refreshUI()
+            end
+        end
+        for head, _ in pairs(affectedHeads) do
+            if not newAffected[head] and head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = newAffected
+    end
+
+    local function ResetHitbox()
+        for head, _ in pairs(affectedHeads) do
+            if head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = {}
+    end
+
+    local function UpdateWhitelist()
+        if isDestroyed then return end
+        Whitelist = {}
+        local players = Players:GetPlayers()
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player then
+                pcall(function()
+                    if p:IsFriendsWith(player.UserId) then
+                        Whitelist[p.UserId] = true
+                    end
+                end)
+            end
+        end
+    end
+
+    A:Divider({ Text = "伤害免疫" })
+    local godOn = false
+    A:Toggle({
+        Title = "免疫部分伤害",
+        Value = false,
+        Callback = function(value)
+            godOn = value
+        end
+    })
+    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
+
+    A:Divider({ Text = "穿墙" })
+    A:Toggle({
+        Title = "启用人物穿墙",
+        Value = false,
+        Callback = function(value)
+            Settings.NoclipEnabled = value
+            if value then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            else
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    })
+
+    A:Divider({ Text = "体力" })
+    local staminaOn = false
+    local StaminaEvent
+    pcall(function()
+        StaminaEvent = ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("PlayerEvent", 5)
+    end)
+    if StaminaEvent then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if self == StaminaEvent and method == "FireServer" then
+                if args[1] == "setStaminaOrFood" and args[2] == "stamina" and staminaOn then
+                    args[3] = 100
+                    return oldNamecall(self, unpack(args))
+                end
+                if args[1] == "takeDamage" and godOn then
+                    return
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+    end
+    task.spawn(function()
+        while not isDestroyed do
+            if staminaOn and StaminaEvent then
+                pcall(function()
+                    StaminaEvent:FireServer("setStaminaOrFood", "stamina", 100)
+                end)
+            end
+            task.wait(0.3)
+        end
+    end)
+    A:Toggle({
+        Title = "无限体力",
+        Value = false,
+        Callback = function(value)
+            staminaOn = value
+        end
+    })
+
+    A:Divider({ Text = "防甩飞" })
+    A:Toggle({
+        Title = "防甩飞",
+        Value = false,
+        Callback = function(value)
+            _G.CatAntiFling_Enabled = value
+        end
+    })
+
+    A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
+    A:Toggle({
+        Title = "防摔",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
+            if value then
+                if antiFallConnection then antiFallConnection:Disconnect() end
+                antiFallConnection = RunService.Heartbeat:Connect(function()
+                    if not antiFallEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    
+                    local vel = root.Velocity
+                    if vel.Y < -20 and hum.PlatformStand == false then
+                        local newY = math.clamp(vel.Y, -40, -10)
+                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    end
+                end)
+            else
+                if antiFallConnection then
+                    antiFallConnection:Disconnect()
+                    antiFallConnection = nil
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 枪械功能 Tab (B)
+    -- ============================================================
+    B:Divider({ Text = "枪械强化" })
+    B:Toggle({
+        Title = "超快射速",
+        Value = false,
+        Callback = function(value)
+            if not value then return end
+            local function ModifyWeaponStats()
+                local garbage = getgc(true)
+                for _, tbl in pairs(garbage) do
+                    if type(tbl) == "table" then
+                        if rawget(tbl, "SHOOT_MODE") then
+                            rawset(tbl, "SHOOT_MODE", 2)
+                        end
+                        if rawget(tbl, "RPM") then
+                            rawset(tbl, "RPM", math.huge)
+                        end
+                        if rawget(tbl, "DAMAGE") then
+                            rawset(tbl, "DAMAGE", math.huge)
+                        end
+                    end
+                end
+            end
+            ModifyWeaponStats()
+            local char = player.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Died:Connect(ModifyWeaponStats)
+                end
+            end
+            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
+        end
+    })
+
+    local infAmmoEnabled = false
+    B:Toggle({
+        Title = "无限子弹",
+        Value = false,
+        Callback = function(value)
+            infAmmoEnabled = value
+        end
+    })
+    task.spawn(function()
+        while not isDestroyed do
+            if infAmmoEnabled then
+                local characterFolder = Workspace:FindFirstChild("Characters") and Workspace.Characters:FindFirstChild(player.Name)
+                if characterFolder then
+                    for _, gun in ipairs(characterFolder:GetChildren()) do
+                        local config = gun:FindFirstChild("Config")
+                        if config then
+                            local ammo = config:FindFirstChild("Ammo")
+                            local totalAmmo = config:FindFirstChild("TotalAmmo")
+                            if ammo then ammo.Value = math.huge end
+                            if totalAmmo then totalAmmo.Value = math.huge end
+                        end
+                    end
+                end
+            end
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
+    B:Divider({ Text = "碰撞箱扩展" })
+    B:Toggle({
+        Title = "启用头部碰撞箱（推荐20-25）",
+        Value = false,
+        Callback = function(value)
+            Settings.HitboxEnabled = value
+            if value then ApplyHitbox() else ResetHitbox() end
+        end
+    })
+    B:Slider({
+        Title = "头部大小",
+        Step = 1,
+        Value = { Min = 5, Max = 400, Default = 10 },
+        Callback = function(value)
+            Settings.HitboxSize = value
+            if Settings.HitboxEnabled then ApplyHitbox() end
+        end
+    })
+    B:Toggle({
+        Title = "好友检测 (白名单)",
+        Value = false,
+        Callback = function(value)
+            Settings.WhitelistEnabled = value
+            if value then UpdateWhitelist() end
+        end
+    })
+
+    B:Divider({ Text = "子追" })
+    local zzEnabled = false
+    local zzDistance = 40
+    local zzAffected = nil
+
+    local function zzRestore()
+        if zzAffected and zzAffected.Parent then
+            pcall(function()
+                zzAffected.Size = Vector3.new(2, 1, 1)
+                zzAffected.Transparency = 0
+            end)
+        end
+        zzAffected = nil
+    end
+
+    task.spawn(function()
+        while not isDestroyed do
+            if zzEnabled then
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local best, bestDist = nil, zzDistance
+                if root then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local head = p.Character:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and head then
+                                local d = (head.Position - root.Position).Magnitude
+                                if d < bestDist then
+                                    bestDist = d
+                                    best = head
+                                end
+                            end
+                        end
+                    end
+                end
+                if best ~= zzAffected then
+                    zzRestore()
+                    if best then
+                        zzAffected = best
+                        pcall(function()
+                            best.Size = Vector3.new(500, 500, 500)
+                            best.Transparency = 1
+                            best.CanCollide = false
+                        end)
+                    end
+                end
+            else
+                zzRestore()
+            end
+            task.wait(0.2)
+        end
+    end)
+
+    B:Toggle({
+        Title = "启用子追",
+        Value = false,
+        Callback = function(value)
+            zzEnabled = value
+            if not value then zzRestore() end
+        end
+    })
+    B:Slider({
+        Title = "判定距离",
+        Step = 1,
+        Value = { Min = 0, Max = 1000, Default = 40 },
+        Callback = function(value)
+            zzDistance = value
+        end
+    })
+
+    B:Divider({ Text = "自瞄" })
+    local aimOn = false
+    local aimFOV = 150
+    local aimNoTeam = true
+    local aimWall = true
+    local aimGui, aimCircle
+
+    local function aimEnsureCircle()
+        if aimGui then return end
+        aimGui = Instance.new("ScreenGui")
+        aimGui.Name = "SA_AimFOV"
+        aimGui.ResetOnSpawn = false
+        aimGui.IgnoreGuiInset = true
+        aimGui.Parent = player:WaitForChild("PlayerGui")
+        aimCircle = Instance.new("Frame")
+        aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+        aimCircle.Position = UDim2.fromScale(0.5, 0.5)
+        aimCircle.BackgroundTransparency = 1
+        aimCircle.Parent = aimGui
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = 1.5
+        stroke.Color = Color3.fromRGB(255, 255, 255)
+        stroke.Transparency = 0.4
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = aimCircle
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = aimCircle
+    end
+
+    RunService.RenderStepped:Connect(function()
+        if not aimOn then
+            if aimGui then aimGui.Enabled = false end
+            return
+        end
+        aimEnsureCircle()
+        aimGui.Enabled = true
+        aimCircle.Size = UDim2.fromOffset(aimFOV * 2, aimFOV * 2)
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+        local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        local best, bestDist = nil, aimFOV
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                local head = p.Character:FindFirstChild("Head")
+                if hum and hum.Health > 0 and head then
+                    local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
+                    if not skip then
+                        local sp, onScreen = camera:WorldToViewportPoint(head.Position)
+                        if onScreen then
+                            local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                            if d < bestDist then
+                                local visible = true
+                                if aimWall then
+                                    local rp = RaycastParams.new()
+                                    rp.FilterType = Enum.RaycastFilterType.Exclude
+                                    rp.FilterDescendantsInstances = { player.Character }
+                                    local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
+                                    visible = (not res) or res.Instance:IsDescendantOf(p.Character)
+                                end
+                                if visible then
+                                    bestDist = d
+                                    best = head
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if best then
+            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, best.Position)
+        end
+    end)
+
+    B:Toggle({
+        Title = "自瞄",
+        Value = false,
+        Callback = function(value)
+            aimOn = value
+        end
+    })
+    B:Slider({
+        Title = "FOV圈大小",
+        Step = 1,
+        Value = { Min = 30, Max = 400, Default = 150 },
+        Callback = function(value)
+            aimFOV = value
+        end
+    })
+    B:Toggle({
+        Title = "不瞄准队友",
+        Value = true,
+        Callback = function(value)
+            aimNoTeam = value
+        end
+    })
+    B:Toggle({
+        Title = "墙壁检测",
+        Value = true,
+        Callback = function(value)
+            aimWall = value
+        end
+    })
+
+    -- ============================================================
+    -- 杀戮光环 Tab (C) - 伤害已拉满
+    -- ============================================================
+    local KA_MAX_DISTANCE = 300
+    local KA_WALL_CHECK = true
+    local kaEnabled = false
+    local KANearestOnly = false
+    local KA_NEAREST_DISTANCE = 25
+    local KATargetPoliceOnly = false
+    local KATargetCivilianOnly = false
+    local KAIgnoreDead = true
+
+    local function kaIsVisible(targetHead)
+        local char = player.Character
+        if not char then return false end
+        local myHead = char:FindFirstChild("Head")
+        if not myHead then return false end
+        local direction = targetHead.Position - myHead.Position
+        local distance = direction.Magnitude
+        if distance < 0.1 then return true end
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {char, targetHead.Parent}
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+        return Workspace:Raycast(myHead.Position, direction.Unit * distance, rayParams) == nil
+    end
+
+    local function kaGetNearestEnemy()
+        local char = player.Character
+        if not char then return nil end
+        local myHead = char:FindFirstChild("Head")
+        if not myHead then return nil end
+        local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+
+        local function isTargetAllowed(p)
+            if KATargetPoliceOnly and KATargetCivilianOnly then return false end
+            local teamName = p.Team and p.Team.Name or ""
+            local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
+            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            if KATargetPoliceOnly then
+                if not isPolice then return false end
+            elseif KATargetCivilianOnly then
+                if not isCivilian then return false end
+            end
+            if KAIgnoreDead then
+                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                if not hum or hum.Health <= 0 then return false end
+            end
+            return true
+        end
+
+        if KANearestOnly then
+            local nearestInRange = nil
+            local nearestDistInRange = 9999
+            local anyEnemy = nil
+            local anyDist = 9999
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local head = p.Character:FindFirstChild("Head")
+                        if head and isTargetAllowed(p) then
+                            local dist = (head.Position - myHead.Position).Magnitude
+                            if dist < anyDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                                anyDist = dist
+                                anyEnemy = p
+                            end
+                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                                nearestDistInRange = dist
+                                nearestInRange = p
+                            end
+                        end
+                    end
+                end
+            end
+            if nearestInRange then return nearestInRange else return anyEnemy end
+        end
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head and isTargetAllowed(p) then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < bestDist and (not KA_WALL_CHECK or kaIsVisible(head)) then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
+                    end
+                end
+            end
+        end
+        return bestPlayer
+    end
+
+    RunService.Heartbeat:Connect(function()
+        if not isDestroyed and kaEnabled then
+            local target = kaGetNearestEnemy()
+            if target then
+                kaTargetName = target.Name
+            else
+                kaTargetName = "未检测到目标"
+            end
+            local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
+            if targetHead then
+                local myHead = player.Character and player.Character:FindFirstChild("Head")
+                if myHead then
+                    local origin = myHead.Position
+                    local hitPos = targetHead.Position
+                    local direction = (hitPos - origin).Unit
+                    local damage = 999999
+                    pcall(function()
+                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                            bodyParts = { { "Head", damage } },
+                            shotCode = { origin, direction },
+                            target = target,
+                            pos = hitPos
+                        })
+                    end)
+                    pcall(function()
+                        local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                        handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                        if handleShots then
+                            handleShots:FireServer("2", "Shoot")
+                        end
+                    end)
+                end
+            end
+        end
+    end)
+
+    C:Divider({ Text = "杀戮光环" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
+    C:Toggle({
+        Title = "启用杀戮光环",
+        Value = false,
+        Callback = function(value)
+            kaEnabled = value
+        end
+    })
+    C:Slider({
+        Title = "攻击距离",
+        Step = 1,
+        Value = { Min = 50, Max = 1000, Default = 300 },
+        Callback = function(value)
+            KA_MAX_DISTANCE = value
+        end
+    })
+    C:Toggle({
+        Title = "墙体检测",
+        Value = true,
+        Callback = function(value)
+            KA_WALL_CHECK = value
+        end
+    })
+
+    C:Divider({ Text = "过滤" })
+    C:Toggle({
+        Title = "只攻击警察",
+        Value = false,
+        Callback = function(value)
+            KATargetPoliceOnly = value
+            if value and KATargetCivilianOnly then
+                KATargetCivilianOnly = false
+            end
+        end
+    })
+    C:Toggle({
+        Title = "只攻击平民",
+        Value = false,
+        Callback = function(value)
+            KATargetCivilianOnly = value
+            if value and KATargetPoliceOnly then
+                KATargetPoliceOnly = false
+            end
+        end
+    })
+    C:Toggle({
+        Title = "不攻击血量为0的玩家",
+        Value = true,
+        Callback = function(value)
+            KAIgnoreDead = value
+        end
+    })
+
+    C:Divider({ Text = "优先攻击" })
+    C:Toggle({
+        Title = "优先攻击最近目标",
+        Value = false,
+        Callback = function(value)
+            KANearestOnly = value
+        end
+    })
+    C:Slider({
+        Title = "优先攻击距离",
+        Step = 1,
+        Value = { Min = 5, Max = 100, Default = 25 },
+        Callback = function(value)
+            KA_NEAREST_DISTANCE = value
+        end
+    })
+
+    -- 更新目标显示循环
+    task.spawn(function()
+        while not isDestroyed do
+            targetLabel.Text = "目标: " .. kaTargetName
+            task.wait(0.1)
+        end
+    end)
+
+    -- ============================================================
+    -- 传送点 Tab (D)
+    -- ============================================================
+    D:Toggle({
+        Title = "启用传送",
+        Value = false,
+        Callback = function(value)
+            Settings.TeleportEnabled = value
+        end
+    })
+
+    local FIXED_TELEPORTS = {
+        {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
+        {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
+        {n = "警察局", p = Vector3.new(3364.273193359375, 3.9188079834, -394.7233581542969)},
+        {n = "圣奥里修车店", p = Vector3.new(2782.46875, 2.630995750427246, -418.59930419921875)},
+        {n = "圣奥里银行", p = Vector3.new(3134.05419921875, 6.116048336029053, -171.36976623535156)},
+        {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
+        {n = "圣奥里平民重生", p = Vector3.new(3741.114990234375, 3.720573663711548, -438.1059875488281)},
+        {n = "圣奥里码头", p = Vector3.new(4527.65625, -23.968238830566406, -280.59356689453125)},
+        {n = "圣奥里餐饮店", p = Vector3.new(3182.416748046875, 3.01859188079834, 426.5179138183594)},
+        {n = "消防部门", p = Vector3.new(3578.676025390625, 8.408823013305664, 579.6567993164062)},
+        {n = "宠物店", p = Vector3.new(3678.237305, 3.017920, 693.114624)},
+        {n = "圣奥里大码头", p = Vector3.new(2736.307617, 2.630299, -1120.333008)},
+        {n = "圣奥里海滩桥下(消星点)", p = Vector3.new(3964.504395, -25.068211, -854.057251)},
+        {n = "大景超市", p = Vector3.new(3936.582764, 3.038293, 1136.326416)},
+        {n = "转镜中心", p = Vector3.new(4152.919922, 2.631675, 941.446045)},
+        {n = "道路服务", p = Vector3.new(4271.332520, 2.628108, 1200.086914)},
+        {n = "大景餐饮店", p = Vector3.new(4476.997559, 3.037825, 906.802979)},
+        {n = "送货中心", p = Vector3.new(4399.419434, 3.038999, 1609.455933)},
+        {n = "大景卖车店", p = Vector3.new(3434.377441, 42.931786, 2687.997070)},
+        {n = "莱斯维尔餐饮店", p = Vector3.new(753.757812, 3.039824, 998.132996)},
+        {n = "莱斯维尔服装店", p = Vector3.new(820.745117, 2.766988, 1047.445679)},
+        {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771)},
+        {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693)},
+        {n = "米尔顿左上加油站", p = Vector3.new(1145.635742, 2.630916, -864.273682)},
+        {n = "米尔顿右下加油站", p = Vector3.new(-1646.802734, 2.630164, 1812.894653)},
+        {n = "米尔顿上方加油站", p = Vector3.new(-900.701660, 2.630927, 1124.683105)},
+        {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689)},
+        {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839)},
+        {n = "约克镇修车厂", p = Vector3.new(-407.163025, 3.076807, -6.098211)},
+        {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670)},
+        {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433)},
+        {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529)},
+        {n = "约克镇卫星车", p = Vector3.new(-302.093567, 3.037825, -167.621017)},
+        {n = "约克镇中心点", p = Vector3.new(-275.995209, 2.630996, -139.985352)},
+        {n = "黑市", p = Vector3.new(1038.969849, -22.732950, 895.430237)},
+        {n = "渔夫码头", p = Vector3.new(-50.147552, -24.555279, 1462.145996)},
+        {n = "农场", p = Vector3.new(-1268.339233, 2.572412, 2560.060303)},
+        {n = "监狱门口", p = Vector3.new(-1697.931885, 2.630666, 1284.567383)},
+        {n = "监狱广场", p = Vector3.new(-1600.602417, 2.631028, 1268.060059)},
+        {n = "代尔山", p = Vector3.new(847.062988, 194.115753, -326.212708)},
+        {n = "瀑布洞穴(消星点)", p = Vector3.new(3040.956055, 109.688538, 2711.069336)},
+        {n = "大桥", p = Vector3.new(949.014954, 25.215754, 2897.654785)},
+        {n = "地图右下(消星点)", p = Vector3.new(-1651.385010, 2.414712, 3225.278320)},
+        {n = "下部加油站", p = Vector3.new(2270.378174, 2.630927, 154.161484)},
+        {n = "游戏厅", p = Vector3.new(2934.893799, 2.956458, 1693.660034)},
+        {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300)},
+        {n = "修船厂", p = Vector3.new(4096.405273, -30.401447, 2865.045166)},
+    }
+
+    local teleNames = {}
+    for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
+    local selectedTeleport = teleNames[1] or ""
+
+    D:Dropdown({
+        Title = "选定传送地点",
+        Values = teleNames,
+        Value = teleNames[1],
+        Callback = function(value)
+            selectedTeleport = value
+        end
+    })
+
+    D:Button({
+        Title = "传送到选定地点",
+        Callback = function()
+            if not Settings.TeleportEnabled then
+                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+                return
+            end
+            for _, data in ipairs(FIXED_TELEPORTS) do
+                if data.n == selectedTeleport then
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        root.CFrame = CFrame.new(data.p)
+                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
+                    end
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
+
+    -- ============================================================
+    -- 透视 Tab (E) - 已删除“显示队伍统计”
+    -- ============================================================
+    local ESP_ENABLED = false
+    local ESP_SHOW_NAME = true
+    local ESP_SHOW_TEAM = true
+    local ESP_SHOW_HEALTH = true
+    local ESP_SHOW_DIST = true
+    local ESP_SHOW_SELF = false
+    local ESP_SHOW_PEERS = true
+    local ESP_LIST = {}
+    local ESP_REFRESH_COUNT = 0
+
+    local function GetTeam(p)
+        if p.Team then
+            local teamName = p.Team.Name
+            local teamMap = {
+                ["Police"] = "警察",
+                ["Fire"] = "火焰",
+                ["Medical"] = "医疗",
+                ["Road"] = "道路",
+                ["Civilian"] = "平民",
+                ["Citizen"] = "平民",
+                ["Criminal"] = "匪徒",
+                ["Gang"] = "黑帮",
+                ["Military"] = "军人",
+                ["Delivery"] = "送货",
+                ["Farmer"] = "农民",
+                ["Banker"] = "银行家",
+                ["Mayor"] = "市长",
+                ["Journalist"] = "记者",
+                ["Lawyer"] = "律师",
+                ["Prisoner"] = "囚犯",
+                ["Guard"] = "狱警",
+                ["Driver"] = "司机",
+                ["Chef"] = "厨师",
+                ["Builder"] = "建筑工",
+                ["Miner"] = "矿工",
+                ["Fisherman"] = "渔夫",
+                ["Merchant"] = "商人",
+                ["Student"] = "学生",
+                ["Teacher"] = "老师",
+                ["Engineer"] = "工程师",
+                ["Scientist"] = "科学家",
+                ["Pilot"] = "飞行员",
+                ["Courier"] = "快递员",
+                ["BusDriver"] = "公交车司机",
+            }
+            return teamMap[teamName] or teamName
+        end
+        return "平民"
+    end
+
+    local function GetTeamColor(p)
+        if p.Team then return p.Team.TeamColor.Color end
+        return Color3.fromRGB(200, 200, 200)
+    end
+
+    local function GetHealth(p)
+        local c = p.Character
+        if not c then return 0 end
+        local h = c:FindFirstChildOfClass("Humanoid")
+        if not h then return 0 end
+        return math.floor(h.Health)
+    end
+
+    local function GetDist(p)
+        local mc = player.Character
+        if not mc then return 0 end
+        local mr = mc:FindFirstChild("HumanoidRootPart")
+        if not mr then return 0 end
+        local tc = p.Character
+        if not tc then return 0 end
+        local tr = tc:FindFirstChild("HumanoidRootPart")
+        if not tr then return 0 end
+        return math.floor((mr.Position - tr.Position).Magnitude)
+    end
+
+    local function RemoveESP(id)
+        local d = ESP_LIST[id]
+        if d then
+            if d.Billboard then d.Billboard:Destroy() end
+            ESP_LIST[id] = nil
+        end
+    end
+
+    local function BuildESP(p)
+        if not p.Character then return end
+        if not ESP_SHOW_SELF and p == player then return end
+        
+        local head = p.Character:FindFirstChild("Head")
+        if not head then return end
+        if ESP_LIST[p.UserId] then
+            if ESP_LIST[p.UserId].Billboard then
+                ESP_LIST[p.UserId].Billboard.Enabled = true
             end
             return
         end
 
-        if key == Config.CrimeESPKey then
-            CrimeESPEnabled = not CrimeESPEnabled refreshUI()
-        elseif key == Config.AimbotKey then
-            AimbotEnabled = not AimbotEnabled if not AimbotEnabled then CurrentTarget = nil end refreshUI()
-        elseif key == Config.ESPKey then
-            ESPEnabled = not ESPEnabled refreshUI()
-        elseif key == Config.FlyKey then
-            FlyEnabled = not FlyEnabled if FlyEnabled then enableFly() else disableFly() end refreshUI()
-        elseif key == Config.TeleportMouseKey then
-            teleportToMouse()
-        elseif key == Config.NoHungerKey then
-            NoHungerEnabled = not NoHungerEnabled refreshUI()
-        elseif key == Config.FastInteractKey then
-            fastInteract()
-        elseif key == Config.RepairCarKey then
-            repairAndRefuelCar()
-        elseif key == Config.SpeedRunKey then
-            SpeedRunEnabled = not SpeedRunEnabled applyWalkSpeed() refreshUI()
-        elseif key == Config.CarBoostKey then
-            CarBoostEnabled = not CarBoostEnabled if CarBoostEnabled then applyCarBoost() end refreshUI()
+        local bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 200, 0, 100)
+        bb.StudsOffset = Vector3.new(0, 3, 0)
+        bb.AlwaysOnTop = true
+        bb.MaxDistance = 764
+        bb.Parent = head
+
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(1, 0, 1, 0)
+        f.BackgroundTransparency = 1
+        f.Parent = bb
+
+        ESP_LIST[p.UserId] = { Billboard = bb, Frame = f }
+    end
+
+    local function RefreshESP()
+        if not ESP_ENABLED then
+            for _, d in pairs(ESP_LIST) do
+                if d.Billboard then d.Billboard.Enabled = false end
+            end
+            return
         end
 
-        if key == Config.CollapseKey then
-            toggleCollapse()
+        ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
+        if ESP_REFRESH_COUNT % 3 ~= 0 then
+            return
+        end
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not ESP_SHOW_SELF and p == player then
+                RemoveESP(p.UserId)
+                continue
+            end
+            
+            if not p.Character then
+                RemoveESP(p.UserId)
+                continue
+            end
+            
+            if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
+                RemoveESP(p.UserId)
+            end
+            
+            if not ESP_LIST[p.UserId] then
+                BuildESP(p)
+            end
+            
+            local d = ESP_LIST[p.UserId]
+            if not d then continue end
+            if not d.Billboard or not d.Billboard.Parent then
+                ESP_LIST[p.UserId] = nil
+                BuildESP(p)
+                d = ESP_LIST[p.UserId]
+                if not d then continue end
+            end
+            d.Billboard.Enabled = true
+
+            local f = d.Frame
+            for _, c in ipairs(f:GetChildren()) do c:Destroy() end
+
+            local y = 0
+            local lines = 0
+            local team = GetTeam(p)
+            local color = GetTeamColor(p)
+            local hp = GetHealth(p)
+            local dist = GetDist(p)
+
+            local isWdfexUser = false
+            local isAuthor = false
+            
+            for _, child in ipairs(p:GetChildren()) do
+                if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                    isWdfexUser = true
+                end
+                if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                    isAuthor = true
+                end
+            end
+            
+            if p.Character then
+                for _, child in ipairs(p.Character:GetDescendants()) do
+                    if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                        isWdfexUser = true
+                    end
+                    if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                        isAuthor = true
+                    end
+                end
+            end
+
+            if ESP_SHOW_NAME then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 20)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                if p == player then
+                    l.Text = p.Name .. " (你)"
+                    l.TextColor3 = Color3.fromRGB(0, 255, 255)
+                else
+                    l.Text = p.Name
+                    l.TextColor3 = color
+                end
+                l.TextSize = 15
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 22
+                lines = lines + 1
+            end
+
+            if ESP_SHOW_PEERS and isWdfexUser then
+                local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
+                local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
+                
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = displayText
+                l.TextColor3 = textColor
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            if ESP_SHOW_TEAM then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = "[" .. team .. "]"
+                l.TextColor3 = color
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            if ESP_SHOW_HEALTH then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                local c = hp > 70 and Color3.fromRGB(0, 255, 100) or hp > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+                l.Text = hp .. "HP"
+                l.TextColor3 = c
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            if ESP_SHOW_DIST then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = dist .. "m"
+                l.TextColor3 = Color3.fromRGB(200, 200, 200)
+                l.TextSize = 13
+                l.Font = Enum.Font.Gotham
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            d.Billboard.Size = UDim2.new(0, 200, 0, lines * 20 + 10)
+        end
+    end
+
+    E:Toggle({
+        Title = "透视总开关",
+        Value = false,
+        Callback = function(value)
+            ESP_ENABLED = value
+            if value then
+                RefreshESP()
+            end
+        end
+    })
+    E:Divider()
+    E:Toggle({
+        Title = "显示名字",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_NAME = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Toggle({
+        Title = "显示队伍",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_TEAM = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Toggle({
+        Title = "显示血量",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_HEALTH = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Toggle({
+        Title = "显示距离",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_DIST = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Divider()
+    E:Toggle({
+        Title = "透视自己",
+        Value = false,
+        Callback = function(value)
+            ESP_SHOW_SELF = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    E:Toggle({
+        Title = "同行显示",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_PEERS = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.3)
+            if ESP_ENABLED then RefreshESP() end
         end
     end)
-end
+    Players.PlayerAdded:Connect(function(p)
+        p.CharacterAdded:Connect(function()
+            task.wait(0.3)
+            if ESP_ENABLED then RefreshESP() end
+        end)
+    end)
+    Players.PlayerRemoving:Connect(function(p)
+        RemoveESP(p.UserId)
+    end)
 
--- ==================== 主循环（随机更新间隔） ====================
-local nextESPUpdate = math.random(2, 4)
-local currentFrame = 0
-local carBoostApplyTimer = 0
+    -- ============================================================
+    -- 音乐 Tab
+    -- ============================================================
+    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
+    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
-RunService.RenderStepped:Connect(function(dt)
-    currentFrame = currentFrame + 1
-    if currentFrame >= nextESPUpdate then
-        pcall(updateESP)
-        currentFrame = 0
-        nextESPUpdate = math.random(2, 4)
+    local SONG_LIST = {
+        { name = "半壶纱", id = "140168001118478" },
+        { name = "对你有感觉", id = "113476583412576" },
+        { name = "失眠", id = "124928120639248" },
+        { name = "中国人能飞", id = "79254667830418" },
+        { name = "忘情牛肉面", id = "72954292508946" },
+        { name = "无需多言", id = "114940361500053" },
+        { name = "出山", id = "108542841138539" },
+        { name = "来个好梗绷一绷", id = "120070812635771" },
+        { name = "孤独患者", id = "88257174439605" },
+        { name = "幻昼", id = "103093530102792" },
+        { name = "海屿你", id = "76421239273915" },
+        { name = "于是", id = "132959953803661" },
+        { name = "罗生门", id = "79952466129206" },
+        { name = "茫", id = "72194943092340" },
+        { name = "忘不掉的你", id = "91111816286323" },
+        { name = "DearD", id = "139047831212058" },
+        { name = "戒烟", id = "137671588958836" },
+        { name = "IQOO进行曲", id = "109693244185458" },
+        { name = "祖国人进行曲", id = "86555185586884" },
+        { name = "十年咕嘎无人知", id = "78729794283728" },
+        { name = "unhappy", id = "88523902860927" },
+    }
+
+    local selectedSong = SONG_LIST[1]
+    local musicSound = nil
+    local isMusicPlaying = false
+    local currentPlayIndex = 1
+    local playMode = "顺序播放"
+    local endedConnection = nil
+
+    local songNames = {}
+    for _, song in ipairs(SONG_LIST) do
+        table.insert(songNames, song.name)
     end
-    pcall(function() updateAimbot(dt) end)
-    pcall(updateAimHUD)
-    pcall(updateFly)
-    pcall(function() updateNoHunger(dt) end)  -- 传入dt
 
-    if CarBoostEnabled then
-        carBoostApplyTimer = carBoostApplyTimer + dt
-        if carBoostApplyTimer >= 2 then
-            pcall(applyCarBoost)
-            carBoostApplyTimer = 0
+    local function PlaySongByIndex(index)
+        if index < 1 or index > #SONG_LIST then
+            if playMode == "顺序播放" then
+                index = 1
+            elseif playMode == "循环播放" then
+                index = 1
+            elseif playMode == "随机播放" then
+                index = math.random(1, #SONG_LIST)
+            end
         end
-    else
-        carBoostApplyTimer = 0
+        
+        if index < 1 or index > #SONG_LIST then return end
+        
+        local song = SONG_LIST[index]
+        selectedSong = song
+        currentPlayIndex = index
+        
+        if musicSound then
+            musicSound:Stop()
+            musicSound:Destroy()
+            musicSound = nil
+        end
+        if endedConnection then
+            endedConnection:Disconnect()
+            endedConnection = nil
+        end
+        
+        pcall(function()
+            musicSound = Instance.new("Sound")
+            musicSound.SoundId = "rbxassetid://" .. song.id
+            musicSound.Volume = 0.5
+            musicSound.Looped = false
+            musicSound.Parent = player:WaitForChild("PlayerGui")
+            musicSound:Play()
+            WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. song.name, Duration = 2 })
+            
+            endedConnection = musicSound.Ended:Connect(function()
+                if not isMusicPlaying then return end
+                if playMode == "循环播放" then
+                    PlaySongByIndex(currentPlayIndex)
+                elseif playMode == "顺序播放" then
+                    local nextIndex = currentPlayIndex + 1
+                    if nextIndex > #SONG_LIST then
+                        nextIndex = 1
+                    end
+                    PlaySongByIndex(nextIndex)
+                elseif playMode == "随机播放" then
+                    local randomIndex = math.random(1, #SONG_LIST)
+                    while randomIndex == currentPlayIndex and #SONG_LIST > 1 do
+                        randomIndex = math.random(1, #SONG_LIST)
+                    end
+                    PlaySongByIndex(randomIndex)
+                end
+            end)
+        end)
     end
-end)
 
--- ==================== 启动（随机延迟 + 全图透视） ====================
-local function start()
-    wait(math.random(3, 8))  -- 随机3~8秒后启动
-    Config.MaxESP_Distance = calculateMapDistance()
-    createAimHUD()
-    local refreshUI, toggleCollapseFunc = createGUI()
-    setupHotkeys(refreshUI, toggleCollapseFunc)
-end
+    MusicGroup:Dropdown({
+        Title = "选择歌曲",
+        Values = songNames,
+        Value = songNames[1],
+        Callback = function(value)
+            for i, song in ipairs(SONG_LIST) do
+                if song.name == value then
+                    selectedSong = song
+                    currentPlayIndex = i
+                    break
+                end
+            end
+            if isMusicPlaying then
+                PlaySongByIndex(currentPlayIndex)
+            end
+        end
+    })
 
-local success, err = pcall(start)
-if not success then
-    -- 静默失败
+    MusicGroup:Divider()
+
+    MusicGroup:Toggle({
+        Title = "播放音乐",
+        Value = false,
+        Callback = function(value)
+            isMusicPlaying = value
+            if value then
+                PlaySongByIndex(currentPlayIndex)
+            else
+                if musicSound then
+                    musicSound:Stop()
+                    musicSound:Destroy()
+                    musicSound = nil
+                end
+                if endedConnection then
+                    endedConnection:Disconnect()
+                    endedConnection = nil
+                end
+                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
+            end
+        end
+    })
+
+    MusicGroup:Slider({
+        Title = "音量",
+        Step = 0.1,
+        Value = { Min = 0, Max = 7, Default = 1 },
+        Callback = function(value)
+            if musicSound then
+                local actualVolume = math.min(value, 1)
+                musicSound.Volume = actualVolume
+            end
+        end
+    })
+
+    MusicGroup:Divider()
+    MusicGroup:Paragraph({
+        Title = "播放模式",
+        Desc = "选择音乐的播放方式"
+    })
+
+    MusicGroup:Dropdown({
+        Title = "播放模式",
+        Values = { "顺序播放", "循环播放", "随机播放" },
+        Value = "顺序播放",
+        Callback = function(value)
+            playMode = value
+            WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
+            if isMusicPlaying then
+                PlaySongByIndex(currentPlayIndex)
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 设置 Tab (G) - 仅作者可见
+    -- ============================================================
+    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
+
+    if DEVICE_UID == AUTHOR_UID then
+        local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
+        AdminGroup:Paragraph({
+            Title = "已授权",
+            Desc = "当前身份: 作者"
+        })
+        AdminGroup:Divider()
+
+        AdminGroup:Paragraph({
+            Title = "黑名单管理",
+            Desc = "输入要拉黑的设备UID，点击拉黑即可"
+        })
+
+        local blacklistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要拉黑的设备UID...",
+            Callback = function(value)
+                blacklistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "拉黑设备",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    if blacklistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
+                        return
+                    end
+                    BLACKLIST[blacklistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "从黑名单移除",
+            Callback = function()
+                if blacklistInput and blacklistInput ~= "" then
+                    BLACKLIST[blacklistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider({ Text = "授权管理" })
+        AdminGroup:Paragraph({
+            Title = "说明",
+            Desc = "输入要授权的设备UID，点击授权即可"
+        })
+
+        local whitelistInput = nil
+        AdminGroup:Input({
+            Title = "输入UID",
+            Placeholder = "请输入要授权的设备UID...",
+            Callback = function(value)
+                whitelistInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "授权设备",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    if whitelistInput == DEVICE_UID then
+                        WindUI:Notify({ Title = "提示", Content = "你已拥有最高权限", Duration = 3 })
+                        return
+                    end
+                    WHITELIST[whitelistInput] = true
+                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "移除授权",
+            Callback = function()
+                if whitelistInput and whitelistInput ~= "" then
+                    WHITELIST[whitelistInput] = nil
+                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                end
+            end
+        })
+
+        AdminGroup:Divider()
+        AdminGroup:Button({
+            Title = "查看当前黑名单",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(BLACKLIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "查看当前授权列表",
+            Callback = function()
+                local list = {}
+                for uid, _ in pairs(WHITELIST) do
+                    table.insert(list, uid)
+                end
+                if #list == 0 then
+                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
+                end
+            end
+        })
+    else
+        local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
+        BlockGroup:Paragraph({
+            Title = "禁止访问",
+            Desc = "你无法进入开发者后台"
+        })
+    end
+
+    WindUI:Notify({
+        Title = "wdfex-Hub",
+        Content = "脚本已加载成功，欢迎使用！",
+        Duration = 3,
+    })
 end
