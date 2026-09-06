@@ -1671,7 +1671,6 @@ function createUI()
     local KATargetCivilianOnly = false
     local KAIgnoreDead = true
     local showTarget = true
-    local onlyGunTarget = false
     local currentTarget = nil
     local targetDisplayGui = nil
     local targetDisplayLabel = nil
@@ -1686,7 +1685,7 @@ function createUI()
 
         targetDisplayLabel = Instance.new("TextLabel")
         targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
-        targetDisplayLabel.Position = UDim2.new(1, -230, 0, 10)
+        targetDisplayLabel.Position = UDim2.new(1, -230, 1, -50) -- 右下角
         targetDisplayLabel.BackgroundTransparency = 1
         targetDisplayLabel.Text = "未检测到目标"
         targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1707,7 +1706,7 @@ function createUI()
     end
 
     local function UpdateTargetDisplay()
-        if not showTarget then
+        if not showTarget or not kaEnabled then
             if targetDisplayGui then targetDisplayGui.Enabled = false end
             return
         end
@@ -1720,32 +1719,6 @@ function createUI()
             targetDisplayLabel.Text = "未检测到目标"
             targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
         end
-    end
-
-    local function playerHasGun(targetPlayer)
-        if not targetPlayer or not targetPlayer.Character then return false end
-        local char = targetPlayer.Character
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Tool") then
-                local nameLower = string.lower(child.Name)
-                local gunKeywords = {"gun", "rifle", "pistol", "shotgun", "sniper", "smg", "ak", "m4", "ar", "手枪", "步枪", "狙击", "霰弹", "冲锋"}
-                for _, keyword in ipairs(gunKeywords) do
-                    if string.find(nameLower, keyword) then
-                        return true
-                    end
-                end
-                if child:FindFirstChild("Handle") or child:FindFirstChild("Gun") or child:FindFirstChild("Weapon") then
-                    return true
-                end
-                if child:FindFirstChildWhichIsA("AnimationTrack") then
-                    return true
-                end
-            end
-            if child:IsA("Model") and child.Name:lower():find("gun") then
-                return true
-            end
-        end
-        return false
     end
 
     local function kaIsVisible(targetHead)
@@ -1773,7 +1746,13 @@ function createUI()
             if KATargetPoliceOnly and KATargetCivilianOnly then return false end
             local teamName = p.Team and p.Team.Name or ""
             local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            local isCivilian = false
+            if p.Team then
+                local tn = p.Team.Name
+                isCivilian = tn:find("平民") or tn:find("Citizen") or tn:find("圣奥里公民")
+            else
+                isCivilian = true
+            end
             if KATargetPoliceOnly then
                 if not isPolice then return false end
             elseif KATargetCivilianOnly then
@@ -1782,9 +1761,6 @@ function createUI()
             if KAIgnoreDead then
                 local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
                 if not hum or hum.Health <= 0 then return false end
-            end
-            if onlyGunTarget and not playerHasGun(p) then
-                return false
             end
             return true
         end
@@ -1912,18 +1888,13 @@ function createUI()
         Callback = function(value)
             showTarget = value
             if value then
-                CreateTargetDisplay()
-                UpdateTargetDisplay()
+                if kaEnabled then
+                    CreateTargetDisplay()
+                    UpdateTargetDisplay()
+                end
             else
                 DestroyTargetDisplay()
             end
-        end
-    })
-    C:Toggle({
-        Title = "只攻击有枪标的玩家",
-        Value = false,
-        Callback = function(value)
-            onlyGunTarget = value
         end
     })
 
