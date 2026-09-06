@@ -251,7 +251,6 @@ function createUI()
         User = {
             Enabled = true,
             Callback = function()
-                -- ==================== 点击头像弹出个人信息 ====================
                 local userId = player.UserId
                 local thumbType = Enum.ThumbnailType.HeadShot
                 local thumbSize = Enum.ThumbnailSize.Size420x420
@@ -634,10 +633,6 @@ function createUI()
     -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
-    NoticeSection:Paragraph({
-        Title = "wdfex",
-        Desc = "作者：wdfex\nQQ：1687426335\n已为您开启反作弊与防挂机祝您玩的愉快"
-    })
     NoticeSection:Divider()
     NoticeSection:Paragraph({
         Title = "注意事项",
@@ -1664,7 +1659,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 伤害已拉满
+    -- 杀戮光环 Tab (C) - 已修复拿枪延迟问题
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1674,6 +1669,57 @@ function createUI()
     local KATargetPoliceOnly = false
     local KATargetCivilianOnly = false
     local KAIgnoreDead = true
+    local showTarget = true
+    local currentTarget = nil
+    local targetDisplayGui = nil
+    local targetDisplayLabel = nil
+    local attackCooldown = false
+
+    local function CreateTargetDisplay()
+        if targetDisplayGui then return end
+        targetDisplayGui = Instance.new("ScreenGui")
+        targetDisplayGui.Name = "KillAuraTargetDisplay"
+        targetDisplayGui.ResetOnSpawn = false
+        targetDisplayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+
+        targetDisplayLabel = Instance.new("TextLabel")
+        targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
+        targetDisplayLabel.Position = UDim2.new(1, -230, 1, -50)
+        targetDisplayLabel.BackgroundTransparency = 1
+        targetDisplayLabel.Text = "未检测到目标"
+        targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        targetDisplayLabel.TextSize = 18
+        targetDisplayLabel.Font = Enum.Font.GothamBold
+        targetDisplayLabel.TextStrokeTransparency = 0.2
+        targetDisplayLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        targetDisplayLabel.TextXAlignment = Enum.TextXAlignment.Right
+        targetDisplayLabel.Parent = targetDisplayGui
+    end
+
+    local function DestroyTargetDisplay()
+        if targetDisplayGui then
+            targetDisplayGui:Destroy()
+            targetDisplayGui = nil
+            targetDisplayLabel = nil
+        end
+    end
+
+    local function UpdateTargetDisplay()
+        if not showTarget or not kaEnabled then
+            if targetDisplayGui then targetDisplayGui.Enabled = false end
+            return
+        end
+        if not targetDisplayGui then CreateTargetDisplay() end
+        targetDisplayGui.Enabled = true
+        if currentTarget then
+            targetDisplayLabel.Text = currentTarget.Name
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        else
+            targetDisplayLabel.Text = "未检测到目标"
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+        end
+    end
 
     local function kaIsVisible(targetHead)
         local char = player.Character
@@ -1700,7 +1746,13 @@ function createUI()
             if KATargetPoliceOnly and KATargetCivilianOnly then return false end
             local teamName = p.Team and p.Team.Name or ""
             local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-            local isCivilian = teamName == "" or teamName:find("平民") or teamName:find("Citizen") or teamName:find("圣奥里公民")
+            local isCivilian = false
+            if p.Team then
+                local tn = p.Team.Name
+                isCivilian = tn:find("平民") or tn:find("Citizen") or tn:find("圣奥里公民")
+            else
+                isCivilian = true
+            end
             if KATargetPoliceOnly then
                 if not isPolice then return false end
             elseif KATargetCivilianOnly then
@@ -1758,17 +1810,23 @@ function createUI()
         return bestPlayer
     end
 
-    RunService.Heartbeat:Connect(function()
-        if not isDestroyed and kaEnabled then
-            local target = kaGetNearestEnemy()
-            local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
+    -- ==================== 攻击执行函数 ====================
+    local function performAttack()
+        if not kaEnabled then return end
+        if attackCooldown then return end
+        attackCooldown = true
+        
+        local target = kaGetNearestEnemy()
+        currentTarget = target
+        if target then
+            local targetHead = target.Character and target.Character:FindFirstChild("Head")
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
                 if myHead then
                     local origin = myHead.Position
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 999999  -- 伤害拉满，秒杀
+                    local damage = 999999
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
@@ -1787,15 +1845,77 @@ function createUI()
                 end
             end
         end
+        UpdateTargetDisplay()
+        
+        task.wait(0.05)
+        attackCooldown = false
+    end
+
+    -- ==================== 主循环（间隔攻击） ====================
+    task.spawn(function()
+        while not isDestroyed do
+            if kaEnabled then
+                performAttack()
+            end
+            task.wait(0.1)
+        end
     end)
 
+    -- ==================== 监听角色变化，拿枪后立即攻击一次 ====================
+    player.CharacterAdded:Connect(function()
+        if kaEnabled then
+            task.wait(0.05)
+            performAttack()
+        end
+    end)
+
+    -- 监听武器切换（工具添加时）
+    local function onToolAdded(tool)
+        if kaEnabled then
+            task.wait(0.05)
+            performAttack()
+        end
+    end
+
+    -- 监听当前角色的工具添加
+    local function setupToolListener(char)
+        if char then
+            char.DescendantAdded:Connect(function(desc)
+                if desc:IsA("Tool") then
+                    onToolAdded(desc)
+                end
+            end)
+        end
+    end
+
+    -- 初始设置
+    if player.Character then
+        setupToolListener(player.Character)
+    end
+
+    -- 角色重生后重新监听
+    player.CharacterAdded:Connect(function(char)
+        setupToolListener(char)
+    end)
+
+    -- ============================================================
+    -- UI 控件
+    -- ============================================================
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
         Callback = function(value)
             kaEnabled = value
+            if value then
+                if showTarget then CreateTargetDisplay() end
+                task.wait(0.1)
+                performAttack()
+            else
+                currentTarget = nil
+                if showTarget then UpdateTargetDisplay() end
+            end
         end
     })
     C:Slider({
@@ -1811,6 +1931,23 @@ function createUI()
         Value = true,
         Callback = function(value)
             KA_WALL_CHECK = value
+        end
+    })
+
+    C:Divider({ Text = "显示设置" })
+    C:Toggle({
+        Title = "显示攻击目标",
+        Value = true,
+        Callback = function(value)
+            showTarget = value
+            if value then
+                if kaEnabled then
+                    CreateTargetDisplay()
+                    UpdateTargetDisplay()
+                end
+            else
+                DestroyTargetDisplay()
+            end
         end
     })
 
@@ -1957,7 +2094,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 已删除“显示队伍统计”
+    -- 透视 Tab (E)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
