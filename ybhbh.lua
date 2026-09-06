@@ -60,7 +60,7 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 统一设备UID检测（换服务器不变） ====================
+    -- ==================== 统一设备UID检测 ====================
     local function getDeviceUID()
         local userId = player.UserId
         local success, machineId = pcall(function()
@@ -78,23 +78,18 @@ function createUI()
 
     -- ==================== 黑名单与授权系统 ====================
     local AUTHOR_UID = "XXCWYXWFYZDRNGDGHPG"
-
     local BLACKLIST = {
         ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
     }
-
     local WHITELIST = {
         ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
     }
 
-    local function isBlacklisted(uid)
-        return BLACKLIST[uid] == true
-    end
-
+    local function isBlacklisted(uid) return BLACKLIST[uid] == true end
     local function isAuthorized(uid)
-        if uid == AUTHOR_UID then return true end
+        if uid == AUTHOR_UID then return true
         return WHITELIST[uid] == true
     end
 
@@ -150,7 +145,6 @@ function createUI()
         blockUid.Font = Enum.Font.Gotham
         blockUid.TextXAlignment = Enum.TextXAlignment.Center
         blockUid.Parent = blockFrame
-
         return
     end
 
@@ -216,11 +210,10 @@ function createUI()
         authUid.Font = Enum.Font.Gotham
         authUid.TextXAlignment = Enum.TextXAlignment.Center
         authUid.Parent = authFrame
-
         return
     end
 
-    -- ==================== 添加脚本标记（用于同行显示） ====================
+    -- ==================== 添加脚本标记（同行显示） ====================
     local scriptTag = Instance.new("BoolValue")
     scriptTag.Name = "wdfexScript"
     scriptTag.Value = true
@@ -251,7 +244,7 @@ function createUI()
         User = {
             Enabled = true,
             Callback = function()
-                -- ==================== 点击头像弹出个人信息 ====================
+                -- 点击头像弹出个人信息
                 local userId = player.UserId
                 local thumbType = Enum.ThumbnailType.HeadShot
                 local thumbSize = Enum.ThumbnailSize.Size420x420
@@ -259,12 +252,9 @@ function createUI()
                     return Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
                 end)
                 local avatarUrl = success and thumbnail or "rbxassetid://0"
-
                 local name = player.Name
-
                 local pwdLen = math.random(10, 15)
                 local stars = string.rep("*", pwdLen)
-
                 local days = player.AccountAge
                 local regTime = days .. " 天前"
 
@@ -369,8 +359,7 @@ function createUI()
                     Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
+                    Callback = function() end
                 }
             }
         }
@@ -399,13 +388,12 @@ function createUI()
         Draggable = true,
     })
 
-    -- ==================== 添加彩色描边（两条反向环绕） ====================
-    task.wait(0.1) -- 等待UI渲染
+    -- ==================== 彩色描边（两条反向环绕） ====================
+    task.wait(0.1)
     local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
     if mainGui then
         local mainFrame = mainGui:FindFirstChildOfClass("Frame")
         if mainFrame then
-            -- 创建两条描边
             local stroke1 = Instance.new("UIStroke")
             stroke1.Thickness = 3
             stroke1.Color = Color3.fromHSV(0, 1, 1)
@@ -420,7 +408,6 @@ function createUI()
             stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             stroke2.Parent = mainFrame
 
-            -- 反向颜色循环
             local hue1 = 0
             local hue2 = 0.5
             local colorConn = RunService.Heartbeat:Connect(function()
@@ -432,6 +419,31 @@ function createUI()
             table.insert(connections, colorConn)
         end
     end
+
+    -- ==================== 杀戮光环目标显示（右上角） ====================
+    local kaTargetName = "未检测到目标"
+    local targetDisplayGui = Instance.new("ScreenGui")
+    targetDisplayGui.Name = "KillAuraTargetDisplay"
+    targetDisplayGui.ResetOnSpawn = false
+    targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+
+    local targetLabel = Instance.new("TextLabel")
+    targetLabel.Size = UDim2.new(0, 220, 0, 30)
+    targetLabel.Position = UDim2.new(1, -230, 0, 10)
+    targetLabel.BackgroundTransparency = 1
+    targetLabel.Text = "目标: 未检测到"
+    targetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    targetLabel.TextSize = 18
+    targetLabel.Font = Enum.Font.GothamBold
+    targetLabel.TextXAlignment = Enum.TextXAlignment.Right
+    targetLabel.Parent = targetDisplayGui
+
+    task.spawn(function()
+        while not isDestroyed do
+            targetLabel.Text = "目标: " .. kaTargetName
+            task.wait(0.1)
+        end
+    end)
 
     spawn(function()
         while true do
@@ -445,7 +457,7 @@ function createUI()
         end
     end)
 
-    -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
+    -- ==================== 播放音乐 ====================
     task.spawn(function()
         pcall(function()
             local sound = Instance.new("Sound")
@@ -459,7 +471,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
+    -- ==================== 滚动横幅 ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -515,7 +527,6 @@ function createUI()
             pcall(function() label:Destroy() end)
         end
         liveModeLabels = {}
-        
         if not liveModeEnabled then return end
         
         local gui = Instance.new("ScreenGui")
@@ -570,7 +581,7 @@ function createUI()
         liveModeLabels = {}
     end
 
-    -- ==================== 其余原有功能 ====================
+    -- ==================== 基础设置 ====================
     local Settings = {
         HoldTime = 0,
         Distance = 25,
@@ -618,7 +629,7 @@ function createUI()
     AntiFlingLoop()
 
     -- ==================== Tab 创建 ====================
-    -- 作者信息 Tab（第一位，默认选中）
+    -- 作者信息（第一位）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -633,7 +644,7 @@ function createUI()
         Desc = "",
     })
 
-    -- 公告 Tab
+    -- 公告
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Paragraph({
@@ -646,7 +657,7 @@ function createUI()
         Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n请勿将此脚本分享给他人发现我将封禁你的设备\n让你无法使用\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
     })
 
-    -- 通知 Tab
+    -- 通知
     local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
     local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
     infoSection:Divider()
@@ -677,9 +688,7 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察 → 其他功能
-    -- ============================================================
+    -- Tab 顺序
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local InteractTab = AddTab(MainSection, "互动", "hand")
@@ -689,6 +698,98 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
     local OtherTab = AddTab(MainSection, "其他功能", "more")
+
+    -- ============================================================
+    -- 其他功能 Tab
+    -- ============================================================
+    OtherTab:Divider({ Text = "直播模式" })
+    OtherTab:Toggle({
+        Title = "直播模式",
+        Value = false,
+        Callback = function(value)
+            liveModeEnabled = value
+            if value then
+                CreateLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
+            else
+                DestroyLiveModeWatermarks()
+                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
+            end
+        end
+    })
+
+    -- ==================== 一键破解黑客小游戏 ====================
+    OtherTab:Divider({ Text = "破解工具" })
+    OtherTab:Button({
+        Title = "一键破解所有黑客小游戏",
+        Callback = function()
+            WindUI:Notify({ Title = "破解中", Content = "正在尝试破解...", Duration = 2 })
+            task.spawn(function()
+                local solved = 0
+                -- 尝试破解ATM（圣奥里常见）
+                local atmGui = player.PlayerGui:FindFirstChild("ATM")
+                if atmGui then
+                    local seq = atmGui:FindFirstChild("Sequence1")
+                    if seq and seq:IsA("TextLabel") then
+                        local code = seq.Text
+                        local buttons = atmGui:FindFirstChild("Buttons")
+                        if buttons then
+                            for _, btn in ipairs(buttons:GetChildren()) do
+                                if btn:IsA("TextButton") and btn.Text == code and btn.BackgroundColor3 ~= Color3.fromRGB(255, 0, 0) then
+                                    btn:Click()
+                                    solved = solved + 1
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                -- 尝试破解保险箱（圣奥里常见）
+                local safeGui = player.PlayerGui:FindFirstChild("Safe")
+                if safeGui then
+                    local codeLabel = safeGui:FindFirstChild("CodeLabel")
+                    if codeLabel and codeLabel:IsA("TextLabel") then
+                        local code = codeLabel.Text
+                        local input = safeGui:FindFirstChild("Input")
+                        if input and input:IsA("TextBox") then
+                            input.Text = code
+                            local confirm = safeGui:FindFirstChild("ConfirmButton")
+                            if confirm and confirm:IsA("TextButton") then
+                                confirm:Click()
+                                solved = solved + 1
+                            end
+                        end
+                    end
+                end
+                -- 尝试破解撬锁（圣奥里常见）
+                local lockGui = player.PlayerGui:FindFirstChild("LockPick")
+                if lockGui then
+                    local pickBtn = lockGui:FindFirstChild("PickButton")
+                    if pickBtn and pickBtn:IsA("TextButton") then
+                        pickBtn:Click()
+                        solved = solved + 1
+                    end
+                end
+                -- 其他通用扫描：找任意包含数字/字母的TextButton并点击（风险较高，但可尝试）
+                local allGuis = player.PlayerGui:GetChildren()
+                for _, gui in ipairs(allGuis) do
+                    if gui:IsA("ScreenGui") then
+                        for _, btn in ipairs(gui:GetDescendants()) do
+                            if btn:IsA("TextButton") and btn.Visible and btn.Active then
+                                local txt = btn.Text or ""
+                                if txt:match("%d") or txt:match("%w") then
+                                    pcall(function() btn:Click() end)
+                                    solved = solved + 1
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                WindUI:Notify({ Title = "破解完成", Content = "已破解 " .. solved .. " 个小游戏", Duration = 3 })
+            end)
+        end
+    })
 
     -- ============================================================
     -- 自动躲警察 Tab
@@ -742,9 +843,7 @@ function createUI()
                                     if policeDodgeWallCheck then
                                         local ignoreList = {char, pChar}
                                         local visible = isVisible(myPos, targetPart.Position, ignoreList)
-                                        if not visible then
-                                            continue
-                                        end
+                                        if not visible then continue end
                                     end
                                     foundAny = true
                                     local dir = (myPos - targetPart.Position).Unit
@@ -777,61 +876,29 @@ function createUI()
         Value = false,
         Callback = function(value)
             policeDodgeEnabled = value
-            if value then
-                startPoliceDodge()
-            else
-                stopPoliceDodge()
-            end
+            if value then startPoliceDodge() else stopPoliceDodge() end
         end
     })
-
     PoliceDodgeTab:Slider({
         Title = "触发距离（米）",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 30 },
-        Callback = function(value)
-            policeDodgeDistance = value
-        end
+        Callback = function(value) policeDodgeDistance = value end
     })
-
     PoliceDodgeTab:Slider({
         Title = "弹开力度",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 50 },
-        Callback = function(value)
-            policeDodgeForce = value
-        end
+        Callback = function(value) policeDodgeForce = value end
     })
-
     PoliceDodgeTab:Toggle({
         Title = "墙体检测",
         Value = true,
-        Callback = function(value)
-            policeDodgeWallCheck = value
-        end
+        Callback = function(value) policeDodgeWallCheck = value end
     })
 
     -- ============================================================
-    -- 其他功能 Tab
-    -- ============================================================
-    OtherTab:Divider({ Text = "直播模式" })
-    OtherTab:Toggle({
-        Title = "直播模式",
-        Value = false,
-        Callback = function(value)
-            liveModeEnabled = value
-            if value then
-                CreateLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
-            else
-                DestroyLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
-            end
-        end
-    })
-
-    -- ============================================================
-    -- 互动 Tab（快速互动相关）
+    -- 互动 Tab（快速互动）
     -- ============================================================
     local interactEnabled = false
 
@@ -851,9 +918,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             interactEnabled = value
-            if value then
-                ScanPrompts()
-            end
+            if value then ScanPrompts() end
         end
     })
     InteractTab:Slider({
@@ -899,7 +964,11 @@ function createUI()
 
     local function flyRefreshParts()
         local char = player.Character
-        if not char then flyState.hrp = nil flyState.hum = nil flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil return end
+        if not char then
+            flyState.hrp = nil flyState.hum = nil
+            flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil
+            return
+        end
         flyState.hrp = char:FindFirstChild("HumanoidRootPart")
         flyState.hum = char:FindFirstChildOfClass("Humanoid")
         flyAnchor.hrp = flyState.hrp
@@ -918,7 +987,7 @@ function createUI()
             local angle = (i / flyAnchor.rayCount) * 2 * math.pi
             local dx = math.cos(angle)
             local dz = math.sin(angle)
-            for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
+            for j = -(flyAnchor.verticalLayers - 1)//2, (flyAnchor.verticalLayers - 1)//2 do
                 local dir = Vector3.new(dx, j * 0.5, dz).Unit
                 local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
                 if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
@@ -1053,11 +1122,10 @@ function createUI()
         Title = "飞行速度",
         Step = 1,
         Value = { Min = 10, Max = 620, Default = 35 },
-        Callback = function(value)
-            FlySpeed = value
-        end
+        Callback = function(value) FlySpeed = value end
     })
 
+    -- 飞天快捷开关
     local flyQuickToggle = false
     local flyQuickScreenGui = nil
     local flyQuickButton = nil
@@ -1169,11 +1237,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             flyQuickToggle = value
-            if value then
-                CreateFlyQuickToggle()
-            else
-                DestroyFlyQuickToggle()
-            end
+            if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end
         end
     })
 
@@ -1183,17 +1247,13 @@ function createUI()
     FlyTab:Toggle({
         Title = "修改移速（绕过）",
         Value = false,
-        Callback = function(value)
-            speedBypassOn = value
-        end
+        Callback = function(value) speedBypassOn = value end
     })
     FlyTab:Slider({
         Title = "移速",
         Step = 1,
         Value = { Min = 5, Max = 150, Default = 20 },
-        Callback = function(value)
-            speedBypassValue = value
-        end
+        Callback = function(value) speedBypassValue = value end
     })
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
@@ -1277,9 +1337,7 @@ function createUI()
     A:Toggle({
         Title = "免疫部分伤害",
         Value = false,
-        Callback = function(value)
-            godOn = value
-        end
+        Callback = function(value) godOn = value end
     })
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
@@ -1347,24 +1405,19 @@ function createUI()
     A:Toggle({
         Title = "无限体力",
         Value = false,
-        Callback = function(value)
-            staminaOn = value
-        end
+        Callback = function(value) staminaOn = value end
     })
 
     A:Divider({ Text = "防甩飞" })
     A:Toggle({
         Title = "防甩飞",
         Value = false,
-        Callback = function(value)
-            _G.CatAntiFling_Enabled = value
-        end
+        Callback = function(value) _G.CatAntiFling_Enabled = value end
     })
 
     A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
     local antiFallConnection = nil
-
     A:Toggle({
         Title = "防摔",
         Value = false,
@@ -1380,7 +1433,6 @@ function createUI()
                     if not root then return end
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     if not hum then return end
-                    
                     local vel = root.Velocity
                     if vel.Y < -20 and hum.PlatformStand == false then
                         local newY = math.clamp(vel.Y, -40, -10)
@@ -1397,7 +1449,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 枪械功能 Tab (B)
+    -- 枪械功能 Tab
     -- ============================================================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
@@ -1437,9 +1489,7 @@ function createUI()
     B:Toggle({
         Title = "无限子弹",
         Value = false,
-        Callback = function(value)
-            infAmmoEnabled = value
-        end
+        Callback = function(value) infAmmoEnabled = value end
     })
     task.spawn(function()
         while not isDestroyed do
@@ -1554,9 +1604,7 @@ function createUI()
         Title = "判定距离",
         Step = 1,
         Value = { Min = 0, Max = 1000, Default = 40 },
-        Callback = function(value)
-            zzDistance = value
-        end
+        Callback = function(value) zzDistance = value end
     })
 
     B:Divider({ Text = "自瞄" })
@@ -1638,35 +1686,27 @@ function createUI()
     B:Toggle({
         Title = "自瞄",
         Value = false,
-        Callback = function(value)
-            aimOn = value
-        end
+        Callback = function(value) aimOn = value end
     })
     B:Slider({
         Title = "FOV圈大小",
         Step = 1,
         Value = { Min = 30, Max = 400, Default = 150 },
-        Callback = function(value)
-            aimFOV = value
-        end
+        Callback = function(value) aimFOV = value end
     })
     B:Toggle({
         Title = "不瞄准队友",
         Value = true,
-        Callback = function(value)
-            aimNoTeam = value
-        end
+        Callback = function(value) aimNoTeam = value end
     })
     B:Toggle({
         Title = "墙壁检测",
         Value = true,
-        Callback = function(value)
-            aimWall = value
-        end
+        Callback = function(value) aimWall = value end
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C)
+    -- 杀戮光环 Tab (伤害已拉满)
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local KA_WALL_CHECK = true
@@ -1763,6 +1803,11 @@ function createUI()
     RunService.Heartbeat:Connect(function()
         if not isDestroyed and kaEnabled then
             local target = kaGetNearestEnemy()
+            if target then
+                kaTargetName = target.Name
+            else
+                kaTargetName = "未检测到目标"
+            end
             local targetHead = target and target.Character and target.Character:FindFirstChild("Head")
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
@@ -1770,7 +1815,7 @@ function createUI()
                     local origin = myHead.Position
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 300
+                    local damage = 999999
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
@@ -1792,28 +1837,22 @@ function createUI()
     end)
 
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
-        Callback = function(value)
-            kaEnabled = value
-        end
+        Callback = function(value) kaEnabled = value end
     })
     C:Slider({
         Title = "攻击距离",
         Step = 1,
         Value = { Min = 50, Max = 1000, Default = 300 },
-        Callback = function(value)
-            KA_MAX_DISTANCE = value
-        end
+        Callback = function(value) KA_MAX_DISTANCE = value end
     })
     C:Toggle({
         Title = "墙体检测",
         Value = true,
-        Callback = function(value)
-            KA_WALL_CHECK = value
-        end
+        Callback = function(value) KA_WALL_CHECK = value end
     })
 
     C:Divider({ Text = "过滤" })
@@ -1822,9 +1861,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             KATargetPoliceOnly = value
-            if value and KATargetCivilianOnly then
-                KATargetCivilianOnly = false
-            end
+            if value and KATargetCivilianOnly then KATargetCivilianOnly = false
         end
     })
     C:Toggle({
@@ -1832,45 +1869,35 @@ function createUI()
         Value = false,
         Callback = function(value)
             KATargetCivilianOnly = value
-            if value and KATargetPoliceOnly then
-                KATargetPoliceOnly = false
-            end
+            if value and KATargetPoliceOnly then KATargetPoliceOnly = false
         end
     })
     C:Toggle({
         Title = "不攻击血量为0的玩家",
         Value = true,
-        Callback = function(value)
-            KAIgnoreDead = value
-        end
+        Callback = function(value) KAIgnoreDead = value end
     })
 
     C:Divider({ Text = "优先攻击" })
     C:Toggle({
         Title = "优先攻击最近目标",
         Value = false,
-        Callback = function(value)
-            KANearestOnly = value
-        end
+        Callback = function(value) KANearestOnly = value end
     })
     C:Slider({
         Title = "优先攻击距离",
         Step = 1,
         Value = { Min = 5, Max = 100, Default = 25 },
-        Callback = function(value)
-            KA_NEAREST_DISTANCE = value
-        end
+        Callback = function(value) KA_NEAREST_DISTANCE = value end
     })
 
     -- ============================================================
-    -- 传送点 Tab (D)
+    -- 传送点 Tab
     -- ============================================================
     D:Toggle({
         Title = "启用传送",
         Value = false,
-        Callback = function(value)
-            Settings.TeleportEnabled = value
-        end
+        Callback = function(value) Settings.TeleportEnabled = value end
     })
 
     local FIXED_TELEPORTS = {
@@ -1931,9 +1958,7 @@ function createUI()
         Title = "选定传送地点",
         Values = teleNames,
         Value = teleNames[1],
-        Callback = function(value)
-            selectedTeleport = value
-        end
+        Callback = function(value) selectedTeleport = value end
     })
 
     D:Button({
@@ -1959,7 +1984,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 透视 Tab (E) - 已删除“显示队伍统计”
+    -- 透视 Tab
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -2081,9 +2106,7 @@ function createUI()
         end
 
         ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
-        if ESP_REFRESH_COUNT % 3 ~= 0 then
-            return
-        end
+        if ESP_REFRESH_COUNT % 3 ~= 0 then return end
 
         for _, p in ipairs(Players:GetPlayers()) do
             if not ESP_SHOW_SELF and p == player then
@@ -2250,9 +2273,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             ESP_ENABLED = value
-            if value then
-                RefreshESP()
-            end
+            if value then RefreshESP() end
         end
     })
     E:Divider()
@@ -2360,21 +2381,16 @@ function createUI()
     local endedConnection = nil
 
     local songNames = {}
-    for _, song in ipairs(SONG_LIST) do
-        table.insert(songNames, song.name)
-    end
+    for _, song in ipairs(SONG_LIST) do table.insert(songNames, song.name) end
 
     local function PlaySongByIndex(index)
         if index < 1 or index > #SONG_LIST then
-            if playMode == "顺序播放" then
-                index = 1
-            elseif playMode == "循环播放" then
+            if playMode == "顺序播放" or playMode == "循环播放" then
                 index = 1
             elseif playMode == "随机播放" then
                 index = math.random(1, #SONG_LIST)
             end
         end
-        
         if index < 1 or index > #SONG_LIST then return end
         
         local song = SONG_LIST[index]
@@ -2406,9 +2422,7 @@ function createUI()
                     PlaySongByIndex(currentPlayIndex)
                 elseif playMode == "顺序播放" then
                     local nextIndex = currentPlayIndex + 1
-                    if nextIndex > #SONG_LIST then
-                        nextIndex = 1
-                    end
+                    if nextIndex > #SONG_LIST then nextIndex = 1 end
                     PlaySongByIndex(nextIndex)
                 elseif playMode == "随机播放" then
                     local randomIndex = math.random(1, #SONG_LIST)
@@ -2433,9 +2447,7 @@ function createUI()
                     break
                 end
             end
-            if isMusicPlaying then
-                PlaySongByIndex(currentPlayIndex)
-            end
+            if isMusicPlaying then PlaySongByIndex(currentPlayIndex) end
         end
     })
 
@@ -2446,8 +2458,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             isMusicPlaying = value
-            if value then
-                PlaySongByIndex(currentPlayIndex)
+            if value then PlaySongByIndex(currentPlayIndex)
             else
                 if musicSound then
                     musicSound:Stop()
@@ -2469,8 +2480,7 @@ function createUI()
         Value = { Min = 0, Max = 7, Default = 1 },
         Callback = function(value)
             if musicSound then
-                local actualVolume = math.min(value, 1)
-                musicSound.Volume = actualVolume
+                musicSound.Volume = math.min(value, 1)
             end
         end
     })
@@ -2488,14 +2498,12 @@ function createUI()
         Callback = function(value)
             playMode = value
             WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
-            if isMusicPlaying then
-                PlaySongByIndex(currentPlayIndex)
-            end
+            if isMusicPlaying then PlaySongByIndex(currentPlayIndex) end
         end
     })
 
     -- ============================================================
-    -- 设置 Tab (G) - 仅作者可见
+    -- 设置 Tab (仅作者可见)
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
@@ -2516,9 +2524,7 @@ function createUI()
         AdminGroup:Input({
             Title = "输入UID",
             Placeholder = "请输入要拉黑的设备UID...",
-            Callback = function(value)
-                blacklistInput = value
-            end
+            Callback = function(value) blacklistInput = value end
         })
 
         AdminGroup:Button({
@@ -2559,9 +2565,7 @@ function createUI()
         AdminGroup:Input({
             Title = "输入UID",
             Placeholder = "请输入要授权的设备UID...",
-            Callback = function(value)
-                whitelistInput = value
-            end
+            Callback = function(value) whitelistInput = value end
         })
 
         AdminGroup:Button({
@@ -2597,9 +2601,7 @@ function createUI()
             Title = "查看当前黑名单",
             Callback = function()
                 local list = {}
-                for uid, _ in pairs(BLACKLIST) do
-                    table.insert(list, uid)
-                end
+                for uid, _ in pairs(BLACKLIST) do table.insert(list, uid) end
                 if #list == 0 then
                     WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
                 else
@@ -2612,9 +2614,7 @@ function createUI()
             Title = "查看当前授权列表",
             Callback = function()
                 local list = {}
-                for uid, _ in pairs(WHITELIST) do
-                    table.insert(list, uid)
-                end
+                for uid, _ in pairs(WHITELIST) do table.insert(list, uid) end
                 if #list == 0 then
                     WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
                 else
