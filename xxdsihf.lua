@@ -31,7 +31,7 @@ end
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
     IconThemed = true,
-    Content = "尊敬的wdfex脚本用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex脚本</font> 当前版本号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
     Buttons = {
         {
             Title = "取消",
@@ -456,7 +456,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
+    -- ==================== 滚动文字横幅（彩虹波浪流动效果） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -476,30 +476,54 @@ function createUI()
             banner.TextStrokeTransparency = 0.3
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
-            
+
+            -- ===== 彩虹渐变（波浪流动效果） =====
+            local gradient = Instance.new("UIGradient")
+            gradient.Rotation = 0
+            gradient.Offset = 0
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
+                ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+                ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+            })
+            gradient.Parent = banner
+
+            -- 波浪流动动画
+            local TweenService = game:GetService("TweenService")
+            local function animateGradient()
+                while banner and banner.Parent do
+                    local tween = TweenService:Create(gradient, TweenInfo.new(3, Enum.EasingStyle.Linear), {
+                        Offset = 1
+                    })
+                    tween:Play()
+                    tween.Completed:Wait()
+                    gradient.Offset = 0
+                end
+            end
+            task.spawn(animateGradient)
+
+            -- ===== 左右移动动画 =====
             local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
-            local hue = 0
-            local colorConn = RunService.Heartbeat:Connect(function()
-                hue = (hue + 0.005) % 1
-                banner.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
-            end)
-            table.insert(connections, colorConn)
-            
             local function startAnimation()
-                local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(1, 10, 0, 2)
-                })
-                tween1:Play()
-                tween1.Completed:Connect(function()
+                while banner and banner.Parent do
+                    local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(1, 10, 0, 2)
+                    })
+                    tween1:Play()
+                    tween1.Completed:Wait()
+                    if not banner or not banner.Parent then break end
                     banner.Position = UDim2.new(0, -textWidth, 0, 2)
-                    startAnimation()
-                end)
+                end
             end
             
             task.wait(0.5)
-            startAnimation()
+            task.spawn(startAnimation)
         end)
     end)
 
@@ -1659,7 +1683,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) -
+    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
@@ -1887,7 +1911,7 @@ function createUI()
     -- UI 控件
     -- ============================================================
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（建议拿刀拿最贵的那个）" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
