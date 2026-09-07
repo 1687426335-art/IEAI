@@ -84,7 +84,7 @@ function createUI()
     }
 
     local WHITELIST = {
-        ["XWZEFFFYAYCRNGDGHPG"] = true,
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
     }
@@ -469,7 +469,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "杀戮光环还有点问题正在修复中"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -1079,7 +1079,7 @@ function createUI()
         button.BackgroundTransparency = 0.15
         button.BorderSizePixel = 2
         button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://74369447499630"  -- 已替换为你的图片
+        button.Image = "rbxassetid://74369447499630"
         button.ImageColor3 = Color3.fromRGB(100, 200, 255)
         button.ScaleType = Enum.ScaleType.Fit
         button.Parent = flyQuickScreenGui
@@ -1394,7 +1394,7 @@ function createUI()
     -- ============================================================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
-        Title = "超快射速（把枪拿手上再开）",
+        Title = "超快射速",
         Value = false,
         Callback = function(value)
             if not value then return end
@@ -1428,7 +1428,7 @@ function createUI()
 
     local infAmmoEnabled = false
     B:Toggle({
-        Title = "无限子弹（把枪拿手上再开）",
+        Title = "无限子弹",
         Value = false,
         Callback = function(value)
             infAmmoEnabled = value
@@ -1659,7 +1659,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满
+    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满，无攻击锁
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
@@ -1672,7 +1672,6 @@ function createUI()
     local currentTarget = nil
     local targetDisplayGui = nil
     local targetDisplayLabel = nil
-    local attackCooldown = false
 
     local function CreateTargetDisplay()
         if targetDisplayGui then return end
@@ -1795,14 +1794,13 @@ function createUI()
         return bestPlayer
     end
 
-    -- ==================== 攻击执行函数 ====================
+    -- ==================== 攻击执行函数（无锁，立即执行） ====================
     local function performAttack()
         if not kaEnabled then return end
-        if attackCooldown then return end
-        attackCooldown = true
         
         local target = kaGetNearestEnemy()
         currentTarget = target
+        
         if target then
             local targetHead = target.Character and target.Character:FindFirstChild("Head")
             if targetHead then
@@ -1831,22 +1829,19 @@ function createUI()
             end
         end
         UpdateTargetDisplay()
-        
-        task.wait(0.05)
-        attackCooldown = false
     end
 
-    -- ==================== 主循环（间隔攻击） ====================
+    -- ==================== 主循环（高频攻击，无锁） ====================
     task.spawn(function()
         while not isDestroyed do
             if kaEnabled then
                 performAttack()
             end
-            task.wait(0.1)
+            task.wait(0.05)
         end
     end)
 
-    -- ==================== 监听角色变化，拿枪后立即攻击一次 ====================
+    -- ==================== 监听角色变化，拿枪后立即攻击 ====================
     player.CharacterAdded:Connect(function()
         if kaEnabled then
             task.wait(0.05)
@@ -1854,15 +1849,13 @@ function createUI()
         end
     end)
 
-    -- 监听武器切换（工具添加时）
+    -- 监听武器切换
     local function onToolAdded(tool)
         if kaEnabled then
-            task.wait(0.05)
             performAttack()
         end
     end
 
-    -- 监听当前角色的工具添加
     local function setupToolListener(char)
         if char then
             char.DescendantAdded:Connect(function(desc)
@@ -1873,12 +1866,10 @@ function createUI()
         end
     end
 
-    -- 初始设置
     if player.Character then
         setupToolListener(player.Character)
     end
 
-    -- 角色重生后重新监听
     player.CharacterAdded:Connect(function(char)
         setupToolListener(char)
     end)
