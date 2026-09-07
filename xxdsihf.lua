@@ -84,7 +84,7 @@ function createUI()
     }
 
     local WHITELIST = {
-        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
+        ["XWZEFFFYAYCRNGDGHPG"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
     }
@@ -614,181 +614,8 @@ function createUI()
     end
     AntiFlingLoop()
 
-    -- ==================== 首页设置 Tab（第一位，默认选中） ====================
-    local HomeTab = Window:Tab({ Title = "首页设置", Icon = "home" })
-    local HomeSection = HomeTab:Section({ Title = "显示设置", Opened = true })
-    
-    -- ==================== 便捷水印功能 ====================
-    local watermarkEnabled = false
-    local functionStates = {}
-    local watermarkGui = nil
-    local watermarkLabels = {} -- 存储当前显示的功能标签 {label, name}
-    local watermarkContainer = nil  -- 用于放置标签的Frame
-    local TweenService = game:GetService("TweenService")
-    
-    -- 创建水印UI容器
-    local function CreateWatermarkContainer()
-        if watermarkGui then return end
-        watermarkGui = Instance.new("ScreenGui")
-        watermarkGui.Name = "WatermarkGUI"
-        watermarkGui.ResetOnSpawn = false
-        watermarkGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        watermarkGui.Parent = player:WaitForChild("PlayerGui")
-        
-        watermarkContainer = Instance.new("Frame")
-        watermarkContainer.Size = UDim2.new(0, 300, 0, 0)
-        watermarkContainer.Position = UDim2.new(1, 0, 0, 10)
-        watermarkContainer.BackgroundTransparency = 1
-        watermarkContainer.Parent = watermarkGui
-        watermarkContainer.ClipsDescendants = true
-    end
-    
-    local function DestroyWatermarkContainer()
-        if watermarkGui then
-            watermarkGui:Destroy()
-            watermarkGui = nil
-            watermarkContainer = nil
-            watermarkLabels = {}
-        end
-    end
-    
-    -- 获取彩虹色（每个字符不同色相，整体偏移）
-    local function GetRainbowColor(text, offset)
-        local chars = {}
-        for i = 1, #text do
-            local hue = (i / #text + offset) % 1
-            chars[i] = Color3.fromHSV(hue, 1, 1)
-        end
-        return chars
-    end
-    
-    -- 更新水印显示
-    local function UpdateWatermark()
-        if not watermarkEnabled then
-            if watermarkGui then watermarkGui.Enabled = false end
-            return
-        end
-        if not watermarkGui then CreateWatermarkContainer() end
-        watermarkGui.Enabled = true
-        
-        -- 获取当前开启的功能列表（按顺序）
-        local activeFunctions = {}
-        for name, state in pairs(functionStates) do
-            if state then
-                table.insert(activeFunctions, name)
-            end
-        end
-        -- 按字母或固定顺序排序（为了稳定，我们按照添加顺序，但这里我们简单按名称排序）
-        table.sort(activeFunctions)
-        
-        -- 计算需要显示的行数
-        local lineHeight = 25
-        local totalHeight = #activeFunctions * lineHeight
-        watermarkContainer.Size = UDim2.new(0, 300, 0, totalHeight)
-        
-        -- 移除多余的标签
-        for i = #watermarkLabels, #activeFunctions + 1, -1 do
-            local label = watermarkLabels[i]
-            if label then
-                -- 滑出动画
-                local tween = TweenService:Create(label, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(1, 50, 0, (i-1) * lineHeight)
-                })
-                tween:Play()
-                tween.Completed:Connect(function()
-                    label:Destroy()
-                end)
-                table.remove(watermarkLabels, i)
-            end
-        end
-        
-        -- 更新或创建标签
-        local currentHueOffset = tick() % 1  -- 整体色相缓慢变化
-        for i, funcName in ipairs(activeFunctions) do
-            local label = watermarkLabels[i]
-            if not label then
-                -- 创建新标签，从右侧滑入
-                label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 0, lineHeight)
-                label.Position = UDim2.new(1, 0, 0, (i-1) * lineHeight) -- 从右侧外开始
-                label.BackgroundTransparency = 1
-                label.Text = funcName
-                label.TextSize = 18
-                label.Font = Enum.Font.GothamBold
-                label.TextStrokeTransparency = 0.3
-                label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                label.TextXAlignment = Enum.TextXAlignment.Right
-                label.Parent = watermarkContainer
-                table.insert(watermarkLabels, i, label)
-                
-                -- 滑入动画
-                local targetX = 0
-                local tween = TweenService:Create(label, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(0, 0, 0, (i-1) * lineHeight)
-                })
-                tween:Play()
-            else
-                -- 更新位置（可能因为前面的删除导致位置变化）
-                local targetY = (i-1) * lineHeight
-                if label.Position.Y.Offset ~= targetY then
-                    local tween = TweenService:Create(label, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(0, 0, 0, targetY)
-                    })
-                    tween:Play()
-                end
-            end
-            
-            -- 设置彩虹颜色（每个字符不同色相，整体旋转）
-            local chars = GetRainbowColor(funcName, currentHueOffset)
-            -- 由于TextLabel不支持每个字符不同颜色，我们可以使用多个TextLabel或使用富文本，但为了简单，我们使用整体颜色随时间变化，但为了彩虹效果，可以每秒改变颜色。更好的方式是用多个TextLabel，但这里我们采用整体颜色随时间变化，每个标签不同起始色相。
-            -- 让每个标签的颜色在色环上均匀分布
-            local hue = (i / #activeFunctions + currentHueOffset) % 1
-            label.TextColor3 = Color3.fromHSV(hue, 1, 1)
-        end
-    end
-    
-    -- 注册功能状态
-    local function RegisterFunction(name, initialValue)
-        functionStates[name] = initialValue
-    end
-    
-    -- 修改Toggle回调的辅助函数（在Toggle中调用）
-    -- 我们将在每个主要功能Toggle的Callback中调用 RegisterFunction 和 UpdateWatermark
-    
-    -- 添加“显示便捷水印”开关
-    HomeSection:Toggle({
-        Title = "显示便捷水印",
-        Value = false,
-        Callback = function(value)
-            watermarkEnabled = value
-            if value then
-                CreateWatermarkContainer()
-                UpdateWatermark()
-            else
-                DestroyWatermarkContainer()
-            end
-        end
-    })
-    
-    -- 预注册所有主要功能（初始关闭）
-    RegisterFunction("飞行", false)
-    RegisterFunction("修改移速", false)
-    RegisterFunction("快速互动", false)
-    RegisterFunction("超快射速", false)
-    RegisterFunction("无限子弹", false)
-    RegisterFunction("头部碰撞箱", false)
-    RegisterFunction("子追", false)
-    RegisterFunction("自瞄", false)
-    RegisterFunction("杀戮光环", false)
-    RegisterFunction("自动躲警察", false)
-    RegisterFunction("直播模式", false)
-    RegisterFunction("穿墙", false)
-    RegisterFunction("无限体力", false)
-    RegisterFunction("防甩飞", false)
-    RegisterFunction("防摔", false)
-
-    -- ==================== 后续Tab定义 ====================
-    -- 作者信息 Tab（第二位）
+    -- ==================== Tab 创建 ====================
+    -- 作者信息 Tab（第一位，默认选中）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -830,8 +657,8 @@ function createUI()
     })
     infoTab:Select()
 
-    -- 默认选中首页设置
-    HomeTab:Select()
+    -- 默认选中作者信息
+    AuthorTab:Select()
 
     -- 主功能 Section
     local MainSection = Window:Section({
@@ -943,8 +770,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             policeDodgeEnabled = value
-            functionStates["自动躲警察"] = value
-            UpdateWatermark()
             if value then
                 startPoliceDodge()
             else
@@ -988,8 +813,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             liveModeEnabled = value
-            functionStates["直播模式"] = value
-            UpdateWatermark()
             if value then
                 CreateLiveModeWatermarks()
                 WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
@@ -1021,8 +844,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             interactEnabled = value
-            functionStates["快速互动"] = value
-            UpdateWatermark()
             if value then
                 ScanPrompts()
             end
@@ -1218,8 +1039,6 @@ function createUI()
         Title = "飞行（绕过）",
         Value = false,
         Callback = function(value)
-            functionStates["飞行"] = value
-            UpdateWatermark()
             if value then startFly() else stopFly() end
         end
     })
@@ -1260,7 +1079,7 @@ function createUI()
         button.BackgroundTransparency = 0.15
         button.BorderSizePixel = 2
         button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://74369447499630"
+        button.Image = "rbxassetid://74369447499630"  -- 已替换为你的图片
         button.ImageColor3 = Color3.fromRGB(100, 200, 255)
         button.ScaleType = Enum.ScaleType.Fit
         button.Parent = flyQuickScreenGui
@@ -1359,8 +1178,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             speedBypassOn = value
-            functionStates["修改移速"] = value
-            UpdateWatermark()
         end
     })
     FlyTab:Slider({
@@ -1465,8 +1282,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             Settings.NoclipEnabled = value
-            functionStates["穿墙"] = value
-            UpdateWatermark()
             if value then
                 local char = player.Character
                 if char then
@@ -1527,8 +1342,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             staminaOn = value
-            functionStates["无限体力"] = value
-            UpdateWatermark()
         end
     })
 
@@ -1538,8 +1351,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             _G.CatAntiFling_Enabled = value
-            functionStates["防甩飞"] = value
-            UpdateWatermark()
         end
     })
 
@@ -1552,8 +1363,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             antiFallEnabled = value
-            functionStates["防摔"] = value
-            UpdateWatermark()
             if value then
                 if antiFallConnection then antiFallConnection:Disconnect() end
                 antiFallConnection = RunService.Heartbeat:Connect(function()
@@ -1589,8 +1398,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             if not value then return end
-            functionStates["超快射速"] = true
-            UpdateWatermark()
             local function ModifyWeaponStats()
                 local garbage = getgc(true)
                 for _, tbl in pairs(garbage) do
@@ -1618,7 +1425,6 @@ function createUI()
             WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
         end
     })
-    -- 注意：超快射速没有关闭功能，所以只能开启，关闭逻辑我们暂不处理，但状态设为true
 
     local infAmmoEnabled = false
     B:Toggle({
@@ -1626,8 +1432,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             infAmmoEnabled = value
-            functionStates["无限子弹"] = value
-            UpdateWatermark()
         end
     })
     task.spawn(function()
@@ -1656,8 +1460,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             Settings.HitboxEnabled = value
-            functionStates["头部碰撞箱"] = value
-            UpdateWatermark()
             if value then ApplyHitbox() else ResetHitbox() end
         end
     })
@@ -1738,8 +1540,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             zzEnabled = value
-            functionStates["子追"] = value
-            UpdateWatermark()
             if not value then zzRestore() end
         end
     })
@@ -1833,8 +1633,6 @@ function createUI()
         Value = false,
         Callback = function(value)
             aimOn = value
-            functionStates["自瞄"] = value
-            UpdateWatermark()
         end
     })
     B:Slider({
@@ -2089,14 +1887,12 @@ function createUI()
     -- UI 控件
     -- ============================================================
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
         Callback = function(value)
             kaEnabled = value
-            functionStates["杀戮光环"] = value
-            UpdateWatermark()
             if value then
                 if showTarget then CreateTargetDisplay() end
                 task.wait(0.1)
