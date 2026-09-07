@@ -469,7 +469,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "我会在中午12点开启30分钟的免费抽取管理员权限的活动每个设备只能抽两次"
+            banner.Text = "杀戮光环所有的问题已经修复了打贴脸的人拿刀就行打100米以外的人拿手枪"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -1422,7 +1422,7 @@ function createUI()
                     humanoid.Died:Connect(ModifyWeaponStats)
                 end
             end
-            WindUI:Notify({ Title = "武器强化", Content = "超快射速开启成功", Duration = 3 })
+            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
         end
     })
 
@@ -1659,7 +1659,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满，无攻击锁
+    -- 杀戮光环 Tab (C) - 伤害已拉到最高（9亿9千9百9十万）
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
@@ -1809,7 +1809,7 @@ function createUI()
                     local origin = myHead.Position
                     local hitPos = targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 99999999
+                    local damage = 999999999
                     pcall(function()
                         ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
                             bodyParts = { { "Head", damage } },
