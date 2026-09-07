@@ -473,6 +473,7 @@ function createUI()
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
+            banner.TextColor3 = Color3.fromRGB(255, 255, 255)
             banner.TextStrokeTransparency = 0.3
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
@@ -507,9 +508,6 @@ function createUI()
             task.spawn(animateGradient)
 
             -- ===== 左右移动动画 =====
-            local TweenService = game:GetService("TweenService")
-            local textWidth = 160
-            
             local function startAnimation()
                 while banner and banner.Parent do
                     local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
@@ -518,7 +516,7 @@ function createUI()
                     tween1:Play()
                     tween1.Completed:Wait()
                     if not banner or not banner.Parent then break end
-                    banner.Position = UDim2.new(0, -textWidth, 0, 2)
+                    banner.Position = UDim2.new(0, -160, 0, 2)
                 end
             end
             
@@ -1683,7 +1681,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满
+    -- 杀戮光环 Tab (C)
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
