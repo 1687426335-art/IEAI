@@ -29,9 +29,9 @@ for i = 1, #version do
 end
 
 WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
+    Title = '<font color="' .. gradientColors[1] .. '">永</font><font color="' .. gradientColors[5] .. '">爱</font>',
     IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n现已支持23个服务器！",
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>永</font><font color='" .. gradientColors[5] .. "'>爱</font> 当前版本型号是: " .. coloredVersion .. "\n现已支持4个服务器！",
     Buttons = {
         {
             Title = "取消",
@@ -52,7 +52,7 @@ WindUI:Popup({
 
 function createUI()
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex',
+        Title = '永爱',
         Icon = "heart",
         IconThemed = true,
         Author = "v1.2.4",
@@ -90,7 +90,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex",
+                    Text = "永爱",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
@@ -101,7 +101,7 @@ function createUI()
     })
 
 Window:EditOpenButton({
-    Title = "wdfex",
+    Title = "永爱",
     Icon = "rbxassetid://105677776902677",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 4,
@@ -115,7 +115,7 @@ Window:Tag({
     })
 
 Window:EditOpenButton({
-    Title = "wdfex",
+    Title = "永爱",
     Icon = "heart",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 4,
@@ -3853,10 +3853,9 @@ TeleportTab:Button({
 })
 
 WindUI:Notify({
-    Title = "wdfex",
+    Title = "永爱",
     Content = "战争大亨",
     Duration = 3,
 })
 end
 refreshAttackPlayerList()
-这个是我待会让你把那个代码的功能和分类替换到这个代码里面的代码
