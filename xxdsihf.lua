@@ -456,7 +456,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（彩虹波浪流动效果） ====================
+    -- ==================== 滚动文字横幅（彩色渐变从左到右流动） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -464,64 +464,68 @@ function createUI()
             bannerGui.ResetOnSpawn = false
             bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             bannerGui.Parent = player:WaitForChild("PlayerGui")
-            
-            local banner = Instance.new("TextLabel")
-            banner.Size = UDim2.new(0, 160, 0, 28)
-            banner.Position = UDim2.new(0, -160, 0, 2)
-            banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
-            banner.TextSize = 18
-            banner.Font = Enum.Font.GothamBold
-            banner.TextScaled = false
-            banner.TextColor3 = Color3.fromRGB(255, 255, 255)
-            banner.TextStrokeTransparency = 0.3
-            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            banner.Parent = bannerGui
 
-            -- ===== 彩虹渐变（波浪流动效果） =====
-            local gradient = Instance.new("UIGradient")
-            gradient.Rotation = 0
-            gradient.Offset = 0
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),
-                ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
-                ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
-            })
-            gradient.Parent = banner
+            local bannerText = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            local charCount = #bannerText
 
-            -- 波浪流动动画
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(0, 160, 0, 28)
+            container.Position = UDim2.new(0, -160, 0, 2)
+            container.BackgroundTransparency = 1
+            container.ClipsDescendants = true
+            container.Parent = bannerGui
+
+            local textLabels = {}
+            local totalWidth = 0
+
+            for i = 1, charCount do
+                local char = bannerText:sub(i, i)
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(0, 16, 1, 0)
+                label.Position = UDim2.new(0, totalWidth, 0, 0)
+                label.BackgroundTransparency = 1
+                label.Text = char
+                label.TextSize = 18
+                label.Font = Enum.Font.GothamBold
+                label.TextStrokeTransparency = 0.3
+                label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                label.TextXAlignment = Enum.TextXAlignment.Center
+                label.Parent = container
+                table.insert(textLabels, label)
+                totalWidth = totalWidth + 16
+            end
+
+            container.Size = UDim2.new(0, totalWidth, 0, 28)
+
             local TweenService = game:GetService("TweenService")
-            local function animateGradient()
-                while banner and banner.Parent do
-                    local tween = TweenService:Create(gradient, TweenInfo.new(3, Enum.EasingStyle.Linear), {
-                        Offset = 1
-                    })
-                    tween:Play()
-                    tween.Completed:Wait()
-                    gradient.Offset = 0
-                end
-            end
-            task.spawn(animateGradient)
+            local hueOffset = 0
 
-            -- ===== 左右移动动画 =====
-            local function startAnimation()
-                while banner and banner.Parent do
-                    local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
-                        Position = UDim2.new(1, 10, 0, 2)
-                    })
-                    tween1:Play()
-                    tween1.Completed:Wait()
-                    if not banner or not banner.Parent then break end
-                    banner.Position = UDim2.new(0, -160, 0, 2)
+            local function updateColors()
+                for i, label in ipairs(textLabels) do
+                    local hue = (hueOffset + (i / charCount) * 0.8) % 1
+                    label.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
                 end
             end
-            
+
+            local colorConn = RunService.Heartbeat:Connect(function()
+                hueOffset = (hueOffset + 0.012) % 1
+                updateColors()
+            end)
+            table.insert(connections, colorConn)
+
+            local function startAnimation()
+                local tween1 = TweenService:Create(container, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(1, 10, 0, 2)
+                })
+                tween1:Play()
+                tween1.Completed:Connect(function()
+                    container.Position = UDim2.new(0, -totalWidth, 0, 2)
+                    startAnimation()
+                end)
+            end
+
             task.wait(0.5)
-            task.spawn(startAnimation)
+            startAnimation()
         end)
     end)
 
@@ -1681,7 +1685,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C)
+    -- 杀戮光环 Tab (C) - 墙体检测已删除，伤害拉满
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
@@ -1909,7 +1913,7 @@ function createUI()
     -- UI 控件
     -- ============================================================
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
