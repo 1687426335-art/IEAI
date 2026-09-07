@@ -1394,7 +1394,7 @@ function createUI()
     -- ============================================================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
-        Title = "超快射速",
+        Title = "超快射速（把枪拿手上再开）",
         Value = false,
         Callback = function(value)
             if not value then return end
@@ -1422,13 +1422,13 @@ function createUI()
                     humanoid.Died:Connect(ModifyWeaponStats)
                 end
             end
-            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
+            WindUI:Notify({ Title = "武器强化", Content = "超快射速开启成功", Duration = 3 })
         end
     })
 
     local infAmmoEnabled = false
     B:Toggle({
-        Title = "无限子弹",
+        Title = "无限子弹（把枪拿手上再开）",
         Value = false,
         Callback = function(value)
             infAmmoEnabled = value
