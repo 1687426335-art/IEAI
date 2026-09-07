@@ -106,7 +106,7 @@ function createUI()
         end
     end)
 
-    -- ==================== 全局变量（来自第二个代码） ====================
+    -- ==================== 全局变量 ====================
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local Workspace = game:GetService("Workspace")
@@ -116,7 +116,7 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 飞行功能（完整复制） ====================
+    -- ==================== 飞行功能 ====================
     local FlightControl = nil
     task.spawn(function()
         pcall(function()
@@ -233,10 +233,6 @@ function createUI()
         if CurrentLV then CurrentLV:Destroy() CurrentLV = nil end
         if CurrentMoverAttachment then CurrentMoverAttachment:Destroy() CurrentMoverAttachment = nil end
     end
-    local function toggleSpinning()
-        if not FlyingEnabled then return end
-        SpinningEnabled = not SpinningEnabled
-    end
     LocalPlayer.CharacterAdded:Connect(function()
         if FlyingEnabled then
             stopFlying()
@@ -307,7 +303,7 @@ function createUI()
     local ImmuneTurret = false
     local oldFireServer = nil
 
-    -- ==================== 自瞄相关（完整复制） ====================
+    -- ==================== 自瞄相关 ====================
     local isAiming = false
     local isPredicting = false
     local isLowHealthPriority = false
@@ -677,555 +673,255 @@ function createUI()
         end
     end
 
-    -- ==================== ESP（完整复制） ====================
-    local ESPConfig = {
-        ESPEnabled = false,
-        ShowBox = false,
-        ShowHealth = false,
-        ShowName = false,
-        ShowDistance = false,
-        ShowTracer = false,
-        TeamCheck = false,
-        ShowSkeleton = false,
-        ShowRadar = false,
-        ShowPlayerCount = false,
-        ShowWeapon = false,
-        ShowFOV = false,
-        OutOfViewArrows = false,
-        Chams = false,
-        TracerColor = Color3.new(1, 0, 0),
-        SkeletonColor = Color3.new(0.2, 0.8, 1),
-        BoxColor = Color3.new(1, 1, 1),
-        HealthBarColor = Color3.new(0, 1, 0),
-        HealthTextColor = Color3.new(1, 1, 1),
-        NameColor = Color3.new(1, 1, 1),
-        DistanceColor = Color3.new(1, 1, 0),
-        WeaponColor = Color3.new(1, 0.5, 0),
-        ArrowColor = Color3.new(1, 0, 0),
-        FOVColor = Color3.new(1, 1, 1),
-        ChamsColor = Color3.new(1, 0, 0),
-        BoxThickness = 1,
-        TracerThickness = 1,
-        SkeletonThickness = 2,
-        FOVRadius = 100,
-        ArrowSize = 15
-    }
-    local ESPComponents = {}
-    local radar = Drawing.new("Circle")
-    radar.Visible = false
-    radar.Color = Color3.new(1, 1, 1)
-    radar.Thickness = 2
-    radar.Filled = false
-    radar.Radius = 100
-    radar.Position = Vector2.new(Cam.ViewportSize.X - 120, 120)
-    local radarCenter = Drawing.new("Circle")
-    radarCenter.Visible = false
-    radarCenter.Color = Color3.new(1, 1, 1)
-    radarCenter.Thickness = 2
-    radarCenter.Filled = true
-    radarCenter.Radius = 3
-    radarCenter.Position = radar.Position
-    local radarDirection = Drawing.new("Line")
-    radarDirection.Visible = false
-    radarDirection.Color = Color3.new(1, 1, 1)
-    radarDirection.Thickness = 2
-    local radarGridLines = {}
-    for i = 1, 4 do
-        radarGridLines[i] = Drawing.new("Line")
-        radarGridLines[i].Visible = false
-        radarGridLines[i].Color = Color3.new(0.5, 0.5, 0.5)
-        radarGridLines[i].Thickness = 1
-    end
-    local radarRangeText = Drawing.new("Text")
-    radarRangeText.Visible = false
-    radarRangeText.Color = Color3.new(1, 1, 1)
-    radarRangeText.Size = 14
-    radarRangeText.Font = Drawing.Fonts.Monospace
-    radarRangeText.Outline = true
-    radarRangeText.OutlineColor = Color3.new(0, 0, 0)
-    radarRangeText.Text = "100m"
-    local radarPlayers = {}
-    local playerCountText = Drawing.new("Text")
-    playerCountText.Visible = false
-    playerCountText.Color = Color3.new(1, 1, 1)
-    playerCountText.Size = 20
-    playerCountText.Font = Drawing.Fonts.Monospace
-    playerCountText.Outline = true
-    playerCountText.OutlineColor = Color3.new(0, 0, 0)
-    playerCountText.Position = Vector2.new(Cam.ViewportSize.X / 2, 10)
-    local fovCircle = Drawing.new("Circle")
-    fovCircle.Visible = false
-    fovCircle.Color = ESPConfig.FOVColor
-    fovCircle.Thickness = 1
-    fovCircle.Filled = false
-    fovCircle.Radius = ESPConfig.FOVRadius
-    fovCircle.Position = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
+    -- ==================== ESP（BillboardGui版 - 移植自圣奥里脚本） ====================
+    local ESP_ENABLED = false
+    local ESP_SHOW_NAME = true
+    local ESP_SHOW_HEALTH = true
+    local ESP_SHOW_DIST = true
+    local ESP_SHOW_SELF = false
+    local ESP_SHOW_PEERS = true
+    local ESP_LIST = {}
+    local ESP_REFRESH_COUNT = 0
 
-    local function updatePlayerCount()
-        local count = #Players:GetPlayers()
-        playerCountText.Text = "在线玩家: " .. count
-        playerCountText.Visible = ESPConfig.ESPEnabled and ESPConfig.ShowPlayerCount
-        local time = tick()
-        local r = math.sin(time * 2) * 0.5 + 0.5
-        local g = math.sin(time * 3) * 0.5 + 0.5
-        local b = math.sin(time * 4) * 0.5 + 0.5
-        playerCountText.Color = Color3.new(r, g, b)
-    end
-    local function updateFOV()
-        fovCircle.Visible = ESPConfig.ShowFOV
-        fovCircle.Color = ESPConfig.FOVColor
-        fovCircle.Radius = ESPConfig.FOVRadius
-        fovCircle.Position = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
-    end
-    local function createESP(player)
-        local box = Drawing.new("Square")
-        box.Visible = false
-        box.Color = ESPConfig.BoxColor
-        box.Thickness = ESPConfig.BoxThickness
-        box.Filled = false
-        local healthBar = Drawing.new("Square")
-        healthBar.Visible = false
-        healthBar.Color = ESPConfig.HealthBarColor
-        healthBar.Thickness = 1
-        healthBar.Filled = true
-        local healthBarBackground = Drawing.new("Square")
-        healthBarBackground.Visible = false
-        healthBarBackground.Color = Color3.new(0, 0, 0)
-        healthBarBackground.Transparency = 0.5
-        healthBarBackground.Thickness = 1
-        healthBarBackground.Filled = true
-        local healthBarBorder = Drawing.new("Square")
-        healthBarBorder.Visible = false
-        healthBarBorder.Color = Color3.new(1, 1, 1)
-        healthBarBorder.Thickness = 1
-        healthBarBorder.Filled = false
-        local healthText = Drawing.new("Text")
-        healthText.Visible = false
-        healthText.Color = ESPConfig.HealthTextColor
-        healthText.Size = 14
-        healthText.Font = Drawing.Fonts.Monospace
-        healthText.Outline = true
-        healthText.OutlineColor = Color3.new(0, 0, 0)
-        local nameText = Drawing.new("Text")
-        nameText.Visible = false
-        nameText.Color = ESPConfig.NameColor
-        nameText.Size = 16
-        nameText.Font = Drawing.Fonts.Monospace
-        nameText.Outline = true
-        nameText.OutlineColor = Color3.new(0, 0, 0)
-        local distanceText = Drawing.new("Text")
-        distanceText.Visible = false
-        distanceText.Color = ESPConfig.DistanceColor
-        distanceText.Size = 14
-        distanceText.Font = Drawing.Fonts.Monospace
-        distanceText.Outline = true
-        distanceText.OutlineColor = Color3.new(0, 0, 0)
-        local weaponText = Drawing.new("Text")
-        weaponText.Visible = false
-        weaponText.Color = ESPConfig.WeaponColor
-        weaponText.Size = 14
-        weaponText.Font = Drawing.Fonts.Monospace
-        weaponText.Outline = true
-        weaponText.OutlineColor = Color3.new(0, 0, 0)
-        local tracer = Drawing.new("Line")
-        tracer.Visible = false
-        tracer.Color = ESPConfig.TracerColor
-        tracer.Thickness = ESPConfig.TracerThickness
-        local arrow = Drawing.new("Triangle")
-        arrow.Visible = false
-        arrow.Color = ESPConfig.ArrowColor
-        arrow.Filled = true
-        arrow.Thickness = 1
-        local skeletonLines = {}
-        local skeletonPoints = {}
-        for i = 1, 15 do
-            skeletonLines[i] = Drawing.new("Line")
-            skeletonLines[i].Visible = false
-            skeletonLines[i].Color = ESPConfig.SkeletonColor
-            skeletonLines[i].Thickness = ESPConfig.SkeletonThickness
+    -- 同行检测标记（wdfex脚本用户）
+    local function isWdfexUser(player)
+        for _, child in ipairs(player:GetChildren()) do
+            if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                return true
+            end
         end
-        skeletonPoints["Head"] = Drawing.new("Circle")
-        skeletonPoints["Head"].Visible = false
-        skeletonPoints["Head"].Color = Color3.new(1, 0.5, 0)
-        skeletonPoints["Head"].Thickness = 2
-        skeletonPoints["Head"].Filled = true
-        skeletonPoints["Head"].Radius = 4
-        local lastHealth = 100
-        local healthChangeTime = 0
-        local smoothHealth = 100
-        ESPComponents[player] = {
-            box = box, healthBar = healthBar, healthBarBackground = healthBarBackground,
-            healthBarBorder = healthBarBorder, healthText = healthText,
-            nameText = nameText, distanceText = distanceText, weaponText = weaponText,
-            tracer = tracer, arrow = arrow, skeletonLines = skeletonLines, skeletonPoints = skeletonPoints
-        }
-        RunService.RenderStepped:Connect(function()
-            if not ESPConfig.ESPEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChild("Humanoid") or player == LocalPlayer then
-                box.Visible = false; healthBar.Visible = false; healthBarBackground.Visible = false; healthBarBorder.Visible = false; healthText.Visible = false; nameText.Visible = false; distanceText.Visible = false; weaponText.Visible = false; tracer.Visible = false; arrow.Visible = false
-                for _, line in pairs(skeletonLines) do line.Visible = false end
-                for _, point in pairs(skeletonPoints) do point.Visible = false end
-                return
+        if player.Character then
+            for _, child in ipairs(player.Character:GetDescendants()) do
+                if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
+                    return true
+                end
             end
-            if ESPConfig.TeamCheck and player.Team == LocalPlayer.Team then
-                box.Visible = false; healthBar.Visible = false; healthBarBackground.Visible = false; healthBarBorder.Visible = false; healthText.Visible = false; nameText.Visible = false; distanceText.Visible = false; weaponText.Visible = false; tracer.Visible = false; arrow.Visible = false
-                for _, line in pairs(skeletonLines) do line.Visible = false end
-                for _, point in pairs(skeletonPoints) do point.Visible = false end
-                return
-            end
-            local character = player.Character
-            local rootPart = character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character:FindFirstChild("Humanoid")
-            if rootPart and humanoid and humanoid.Health > 0 then
-                local rootPos, onScreen = Cam:WorldToViewportPoint(rootPart.Position)
-                local headPos, _ = Cam:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 3, 0))
-                local legPos, _ = Cam:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0))
-                local weaponName = "无武器"
-                for _, tool in ipairs(character:GetChildren()) do
-                    if tool:IsA("Tool") then weaponName = tool.Name break end
-                end
-                if ESPConfig.ShowBox and onScreen then
-                    box.Size = Vector2.new(1000 / rootPos.Z, headPos.Y - legPos.Y)
-                    box.Position = Vector2.new(rootPos.X - box.Size.X / 2, rootPos.Y - box.Size.Y / 2)
-                    box.Visible = true
-                    box.Color = ESPConfig.BoxColor
-                    box.Thickness = ESPConfig.BoxThickness
-                else box.Visible = false end
-                if ESPConfig.ShowHealth and onScreen then
-                    local healthPercentage = humanoid.Health / humanoid.MaxHealth
-                    local barWidth = 50
-                    local barHeight = 5
-                    local barX = headPos.X - barWidth / 2
-                    local barY = headPos.Y - 20
-                    healthBarBackground.Size = Vector2.new(barWidth, barHeight)
-                    healthBarBackground.Position = Vector2.new(barX, barY)
-                    healthBarBackground.Visible = true
-                    healthBarBorder.Size = Vector2.new(barWidth, barHeight)
-                    healthBarBorder.Position = Vector2.new(barX, barY)
-                    healthBarBorder.Visible = true
-                    smoothHealth = smoothHealth + (humanoid.Health - smoothHealth) * 0.1
-                    local smoothHealthPercentage = smoothHealth / humanoid.MaxHealth
-                    healthBar.Size = Vector2.new(barWidth * smoothHealthPercentage, barHeight)
-                    healthBar.Position = Vector2.new(barX, barY)
-                    if smoothHealthPercentage >= 0.8 then healthBar.Color = Color3.new(0, 1, 0)
-                    elseif smoothHealthPercentage >= 0.5 then healthBar.Color = Color3.new(1, 1, 0)
-                    elseif smoothHealthPercentage >= 0.2 then healthBar.Color = Color3.new(1, 0.5, 0)
-                    else healthBar.Color = Color3.new(1, 0, 0) end
-                    healthBar.Visible = true
-                    if humanoid.Health ~= lastHealth then healthChangeTime = tick() lastHealth = humanoid.Health end
-                    if tick() - healthChangeTime < 0.5 then healthBar.Color = Color3.new(1, 0, 0) end
-                    healthText.Position = Vector2.new(barX + barWidth + 5, barY - 5)
-                    healthText.Text = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
-                    healthText.Visible = true
-                else
-                    healthBar.Visible = false; healthBarBackground.Visible = false; healthBarBorder.Visible = false; healthText.Visible = false
-                end
-                if ESPConfig.ShowName and onScreen then
-                    nameText.Position = Vector2.new(headPos.X, headPos.Y - 35)
-                    nameText.Text = player.Name
-                    nameText.Visible = true
-                    if ESPConfig.ShowDistance then
-                        local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                        distanceText.Position = Vector2.new(headPos.X, headPos.Y + 10)
-                        distanceText.Text = math.floor(distance) .. "m"
-                        distanceText.Visible = true
-                    else distanceText.Visible = false end
-                    if ESPConfig.ShowWeapon then
-                        weaponText.Position = Vector2.new(headPos.X, headPos.Y - 50)
-                        weaponText.Text = weaponName
-                        weaponText.Visible = true
-                    else weaponText.Visible = false end
-                else
-                    nameText.Visible = false; distanceText.Visible = false; weaponText.Visible = false
-                end
-                if ESPConfig.ShowTracer then
-                    local head = character:FindFirstChild("Head")
-                    if head then
-                        local headPos, onScreen = Cam:WorldToViewportPoint(head.Position)
-                        if onScreen then
-                            tracer.From = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y)
-                            tracer.To = Vector2.new(headPos.X, headPos.Y)
-                            tracer.Visible = true
-                            tracer.Color = ESPConfig.TracerColor
-                            tracer.Thickness = ESPConfig.TracerThickness
-                            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                            if distance < 20 then tracer.Color = Color3.new(0, 1, 0)
-                            elseif distance < 50 then tracer.Color = Color3.new(1, 1, 0)
-                            else tracer.Color = ESPConfig.TracerColor end
-                        else tracer.Visible = false end
-                    else tracer.Visible = false end
-                else tracer.Visible = false end
-                if ESPConfig.OutOfViewArrows and not onScreen then
-                    local direction = (rootPart.Position - Cam.CFrame.Position).Unit
-                    local dotProduct = Cam.CFrame.RightVector:Dot(direction)
-                    local crossProduct = Cam.CFrame.RightVector:Cross(direction)
-                    local screenPosition = Vector2.new(
-                        Cam.ViewportSize.X / 2 + dotProduct * Cam.ViewportSize.X / 3,
-                        Cam.ViewportSize.Y / 2 - crossProduct.Y * Cam.ViewportSize.Y / 3
-                    )
-                    screenPosition = Vector2.new(
-                        math.clamp(screenPosition.X, ESPConfig.ArrowSize, Cam.ViewportSize.X - ESPConfig.ArrowSize),
-                        math.clamp(screenPosition.Y, ESPConfig.ArrowSize, Cam.ViewportSize.Y - ESPConfig.ArrowSize)
-                    )
-                    local angle = math.atan2(screenPosition.Y - Cam.ViewportSize.Y / 2, screenPosition.X - Cam.ViewportSize.X / 2)
-                    arrow.PointA = screenPosition
-                    arrow.PointB = Vector2.new(screenPosition.X - ESPConfig.ArrowSize * math.cos(angle - 0.5), screenPosition.Y - ESPConfig.ArrowSize * math.sin(angle - 0.5))
-                    arrow.PointC = Vector2.new(screenPosition.X - ESPConfig.ArrowSize * math.cos(angle + 0.5), screenPosition.Y - ESPConfig.ArrowSize * math.sin(angle + 0.5))
-                    arrow.Color = ESPConfig.ArrowColor
-                    arrow.Visible = true
-                else arrow.Visible = false end
-                if ESPConfig.ShowSkeleton and onScreen then
-                    local head = character:FindFirstChild("Head")
-                    local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-                    local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
-                    local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
-                    local leftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftUpperLeg")
-                    local rightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightUpperLeg")
-                    if head and torso and leftArm and rightArm and leftLeg and rightLeg then
-                        local headPos = Cam:WorldToViewportPoint(head.Position)
-                        local torsoPos = Cam:WorldToViewportPoint(torso.Position)
-                        local leftArmPos = Cam:WorldToViewportPoint(leftArm.Position)
-                        local rightArmPos = Cam:WorldToViewportPoint(rightArm.Position)
-                        local leftLegPos = Cam:WorldToViewportPoint(leftLeg.Position)
-                        local rightLegPos = Cam:WorldToViewportPoint(rightLeg.Position)
-                        skeletonPoints["Head"].Position = Vector2.new(headPos.X, headPos.Y)
-                        skeletonPoints["Head"].Visible = true
-                        skeletonLines[1].From = Vector2.new(headPos.X, headPos.Y)
-                        skeletonLines[1].To = Vector2.new(torsoPos.X, torsoPos.Y)
-                        skeletonLines[1].Visible = true
-                        skeletonLines[2].From = Vector2.new(torsoPos.X, torsoPos.Y)
-                        skeletonLines[2].To = Vector2.new(leftArmPos.X, leftArmPos.Y)
-                        skeletonLines[2].Visible = true
-                        skeletonLines[3].From = Vector2.new(torsoPos.X, torsoPos.Y)
-                        skeletonLines[3].To = Vector2.new(rightArmPos.X, rightArmPos.Y)
-                        skeletonLines[3].Visible = true
-                        skeletonLines[4].From = Vector2.new(torsoPos.X, torsoPos.Y)
-                        skeletonLines[4].To = Vector2.new(leftLegPos.X, leftLegPos.Y)
-                        skeletonLines[4].Visible = true
-                        skeletonLines[5].From = Vector2.new(torsoPos.X, torsoPos.Y)
-                        skeletonLines[5].To = Vector2.new(rightLegPos.X, rightLegPos.Y)
-                        skeletonLines[5].Visible = true
-                        if character:FindFirstChild("LeftLowerArm") then
-                            local leftLowerArmPos = Cam:WorldToViewportPoint(character.LeftLowerArm.Position)
-                            skeletonLines[6].From = Vector2.new(leftArmPos.X, leftArmPos.Y)
-                            skeletonLines[6].To = Vector2.new(leftLowerArmPos.X, leftLowerArmPos.Y)
-                            skeletonLines[6].Visible = true
-                        end
-                        if character:FindFirstChild("RightLowerArm") then
-                            local rightLowerArmPos = Cam:WorldToViewportPoint(character.RightLowerArm.Position)
-                            skeletonLines[7].From = Vector2.new(rightArmPos.X, rightArmPos.Y)
-                            skeletonLines[7].To = Vector2.new(rightLowerArmPos.X, rightLowerArmPos.Y)
-                            skeletonLines[7].Visible = true
-                        end
-                        if character:FindFirstChild("LeftLowerLeg") then
-                            local leftLowerLegPos = Cam:WorldToViewportPoint(character.LeftLowerLeg.Position)
-                            skeletonLines[8].From = Vector2.new(leftLegPos.X, leftLegPos.Y)
-                            skeletonLines[8].To = Vector2.new(leftLowerLegPos.X, leftLowerLegPos.Y)
-                            skeletonLines[8].Visible = true
-                        end
-                        if character:FindFirstChild("RightLowerLeg") then
-                            local rightLowerLegPos = Cam:WorldToViewportPoint(character.RightLowerLeg.Position)
-                            skeletonLines[9].From = Vector2.new(rightLegPos.X, rightLegPos.Y)
-                            skeletonLines[9].To = Vector2.new(rightLowerLegPos.X, rightLowerLegPos.Y)
-                            skeletonLines[9].Visible = true
-                        end
-                    else
-                        for _, line in pairs(skeletonLines) do line.Visible = false end
-                        for _, point in pairs(skeletonPoints) do point.Visible = false end
-                    end
-                else
-                    for _, line in pairs(skeletonLines) do line.Visible = false end
-                    for _, point in pairs(skeletonPoints) do point.Visible = false end
-                end
-            else
-                box.Visible = false; healthBar.Visible = false; healthBarBackground.Visible = false; healthBarBorder.Visible = false; healthText.Visible = false; nameText.Visible = false; distanceText.Visible = false; weaponText.Visible = false; tracer.Visible = false; arrow.Visible = false
-                for _, line in pairs(skeletonLines) do line.Visible = false end
-                for _, point in pairs(skeletonPoints) do point.Visible = false end
-            end
-        end)
+        end
+        return false
     end
 
-    local function updateRadar()
-        if not ESPConfig.ShowRadar then
-            radar.Visible = false; radarCenter.Visible = false; radarDirection.Visible = false; radarRangeText.Visible = false
-            for _, line in pairs(radarGridLines) do line.Visible = false end
-            for _, player in pairs(radarPlayers) do
-                if player.dot then player.dot.Visible = false end
-                if player.direction then player.direction.Visible = false end
-                if player.name then player.name.Visible = false end
+    local function isAuthor(player)
+        for _, child in ipairs(player:GetChildren()) do
+            if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                return true
+            end
+        end
+        if player.Character then
+            for _, child in ipairs(player.Character:GetDescendants()) do
+                if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function GetHealth(player)
+        local c = player.Character
+        if not c then return 0 end
+        local h = c:FindFirstChildOfClass("Humanoid")
+        if not h then return 0 end
+        return math.floor(h.Health)
+    end
+
+    local function GetDist(player)
+        local mc = LocalPlayer.Character
+        if not mc then return 0 end
+        local mr = mc:FindFirstChild("HumanoidRootPart")
+        if not mr then return 0 end
+        local tc = player.Character
+        if not tc then return 0 end
+        local tr = tc:FindFirstChild("HumanoidRootPart")
+        if not tr then return 0 end
+        return math.floor((mr.Position - tr.Position).Magnitude)
+    end
+
+    local function RemoveESP(id)
+        local d = ESP_LIST[id]
+        if d then
+            if d.Billboard then d.Billboard:Destroy() end
+            ESP_LIST[id] = nil
+        end
+    end
+
+    local function BuildESP(player)
+        if not player.Character then return end
+        if not ESP_SHOW_SELF and player == LocalPlayer then return end
+        
+        local head = player.Character:FindFirstChild("Head")
+        if not head then return end
+        if ESP_LIST[player.UserId] then
+            if ESP_LIST[player.UserId].Billboard then
+                ESP_LIST[player.UserId].Billboard.Enabled = true
             end
             return
         end
-        radar.Visible = true; radarCenter.Visible = true; radarDirection.Visible = true; radarRangeText.Visible = true
-        radarRangeText.Position = Vector2.new(radar.Position.X, radar.Position.Y + radar.Radius + 5)
-        for i = 1, 4 do
-            local angle = (i - 1) * math.pi / 2
-            radarGridLines[i].From = radar.Position
-            radarGridLines[i].To = Vector2.new(radar.Position.X + math.cos(angle) * radar.Radius, radar.Position.Y + math.sin(angle) * radar.Radius)
-            radarGridLines[i].Visible = true
+
+        local bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 200, 0, 100)
+        bb.StudsOffset = Vector3.new(0, 3, 0)
+        bb.AlwaysOnTop = true
+        bb.MaxDistance = 764
+        bb.Parent = head
+
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(1, 0, 1, 0)
+        f.BackgroundTransparency = 1
+        f.Parent = bb
+
+        ESP_LIST[player.UserId] = { Billboard = bb, Frame = f }
+    end
+
+    local function RefreshESP()
+        if not ESP_ENABLED then
+            for _, d in pairs(ESP_LIST) do
+                if d.Billboard then d.Billboard.Enabled = false end
+            end
+            return
         end
-        radarDirection.From = radar.Position
-        radarDirection.To = Vector2.new(radar.Position.X, radar.Position.Y - radar.Radius)
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
-                local rootPart = player.Character.HumanoidRootPart
-                local relativePosition = rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position
-                local radarX = radar.Position.X + (relativePosition.X / 10)
-                local radarY = radar.Position.Y + (relativePosition.Z / 10)
-                local distanceFromCenter = math.sqrt((radarX - radar.Position.X) ^ 2 + (radarY - radar.Position.Y) ^ 2)
-                if distanceFromCenter > radar.Radius then
-                    local angle = math.atan2(radarY - radar.Position.Y, radarX - radar.Position.X)
-                    radarX = radar.Position.X + math.cos(angle) * radar.Radius
-                    radarY = radar.Position.Y + math.sin(angle) * radar.Radius
-                end
-                if not radarPlayers[player] then
-                    radarPlayers[player] = {
-                        dot = Drawing.new("Circle"),
-                        direction = Drawing.new("Line"),
-                        name = Drawing.new("Text")
-                    }
-                    radarPlayers[player].dot.Thickness = 1
-                    radarPlayers[player].dot.Filled = true
-                    radarPlayers[player].dot.Radius = 4
-                    radarPlayers[player].direction.Thickness = 2
-                    radarPlayers[player].direction.Visible = true
-                    radarPlayers[player].name.Size = 12
-                    radarPlayers[player].name.Font = Drawing.Fonts.Monospace
-                    radarPlayers[player].name.Outline = true
-                    radarPlayers[player].name.OutlineColor = Color3.new(0, 0, 0)
-                end
-                if player.Team == LocalPlayer.Team then
-                    radarPlayers[player].dot.Color = Color3.new(0, 1, 0)
-                    radarPlayers[player].direction.Color = Color3.new(0, 0.8, 0)
-                    radarPlayers[player].name.Color = Color3.new(0, 1, 0)
+
+        ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
+        if ESP_REFRESH_COUNT % 3 ~= 0 then
+            return
+        end
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not ESP_SHOW_SELF and p == LocalPlayer then
+                RemoveESP(p.UserId)
+                continue
+            end
+            
+            if not p.Character then
+                RemoveESP(p.UserId)
+                continue
+            end
+            
+            if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
+                RemoveESP(p.UserId)
+            end
+            
+            if not ESP_LIST[p.UserId] then
+                BuildESP(p)
+            end
+            
+            local d = ESP_LIST[p.UserId]
+            if not d then continue end
+            if not d.Billboard or not d.Billboard.Parent then
+                ESP_LIST[p.UserId] = nil
+                BuildESP(p)
+                d = ESP_LIST[p.UserId]
+                if not d then continue end
+            end
+            d.Billboard.Enabled = true
+
+            local f = d.Frame
+            for _, c in ipairs(f:GetChildren()) do c:Destroy() end
+
+            local y = 0
+            local lines = 0
+            local hp = GetHealth(p)
+            local dist = GetDist(p)
+
+            local isWdfexUser = isWdfexUser(p)
+            local isAuthorUser = isAuthor(p)
+
+            if ESP_SHOW_NAME then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 20)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                if p == LocalPlayer then
+                    l.Text = p.Name .. " (你)"
+                    l.TextColor3 = Color3.fromRGB(0, 255, 255)
                 else
-                    radarPlayers[player].dot.Color = Color3.new(1, 0, 0)
-                    radarPlayers[player].direction.Color = Color3.new(1, 0, 0)
-                    radarPlayers[player].name.Color = Color3.new(1, 0, 0)
+                    l.Text = p.Name
+                    l.TextColor3 = Color3.fromRGB(255, 255, 255)
                 end
-                radarPlayers[player].dot.Position = Vector2.new(radarX, radarY)
-                radarPlayers[player].dot.Visible = true
-                local lookVector = rootPart.CFrame.LookVector
-                local directionLength = 10
-                radarPlayers[player].direction.From = Vector2.new(radarX, radarY)
-                radarPlayers[player].direction.To = Vector2.new(radarX + lookVector.X * directionLength, radarY + lookVector.Z * directionLength)
-                radarPlayers[player].name.Position = Vector2.new(radarX, radarY - 15)
-                radarPlayers[player].name.Text = player.Name
-                radarPlayers[player].name.Visible = distanceFromCenter <= radar.Radius
-            elseif radarPlayers[player] then
-                radarPlayers[player].dot.Visible = false
-                radarPlayers[player].direction.Visible = false
-                radarPlayers[player].name.Visible = false
+                l.TextSize = 15
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 22
+                lines = lines + 1
             end
-        end
-        for player, components in pairs(radarPlayers) do
-            if not Players:FindFirstChild(player.Name) then
-                components.dot.Visible = false
-                components.direction.Visible = false
-                components.name.Visible = false
-                radarPlayers[player] = nil
+
+            if ESP_SHOW_PEERS and isWdfexUser then
+                local displayText = isAuthorUser and "wdfex作者" or "wdfex用户"
+                local textColor = isAuthorUser and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
+                
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = displayText
+                l.TextColor3 = textColor
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
             end
+
+            if ESP_SHOW_HEALTH then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                local c = hp > 70 and Color3.fromRGB(0, 255, 100) or hp > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
+                l.Text = hp .. "HP"
+                l.TextColor3 = c
+                l.TextSize = 13
+                l.Font = Enum.Font.GothamBold
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            if ESP_SHOW_DIST then
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 0, 18)
+                l.Position = UDim2.new(0, 0, 0, y)
+                l.BackgroundTransparency = 1
+                l.Text = dist .. "m"
+                l.TextColor3 = Color3.fromRGB(200, 200, 200)
+                l.TextSize = 13
+                l.Font = Enum.Font.Gotham
+                l.TextStrokeTransparency = 0.3
+                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.TextXAlignment = Enum.TextXAlignment.Center
+                l.Parent = f
+                y = y + 20
+                lines = lines + 1
+            end
+
+            d.Billboard.Size = UDim2.new(0, 200, 0, lines * 20 + 10)
         end
     end
 
-    -- ==================== 娱乐功能变量 ====================
-    _G.AUTO_CHAT_TEXT = "wdfex-通缉"
-    _G.AUTO_CHAT_ENABLED = false
-    _G.AUTO_CHAT_INTERVAL = 1.5
-    _G.AUTO_CHAT_MODE = "自定义"
-    local chatSystem = {
-        Players = game:GetService("Players"),
-        ReplicatedStorage = game:GetService("ReplicatedStorage"),
-        TextChatService = game:GetService("TextChatService"),
-        messageIndex = 1,
-        messageCount = 0,
-        lastMessageTime = 0,
-        chatModes = {
-            ["自定义"] = function() return { _G.AUTO_CHAT_TEXT } end,
-            ["7字经"] = function() return { "我没有妈妈", "我没有爸爸", "我妈死了", "我全家没了", "爸爸", "爷爷", "妈妈" } end,
-            ["14字经"] = function() return { "我有啥用", "我活着干啥呢", "我赶紧跳了吧", "我没有鸡8", "你是我爸爸", "你是我爷爷", "我个窝囊废", "孩子快来呀", "怎么不敢和你爹对话了？", "你有什么用处", "你活着当技女吗？", "一句话", "来打压我", "哈哈哈笑死我了" } end,
-            ["糖人语言"] = function() return { "我是奶龙", "奶龙是我", "你是谁？？", "我是谁", "你干嘛啊？" } end,
-            ["宣传词"] = function() return { "wdfex-Hub牛逼", "打败一切", "快来购买", "功能多多", "支持超多服务器" } end
-        },
-        connections = {},
-        active = false
-    }
-    chatSystem.tryTextChatSend = function(msg)
-        local ok = false
-        pcall(function()
-            local ch = chatSystem.TextChatService.TextChannels:FindFirstChild("RBXGeneral") or
-                chatSystem.TextChatService.TextChannels:FindFirstChild("RBXGeneralChannel")
-            if ch and ch.SendAsync then ch:SendAsync(msg) ok = true end
-        end)
-        return ok
-    end
-    chatSystem.tryOldChatSend = function(msg)
-        local ok = false
-        pcall(function()
-            local ev = chatSystem.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-            local req = ev and ev:FindFirstChild("SayMessageRequest")
-            if req then req:FireServer(msg, "All") ok = true end
-        end)
-        return ok
-    end
-    chatSystem.tryPlayerChat = function(msg)
-        local ok = false
-        pcall(function()
-            local pl = chatSystem.Players.LocalPlayer
-            if pl and pl.Chat then pl:Chat(msg) ok = true end
-        end)
-        return ok
-    end
-    chatSystem.doSend = function(msg)
-        local sent = false
-        sent = chatSystem.tryTextChatSend(msg) or sent
-        if not sent then sent = chatSystem.tryOldChatSend(msg) or sent end
-        if not sent then sent = chatSystem.tryPlayerChat(msg) or sent end
-        if sent then
-            chatSystem.messageCount = chatSystem.messageCount + 1
-            chatSystem.lastMessageTime = os.time()
+    -- 透视刷新循环
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.3)
+            if ESP_ENABLED then RefreshESP() end
         end
-        return sent
-    end
-    chatSystem.startAutoChat = function()
-        if chatSystem.active then return end
-        chatSystem.active = true
-        chatSystem.connections.autoChat = RunService.Heartbeat:Connect(function()
-            if _G.AUTO_CHAT_ENABLED and chatSystem.chatModes[_G.AUTO_CHAT_MODE] then
-                local currentTime = tick()
-                local lastSendTime = chatSystem.lastSendTime or 0
-                local interval = tonumber(_G.AUTO_CHAT_INTERVAL) or 1.5
-                if currentTime - lastSendTime >= interval then
-                    local messages = chatSystem.chatModes[_G.AUTO_CHAT_MODE]()
-                    if messages and #messages > 0 then
-                        local message = messages[chatSystem.messageIndex]
-                        chatSystem.doSend(tostring(message))
-                        chatSystem.messageIndex = (chatSystem.messageIndex % #messages) + 1
-                        chatSystem.lastSendTime = currentTime
-                    end
-                end
-            end
+    end)
+    Players.PlayerAdded:Connect(function(p)
+        p.CharacterAdded:Connect(function()
+            task.wait(0.3)
+            if ESP_ENABLED then RefreshESP() end
         end)
-    end
-    chatSystem.stopAutoChat = function()
-        chatSystem.active = false
-        if chatSystem.connections.autoChat then
-            chatSystem.connections.autoChat:Disconnect()
-            chatSystem.connections.autoChat = nil
-        end
-    end
-    chatSystem.init = function() chatSystem.startAutoChat() end
-    chatSystem.sendNow = function(message)
-        if not message or message == "" then message = _G.AUTO_CHAT_TEXT end
-        return chatSystem.doSend(message)
-    end
-    chatSystem.cleanup = function()
-        for name, connection in pairs(chatSystem.connections) do
-            if connection then pcall(function() connection:Disconnect() end) end
-        end
-        chatSystem.connections = {}
-        chatSystem.active = false
-    end
-    task.spawn(chatSystem.init)
+    end)
+    Players.PlayerRemoving:Connect(function(p)
+        RemoveESP(p.UserId)
+    end)
 
     -- ==================== 天气和天空盒 ====================
     local weatherSettings = {
@@ -1530,6 +1226,106 @@ function createUI()
         end
     end
 
+    -- ==================== 娱乐功能变量 ====================
+    _G.AUTO_CHAT_TEXT = "wdfex-通缉"
+    _G.AUTO_CHAT_ENABLED = false
+    _G.AUTO_CHAT_INTERVAL = 1.5
+    _G.AUTO_CHAT_MODE = "自定义"
+    local chatSystem = {
+        Players = game:GetService("Players"),
+        ReplicatedStorage = game:GetService("ReplicatedStorage"),
+        TextChatService = game:GetService("TextChatService"),
+        messageIndex = 1,
+        messageCount = 0,
+        lastMessageTime = 0,
+        chatModes = {
+            ["自定义"] = function() return { _G.AUTO_CHAT_TEXT } end,
+            ["7字经"] = function() return { "我没有妈妈", "我没有爸爸", "我妈死了", "我全家没了", "爸爸", "爷爷", "妈妈" } end,
+            ["14字经"] = function() return { "我有啥用", "我活着干啥呢", "我赶紧跳了吧", "我没有鸡8", "你是我爸爸", "你是我爷爷", "我个窝囊废", "孩子快来呀", "怎么不敢和你爹对话了？", "你有什么用处", "你活着当技女吗？", "一句话", "来打压我", "哈哈哈笑死我了" } end,
+            ["糖人语言"] = function() return { "我是奶龙", "奶龙是我", "你是谁？？", "我是谁", "你干嘛啊？" } end,
+            ["宣传词"] = function() return { "wdfex-Hub牛逼", "打败一切", "快来购买", "功能多多", "支持超多服务器" } end
+        },
+        connections = {},
+        active = false
+    }
+    chatSystem.tryTextChatSend = function(msg)
+        local ok = false
+        pcall(function()
+            local ch = chatSystem.TextChatService.TextChannels:FindFirstChild("RBXGeneral") or
+                chatSystem.TextChatService.TextChannels:FindFirstChild("RBXGeneralChannel")
+            if ch and ch.SendAsync then ch:SendAsync(msg) ok = true end
+        end)
+        return ok
+    end
+    chatSystem.tryOldChatSend = function(msg)
+        local ok = false
+        pcall(function()
+            local ev = chatSystem.ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+            local req = ev and ev:FindFirstChild("SayMessageRequest")
+            if req then req:FireServer(msg, "All") ok = true end
+        end)
+        return ok
+    end
+    chatSystem.tryPlayerChat = function(msg)
+        local ok = false
+        pcall(function()
+            local pl = chatSystem.Players.LocalPlayer
+            if pl and pl.Chat then pl:Chat(msg) ok = true end
+        end)
+        return ok
+    end
+    chatSystem.doSend = function(msg)
+        local sent = false
+        sent = chatSystem.tryTextChatSend(msg) or sent
+        if not sent then sent = chatSystem.tryOldChatSend(msg) or sent end
+        if not sent then sent = chatSystem.tryPlayerChat(msg) or sent end
+        if sent then
+            chatSystem.messageCount = chatSystem.messageCount + 1
+            chatSystem.lastMessageTime = os.time()
+        end
+        return sent
+    end
+    chatSystem.startAutoChat = function()
+        if chatSystem.active then return end
+        chatSystem.active = true
+        chatSystem.connections.autoChat = RunService.Heartbeat:Connect(function()
+            if _G.AUTO_CHAT_ENABLED and chatSystem.chatModes[_G.AUTO_CHAT_MODE] then
+                local currentTime = tick()
+                local lastSendTime = chatSystem.lastSendTime or 0
+                local interval = tonumber(_G.AUTO_CHAT_INTERVAL) or 1.5
+                if currentTime - lastSendTime >= interval then
+                    local messages = chatSystem.chatModes[_G.AUTO_CHAT_MODE]()
+                    if messages and #messages > 0 then
+                        local message = messages[chatSystem.messageIndex]
+                        chatSystem.doSend(tostring(message))
+                        chatSystem.messageIndex = (chatSystem.messageIndex % #messages) + 1
+                        chatSystem.lastSendTime = currentTime
+                    end
+                end
+            end
+        end)
+    end
+    chatSystem.stopAutoChat = function()
+        chatSystem.active = false
+        if chatSystem.connections.autoChat then
+            chatSystem.connections.autoChat:Disconnect()
+            chatSystem.connections.autoChat = nil
+        end
+    end
+    chatSystem.init = function() chatSystem.startAutoChat() end
+    chatSystem.sendNow = function(message)
+        if not message or message == "" then message = _G.AUTO_CHAT_TEXT end
+        return chatSystem.doSend(message)
+    end
+    chatSystem.cleanup = function()
+        for name, connection in pairs(chatSystem.connections) do
+            if connection then pcall(function() connection:Disconnect() end) end
+        end
+        chatSystem.connections = {}
+        chatSystem.active = false
+    end
+    task.spawn(chatSystem.init)
+
     -- ==================== 开始构建 UI ====================
     -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
@@ -1581,7 +1377,7 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- 玩家修改 Tab (飞行、速度、视野、无限跳)
+    -- 玩家修改 Tab
     local PlayerTab = AddTab(MainSection, "玩家修改", "user")
     PlayerTab:Divider({ Text = "飞行" })
     PlayerTab:Toggle({
@@ -1633,8 +1429,9 @@ function createUI()
         Callback = function(v) toggleInfiniteJump(v) end
     })
 
-    -- 战斗功能 Tab
+    -- ==================== 战斗功能 Tab（合并：强制加载 + 杀戮光环） ====================
     local CombatTab = AddTab(MainSection, "战斗功能", "swords")
+
     CombatTab:Toggle({
         Title = "强制加载所有数据",
         Value = false,
@@ -1679,137 +1476,143 @@ function createUI()
             end
         end
     })
+
+    -- ==================== 杀戮光环（精简版 - 无过滤、无队伍、无显示） ====================
+    local kaEnabled = false
+    local KA_MAX_DISTANCE = 300
+    local attackCooldown = false
+
+    local function kaGetNearestEnemy()
+        local char = LocalPlayer.Character
+        if not char then return nil end
+        local myHead = char:FindFirstChild("Head")
+        if not myHead then return nil end
+        local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
+                    end
+                end
+            end
+        end
+        return bestPlayer
+    end
+
+    local function performAttack()
+        if not kaEnabled then return end
+        if attackCooldown then return end
+        attackCooldown = true
+        
+        local target = kaGetNearestEnemy()
+        if target then
+            local targetHead = target.Character and target.Character:FindFirstChild("Head")
+            if targetHead then
+                local myHead = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
+                if myHead then
+                    local origin = myHead.Position
+                    local hitPos = targetHead.Position
+                    local direction = (hitPos - origin).Unit
+                    local damage = 99999999
+                    pcall(function()
+                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                            bodyParts = { { "Head", damage } },
+                            shotCode = { origin, direction },
+                            target = target,
+                            pos = hitPos
+                        })
+                    end)
+                    pcall(function()
+                        local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                        handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                        if handleShots then
+                            handleShots:FireServer("2", "Shoot")
+                        end
+                    end)
+                end
+            end
+        end
+        
+        task.wait(0.05)
+        attackCooldown = false
+    end
+
+    -- 主循环（每0.1秒攻击一次）
+    task.spawn(function()
+        while not isDestroyed do
+            if kaEnabled then
+                performAttack()
+            end
+            task.wait(0.1)
+        end
+    end)
+
+    -- 角色重生后立即攻击
+    LocalPlayer.CharacterAdded:Connect(function()
+        if kaEnabled then
+            task.wait(0.05)
+            performAttack()
+        end
+    end)
+
+    -- 监听武器切换
+    local function onToolAdded(tool)
+        if kaEnabled then
+            task.wait(0.05)
+            performAttack()
+        end
+    end
+
+    local function setupToolListener(char)
+        if char then
+            char.DescendantAdded:Connect(function(desc)
+                if desc:IsA("Tool") then
+                    onToolAdded(desc)
+                end
+            end)
+        end
+    end
+
+    if LocalPlayer.Character then
+        setupToolListener(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(function(char)
+        setupToolListener(char)
+    end)
+
+    -- UI控件
+    CombatTab:Divider({ Text = "杀戮光环" })
+    CombatTab:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
     CombatTab:Toggle({
-        Title = "愤怒机器人[全枪]",
+        Title = "启用杀戮光环",
         Value = false,
-        Callback = function(v)
-            AutoShoot = v
-            if v then
-                task.spawn(function()
-                    ShooterModule = require(ReplicatedStorage.Client.Wanted.Objects.ClientTool.Components.Guns.Shooter)
-                    OriginalShoot = ShooterModule._shoot
-                    local function createBeautifulTrail(origin, targetPos)
-                        local function createBezierCurve(p0, p1, p2, t)
-                            return (1 - t) ^ 2 * p0 + 2 * (1 - t) * t * p1 + t ^ 2 * p2
-                        end
-                        local trailContainer = Instance.new("Folder")
-                        trailContainer.Name = "MagicTrail"
-                        trailContainer.Parent = Workspace
-                        local midPoint = (origin + targetPos) / 2
-                        local direction = (targetPos - origin).Unit
-                        local perpendicular = Vector3.new(-direction.Z, direction.Y, direction.X) * 3
-                        local controlPoint = midPoint + perpendicular + Vector3.new(0, math.random(-3, 3), 0)
-                        local curvePoints = {}
-                        for i = 0, 20 do
-                            local t = i / 20
-                            table.insert(curvePoints, createBezierCurve(origin, controlPoint, targetPos, t))
-                        end
-                        for i = 1, #curvePoints - 1 do
-                            local startPoint = curvePoints[i]
-                            local endPoint = curvePoints[i + 1]
-                            local distance = (endPoint - startPoint).Magnitude
-                            local beamPart = Instance.new("Part")
-                            beamPart.Size = Vector3.new(0.15, 0.15, distance)
-                            beamPart.Anchored = true
-                            beamPart.CanCollide = false
-                            beamPart.Material = Enum.Material.Neon
-                            beamPart.Transparency = 0.3
-                            beamPart.CFrame = CFrame.new(startPoint, endPoint) * CFrame.new(0, 0, -distance / 2)
-                            beamPart.Parent = trailContainer
-                            local pointLight = Instance.new("PointLight")
-                            pointLight.Brightness = 5
-                            pointLight.Range = 3
-                            pointLight.Color = Color3.fromRGB(0, 170, 255)
-                            pointLight.Parent = beamPart
-                            local particles = Instance.new("ParticleEmitter")
-                            particles.Size = NumberSequence.new(0.1, 0.3)
-                            particles.Transparency = NumberSequence.new(0.3, 0.8)
-                            particles.Lifetime = NumberRange.new(0.5, 1)
-                            particles.Rate = 50
-                            particles.Speed = NumberRange.new(1, 2)
-                            particles.VelocitySpread = 180
-                            particles.Parent = beamPart
-                        end
-                        task.spawn(function()
-                            task.wait(1.5)
-                            if trailContainer and trailContainer.Parent then trailContainer:Destroy() end
-                        end)
-                        return trailContainer
-                    end
-                    local function hasLineOfSight(shooterPos, targetPos)
-                        local raycastParams = RaycastParams.new()
-                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                        raycastParams.FilterDescendantsInstances = { LocalPlayer.Character }
-                        raycastParams.IgnoreWater = true
-                        local direction = (targetPos - shooterPos).Unit
-                        local distance = (targetPos - shooterPos).Magnitude
-                        local raycastResult = Workspace:Raycast(shooterPos, direction * distance, raycastParams)
-                        if raycastResult then
-                            local hitPart = raycastResult.Instance
-                            if hitPart then
-                                local hitCharacter = hitPart:FindFirstAncestorOfClass("Model")
-                                if hitCharacter and hitCharacter:FindFirstChild("Humanoid") then
-                                    return true
-                                else
-                                    return false
-                                end
-                            end
-                        end
-                        return true
-                    end
-                    ShooterModule._shoot = function(self)
-                        if not self or not self.tool then return OriginalShoot(self) end
-                        local LocalCharacter = LocalPlayer.Character
-                        if not LocalCharacter then return OriginalShoot(self) end
-                        local shooterPos = LocalCharacter.HumanoidRootPart and LocalCharacter.HumanoidRootPart.Position or LocalCharacter.PrimaryPart.Position
-                        local nearestPlayer = nil
-                        local nearestDistance = math.huge
-                        for _, p in ipairs(Players:GetPlayers()) do
-                            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                local targetPos = p.Character.HumanoidRootPart.Position
-                                local distance = (shooterPos - targetPos).Magnitude
-                                if hasLineOfSight(shooterPos, targetPos) and distance < nearestDistance then
-                                    nearestDistance = distance
-                                    nearestPlayer = p
-                                end
-                            end
-                        end
-                        if nearestPlayer and nearestPlayer.Character and nearestPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            local targetPos = nearestPlayer.Character.HumanoidRootPart.Position
-                            self.aimpoint = targetPos
-                            self.aimpoint2 = targetPos
-                            if self.tool.model and self.tool.model.PrimaryPart then
-                                createBeautifulTrail(self.tool.model.PrimaryPart.Position, targetPos)
-                            else
-                                createBeautifulTrail(shooterPos, targetPos)
-                            end
-                            if self.tool then
-                                self.tool.shooting = true
-                                self.tool.fireDebounce = 0
-                                self.tool.fireMode = "auto"
-                            end
-                        else
-                            if self.tool then self.tool.shooting = false end
-                        end
-                        return OriginalShoot(self)
-                    end
-                    while AutoShoot do
-                        if ShooterModule and ShooterModule._shoot then
-                            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
-                            if tool then
-                                local shooter = tool:FindFirstChild("Shooter") or { tool = tool }
-                                pcall(function() ShooterModule._shoot(shooter) end)
-                            end
-                        end
-                        task.wait(0.2)
-                    end
-                    if OriginalShoot then ShooterModule._shoot = OriginalShoot end
-                end)
-            else
-                if ShooterModule and OriginalShoot then ShooterModule._shoot = OriginalShoot end
+        Callback = function(value)
+            kaEnabled = value
+            if value then
+                task.wait(0.1)
+                performAttack()
             end
         end
     })
+    CombatTab:Slider({
+        Title = "攻击距离",
+        Step = 1,
+        Value = { Min = 50, Max = 1000, Default = 300 },
+        Callback = function(value)
+            KA_MAX_DISTANCE = value
+        end
+    })
+
+    -- 出售物品光环
+    CombatTab:Divider({ Text = "其他" })
     CombatTab:Toggle({
         Title = "出售物品光环",
         Value = false,
@@ -1833,7 +1636,7 @@ function createUI()
         end
     })
 
-    -- 刷钱功能 Tab
+    -- ==================== 刷钱功能 Tab ====================
     local MoneyTab = AddTab(MainSection, "刷钱功能", "dollar-sign")
     MoneyTab:Toggle({
         Title = "自动抢银行",
@@ -2084,7 +1887,7 @@ function createUI()
         end
     })
 
-    -- 自动拾取 Tab
+    -- ==================== 自动拾取 Tab ====================
     local PickupTab = AddTab(MainSection, "自动拾取", "box")
     PickupTab:Toggle({
         Title = "自动拾取金条",
@@ -2227,7 +2030,7 @@ function createUI()
         end
     })
 
-    -- 自瞄 Tab
+    -- ==================== 自瞄 Tab ====================
     local AimTab = AddTab(MainSection, "自瞄", "crosshair")
     AimTab:Toggle({
         Title = "开启自瞄",
@@ -2395,96 +2198,59 @@ function createUI()
         Callback = function(v) isLagCompensation = v end
     })
 
-    -- 透视 Tab
-    local ESPTab = AddTab(MainSection, "透视", "user")
+    -- ==================== 透视 Tab ====================
+    local ESPTab = AddTab(MainSection, "透视", "eye")
     ESPTab:Toggle({
-        Title = "ESP总开关",
+        Title = "透视总开关",
         Value = false,
-        Callback = function(v) ESPConfig.ESPEnabled = v end
+        Callback = function(value)
+            ESP_ENABLED = value
+            if value then
+                RefreshESP()
+            end
+        end
     })
+    ESPTab:Divider()
     ESPTab:Toggle({
-        Title = "显示方框",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowBox = v end
+        Title = "显示名字",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_NAME = value
+            if ESP_ENABLED then RefreshESP() end
+        end
     })
     ESPTab:Toggle({
         Title = "显示血量",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowHealth = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示名称",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowName = v end
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_HEALTH = value
+            if ESP_ENABLED then RefreshESP() end
+        end
     })
     ESPTab:Toggle({
         Title = "显示距离",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_DIST = value
+            if ESP_ENABLED then RefreshESP() end
+        end
+    })
+    ESPTab:Divider()
+    ESPTab:Toggle({
+        Title = "透视自己",
         Value = false,
-        Callback = function(v) ESPConfig.ShowDistance = v end
+        Callback = function(value)
+            ESP_SHOW_SELF = value
+            if ESP_ENABLED then RefreshESP() end
+        end
     })
     ESPTab:Toggle({
-        Title = "显示射线",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowTracer = v end
-    })
-    ESPTab:Toggle({
-        Title = "队伍检查",
-        Value = false,
-        Callback = function(v) ESPConfig.TeamCheck = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示骨骼",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowSkeleton = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示雷达",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowRadar = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示玩家计数",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowPlayerCount = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示武器",
-        Value = false,
-        Callback = function(v) ESPConfig.ShowWeapon = v end
-    })
-    ESPTab:Toggle({
-        Title = "屏幕外箭头",
-        Value = false,
-        Callback = function(v) ESPConfig.OutOfViewArrows = v end
-    })
-    ESPTab:Toggle({
-        Title = "显示 Chams",
-        Value = false,
-        Callback = function(v) ESPConfig.Chams = v end
-    })
-    ESPTab:Slider({
-        Title = "方框粗细",
-        Step = 1,
-        Value = { Min = 1, Max = 5, Default = 1 },
-        Callback = function(v) ESPConfig.BoxThickness = v end
-    })
-    ESPTab:Slider({
-        Title = "射线粗细",
-        Step = 1,
-        Value = { Min = 1, Max = 5, Default = 1 },
-        Callback = function(v) ESPConfig.TracerThickness = v end
-    })
-    ESPTab:Slider({
-        Title = "骨骼粗细",
-        Step = 1,
-        Value = { Min = 1, Max = 5, Default = 2 },
-        Callback = function(v) ESPConfig.SkeletonThickness = v end
-    })
-    ESPTab:Slider({
-        Title = "箭头大小",
-        Step = 1,
-        Value = { Min = 5, Max = 30, Default = 15 },
-        Callback = function(v) ESPConfig.ArrowSize = v end
+        Title = "同行显示（wdfex用户）",
+        Value = true,
+        Callback = function(value)
+            ESP_SHOW_PEERS = value
+            if ESP_ENABLED then RefreshESP() end
+        end
     })
 
     -- ==================== 其他功能 Section ====================
