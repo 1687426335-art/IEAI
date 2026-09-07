@@ -779,7 +779,7 @@ function createUI()
     })
 
     PoliceDodgeTab:Slider({
-        Title = "触发距离（米）",
+        Title = "触发距离",
         Step = 1,
         Value = { Min = 1, Max = 100, Default = 30 },
         Callback = function(value)
@@ -1878,7 +1878,7 @@ function createUI()
     -- UI 控件
     -- ============================================================
     C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害（伤害已拉满）" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({
         Title = "启用杀戮光环",
         Value = false,
