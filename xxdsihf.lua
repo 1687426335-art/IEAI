@@ -594,7 +594,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5更新提示",
-        Desc = "修复部分功能卡顿问题\n修复杀戮光环所有问题\n增加一些功能",
+        Desc = "修复部分功能卡顿问题\n修复杀戮光环所有问题\n应该没啥bug了",
         ThumbnailSize = 190,
     })
     infoTab:Select()
