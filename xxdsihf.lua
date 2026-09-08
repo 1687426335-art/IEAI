@@ -475,7 +475,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "我会在下午4点更新v2.0.5版本"
+            banner.Text = "杀戮光环打20米以内的人拿刀20米以外的拿刀打"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
