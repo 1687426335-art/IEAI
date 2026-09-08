@@ -475,7 +475,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            banner.Text = "我会在下午4点更新v2.0.5版本"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -593,8 +593,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.4提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
+        Title = "v2.0.5更新提示",
+        Desc = "修复部分功能卡顿问题\n修复杀戮光环所有问题\n增加一些功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
