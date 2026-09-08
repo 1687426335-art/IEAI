@@ -448,7 +448,7 @@ function createUI()
         end
     end)
 
-    -- ==================== 播放音乐 ====================
+    -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
     task.spawn(function()
         pcall(function()
             local sound = Instance.new("Sound")
@@ -462,7 +462,7 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅 ====================
+    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -508,70 +508,6 @@ function createUI()
             startAnimation()
         end)
     end)
-
-    -- ==================== 直播模式水印 ====================
-    local liveModeEnabled = false
-    local liveModeLabels = {}
-
-    local function CreateLiveModeWatermarks()
-        for _, label in ipairs(liveModeLabels) do
-            pcall(function() label:Destroy() end)
-        end
-        liveModeLabels = {}
-        
-        if not liveModeEnabled then return end
-        
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "LiveModeWatermarks"
-        gui.ResetOnSpawn = false
-        gui.Parent = player:WaitForChild("PlayerGui")
-        table.insert(liveModeLabels, gui)
-        
-        local bottomRight = Instance.new("TextLabel")
-        bottomRight.Size = UDim2.new(0, 260, 0, 32)
-        bottomRight.Position = UDim2.new(1, -270, 1, -42)
-        bottomRight.BackgroundTransparency = 1
-        bottomRight.Text = "豆包AI生成请注意分辨"
-        bottomRight.TextSize = 20
-        bottomRight.Font = Enum.Font.GothamBold
-        bottomRight.TextScaled = false
-        bottomRight.TextStrokeTransparency = 0.2
-        bottomRight.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        bottomRight.TextXAlignment = Enum.TextXAlignment.Right
-        bottomRight.Parent = gui
-        table.insert(liveModeLabels, bottomRight)
-        
-        local topLeft = Instance.new("TextLabel")
-        topLeft.Size = UDim2.new(0, 180, 0, 32)
-        topLeft.Position = UDim2.new(0, 10, 0, 10)
-        topLeft.BackgroundTransparency = 1
-        topLeft.Text = "后期PS制作"
-        topLeft.TextSize = 20
-        topLeft.Font = Enum.Font.GothamBold
-        topLeft.TextScaled = false
-        topLeft.TextStrokeTransparency = 0.2
-        topLeft.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        topLeft.TextXAlignment = Enum.TextXAlignment.Left
-        topLeft.Parent = gui
-        table.insert(liveModeLabels, topLeft)
-        
-        local hue = 0
-        local colorConn = RunService.Heartbeat:Connect(function()
-            hue = (hue + 0.005) % 1
-            local color = Color3.fromHSV(hue, 0.9, 1)
-            bottomRight.TextColor3 = color
-            topLeft.TextColor3 = color
-        end)
-        table.insert(connections, colorConn)
-        table.insert(liveModeLabels, colorConn)
-    end
-
-    local function DestroyLiveModeWatermarks()
-        for _, label in ipairs(liveModeLabels) do
-            pcall(function() label:Destroy() end)
-        end
-        liveModeLabels = {}
-    end
 
     -- ==================== 其余原有功能 ====================
     local Settings = {
@@ -621,7 +557,7 @@ function createUI()
     AntiFlingLoop()
 
     -- ==================== Tab 创建 ====================
-    -- 作者信息 Tab
+    -- 作者信息 Tab（第一位，默认选中）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -663,6 +599,7 @@ function createUI()
     })
     infoTab:Select()
 
+    -- 默认选中作者信息
     AuthorTab:Select()
 
     -- 主功能 Section
@@ -676,7 +613,7 @@ function createUI()
     end
 
     -- ============================================================
-    -- Tab 顺序
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察
     -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
@@ -686,7 +623,6 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-    local OtherTab = AddTab(MainSection, "其他功能", "more")
 
     -- ============================================================
     -- 自动躲警察 Tab
@@ -810,26 +746,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 其他功能 Tab
-    -- ============================================================
-    OtherTab:Divider({ Text = "直播模式" })
-    OtherTab:Toggle({
-        Title = "直播模式",
-        Value = false,
-        Callback = function(value)
-            liveModeEnabled = value
-            if value then
-                CreateLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
-            else
-                DestroyLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
-            end
-        end
-    })
-
-    -- ============================================================
-    -- 互动 Tab
+    -- 互动 Tab（快速互动相关）
     -- ============================================================
     local interactEnabled = false
 
@@ -882,13 +799,1193 @@ function createUI()
     end)
 
     -- ============================================================
-    -- 飞天与加速 Tab（完整保留，省略中间代码）
+    -- 飞天与加速 Tab
     -- ============================================================
-    -- （此处省略飞天与加速完整代码，实际脚本中需保留）
-    -- 由于内容过长，已确认飞天功能完整保留
+    local FlySpeed = 35
+    local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
+    local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
+    local FlyControl
+    task.spawn(function()
+        pcall(function()
+            local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
+            if pm then FlyControl = require(pm):GetControls() end
+        end)
+    end)
+
+    local function flyRefreshParts()
+        local char = player.Character
+        if not char then flyState.hrp = nil flyState.hum = nil flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil return end
+        flyState.hrp = char:FindFirstChild("HumanoidRootPart")
+        flyState.hum = char:FindFirstChildOfClass("Humanoid")
+        flyAnchor.hrp = flyState.hrp
+        flyAnchor.head = char:FindFirstChild("Head")
+        flyAnchor.hum = flyState.hum
+    end
+
+    local function flyDetectWall()
+        local hrp = flyAnchor.hrp
+        if not hrp then return false end
+        local pos = hrp.Position
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Blacklist
+        params.FilterDescendantsInstances = { player.Character }
+        for i = 1, flyAnchor.rayCount do
+            local angle = (i / flyAnchor.rayCount) * 2 * math.pi
+            local dx = math.cos(angle)
+            local dz = math.sin(angle)
+            for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
+                local dir = Vector3.new(dx, j * 0.5, dz).Unit
+                local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
+                if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function flyEnterAnchor()
+        if flyAnchor.active then return end
+        if not flyAnchor.head or not flyAnchor.hrp or not flyAnchor.hum then return end
+        flyAnchor.head.Anchored = true
+        flyAnchor.hum.PlatformStand = true
+        flyAnchor.active = true
+    end
+
+    local function flyExitAnchor()
+        if not flyAnchor.active then return end
+        if flyAnchor.head and flyAnchor.hum then
+            flyAnchor.head.Anchored = false
+            flyAnchor.hum.PlatformStand = false
+        end
+        flyAnchor.active = false
+    end
+
+    local function flyMicroStepLoop()
+        flyState.targetPos = flyState.hrp.Position
+        flyState.lastTime = tick()
+        while flyState.enabled do
+            local now = tick()
+            local dt = now - flyState.lastTime
+            flyState.lastTime = now
+            if not flyState.hrp or not flyState.hrp.Parent then break end
+            local inWall = flyDetectWall()
+            if inWall and not flyAnchor.active then
+                flyEnterAnchor()
+            elseif not inWall and flyAnchor.active then
+                flyExitAnchor()
+            end
+            local moveDir
+            if FlyControl then
+                local mv = FlyControl:GetMoveVector()
+                local cf = workspace.CurrentCamera.CFrame
+                moveDir = (cf.LookVector * -mv.Z) + (cf.RightVector * mv.X)
+            else
+                moveDir = (flyState.hum and flyState.hum.MoveDirection) or Vector3.zero
+            end
+            local vertical = 0
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                vertical = 1
+            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                vertical = -1
+            end
+            local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
+            flyState.targetPos = flyState.targetPos + delta
+            local currentPos = flyState.hrp.Position
+            local remaining = flyState.targetPos - currentPos
+            local distance = remaining.Magnitude
+            if distance > 0 then
+                local steps = math.ceil(distance / 10)
+                local stepVec = remaining / steps
+                for i = 1, steps do
+                    if not flyState.enabled then break end
+                    currentPos = currentPos + stepVec
+                    flyState.hrp.CFrame = CFrame.new(currentPos) * flyState.hrp.CFrame.Rotation
+                    flyState.hrp.Velocity = Vector3.zero
+                end
+            else
+                flyState.hrp.CFrame = CFrame.new(flyState.targetPos) * flyState.hrp.CFrame.Rotation
+                flyState.hrp.Velocity = Vector3.zero
+            end
+            if flyState.hum then
+                flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+            end
+            task.wait(0.001)
+        end
+    end
+
+    local function flyHealthLockLoop()
+        while flyState.enabled do
+            if flyState.hum and flyState.hum.Health <= 0 then
+                flyState.hum.Health = flyState.hum.MaxHealth
+            end
+            task.wait(0.1)
+        end
+    end
+
+    local function startFly()
+        if flyState.enabled then return end
+        flyRefreshParts()
+        if not flyState.hrp or not flyState.hum then return end
+        flyState.enabled = true
+        flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+        flyState.microThread = task.spawn(flyMicroStepLoop)
+        flyState.healthThread = task.spawn(flyHealthLockLoop)
+        flyState.diedConn = flyState.hum.Died:Connect(function()
+            if flyState.hum and flyState.enabled then
+                flyState.hum.Health = flyState.hum.MaxHealth
+                flyState.hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end)
+    end
+
+    local function stopFly()
+        flyState.enabled = false
+        flyExitAnchor()
+        if flyState.microThread then task.cancel(flyState.microThread) flyState.microThread = nil end
+        if flyState.healthThread then task.cancel(flyState.healthThread) flyState.healthThread = nil end
+        if flyState.diedConn then flyState.diedConn:Disconnect() flyState.diedConn = nil end
+        if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
+    end
+
+    player.CharacterAdded:Connect(function()
+        if flyState.enabled then
+            stopFly()
+            task.wait(0.2)
+            startFly()
+        end
+    end)
+
+    FlyTab:Divider({ Text = "飞行" })
+    FlyTab:Toggle({
+        Title = "飞行（绕过）",
+        Value = false,
+        Callback = function(value)
+            if value then startFly() else stopFly() end
+        end
+    })
+    FlyTab:Slider({
+        Title = "飞行速度",
+        Step = 1,
+        Value = { Min = 10, Max = 620, Default = 35 },
+        Callback = function(value)
+            FlySpeed = value
+        end
+    })
+
+    local flyQuickToggle = false
+    local flyQuickScreenGui = nil
+    local flyQuickButton = nil
+    local flyQuickStatusLabel = nil
+
+    local function DestroyFlyQuickToggle()
+        if flyQuickScreenGui then
+            flyQuickScreenGui:Destroy()
+            flyQuickScreenGui = nil
+            flyQuickButton = nil
+            flyQuickStatusLabel = nil
+        end
+    end
+
+    local function CreateFlyQuickToggle()
+        if flyQuickButton then return end
+        flyQuickScreenGui = Instance.new("ScreenGui")
+        flyQuickScreenGui.Name = "FlyQuickToggle"
+        flyQuickScreenGui.ResetOnSpawn = false
+        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://74369447499630"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
+        button.Parent = flyQuickScreenGui
+        flyQuickButton = button
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = button
+
+        flyQuickStatusLabel = Instance.new("TextLabel")
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.BackgroundTransparency = 1
+        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.Font = Enum.Font.GothamBold
+        flyQuickStatusLabel.TextStrokeTransparency = 0.3
+        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        flyQuickStatusLabel.Text = "飞行: 关"
+        flyQuickStatusLabel.Parent = button
+
+        local function updateFlyStatus()
+            if flyQuickStatusLabel then
+                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                if flyQuickButton then
+                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                end
+            end
+        end
+
+        button.MouseButton1Click:Connect(function()
+            if flyState.enabled then stopFly() else startFly() end
+            updateFlyStatus()
+        end)
+
+        local dragging = false
+        local dragStart = nil
+        local startPos = nil
+
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
+
+        button.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
+                    startPos.Y.Offset + delta.Y
+                )
+                button.Position = newPos
+            end
+        end)
+
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
+        updateFlyStatus()
+
+        local statusConn = RunService.Heartbeat:Connect(function()
+            if flyQuickToggle and flyQuickStatusLabel then
+                updateFlyStatus()
+            end
+        end)
+        table.insert(connections, statusConn)
+    end
+
+    FlyTab:Toggle({
+        Title = "飞天快捷开关",
+        Value = false,
+        Callback = function(value)
+            flyQuickToggle = value
+            if value then
+                CreateFlyQuickToggle()
+            else
+                DestroyFlyQuickToggle()
+            end
+        end
+    })
+
+    FlyTab:Divider({ Text = "移速" })
+    local speedBypassOn = false
+    local speedBypassValue = 20
+    FlyTab:Toggle({
+        Title = "修改移速（绕过）",
+        Value = false,
+        Callback = function(value)
+            speedBypassOn = value
+        end
+    })
+    FlyTab:Slider({
+        Title = "移速",
+        Step = 1,
+        Value = { Min = 5, Max = 150, Default = 20 },
+        Callback = function(value)
+            speedBypassValue = value
+        end
+    })
+    RunService.Heartbeat:Connect(function(dt)
+        if not speedBypassOn then return end
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and root and hum.MoveDirection.Magnitude > 0 then
+            root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
+        end
+    end)
 
     -- ============================================================
-    -- 透视 Tab (E) - 含“显示通缉玩家”功能
+    -- 玩家修改 Tab
+    -- ============================================================
+    local function ApplyHitbox()
+        if isDestroyed or not Settings.HitboxEnabled then return end
+        local players = Players:GetPlayers()
+        local newAffected = {}
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player and p.Character then
+                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
+                else
+                    local char = p.Character
+                    local head = char:FindFirstChild("Head")
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 and head then
+                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                        head.Transparency = 1
+                        head.Color = Color3.fromRGB(255, 215, 0)
+                        head.Material = Enum.Material.Neon
+                        head.CanCollide = false
+                        newAffected[head] = true
+                    end
+                end
+            end
+        end
+        for head, _ in pairs(affectedHeads) do
+            if not newAffected[head] and head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = newAffected
+    end
+
+    local function ResetHitbox()
+        for head, _ in pairs(affectedHeads) do
+            if head and head.Parent then
+                head.Size = Vector3.new(2, 1, 1)
+                head.Transparency = 0
+                head.CanCollide = true
+                head.Color = Color3.new(1, 1, 1)
+                head.Material = Enum.Material.Plastic
+            end
+        end
+        affectedHeads = {}
+    end
+
+    local function UpdateWhitelist()
+        if isDestroyed then return end
+        Whitelist = {}
+        local players = Players:GetPlayers()
+        for i = 1, #players do
+            local p = players[i]
+            if p ~= player then
+                pcall(function()
+                    if p:IsFriendsWith(player.UserId) then
+                        Whitelist[p.UserId] = true
+                    end
+                end)
+            end
+        end
+    end
+
+    A:Divider({ Text = "伤害免疫" })
+    local godOn = false
+    A:Toggle({
+        Title = "免疫部分伤害",
+        Value = false,
+        Callback = function(value)
+            godOn = value
+        end
+    })
+    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
+
+    A:Divider({ Text = "穿墙" })
+    A:Toggle({
+        Title = "启用人物穿墙",
+        Value = false,
+        Callback = function(value)
+            Settings.NoclipEnabled = value
+            if value then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            else
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
+        end
+    })
+
+    A:Divider({ Text = "体力" })
+    local staminaOn = false
+    local StaminaEvent
+    pcall(function()
+        StaminaEvent = ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("PlayerEvent", 5)
+    end)
+    if StaminaEvent then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if self == StaminaEvent and method == "FireServer" then
+                if args[1] == "setStaminaOrFood" and args[2] == "stamina" and staminaOn then
+                    args[3] = 100
+                    return oldNamecall(self, unpack(args))
+                end
+                if args[1] == "takeDamage" and godOn then
+                    return
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+    end
+    task.spawn(function()
+        while not isDestroyed do
+            if staminaOn and StaminaEvent then
+                pcall(function()
+                    StaminaEvent:FireServer("setStaminaOrFood", "stamina", 100)
+                end)
+            end
+            task.wait(0.3)
+        end
+    end)
+    A:Toggle({
+        Title = "无限体力",
+        Value = false,
+        Callback = function(value)
+            staminaOn = value
+        end
+    })
+
+    A:Divider({ Text = "防甩飞" })
+    A:Toggle({
+        Title = "防甩飞",
+        Value = false,
+        Callback = function(value)
+            _G.CatAntiFling_Enabled = value
+        end
+    })
+
+    A:Divider({ Text = "防摔" })
+    local antiFallEnabled = false
+    local antiFallConnection = nil
+
+    A:Toggle({
+        Title = "防摔",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
+            if value then
+                if antiFallConnection then antiFallConnection:Disconnect() end
+                antiFallConnection = RunService.Heartbeat:Connect(function()
+                    if not antiFallEnabled then return end
+                    local char = player.Character
+                    if not char then return end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    
+                    local vel = root.Velocity
+                    if vel.Y < -20 and hum.PlatformStand == false then
+                        local newY = math.clamp(vel.Y, -40, -10)
+                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
+                    end
+                end)
+            else
+                if antiFallConnection then
+                    antiFallConnection:Disconnect()
+                    antiFallConnection = nil
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 枪械功能 Tab (B)
+    -- ============================================================
+    B:Divider({ Text = "枪械强化" })
+    B:Toggle({
+        Title = "超快射速",
+        Value = false,
+        Callback = function(value)
+            if not value then return end
+            local function ModifyWeaponStats()
+                local garbage = getgc(true)
+                for _, tbl in pairs(garbage) do
+                    if type(tbl) == "table" then
+                        if rawget(tbl, "SHOOT_MODE") then
+                            rawset(tbl, "SHOOT_MODE", 2)
+                        end
+                        if rawget(tbl, "RPM") then
+                            rawset(tbl, "RPM", math.huge)
+                        end
+                        if rawget(tbl, "DAMAGE") then
+                            rawset(tbl, "DAMAGE", math.huge)
+                        end
+                    end
+                end
+            end
+            ModifyWeaponStats()
+            local char = player.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Died:Connect(ModifyWeaponStats)
+                end
+            end
+            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
+        end
+    })
+
+    local infAmmoEnabled = false
+    B:Toggle({
+        Title = "无限子弹",
+        Value = false,
+        Callback = function(value)
+            infAmmoEnabled = value
+        end
+    })
+    task.spawn(function()
+        while not isDestroyed do
+            if infAmmoEnabled then
+                local characterFolder = Workspace:FindFirstChild("Characters") and Workspace.Characters:FindFirstChild(player.Name)
+                if characterFolder then
+                    for _, gun in ipairs(characterFolder:GetChildren()) do
+                        local config = gun:FindFirstChild("Config")
+                        if config then
+                            local ammo = config:FindFirstChild("Ammo")
+                            local totalAmmo = config:FindFirstChild("TotalAmmo")
+                            if ammo then ammo.Value = math.huge end
+                            if totalAmmo then totalAmmo.Value = math.huge end
+                        end
+                    end
+                end
+            end
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
+    B:Divider({ Text = "碰撞箱扩展" })
+    B:Toggle({
+        Title = "启用头部碰撞箱（推荐20-25）",
+        Value = false,
+        Callback = function(value)
+            Settings.HitboxEnabled = value
+            if value then ApplyHitbox() else ResetHitbox() end
+        end
+    })
+    B:Slider({
+        Title = "头部大小",
+        Step = 1,
+        Value = { Min = 5, Max = 400, Default = 10 },
+        Callback = function(value)
+            Settings.HitboxSize = value
+            if Settings.HitboxEnabled then ApplyHitbox() end
+        end
+    })
+    B:Toggle({
+        Title = "好友检测 (白名单)",
+        Value = false,
+        Callback = function(value)
+            Settings.WhitelistEnabled = value
+            if value then UpdateWhitelist() end
+        end
+    })
+
+    B:Divider({ Text = "子追" })
+    local zzEnabled = false
+    local zzDistance = 40
+    local zzAffected = nil
+
+    local function zzRestore()
+        if zzAffected and zzAffected.Parent then
+            pcall(function()
+                zzAffected.Size = Vector3.new(2, 1, 1)
+                zzAffected.Transparency = 0
+            end)
+        end
+        zzAffected = nil
+    end
+
+    task.spawn(function()
+        while not isDestroyed do
+            if zzEnabled then
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local best, bestDist = nil, zzDistance
+                if root then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local head = p.Character:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and head then
+                                local d = (head.Position - root.Position).Magnitude
+                                if d < bestDist then
+                                    bestDist = d
+                                    best = head
+                                end
+                            end
+                        end
+                    end
+                end
+                if best ~= zzAffected then
+                    zzRestore()
+                    if best then
+                        zzAffected = best
+                        pcall(function()
+                            best.Size = Vector3.new(500, 500, 500)
+                            best.Transparency = 1
+                            best.CanCollide = false
+                        end)
+                    end
+                end
+            else
+                zzRestore()
+            end
+            task.wait(0.2)
+        end
+    end)
+
+    B:Toggle({
+        Title = "启用子追",
+        Value = false,
+        Callback = function(value)
+            zzEnabled = value
+            if not value then zzRestore() end
+        end
+    })
+    B:Slider({
+        Title = "判定距离",
+        Step = 1,
+        Value = { Min = 0, Max = 1000, Default = 40 },
+        Callback = function(value)
+            zzDistance = value
+        end
+    })
+
+    B:Divider({ Text = "自瞄" })
+    local aimOn = false
+    local aimFOV = 150
+    local aimNoTeam = true
+    local aimWall = true
+    local aimGui, aimCircle
+
+    local function aimEnsureCircle()
+        if aimGui then return end
+        aimGui = Instance.new("ScreenGui")
+        aimGui.Name = "SA_AimFOV"
+        aimGui.ResetOnSpawn = false
+        aimGui.IgnoreGuiInset = true
+        aimGui.Parent = player:WaitForChild("PlayerGui")
+        aimCircle = Instance.new("Frame")
+        aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+        aimCircle.Position = UDim2.fromScale(0.5, 0.5)
+        aimCircle.BackgroundTransparency = 1
+        aimCircle.Parent = aimGui
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = 1.5
+        stroke.Color = Color3.fromRGB(255, 255, 255)
+        stroke.Transparency = 0.4
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = aimCircle
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = aimCircle
+    end
+
+    RunService.RenderStepped:Connect(function()
+        if not aimOn then
+            if aimGui then aimGui.Enabled = false end
+            return
+        end
+        aimEnsureCircle()
+        aimGui.Enabled = true
+        aimCircle.Size = UDim2.fromOffset(aimFOV * 2, aimFOV * 2)
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+        local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+        local best, bestDist = nil, aimFOV
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                local head = p.Character:FindFirstChild("Head")
+                if hum and hum.Health > 0 and head then
+                    local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
+                    if not skip then
+                        local sp, onScreen = camera:WorldToViewportPoint(head.Position)
+                        if onScreen then
+                            local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                            if d < bestDist then
+                                local visible = true
+                                if aimWall then
+                                    local rp = RaycastParams.new()
+                                    rp.FilterType = Enum.RaycastFilterType.Exclude
+                                    rp.FilterDescendantsInstances = { player.Character }
+                                    local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
+                                    visible = (not res) or res.Instance:IsDescendantOf(p.Character)
+                                end
+                                if visible then
+                                    bestDist = d
+                                    best = head
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if best then
+            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, best.Position)
+        end
+    end)
+
+    B:Toggle({
+        Title = "自瞄",
+        Value = false,
+        Callback = function(value)
+            aimOn = value
+        end
+    })
+    B:Slider({
+        Title = "FOV圈大小",
+        Step = 1,
+        Value = { Min = 30, Max = 400, Default = 150 },
+        Callback = function(value)
+            aimFOV = value
+        end
+    })
+    B:Toggle({
+        Title = "不瞄准队友",
+        Value = true,
+        Callback = function(value)
+            aimNoTeam = value
+        end
+    })
+    B:Toggle({
+        Title = "墙壁检测",
+        Value = true,
+        Callback = function(value)
+            aimWall = value
+        end
+    })
+
+    -- ============================================================
+    -- 杀戮光环 Tab (C) - 伤害已拉到最高（9亿9千9百9十万）
+    -- ============================================================
+    local KA_MAX_DISTANCE = 300
+    local kaEnabled = false
+    local KANearestOnly = false
+    local KA_NEAREST_DISTANCE = 25
+    local KATargetPoliceOnly = false
+    local KATargetCivilianOnly = false
+    local KAIgnoreDead = true
+    local showTarget = true
+    local currentTarget = nil
+    local targetDisplayGui = nil
+    local targetDisplayLabel = nil
+
+    local function CreateTargetDisplay()
+        if targetDisplayGui then return end
+        targetDisplayGui = Instance.new("ScreenGui")
+        targetDisplayGui.Name = "KillAuraTargetDisplay"
+        targetDisplayGui.ResetOnSpawn = false
+        targetDisplayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+
+        targetDisplayLabel = Instance.new("TextLabel")
+        targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
+        targetDisplayLabel.Position = UDim2.new(1, -230, 1, -50)
+        targetDisplayLabel.BackgroundTransparency = 1
+        targetDisplayLabel.Text = "未检测到目标"
+        targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        targetDisplayLabel.TextSize = 18
+        targetDisplayLabel.Font = Enum.Font.GothamBold
+        targetDisplayLabel.TextStrokeTransparency = 0.2
+        targetDisplayLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        targetDisplayLabel.TextXAlignment = Enum.TextXAlignment.Right
+        targetDisplayLabel.Parent = targetDisplayGui
+    end
+
+    local function DestroyTargetDisplay()
+        if targetDisplayGui then
+            targetDisplayGui:Destroy()
+            targetDisplayGui = nil
+            targetDisplayLabel = nil
+        end
+    end
+
+    local function UpdateTargetDisplay()
+        if not showTarget or not kaEnabled then
+            if targetDisplayGui then targetDisplayGui.Enabled = false end
+            return
+        end
+        if not targetDisplayGui then CreateTargetDisplay() end
+        targetDisplayGui.Enabled = true
+        if currentTarget then
+            targetDisplayLabel.Text = currentTarget.Name
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        else
+            targetDisplayLabel.Text = "未检测到目标"
+            targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+        end
+    end
+
+    local function kaGetNearestEnemy()
+        local char = player.Character
+        if not char then return nil end
+        local myHead = char:FindFirstChild("Head")
+        if not myHead then return nil end
+        local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
+
+        local function isTargetAllowed(p)
+            if KATargetPoliceOnly and KATargetCivilianOnly then return false end
+            local teamName = p.Team and p.Team.Name or ""
+            local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
+            local isCivilian = false
+            if p.Team then
+                local tn = p.Team.Name
+                isCivilian = tn:find("平民") or tn:find("Citizen") or tn:find("圣奥里公民")
+            else
+                isCivilian = true
+            end
+            if KATargetPoliceOnly then
+                if not isPolice then return false end
+            elseif KATargetCivilianOnly then
+                if not isCivilian then return false end
+            end
+            if KAIgnoreDead then
+                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                if not hum or hum.Health <= 0 then return false end
+            end
+            return true
+        end
+
+        if KANearestOnly then
+            local nearestInRange = nil
+            local nearestDistInRange = 9999
+            local anyEnemy = nil
+            local anyDist = 9999
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local head = p.Character:FindFirstChild("Head")
+                        if head and isTargetAllowed(p) then
+                            local dist = (head.Position - myHead.Position).Magnitude
+                            if dist < anyDist then
+                                anyDist = dist
+                                anyEnemy = p
+                            end
+                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange then
+                                nearestDistInRange = dist
+                                nearestInRange = p
+                            end
+                        end
+                    end
+                end
+            end
+            if nearestInRange then return nearestInRange else return anyEnemy end
+        end
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head and isTargetAllowed(p) then
+                        local dist = (head.Position - myHead.Position).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            bestPlayer = p
+                        end
+                    end
+                end
+            end
+        end
+        return bestPlayer
+    end
+
+    -- ==================== 攻击执行函数（无锁，立即执行） ====================
+    local function performAttack()
+        if not kaEnabled then return end
+        
+        local target = kaGetNearestEnemy()
+        currentTarget = target
+        
+        if target then
+            local targetHead = target.Character and target.Character:FindFirstChild("Head")
+            if targetHead then
+                local myHead = player.Character and player.Character:FindFirstChild("Head")
+                if myHead then
+                    local origin = myHead.Position
+                    local hitPos = targetHead.Position
+                    local direction = (hitPos - origin).Unit
+                    local damage = 999999999
+                    pcall(function()
+                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
+                            bodyParts = { { "Head", damage } },
+                            shotCode = { origin, direction },
+                            target = target,
+                            pos = hitPos
+                        })
+                    end)
+                    pcall(function()
+                        local handleShots = ReplicatedStorage:FindFirstChild("Events")
+                        handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
+                        if handleShots then
+                            handleShots:FireServer("2", "Shoot")
+                        end
+                    end)
+                end
+            end
+        end
+        UpdateTargetDisplay()
+    end
+
+    -- ==================== 主循环（高频攻击，无锁） ====================
+    task.spawn(function()
+        while not isDestroyed do
+            if kaEnabled then
+                performAttack()
+            end
+            task.wait(0.05)
+        end
+    end)
+
+    -- ==================== 监听角色变化，拿枪后立即攻击 ====================
+    player.CharacterAdded:Connect(function()
+        if kaEnabled then
+            task.wait(0.05)
+            performAttack()
+        end
+    end)
+
+    -- 监听武器切换
+    local function onToolAdded(tool)
+        if kaEnabled then
+            performAttack()
+        end
+    end
+
+    local function setupToolListener(char)
+        if char then
+            char.DescendantAdded:Connect(function(desc)
+                if desc:IsA("Tool") then
+                    onToolAdded(desc)
+                end
+            end)
+        end
+    end
+
+    if player.Character then
+        setupToolListener(player.Character)
+    end
+
+    player.CharacterAdded:Connect(function(char)
+        setupToolListener(char)
+    end)
+
+    -- ============================================================
+    -- UI 控件
+    -- ============================================================
+    C:Divider({ Text = "杀戮光环" })
+    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
+    C:Toggle({
+        Title = "启用杀戮光环",
+        Value = false,
+        Callback = function(value)
+            kaEnabled = value
+            if value then
+                if showTarget then CreateTargetDisplay() end
+                task.wait(0.1)
+                performAttack()
+            else
+                currentTarget = nil
+                if showTarget then UpdateTargetDisplay() end
+            end
+        end
+    })
+    C:Slider({
+        Title = "攻击距离",
+        Step = 1,
+        Value = { Min = 50, Max = 1000, Default = 300 },
+        Callback = function(value)
+            KA_MAX_DISTANCE = value
+        end
+    })
+
+    C:Divider({ Text = "显示设置" })
+    C:Toggle({
+        Title = "显示攻击目标",
+        Value = true,
+        Callback = function(value)
+            showTarget = value
+            if value then
+                if kaEnabled then
+                    CreateTargetDisplay()
+                    UpdateTargetDisplay()
+                end
+            else
+                DestroyTargetDisplay()
+            end
+        end
+    })
+
+    C:Divider({ Text = "过滤" })
+    C:Toggle({
+        Title = "只攻击警察",
+        Value = false,
+        Callback = function(value)
+            KATargetPoliceOnly = value
+            if value and KATargetCivilianOnly then
+                KATargetCivilianOnly = false
+            end
+        end
+    })
+    C:Toggle({
+        Title = "只攻击平民",
+        Value = false,
+        Callback = function(value)
+            KATargetCivilianOnly = value
+            if value and KATargetPoliceOnly then
+                KATargetPoliceOnly = false
+            end
+        end
+    })
+    C:Toggle({
+        Title = "不攻击血量为0的玩家",
+        Value = true,
+        Callback = function(value)
+            KAIgnoreDead = value
+        end
+    })
+
+    C:Divider({ Text = "优先攻击" })
+    C:Toggle({
+        Title = "优先攻击最近目标",
+        Value = false,
+        Callback = function(value)
+            KANearestOnly = value
+        end
+    })
+    C:Slider({
+        Title = "优先攻击距离",
+        Step = 1,
+        Value = { Min = 5, Max = 100, Default = 25 },
+        Callback = function(value)
+            KA_NEAREST_DISTANCE = value
+        end
+    })
+
+    -- ============================================================
+    -- 传送点 Tab (D)
+    -- ============================================================
+    D:Toggle({
+        Title = "启用传送",
+        Value = false,
+        Callback = function(value)
+            Settings.TeleportEnabled = value
+        end
+    })
+
+    local FIXED_TELEPORTS = {
+        {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
+        {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
+        {n = "警察局", p = Vector3.new(3364.273193359375, 3.9188079834, -394.7233581542969)},
+        {n = "圣奥里修车店", p = Vector3.new(2782.46875, 2.630995750427246, -418.59930419921875)},
+        {n = "圣奥里银行", p = Vector3.new(3134.05419921875, 6.116048336029053, -171.36976623535156)},
+        {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
+        {n = "圣奥里平民重生", p = Vector3.new(3741.114990234375, 3.720573663711548, -438.1059875488281)},
+        {n = "圣奥里码头", p = Vector3.new(4527.65625, -23.968238830566406, -280.59356689453125)},
+        {n = "圣奥里餐饮店", p = Vector3.new(3182.416748046875, 3.01859188079834, 426.5179138183594)},
+        {n = "消防部门", p = Vector3.new(3578.676025390625, 8.408823013305664, 579.6567993164062)},
+        {n = "宠物店", p = Vector3.new(3678.237305, 3.017920, 693.114624)},
+        {n = "圣奥里大码头", p = Vector3.new(2736.307617, 2.630299, -1120.333008)},
+        {n = "圣奥里海滩桥下(消星点)", p = Vector3.new(3964.504395, -25.068211, -854.057251)},
+        {n = "大景超市", p = Vector3.new(3936.582764, 3.038293, 1136.326416)},
+        {n = "转镜中心", p = Vector3.new(4152.919922, 2.631675, 941.446045)},
+        {n = "道路服务", p = Vector3.new(4271.332520, 2.628108, 1200.086914)},
+        {n = "大景餐饮店", p = Vector3.new(4476.997559, 3.037825, 906.802979)},
+        {n = "送货中心", p = Vector3.new(4399.419434, 3.038999, 1609.455933)},
+        {n = "大景卖车店", p = Vector3.new(3434.377441, 42.931786, 2687.997070)},
+        {n = "莱斯维尔餐饮店", p = Vector3.new(753.757812, 3.039824, 998.132996)},
+        {n = "莱斯维尔服装店", p = Vector3.new(820.745117, 2.766988, 1047.445679)},
+        {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771)},
+        {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693)},
+        {n = "米尔顿左上加油站", p = Vector3.new(1145.635742, 2.630916, -864.273682)},
+        {n = "米尔顿右下加油站", p = Vector3.new(-1646.802734, 2.630164, 1812.894653)},
+        {n = "米尔顿上方加油站", p = Vector3.new(-900.701660, 2.630927, 1124.683105)},
+        {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689)},
+        {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839)},
+        {n = "约克镇修车厂", p = Vector3.new(-407.163025, 3.076807, -6.098211)},
+        {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670)},
+        {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433)},
+        {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529)},
+        {n = "约克镇卫星车", p = Vector3.new(-302.093567, 3.037825, -167.621017)},
+        {n = "约克镇中心点", p = Vector3.new(-275.995209, 2.630996, -139.985352)},
+        {n = "黑市", p = Vector3.new(1038.969849, -22.732950, 895.430237)},
+        {n = "渔夫码头", p = Vector3.new(-50.147552, -24.555279, 1462.145996)},
+        {n = "农场", p = Vector3.new(-1268.339233, 2.572412, 2560.060303)},
+        {n = "监狱门口", p = Vector3.new(-1697.931885, 2.630666, 1284.567383)},
+        {n = "监狱广场", p = Vector3.new(-1600.602417, 2.631028, 1268.060059)},
+        {n = "代尔山", p = Vector3.new(847.062988, 194.115753, -326.212708)},
+        {n = "瀑布洞穴(消星点)", p = Vector3.new(3040.956055, 109.688538, 2711.069336)},
+        {n = "大桥", p = Vector3.new(949.014954, 25.215754, 2897.654785)},
+        {n = "地图右下(消星点)", p = Vector3.new(-1651.385010, 2.414712, 3225.278320)},
+        {n = "下部加油站", p = Vector3.new(2270.378174, 2.630927, 154.161484)},
+        {n = "游戏厅", p = Vector3.new(2934.893799, 2.956458, 1693.660034)},
+        {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300)},
+        {n = "修船厂", p = Vector3.new(4096.405273, -30.401447, 2865.045166)},
+    }
+
+    local teleNames = {}
+    for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
+    local selectedTeleport = teleNames[1] or ""
+
+    D:Dropdown({
+        Title = "选定传送地点",
+        Values = teleNames,
+        Value = teleNames[1],
+        Callback = function(value)
+            selectedTeleport = value
+        end
+    })
+
+    D:Button({
+        Title = "传送到选定地点",
+        Callback = function()
+            if not Settings.TeleportEnabled then
+                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+                return
+            end
+            for _, data in ipairs(FIXED_TELEPORTS) do
+                if data.n == selectedTeleport then
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        root.CFrame = CFrame.new(data.p)
+                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
+                    end
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
+
+    -- ============================================================
+    -- 透视 Tab (E)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
@@ -897,47 +1994,8 @@ function createUI()
     local ESP_SHOW_DIST = true
     local ESP_SHOW_SELF = false
     local ESP_SHOW_PEERS = true
-    local ESP_SHOW_WANTED = false
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
-
-    local function isPlayerWanted(p)
-        if not p then return false end
-        if p:FindFirstChild("Wanted") and p.Wanted:IsA("BoolValue") and p.Wanted.Value then
-            return true
-        end
-        if p:FindFirstChild("IsWanted") and p.IsWanted:IsA("BoolValue") and p.IsWanted.Value then
-            return true
-        end
-        if p:FindFirstChild("WantedLevel") then
-            local lvl = p:FindFirstChild("WantedLevel")
-            if lvl:IsA("NumberValue") and lvl.Value > 0 then
-                return true
-            end
-        end
-        if p:FindFirstChild("wanted") and p.wanted:IsA("BoolValue") and p.wanted.Value then
-            return true
-        end
-        if p:FindFirstChild("isWanted") and p.isWanted:IsA("BoolValue") and p.isWanted.Value then
-            return true
-        end
-        if p:FindFirstChild("Crime") and p.Crime:IsA("StringValue") and p.Crime.Value ~= "" then
-            return true
-        end
-        if p:GetAttribute("Wanted") == true then
-            return true
-        end
-        if p:GetAttribute("IsWanted") == true then
-            return true
-        end
-        if p:GetAttribute("wanted") == true then
-            return true
-        end
-        if p:GetAttribute("isWanted") == true then
-            return true
-        end
-        return false
-    end
 
     local function GetTeam(p)
         if p.Team then
@@ -1091,7 +2149,6 @@ function createUI()
             local color = GetTeamColor(p)
             local hp = GetHealth(p)
             local dist = GetDist(p)
-            local wanted = isPlayerWanted(p)
 
             local isWdfexUser = false
             local isAuthor = false
@@ -1135,23 +2192,6 @@ function createUI()
                 l.TextXAlignment = Enum.TextXAlignment.Center
                 l.Parent = f
                 y = y + 22
-                lines = lines + 1
-            end
-
-            if ESP_SHOW_WANTED and wanted then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                l.Text = "通缉"
-                l.TextColor3 = Color3.fromRGB(255, 0, 0)
-                l.TextSize = 14
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.2
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
                 lines = lines + 1
             end
 
@@ -1288,14 +2328,6 @@ function createUI()
         Value = true,
         Callback = function(value)
             ESP_SHOW_PEERS = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示通缉玩家",
-        Value = false,
-        Callback = function(value)
-            ESP_SHOW_WANTED = value
             if ESP_ENABLED then RefreshESP() end
         end
     })
@@ -1662,7 +2694,7 @@ function createUI()
                 else
                     WindUI:Notify({ 
                         Title = "查询结果", 
-                        Content = "未找到该设备UID对应的在线玩家", 
+                        Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", 
                         Duration = 4 
                     })
                 end
