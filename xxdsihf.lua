@@ -87,6 +87,7 @@ function createUI()
         ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
+        ["XWZFFFYAYCRNGDGHPG"] = true,
     }
 
     local function isBlacklisted(uid)
@@ -225,6 +226,12 @@ function createUI()
     scriptTag.Name = "wdfexScript"
     scriptTag.Value = true
     scriptTag.Parent = player
+
+    -- 存储设备UID以便开发者查询
+    local uidTag = Instance.new("StringValue")
+    uidTag.Name = "wdfexDeviceUID"
+    uidTag.Value = DEVICE_UID
+    uidTag.Parent = player
 
     if DEVICE_UID == AUTHOR_UID then
         local authorTag = Instance.new("BoolValue")
@@ -469,7 +476,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "杀戮光环所有的问题已经修复了打贴脸的人拿刀就行打100米以外的人拿手枪"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -2726,6 +2733,59 @@ function createUI()
                 end
             end
         })
+
+        -- ==================== 通过设备UID查看Roblox用户名 ====================
+        AdminGroup:Divider({ Text = "用户查询" })
+        AdminGroup:Paragraph({
+            Title = "通过设备UID查看Roblox用户名",
+            Desc = "输入已授权或任意在线玩家的设备UID，点击查询即可显示对应的游戏名字"
+        })
+
+        local searchUidInput = nil
+        AdminGroup:Input({
+            Title = "输入设备UID",
+            Placeholder = "请输入要查询的设备UID...",
+            Callback = function(value)
+                searchUidInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "查询用户名",
+            Callback = function()
+                if not searchUidInput or searchUidInput == "" then
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    return
+                end
+
+                local found = false
+                local resultName = "未找到"
+                
+                for _, p in ipairs(Players:GetPlayers()) do
+                    local uidTag = p:FindFirstChild("wdfexDeviceUID")
+                    if uidTag and uidTag:IsA("StringValue") and uidTag.Value == searchUidInput then
+                        found = true
+                        resultName = p.Name
+                        break
+                    end
+                end
+
+                if found then
+                    WindUI:Notify({ 
+                        Title = "查询结果", 
+                        Content = "设备UID: " .. searchUidInput .. "\n用户名: " .. resultName, 
+                        Duration = 5 
+                    })
+                else
+                    WindUI:Notify({ 
+                        Title = "查询结果", 
+                        Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", 
+                        Duration = 4 
+                    })
+                end
+            end
+        })
+
     else
         local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         BlockGroup:Paragraph({
