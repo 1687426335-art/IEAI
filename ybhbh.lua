@@ -87,6 +87,7 @@ function createUI()
         ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
+        ["XWZFFFYAYCRNGDGHPG"] = true,
     }
 
     local function isBlacklisted(uid)
@@ -225,6 +226,11 @@ function createUI()
     scriptTag.Name = "wdfexScript"
     scriptTag.Value = true
     scriptTag.Parent = player
+
+    local uidTag = Instance.new("StringValue")
+    uidTag.Name = "wdfexDeviceUID"
+    uidTag.Value = DEVICE_UID
+    uidTag.Parent = player
 
     if DEVICE_UID == AUTHOR_UID then
         local authorTag = Instance.new("BoolValue")
@@ -469,7 +475,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "你好"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -502,70 +508,6 @@ function createUI()
             startAnimation()
         end)
     end)
-
-    -- ==================== 直播模式水印 ====================
-    local liveModeEnabled = false
-    local liveModeLabels = {}
-
-    local function CreateLiveModeWatermarks()
-        for _, label in ipairs(liveModeLabels) do
-            pcall(function() label:Destroy() end)
-        end
-        liveModeLabels = {}
-        
-        if not liveModeEnabled then return end
-        
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "LiveModeWatermarks"
-        gui.ResetOnSpawn = false
-        gui.Parent = player:WaitForChild("PlayerGui")
-        table.insert(liveModeLabels, gui)
-        
-        local bottomRight = Instance.new("TextLabel")
-        bottomRight.Size = UDim2.new(0, 260, 0, 32)
-        bottomRight.Position = UDim2.new(1, -270, 1, -42)
-        bottomRight.BackgroundTransparency = 1
-        bottomRight.Text = "豆包AI生成请注意分辨"
-        bottomRight.TextSize = 20
-        bottomRight.Font = Enum.Font.GothamBold
-        bottomRight.TextScaled = false
-        bottomRight.TextStrokeTransparency = 0.2
-        bottomRight.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        bottomRight.TextXAlignment = Enum.TextXAlignment.Right
-        bottomRight.Parent = gui
-        table.insert(liveModeLabels, bottomRight)
-        
-        local topLeft = Instance.new("TextLabel")
-        topLeft.Size = UDim2.new(0, 180, 0, 32)
-        topLeft.Position = UDim2.new(0, 10, 0, 10)
-        topLeft.BackgroundTransparency = 1
-        topLeft.Text = "后期PS制作"
-        topLeft.TextSize = 20
-        topLeft.Font = Enum.Font.GothamBold
-        topLeft.TextScaled = false
-        topLeft.TextStrokeTransparency = 0.2
-        topLeft.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        topLeft.TextXAlignment = Enum.TextXAlignment.Left
-        topLeft.Parent = gui
-        table.insert(liveModeLabels, topLeft)
-        
-        local hue = 0
-        local colorConn = RunService.Heartbeat:Connect(function()
-            hue = (hue + 0.005) % 1
-            local color = Color3.fromHSV(hue, 0.9, 1)
-            bottomRight.TextColor3 = color
-            topLeft.TextColor3 = color
-        end)
-        table.insert(connections, colorConn)
-        table.insert(liveModeLabels, colorConn)
-    end
-
-    local function DestroyLiveModeWatermarks()
-        for _, label in ipairs(liveModeLabels) do
-            pcall(function() label:Destroy() end)
-        end
-        liveModeLabels = {}
-    end
 
     -- ==================== 其余原有功能 ====================
     local Settings = {
@@ -671,7 +613,7 @@ function createUI()
     end
 
     -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察 → 其他功能
+    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察 → 警察功能
     -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
@@ -681,7 +623,7 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-    local OtherTab = AddTab(MainSection, "其他功能", "more")
+    local PoliceTab = AddTab(MainSection, "警察功能", "badge")  -- 新增警察功能
 
     -- ============================================================
     -- 自动躲警察 Tab
@@ -805,21 +747,226 @@ function createUI()
     })
 
     -- ============================================================
-    -- 其他功能 Tab
+    -- 警察功能 Tab（传送通缉玩家 + 循环传送）
     -- ============================================================
-    OtherTab:Divider({ Text = "直播模式" })
-    OtherTab:Toggle({
-        Title = "直播模式",
+    local wantedTeleportEnabled = false
+    local wantedTeleportDistance = 300
+    local wantedTeleportDelay = 1
+    local wantedTeleportConn = nil
+    local wantedStatusGui = nil
+    local wantedStatusLabel = nil
+
+    -- 创建右下角状态显示
+    local function CreateWantedStatusDisplay()
+        if wantedStatusGui then return end
+        wantedStatusGui = Instance.new("ScreenGui")
+        wantedStatusGui.Name = "WantedStatusDisplay"
+        wantedStatusGui.ResetOnSpawn = false
+        wantedStatusGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        wantedStatusGui.Parent = player:WaitForChild("PlayerGui")
+
+        wantedStatusLabel = Instance.new("TextLabel")
+        wantedStatusLabel.Size = UDim2.new(0, 280, 0, 30)
+        wantedStatusLabel.Position = UDim2.new(1, -290, 1, -50)
+        wantedStatusLabel.BackgroundTransparency = 1
+        wantedStatusLabel.Text = "未找到通缉玩家"
+        wantedStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+        wantedStatusLabel.TextSize = 18
+        wantedStatusLabel.Font = Enum.Font.GothamBold
+        wantedStatusLabel.TextStrokeTransparency = 0.2
+        wantedStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        wantedStatusLabel.TextXAlignment = Enum.TextXAlignment.Right
+        wantedStatusLabel.Parent = wantedStatusGui
+    end
+
+    local function DestroyWantedStatusDisplay()
+        if wantedStatusGui then
+            wantedStatusGui:Destroy()
+            wantedStatusGui = nil
+            wantedStatusLabel = nil
+        end
+    end
+
+    local function UpdateWantedStatus(found, targetName)
+        if not wantedTeleportEnabled then
+            if wantedStatusGui then wantedStatusGui.Enabled = false end
+            return
+        end
+        if not wantedStatusGui then CreateWantedStatusDisplay() end
+        wantedStatusGui.Enabled = true
+        if found and targetName then
+            wantedStatusLabel.Text = "已找到通缉玩家：" .. targetName
+            wantedStatusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        else
+            wantedStatusLabel.Text = "未找到通缉玩家"
+            wantedStatusLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+        end
+    end
+
+    -- 检测玩家是否被通缉（有星标）
+    local function isPlayerWanted(targetPlayer)
+        if not targetPlayer or not targetPlayer.Character then return false end
+        local char = targetPlayer.Character
+        -- 检查头顶是否有星标（常见的通缉标识）
+        for _, child in ipairs(char:GetDescendants()) do
+            if child:IsA("BillboardGui") or child:IsA("Attachment") then
+                -- 检查是否有星星相关的名称
+                local nameLower = string.lower(child.Name)
+                if nameLower:find("star") or nameLower:find("wanted") or nameLower:find("通缉") then
+                    return true
+                end
+            end
+            -- 检查是否有BoolValue标记表示通缉
+            if child:IsA("BoolValue") and (child.Name:find("Wanted") or child.Name:find("Star") or child.Name:find("通缉")) then
+                if child.Value == true then
+                    return true
+                end
+            end
+            -- 检查是否有NumberValue表示通缉等级
+            if child:IsA("NumberValue") and child.Name:find("WantedLevel") then
+                if child.Value > 0 then
+                    return true
+                end
+            end
+        end
+        -- 部分游戏使用IntValue表示通缉状态
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("IntValue") and child.Name:find("Wanted") then
+                if child.Value > 0 then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    -- 获取通缉玩家列表（距离范围内）
+    local function getWantedPlayersInRange()
+        local result = {}
+        local char = player.Character
+        if not char then return result end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then return result end
+        
+        local myPos = root.Position
+        
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p == player then continue end
+            if not p.Character then continue end
+            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+            if not pRoot then continue end
+            local dist = (pRoot.Position - myPos).Magnitude
+            if dist <= wantedTeleportDistance and isPlayerWanted(p) then
+                table.insert(result, p)
+            end
+        end
+        return result
+    end
+
+    -- 传送并抓捕通缉玩家
+    local function teleportToWanted()
+        if not wantedTeleportEnabled then return end
+        
+        local wantedList = getWantedPlayersInRange()
+        
+        if #wantedList > 0 then
+            local target = wantedList[1]
+            local targetName = target.Name
+            UpdateWantedStatus(true, targetName)
+            
+            local char = player.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            if not targetRoot then return end
+            
+            -- 传送到目标头顶
+            local targetPos = targetRoot.Position + Vector3.new(0, 3, 0)
+            root.CFrame = CFrame.new(targetPos)
+            
+            -- 尝试使用手铐
+            task.wait(0.1)
+            -- 查找手铐工具并装备
+            local backpack = player:FindFirstChild("Backpack")
+            if backpack then
+                for _, tool in ipairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        local nameLower = string.lower(tool.Name)
+                        if nameLower:find("handcuff") or nameLower:find("cuff") or nameLower:find("手铐") or nameLower:find("逮捕") then
+                            -- 装备手铐
+                            local args = {
+                                [1] = tool
+                            }
+                            player.Character.Humanoid:EquipTool(tool)
+                            task.wait(0.2)
+                            -- 使用手铐
+                            tool:Activate()
+                            break
+                        end
+                    end
+                end
+            end
+        else
+            UpdateWantedStatus(false, nil)
+        end
+    end
+
+    -- 启动/停止循环传送
+    local function startWantedTeleport()
+        if wantedTeleportConn then return end
+        wantedTeleportConn = task.spawn(function()
+            while wantedTeleportEnabled and not isDestroyed do
+                teleportToWanted()
+                task.wait(wantedTeleportDelay)
+            end
+            wantedTeleportConn = nil
+        end)
+    end
+
+    local function stopWantedTeleport()
+        if wantedTeleportConn then
+            task.cancel(wantedTeleportConn)
+            wantedTeleportConn = nil
+        end
+        DestroyWantedStatusDisplay()
+    end
+
+    -- 警察功能 UI
+    PoliceTab:Divider({ Text = "传送通缉玩家" })
+    PoliceTab:Paragraph({ 
+        Title = "说明", 
+        Desc = "开启后会自动传送到距离范围内被通缉的玩家头顶，并自动使用手铐抓捕" 
+    })
+    PoliceTab:Toggle({
+        Title = "启用传送通缉玩家",
         Value = false,
         Callback = function(value)
-            liveModeEnabled = value
+            wantedTeleportEnabled = value
             if value then
-                CreateLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已开启", Duration = 2 })
+                CreateWantedStatusDisplay()
+                startWantedTeleport()
             else
-                DestroyLiveModeWatermarks()
-                WindUI:Notify({ Title = "直播模式", Content = "已关闭", Duration = 2 })
+                stopWantedTeleport()
             end
+        end
+    })
+
+    PoliceTab:Slider({
+        Title = "传送距离",
+        Step = 1,
+        Value = { Min = 1, Max = 300, Default = 300 },
+        Callback = function(value)
+            wantedTeleportDistance = value
+        end
+    })
+
+    PoliceTab:Slider({
+        Title = "循环传送延迟（秒）",
+        Step = 0.5,
+        Value = { Min = 1, Max = 10, Default = 1 },
+        Callback = function(value)
+            wantedTeleportDelay = value
         end
     })
 
@@ -2726,6 +2873,59 @@ function createUI()
                 end
             end
         })
+
+        -- ==================== 通过设备UID查看Roblox用户名 ====================
+        AdminGroup:Divider({ Text = "用户查询" })
+        AdminGroup:Paragraph({
+            Title = "通过设备UID查看Roblox用户名",
+            Desc = "输入已授权或任意在线玩家的设备UID，点击查询即可显示对应的游戏名字"
+        })
+
+        local searchUidInput = nil
+        AdminGroup:Input({
+            Title = "输入设备UID",
+            Placeholder = "请输入要查询的设备UID...",
+            Callback = function(value)
+                searchUidInput = value
+            end
+        })
+
+        AdminGroup:Button({
+            Title = "查询用户名",
+            Callback = function()
+                if not searchUidInput or searchUidInput == "" then
+                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
+                    return
+                end
+
+                local found = false
+                local resultName = "未找到"
+                
+                for _, p in ipairs(Players:GetPlayers()) do
+                    local uidTag = p:FindFirstChild("wdfexDeviceUID")
+                    if uidTag and uidTag:IsA("StringValue") and uidTag.Value == searchUidInput then
+                        found = true
+                        resultName = p.Name
+                        break
+                    end
+                end
+
+                if found then
+                    WindUI:Notify({ 
+                        Title = "查询结果", 
+                        Content = "设备UID: " .. searchUidInput .. "\n用户名: " .. resultName, 
+                        Duration = 5 
+                    })
+                else
+                    WindUI:Notify({ 
+                        Title = "查询结果", 
+                        Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", 
+                        Duration = 4 
+                    })
+                end
+            end
+        })
+
     else
         local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         BlockGroup:Paragraph({
