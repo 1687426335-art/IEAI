@@ -239,7 +239,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 动态灵动岛（已调整位置到屏幕最顶端，尺寸略微调大） ====================
+    -- ==================== 动态灵动岛（紧贴屏幕最顶部） ====================
     local function createDynamicIsland()
         local gui = Instance.new("ScreenGui")
         gui.Name = "DynamicIsland"
@@ -247,10 +247,10 @@ function createUI()
         gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         gui.Parent = player:WaitForChild("PlayerGui")
 
-        -- 主容器（药丸形状）- 位置调到屏幕最顶端，尺寸稍微调大
+        -- 主容器 - 位置紧贴顶部
         local container = Instance.new("Frame")
         container.Size = UDim2.new(0, 140, 0, 40)
-        container.Position = UDim2.new(0.5, -70, 0, 3)
+        container.Position = UDim2.new(0.5, -70, 0, 0)
         container.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
         container.BorderSizePixel = 0
         container.ClipsDescendants = true
@@ -332,9 +332,9 @@ function createUI()
 
         task.spawn(breatheLoop)
 
-        -- 从顶部滑入动画（现在从更靠上的位置滑入）
+        -- 从顶部滑入动画（紧贴顶部）
         local startPos = UDim2.new(0.5, -70, 0, -45)
-        local endPos = UDim2.new(0.5, -70, 0, 3)
+        local endPos = UDim2.new(0.5, -70, 0, 0)
         container.Position = startPos
         local slideIn = TweenService:Create(container, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = endPos
