@@ -594,7 +594,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
+        Desc = "修复所有已知问题\n修复杀戮光环所有的问题\n修复透视飞天加速开启之后卡顿的问题",
         ThumbnailSize = 190,
     })
     infoTab:Select()
