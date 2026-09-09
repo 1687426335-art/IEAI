@@ -239,6 +239,158 @@ function createUI()
         authorTag.Parent = player
     end
 
+    -- ==================== 仿iPhone灵动岛（无文字，纯药丸+呼吸灯+点击展开） ====================
+    local function createDynamicIsland()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "DynamicIsland"
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = player:WaitForChild("PlayerGui")
+
+        local TweenService = game:GetService("TweenService")
+        local expanded = false
+
+        -- 主药丸（顶部居中，仿iPhone大小）
+        local pill = Instance.new("Frame")
+        pill.Size = UDim2.new(0, 140, 0, 34)
+        pill.Position = UDim2.new(0.5, -70, 0, 2)
+        pill.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+        pill.BorderSizePixel = 0
+        pill.ClipsDescendants = true
+        pill.Parent = gui
+
+        local pillCorner = Instance.new("UICorner")
+        pillCorner.CornerRadius = UDim.new(1, 0)
+        pillCorner.Parent = pill
+
+        -- 外发光描边（呼吸光效）
+        local glow = Instance.new("UIStroke")
+        glow.Thickness = 1.5
+        glow.Color = Color3.fromRGB(200, 200, 200)
+        glow.Transparency = 0.85
+        glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        glow.Parent = pill
+
+        -- 左侧呼吸小圆点（绿色动态）
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.new(0, 8, 0, 8)
+        dot.Position = UDim2.new(0, 12, 0.5, -4)
+        dot.BackgroundColor3 = Color3.fromRGB(50, 220, 100)
+        dot.BorderSizePixel = 0
+        dot.Parent = pill
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+
+        -- 呼吸动画（小圆点脉动 + 发光呼吸）
+        local function breatheLoop()
+            while gui and gui.Parent do
+                -- 发光呼吸
+                local t1 = TweenService:Create(glow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.5
+                })
+                local t2 = TweenService:Create(glow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.85
+                })
+                -- 小圆点脉动
+                local d1 = TweenService:Create(dot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Size = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 11, 0.5, -5)
+                })
+                local d2 = TweenService:Create(dot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Size = UDim2.new(0, 8, 0, 8),
+                    Position = UDim2.new(0, 12, 0.5, -4)
+                })
+                t1:Play()
+                d1:Play()
+                task.wait(0.8)
+                t2:Play()
+                d2:Play()
+                task.wait(1.2)
+            end
+        end
+        task.spawn(breatheLoop)
+
+        -- ===== 展开面板（点击药丸后滑出） =====
+        local expandPanel = Instance.new("Frame")
+        expandPanel.Size = UDim2.new(0, 220, 0, 120)
+        expandPanel.Position = UDim2.new(0.5, -110, 0, -125)  -- 屏幕外上方
+        expandPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        expandPanel.BorderSizePixel = 0
+        expandPanel.Visible = false
+        expandPanel.Parent = gui
+
+        local panelCorner = Instance.new("UICorner")
+        panelCorner.CornerRadius = UDim.new(0, 16)
+        panelCorner.Parent = expandPanel
+
+        local panelStroke = Instance.new("UIStroke")
+        panelStroke.Thickness = 1.5
+        panelStroke.Color = Color3.fromRGB(255, 255, 255)
+        panelStroke.Transparency = 0.3
+        panelStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        panelStroke.Parent = expandPanel
+
+        -- 展开面板内添加一些装饰（纯黑无文字，只显示几个小圆点模拟图标）
+        for i = 1, 3 do
+            local dot2 = Instance.new("Frame")
+            dot2.Size = UDim2.new(0, 12, 0, 12)
+            dot2.Position = UDim2.new(0.5, -30 + (i-1)*30, 0.5, -6)
+            dot2.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+            dot2.BorderSizePixel = 0
+            dot2.Parent = expandPanel
+            local dotCorner2 = Instance.new("UICorner")
+            dotCorner2.CornerRadius = UDim.new(1, 0)
+            dotCorner2.Parent = dot2
+        end
+
+        -- 点击药丸切换展开/收回
+        local function toggleExpand()
+            expanded = not expanded
+            if expanded then
+                expandPanel.Visible = true
+                local tweenIn = TweenService:Create(expandPanel, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Position = UDim2.new(0.5, -110, 0, 42)  -- 停在药丸下方
+                })
+                tweenIn:Play()
+                -- 药丸稍微变宽（仿iPhone展开效果）
+                local tweenPill = TweenService:Create(pill, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 160, 0, 34)
+                })
+                tweenPill:Play()
+            else
+                local tweenOut = TweenService:Create(expandPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    Position = UDim2.new(0.5, -110, 0, -125)
+                })
+                tweenOut:Play()
+                tweenOut.Completed:Connect(function()
+                    expandPanel.Visible = false
+                end)
+                -- 药丸恢复原宽
+                local tweenPill = TweenService:Create(pill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    Size = UDim2.new(0, 140, 0, 34)
+                })
+                tweenPill:Play()
+            end
+        end
+
+        -- 点击药丸触发
+        local clickDetector = Instance.new("TextButton")
+        clickDetector.Size = UDim2.new(1, 0, 1, 0)
+        clickDetector.BackgroundTransparency = 1
+        clickDetector.Text = ""
+        clickDetector.Parent = pill
+        clickDetector.MouseButton1Click:Connect(toggleExpand)
+
+        -- 点击面板外部（空白区域）可收回，但这里简单处理：再次点击药丸收回
+        -- 另外如果点击面板内部也可以收回（可选），但iPhone是点击面板外部收回，我们简化：再点药丸收回
+
+        return gui, pill
+    end
+
+    -- 创建灵动岛
+    local islandGui, islandPill = createDynamicIsland()
+
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
