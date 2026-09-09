@@ -743,7 +743,7 @@ function createUI()
     AuthorSection:Paragraph({
         Title = "",
         Desc = "",
-        Thumbnail = "rbxassetid://74369447499630",
+        Thumbnail = "rbxassetid://89808064406255",
         ThumbnailSize = 150,
         ThumbnailShape = "Square",
     })
