@@ -769,7 +769,7 @@ function createUI()
     MoneyTab:Divider({ Text = "出租车刷钱" })
     MoneyTab:Paragraph({
         Title = "说明",
-        Desc = "两个功能可独立开关，互不影响。\n自动接单：模拟点击手机接单\n自动传送：传送到任务目标位置"
+        Desc = "高危功能谨慎使用"
     })
 
     MoneyTab:Toggle({
