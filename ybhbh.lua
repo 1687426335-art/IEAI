@@ -239,7 +239,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 动态灵动岛（紧贴屏幕最顶部） ====================
+    -- ==================== 动态灵动岛（已调整高度到60，更显眼） ====================
     local function createDynamicIsland()
         local gui = Instance.new("ScreenGui")
         gui.Name = "DynamicIsland"
@@ -247,10 +247,10 @@ function createUI()
         gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         gui.Parent = player:WaitForChild("PlayerGui")
 
-        -- 主容器 - 位置紧贴顶部
+        -- 主容器（药丸形状）- 高度改为60
         local container = Instance.new("Frame")
-        container.Size = UDim2.new(0, 140, 0, 40)
-        container.Position = UDim2.new(0.5, -70, 0, 0)
+        container.Size = UDim2.new(0, 140, 0, 60)        -- 高度从40改为60
+        container.Position = UDim2.new(0.5, -70, 0, 3)
         container.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
         container.BorderSizePixel = 0
         container.ClipsDescendants = true
@@ -332,9 +332,9 @@ function createUI()
 
         task.spawn(breatheLoop)
 
-        -- 从顶部滑入动画（紧贴顶部）
-        local startPos = UDim2.new(0.5, -70, 0, -45)
-        local endPos = UDim2.new(0.5, -70, 0, 0)
+        -- 从顶部滑入动画（起点相应调高）
+        local startPos = UDim2.new(0.5, -70, 0, -65)   -- 从 -45 改为 -65
+        local endPos = UDim2.new(0.5, -70, 0, 3)
         container.Position = startPos
         local slideIn = TweenService:Create(container, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Position = endPos
@@ -583,7 +583,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "wdfexNB"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
