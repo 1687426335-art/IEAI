@@ -475,7 +475,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "如果你游玩的时候出现了卡顿掉帧问题请联系作者修复"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -593,8 +593,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.5更新提示",
-        Desc = "修复部分功能卡顿问题\n修复杀戮光环所有问题\n应该没啥bug了",
+        Title = "v2.0.5提示",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -2697,6 +2697,123 @@ function createUI()
                         Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", 
                         Duration = 4 
                     })
+                end
+            end
+        })
+
+        -- ==================== 坐标显示 ====================
+        AdminGroup:Divider({ Text = "坐标显示" })
+        local coordEnabled = false
+        local coordGui = nil
+        local coordFrame = nil
+        local coordTextBox = nil
+        local coordCopyBtn = nil
+        local coordDragging = false
+        local coordDragStart, coordStartPos
+        local coordRenderConn = nil
+
+        local function CreateCoordDisplay()
+            if coordGui then return end
+            
+            local character = player.Character or player.CharacterAdded:Wait()
+            local root = character:WaitForChild("HumanoidRootPart")
+            
+            coordGui = Instance.new("ScreenGui")
+            coordGui.Name = "CoordinateCopyTool"
+            coordGui.Parent = player:WaitForChild("PlayerGui")
+            
+            coordFrame = Instance.new("Frame")
+            coordFrame.Size = UDim2.new(0, 250, 0, 100)
+            coordFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
+            coordFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            coordFrame.Active = true
+            coordFrame.Parent = coordGui
+            
+            coordTextBox = Instance.new("TextBox")
+            coordTextBox.Size = UDim2.new(0.9, 0, 0, 30)
+            coordTextBox.Position = UDim2.new(0.05, 0, 0.15, 0)
+            coordTextBox.Text = "加载中..."
+            coordTextBox.ClearTextOnFocus = false
+            coordTextBox.TextEditable = false
+            coordTextBox.Parent = coordFrame
+            
+            coordCopyBtn = Instance.new("TextButton")
+            coordCopyBtn.Size = UDim2.new(0.9, 0, 0, 35)
+            coordCopyBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
+            coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
+            coordCopyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+            coordCopyBtn.TextColor3 = Color3.new(1, 1, 1)
+            coordCopyBtn.Parent = coordFrame
+            
+            coordFrame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    coordDragging = true
+                    coordDragStart = input.Position
+                    coordStartPos = coordFrame.Position
+                end
+            end)
+            
+            coordFrame.InputChanged:Connect(function(input)
+                if coordDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - coordDragStart
+                    coordFrame.Position = UDim2.new(coordStartPos.X.Scale, coordStartPos.X.Offset + delta.X, coordStartPos.Y.Scale, coordStartPos.Y.Offset + delta.Y)
+                end
+            end)
+            
+            coordFrame.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    coordDragging = false
+                end
+            end)
+            
+            coordRenderConn = RunService.RenderStepped:Connect(function()
+                if not coordEnabled then return end
+                local char = player.Character
+                if not char then return end
+                local rootPart = char:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
+                local pos = rootPart.Position
+                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                if coordTextBox and not coordTextBox:IsFocused() then
+                    coordTextBox.Text = formattedPos
+                end
+            end)
+            table.insert(connections, coordRenderConn)
+            
+            coordCopyBtn.MouseButton1Click:Connect(function()
+                if not coordTextBox then return end
+                coordTextBox:CaptureFocus()
+                coordTextBox.SelectionStart = 1
+                coordTextBox.CursorPosition = #coordTextBox.Text + 1
+                coordCopyBtn.Text = "现在按下 Ctrl + C 复制！"
+                task.wait(2)
+                coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
+            end)
+        end
+
+        local function DestroyCoordDisplay()
+            if coordRenderConn then
+                coordRenderConn:Disconnect()
+                coordRenderConn = nil
+            end
+            if coordGui then
+                coordGui:Destroy()
+                coordGui = nil
+                coordFrame = nil
+                coordTextBox = nil
+                coordCopyBtn = nil
+            end
+        end
+
+        AdminGroup:Toggle({
+            Title = "启用坐标显示",
+            Value = false,
+            Callback = function(value)
+                coordEnabled = value
+                if value then
+                    CreateCoordDisplay()
+                else
+                    DestroyCoordDisplay()
                 end
             end
         })
