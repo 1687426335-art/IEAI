@@ -60,7 +60,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 统一设备UID检测（换服务器不变） ====================
     local function getDeviceUID()
         local userId = player.UserId
         local success, machineId = pcall(function()
@@ -76,7 +75,6 @@ function createUI()
     end
     local DEVICE_UID = getDeviceUID()
 
-    -- ==================== 黑名单与授权系统 ====================
     local AUTHOR_UID = "XXCXXFEXWXARNGDGHPG"
 
     local BLACKLIST = {
@@ -99,7 +97,6 @@ function createUI()
         return WHITELIST[uid] == true
     end
 
-    -- ==================== 权限验证 ====================
     if isBlacklisted(DEVICE_UID) then
         local blockGui = Instance.new("ScreenGui")
         blockGui.Name = "BlockedScreen"
@@ -221,7 +218,6 @@ function createUI()
         return
     end
 
-    -- ==================== 添加脚本标记（用于同行显示） ====================
     local scriptTag = Instance.new("BoolValue")
     scriptTag.Name = "wdfexScript"
     scriptTag.Value = true
@@ -238,6 +234,152 @@ function createUI()
         authorTag.Value = true
         authorTag.Parent = player
     end
+
+    -- ==================== 仿iPhone灵动岛（修复三小点消失问题） ====================
+    local function createDynamicIsland()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "DynamicIsland"
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = player:WaitForChild("PlayerGui")
+
+        local TweenService = game:GetService("TweenService")
+        local expanded = false
+
+        -- 药丸主容器
+        local pill = Instance.new("Frame")
+        pill.Size = UDim2.new(0, 140, 0, 34)
+        pill.Position = UDim2.new(0.5, -70, 0, 0)
+        pill.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+        pill.BorderSizePixel = 0
+        pill.ClipsDescendants = true
+        pill.Parent = gui
+
+        local pillCorner = Instance.new("UICorner")
+        pillCorner.CornerRadius = UDim.new(1, 0)
+        pillCorner.Parent = pill
+
+        local glow = Instance.new("UIStroke")
+        glow.Thickness = 1.2
+        glow.Color = Color3.fromRGB(255, 255, 255)
+        glow.Transparency = 0.9
+        glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        glow.Parent = pill
+
+        -- 左侧绿色呼吸点
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.new(0, 7, 0, 7)
+        dot.Position = UDim2.new(0, 13, 0.5, -3.5)
+        dot.BackgroundColor3 = Color3.fromRGB(50, 220, 100)
+        dot.BorderSizePixel = 0
+        dot.Parent = pill
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+
+        -- 右侧三小点（永久存在，不会被误删）
+        local signalDots = {}
+        for i = 1, 3 do
+            local miniDot = Instance.new("Frame")
+            miniDot.Name = "SignalDot"
+            miniDot.Size = UDim2.new(0, 3, 0, 3)
+            miniDot.Position = UDim2.new(1, -16 - (i-1)*8, 0.5, -1.5)
+            miniDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            miniDot.BackgroundTransparency = 0.5
+            miniDot.BorderSizePixel = 0
+            miniDot.Parent = pill
+            local miniCorner = Instance.new("UICorner")
+            miniCorner.CornerRadius = UDim.new(1, 0)
+            miniCorner.Parent = miniDot
+            table.insert(signalDots, miniDot)
+        end
+
+        -- 呼吸动画
+        local function breatheLoop()
+            while gui and gui.Parent do
+                local t1 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.5
+                })
+                local t2 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.9
+                })
+                local d1 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Size = UDim2.new(0, 9, 0, 9),
+                    Position = UDim2.new(0, 12, 0.5, -4.5)
+                })
+                local d2 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Size = UDim2.new(0, 7, 0, 7),
+                    Position = UDim2.new(0, 13, 0.5, -3.5)
+                })
+                t1:Play()
+                d1:Play()
+                task.wait(1.2)
+                t2:Play()
+                d2:Play()
+                task.wait(1.2)
+            end
+        end
+        task.spawn(breatheLoop)
+
+        -- 展开/收回逻辑（修复三小点不丢失）
+        local function toggleExpand()
+            expanded = not expanded
+            if expanded then
+                -- 先清理之前展开遗留的点（如果有）
+                for _, child in ipairs(pill:GetChildren()) do
+                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
+                        child:Destroy()
+                    end
+                end
+
+                local tween = TweenService:Create(pill, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, 280, 0, 48),
+                    Position = UDim2.new(0.5, -140, 0, 0)
+                })
+                tween:Play()
+
+                -- 展开时添加的圆点（带标记 ExpandedDot）
+                for i = 1, 6 do
+                    local miniDot = Instance.new("Frame")
+                    miniDot.Name = "ExpandedDot"
+                    miniDot.Size = UDim2.new(0, 4, 0, 4)
+                    miniDot.Position = UDim2.new(0, 30 + (i-1)*35, 0.5, -2)
+                    miniDot.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+                    miniDot.BackgroundTransparency = 0.3
+                    miniDot.BorderSizePixel = 0
+                    miniDot.Parent = pill
+                    local miniCorner = Instance.new("UICorner")
+                    miniCorner.CornerRadius = UDim.new(1, 0)
+                    miniCorner.Parent = miniDot
+                    task.wait(0.05)
+                end
+            else
+                local tween = TweenService:Create(pill, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                    Size = UDim2.new(0, 140, 0, 34),
+                    Position = UDim2.new(0.5, -70, 0, 0)
+                })
+                tween:Play()
+
+                -- 只删除展开时添加的带标记点，不动其他任何东西
+                for _, child in ipairs(pill:GetChildren()) do
+                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
+                        child:Destroy()
+                    end
+                end
+            end
+        end
+
+        local clicker = Instance.new("TextButton")
+        clicker.Size = UDim2.new(1, 0, 1, 0)
+        clicker.BackgroundTransparency = 1
+        clicker.Text = ""
+        clicker.Parent = pill
+        clicker.MouseButton1Click:Connect(toggleExpand)
+
+        return gui, pill
+    end
+
+    local islandGui, islandPill = createDynamicIsland()
 
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
@@ -404,7 +546,6 @@ function createUI()
         Draggable = true,
     })
 
-    -- ==================== 添加彩色描边（两条反向环绕） ====================
     task.wait(0.1)
     local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
     if mainGui then
@@ -448,7 +589,6 @@ function createUI()
         end
     end)
 
-    -- ==================== 播放音乐（悬浮窗出来后播放7秒） ====================
     task.spawn(function()
         pcall(function()
             local sound = Instance.new("Sound")
@@ -462,7 +602,6 @@ function createUI()
         end)
     end)
 
-    -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -475,7 +614,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            banner.Text = "电脑出了点事这几天暂时没办法更新了"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -509,7 +648,6 @@ function createUI()
         end)
     end)
 
-    -- ==================== 其余原有功能 ====================
     local Settings = {
         HoldTime = 0,
         Distance = 25,
@@ -523,7 +661,6 @@ function createUI()
     local affectedHeads = {}
     local frameCount = 0
 
-    -- 防甩飞
     _G.CatAntiFling_Enabled = false
     _G.CatAntiFling_Running = false
     local function AntiFlingLoop()
@@ -556,8 +693,6 @@ function createUI()
     end
     AntiFlingLoop()
 
-    -- ==================== Tab 创建 ====================
-    -- 作者信息 Tab（第一位，默认选中）
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -572,7 +707,6 @@ function createUI()
         Desc = "",
     })
 
-    -- 公告 Tab
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Divider()
@@ -581,7 +715,6 @@ function createUI()
         Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n修复了透视卡顿的问题\n修复了杀戮光环攻击有延迟的问题\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
     })
 
-    -- 通知 Tab
     local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
     local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
     infoSection:Divider()
@@ -594,15 +727,13 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5提示",
-        Desc = "修复所有已知问题",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
 
-    -- 默认选中作者信息
     AuthorTab:Select()
 
-    -- 主功能 Section
     local MainSection = Window:Section({
         Title = "主功能",
         Opened = true,
@@ -612,9 +743,6 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- ============================================================
-    -- Tab 顺序：玩家修改 → 飞天与加速 → 互动 → 枪械功能 → 杀戮光环 → 传送点 → 透视 → 自动躲警察
-    -- ============================================================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local InteractTab = AddTab(MainSection, "互动", "hand")
@@ -624,9 +752,6 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
-    -- ============================================================
-    -- 自动躲警察 Tab
-    -- ============================================================
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
     local policeDodgeForce = 50
@@ -745,9 +870,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 互动 Tab（快速互动相关）
-    -- ============================================================
     local interactEnabled = false
 
     local function ScanPrompts()
@@ -798,9 +920,6 @@ function createUI()
         end
     end)
 
-    -- ============================================================
-    -- 飞天与加速 Tab
-    -- ============================================================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -1120,9 +1239,6 @@ function createUI()
         end
     end)
 
-    -- ============================================================
-    -- 玩家修改 Tab
-    -- ============================================================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
         local players = Players:GetPlayers()
@@ -1311,9 +1427,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 枪械功能 Tab (B)
-    -- ============================================================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
         Title = "超快射速",
@@ -1580,9 +1693,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 杀戮光环 Tab (C) - 伤害已拉到最高（9亿9千9百9十万）
-    -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
     local KANearestOnly = false
@@ -1716,7 +1826,6 @@ function createUI()
         return bestPlayer
     end
 
-    -- ==================== 攻击执行函数（无锁，立即执行） ====================
     local function performAttack()
         if not kaEnabled then return end
         
@@ -1753,7 +1862,6 @@ function createUI()
         UpdateTargetDisplay()
     end
 
-    -- ==================== 主循环（高频攻击，无锁） ====================
     task.spawn(function()
         while not isDestroyed do
             if kaEnabled then
@@ -1763,7 +1871,6 @@ function createUI()
         end
     end)
 
-    -- ==================== 监听角色变化，拿枪后立即攻击 ====================
     player.CharacterAdded:Connect(function()
         if kaEnabled then
             task.wait(0.05)
@@ -1771,7 +1878,6 @@ function createUI()
         end
     end)
 
-    -- 监听武器切换
     local function onToolAdded(tool)
         if kaEnabled then
             performAttack()
@@ -1796,9 +1902,6 @@ function createUI()
         setupToolListener(char)
     end)
 
-    -- ============================================================
-    -- UI 控件
-    -- ============================================================
     C:Divider({ Text = "杀戮光环" })
     C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({
@@ -1888,9 +1991,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 传送点 Tab (D) - 已添加偷车传送分类
-    -- ============================================================
     D:Toggle({
         Title = "启用传送",
         Value = false,
@@ -1899,7 +1999,6 @@ function createUI()
         end
     })
 
-    -- ==================== 常规传送 ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
         {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
@@ -1954,7 +2053,6 @@ function createUI()
     for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
     local selectedTeleport = teleNames[1] or ""
 
-    -- ==================== 偷车传送 ====================
     local CAR_TELEPORTS = {
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
@@ -2027,9 +2125,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 透视 Tab (E)
-    -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
@@ -2391,9 +2486,6 @@ function createUI()
         RemoveESP(p.UserId)
     end)
 
-    -- ============================================================
-    -- 音乐 Tab
-    -- ============================================================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
@@ -2563,9 +2655,6 @@ function createUI()
         end
     })
 
-    -- ============================================================
-    -- 设置 Tab (G) - 仅作者可见
-    -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
     if DEVICE_UID == AUTHOR_UID then
@@ -2692,7 +2781,6 @@ function createUI()
             end
         })
 
-        -- ==================== 通过设备UID查看Roblox用户名 ====================
         AdminGroup:Divider({ Text = "用户查询" })
         AdminGroup:Paragraph({
             Title = "通过设备UID查看Roblox用户名",
@@ -2744,7 +2832,6 @@ function createUI()
             end
         })
 
-        -- ==================== 坐标显示 ====================
         AdminGroup:Divider({ Text = "坐标显示" })
         local coordEnabled = false
         local coordGui = nil
