@@ -235,7 +235,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 仿iPhone灵动岛（更还原） ====================
+    -- ==================== 仿iPhone灵动岛（修复三小点消失问题） ====================
     local function createDynamicIsland()
         local gui = Instance.new("ScreenGui")
         gui.Name = "DynamicIsland"
@@ -246,7 +246,7 @@ function createUI()
         local TweenService = game:GetService("TweenService")
         local expanded = false
 
-        -- 药丸主容器（贴顶，仿iPhone 14 Pro尺寸比例）
+        -- 药丸主容器
         local pill = Instance.new("Frame")
         pill.Size = UDim2.new(0, 140, 0, 34)
         pill.Position = UDim2.new(0.5, -70, 0, 0)
@@ -259,7 +259,6 @@ function createUI()
         pillCorner.CornerRadius = UDim.new(1, 0)
         pillCorner.Parent = pill
 
-        -- 外发光（超薄呼吸）
         local glow = Instance.new("UIStroke")
         glow.Thickness = 1.2
         glow.Color = Color3.fromRGB(255, 255, 255)
@@ -267,7 +266,7 @@ function createUI()
         glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         glow.Parent = pill
 
-        -- 左侧绿色指示器（呼吸）
+        -- 左侧绿色呼吸点
         local dot = Instance.new("Frame")
         dot.Size = UDim2.new(0, 7, 0, 7)
         dot.Position = UDim2.new(0, 13, 0.5, -3.5)
@@ -278,9 +277,11 @@ function createUI()
         dotCorner.CornerRadius = UDim.new(1, 0)
         dotCorner.Parent = dot
 
-        -- 右侧三小点（模仿iPhone信号/状态）
+        -- 右侧三小点（永久存在，不会被误删）
+        local signalDots = {}
         for i = 1, 3 do
             local miniDot = Instance.new("Frame")
+            miniDot.Name = "SignalDot"
             miniDot.Size = UDim2.new(0, 3, 0, 3)
             miniDot.Position = UDim2.new(1, -16 - (i-1)*8, 0.5, -1.5)
             miniDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -290,6 +291,7 @@ function createUI()
             local miniCorner = Instance.new("UICorner")
             miniCorner.CornerRadius = UDim.new(1, 0)
             miniCorner.Parent = miniDot
+            table.insert(signalDots, miniDot)
         end
 
         -- 呼吸动画
@@ -319,18 +321,27 @@ function createUI()
         end
         task.spawn(breatheLoop)
 
-        -- 展开状态（仿iPhone实时活动展开）
+        -- 展开/收回逻辑（修复三小点不丢失）
         local function toggleExpand()
             expanded = not expanded
             if expanded then
+                -- 先清理之前展开遗留的点（如果有）
+                for _, child in ipairs(pill:GetChildren()) do
+                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
+                        child:Destroy()
+                    end
+                end
+
                 local tween = TweenService:Create(pill, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 280, 0, 48),
                     Position = UDim2.new(0.5, -140, 0, 0)
                 })
                 tween:Play()
-                -- 展开时显示更多圆点
+
+                -- 展开时添加的圆点（带标记 ExpandedDot）
                 for i = 1, 6 do
                     local miniDot = Instance.new("Frame")
+                    miniDot.Name = "ExpandedDot"
                     miniDot.Size = UDim2.new(0, 4, 0, 4)
                     miniDot.Position = UDim2.new(0, 30 + (i-1)*35, 0.5, -2)
                     miniDot.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
@@ -348,16 +359,16 @@ function createUI()
                     Position = UDim2.new(0.5, -70, 0, 0)
                 })
                 tween:Play()
-                -- 移除展开时的额外圆点
+
+                -- 只删除展开时添加的带标记点，不动其他任何东西
                 for _, child in ipairs(pill:GetChildren()) do
-                    if child:IsA("Frame") and child ~= dot and child.Size.X.Offset <= 4 then
+                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
                         child:Destroy()
                     end
                 end
             end
         end
 
-        -- 点击触发器（覆盖整个药丸）
         local clicker = Instance.new("TextButton")
         clicker.Size = UDim2.new(1, 0, 1, 0)
         clicker.BackgroundTransparency = 1
