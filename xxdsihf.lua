@@ -1889,7 +1889,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 传送点 Tab (D)
+    -- 传送点 Tab (D) - 已添加偷车传送分类
     -- ============================================================
     D:Toggle({
         Title = "启用传送",
@@ -1899,6 +1899,7 @@ function createUI()
         end
     })
 
+    -- ==================== 常规传送 ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
         {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
@@ -1953,8 +1954,18 @@ function createUI()
     for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
     local selectedTeleport = teleNames[1] or ""
 
+    -- ==================== 偷车传送 ====================
+    local CAR_TELEPORTS = {
+        {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
+    }
+
+    local carTeleNames = {}
+    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
+    local selectedCarTeleport = carTeleNames[1] or ""
+
+    D:Divider({ Text = "常规传送" })
     D:Dropdown({
-        Title = "选定传送地点",
+        Title = "常规传送",
         Values = teleNames,
         Value = teleNames[1],
         Callback = function(value)
@@ -1971,6 +1982,38 @@ function createUI()
             end
             for _, data in ipairs(FIXED_TELEPORTS) do
                 if data.n == selectedTeleport then
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        root.CFrame = CFrame.new(data.p)
+                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
+                    end
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
+
+    D:Divider({ Text = "偷车能用到的传送地点" })
+    D:Dropdown({
+        Title = "偷车能用到的传送地点",
+        Values = carTeleNames,
+        Value = carTeleNames[1],
+        Callback = function(value)
+            selectedCarTeleport = value
+        end
+    })
+
+    D:Button({
+        Title = "传送到选定地点",
+        Callback = function()
+            if not Settings.TeleportEnabled then
+                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+                return
+            end
+            for _, data in ipairs(CAR_TELEPORTS) do
+                if data.n == selectedCarTeleport then
                     local char = player.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if root then
