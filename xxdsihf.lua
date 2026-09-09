@@ -1,6 +1,49 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local Confirmed = false
 
+-- ===== 防封：静默模式 =====
+local DEBUG = false
+if not DEBUG then
+    print = function() end
+    warn = function() end
+end
+
+-- ===== 防封：随机字符串 =====
+local function randomString(length)
+    local chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local result = ""
+    for i = 1, length do
+        local index = math.random(1, #chars)
+        result = result .. string.sub(chars, index, index)
+    end
+    return result
+end
+
+-- ===== 防封：安全父级获取 =====
+local function getSafeParent()
+    local candidates = {}
+    if gethui then table.insert(candidates, gethui) end
+    table.insert(candidates, function() return game:GetService("CoreGui") end)
+    table.insert(candidates, function() return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end)
+    for _, getParent in ipairs(candidates) do
+        local ok, p = pcall(getParent)
+        if ok and p then return p end
+    end
+    return game:GetService("CoreGui")
+end
+
+-- ===== 防封：GUI保护 =====
+local function protectGUI(gui)
+    if syn and syn.protect_gui then
+        pcall(function() syn.protect_gui(gui) end)
+    end
+end
+
+-- ===== 防封：随机因子（0.9~1.1） =====
+local function getRandomFactor()
+    return 0.9 + math.random() * 0.2
+end
+
 local gradientColors = {
     "rgb(255, 230, 235)",
     "rgb(255, 210, 220)",
@@ -51,6 +94,9 @@ WindUI:Popup({
 })
 
 function createUI()
+    -- 防封：随机延迟启动（3~8秒）
+    task.wait(math.random(3, 8))
+
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local Workspace = game:GetService("Workspace")
@@ -99,14 +145,20 @@ function createUI()
         return WHITELIST[uid] == true
     end
 
+    -- ===== 防封：GUI创建辅助 =====
+    local function createSafeScreenGui(name)
+        local gui = Instance.new("ScreenGui")
+        gui.Name = randomString(12)
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = getSafeParent()
+        protectGUI(gui)
+        return gui
+    end
+
     -- ==================== 权限验证 ====================
     if isBlacklisted(DEVICE_UID) then
-        local blockGui = Instance.new("ScreenGui")
-        blockGui.Name = "BlockedScreen"
-        blockGui.ResetOnSpawn = false
-        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        blockGui.Parent = player:WaitForChild("PlayerGui")
-
+        local blockGui = createSafeScreenGui()
         local blockFrame = Instance.new("Frame")
         blockFrame.Size = UDim2.new(0, 500, 0, 200)
         blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
@@ -156,12 +208,7 @@ function createUI()
     end
 
     if not isAuthorized(DEVICE_UID) then
-        local authGui = Instance.new("ScreenGui")
-        authGui.Name = "AuthScreen"
-        authGui.ResetOnSpawn = false
-        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        authGui.Parent = player:WaitForChild("PlayerGui")
-
+        local authGui = createSafeScreenGui()
         local authFrame = Instance.new("Frame")
         authFrame.Size = UDim2.new(0, 520, 0, 220)
         authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
@@ -273,12 +320,7 @@ function createUI()
                 local days = player.AccountAge
                 local regTime = days .. " 天前"
 
-                local popupGui = Instance.new("ScreenGui")
-                popupGui.Name = "UserInfoPopup"
-                popupGui.ResetOnSpawn = false
-                popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-                popupGui.Parent = player:WaitForChild("PlayerGui")
-
+                local popupGui = createSafeScreenGui()
                 local frame = Instance.new("Frame")
                 frame.Size = UDim2.new(0, 300, 0, 250)
                 frame.Position = UDim2.new(0.5, -150, 0.5, -125)
@@ -465,11 +507,7 @@ function createUI()
     -- ==================== 滚动文字横幅（wdfex-Hub彩色） ====================
     task.spawn(function()
         pcall(function()
-            local bannerGui = Instance.new("ScreenGui")
-            bannerGui.Name = "BannerGui"
-            bannerGui.ResetOnSpawn = false
-            bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            bannerGui.Parent = player:WaitForChild("PlayerGui")
+            local bannerGui = createSafeScreenGui()
             
             local banner = Instance.new("TextLabel")
             banner.Size = UDim2.new(0, 160, 0, 28)
@@ -594,7 +632,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5提示",
-        Desc = "修复所有已知问题\n修复杀戮光环所有的问题\n修复透视飞天加速开启之后卡顿的问题",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -889,7 +927,9 @@ function createUI()
             elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
                 vertical = -1
             end
-            local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
+            -- 防封：飞行速度加入随机因子
+            local speedWithRandom = FlySpeed * getRandomFactor()
+            local delta = (moveDir + Vector3.new(0, vertical, 0)) * speedWithRandom * dt
             flyState.targetPos = flyState.targetPos + delta
             local currentPos = flyState.hrp.Position
             local remaining = flyState.targetPos - currentPos
@@ -990,9 +1030,10 @@ function createUI()
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
         flyQuickScreenGui = Instance.new("ScreenGui")
-        flyQuickScreenGui.Name = "FlyQuickToggle"
+        flyQuickScreenGui.Name = randomString(12)
         flyQuickScreenGui.ResetOnSpawn = false
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
+        protectGUI(flyQuickScreenGui)
 
         local button = Instance.new("ImageButton")
         button.Size = UDim2.new(0, 60, 0, 60)
@@ -1453,7 +1494,8 @@ function createUI()
             else
                 zzRestore()
             end
-            task.wait(0.2)
+            -- 防封：随机间隔（0.15~0.25）
+            task.wait(0.15 + math.random() * 0.1)
         end
     end)
 
@@ -1484,10 +1526,12 @@ function createUI()
     local function aimEnsureCircle()
         if aimGui then return end
         aimGui = Instance.new("ScreenGui")
-        aimGui.Name = "SA_AimFOV"
+        aimGui.Name = randomString(12)
         aimGui.ResetOnSpawn = false
         aimGui.IgnoreGuiInset = true
-        aimGui.Parent = player:WaitForChild("PlayerGui")
+        aimGui.Parent = getSafeParent()
+        protectGUI(aimGui)
+
         aimCircle = Instance.new("Frame")
         aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
         aimCircle.Position = UDim2.fromScale(0.5, 0.5)
@@ -1581,7 +1625,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 杀戮光环 Tab (C) - 伤害已拉到最高（9亿9千9百9十万）
+    -- 杀戮光环 Tab (C)
     -- ============================================================
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
@@ -1598,10 +1642,11 @@ function createUI()
     local function CreateTargetDisplay()
         if targetDisplayGui then return end
         targetDisplayGui = Instance.new("ScreenGui")
-        targetDisplayGui.Name = "KillAuraTargetDisplay"
+        targetDisplayGui.Name = randomString(12)
         targetDisplayGui.ResetOnSpawn = false
         targetDisplayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
+        targetDisplayGui.Parent = getSafeParent()
+        protectGUI(targetDisplayGui)
 
         targetDisplayLabel = Instance.new("TextLabel")
         targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
@@ -1716,7 +1761,6 @@ function createUI()
         return bestPlayer
     end
 
-    -- ==================== 攻击执行函数（无锁，立即执行） ====================
     local function performAttack()
         if not kaEnabled then return end
         
@@ -1753,17 +1797,16 @@ function createUI()
         UpdateTargetDisplay()
     end
 
-    -- ==================== 主循环（高频攻击，无锁） ====================
+    -- 防封：杀戮光环主循环随机间隔
     task.spawn(function()
         while not isDestroyed do
             if kaEnabled then
                 performAttack()
             end
-            task.wait(0.05)
+            task.wait(0.04 + math.random() * 0.02) -- 40~60ms
         end
     end)
 
-    -- ==================== 监听角色变化，拿枪后立即攻击 ====================
     player.CharacterAdded:Connect(function()
         if kaEnabled then
             task.wait(0.05)
@@ -1771,7 +1814,6 @@ function createUI()
         end
     end)
 
-    -- 监听武器切换
     local function onToolAdded(tool)
         if kaEnabled then
             performAttack()
@@ -1797,7 +1839,7 @@ function createUI()
     end)
 
     -- ============================================================
-    -- UI 控件
+    -- UI 控件（杀戮光环）
     -- ============================================================
     C:Divider({ Text = "杀戮光环" })
     C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
@@ -1889,7 +1931,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 传送点 Tab (D) - 已添加偷车传送分类
+    -- 传送点 Tab (D)
     -- ============================================================
     D:Toggle({
         Title = "启用传送",
@@ -1899,7 +1941,6 @@ function createUI()
         end
     })
 
-    -- ==================== 常规传送 ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
         {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
@@ -1954,7 +1995,6 @@ function createUI()
     for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
     local selectedTeleport = teleNames[1] or ""
 
-    -- ==================== 偷车传送 ====================
     local CAR_TELEPORTS = {
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
@@ -2375,9 +2415,11 @@ function createUI()
         end
     })
 
+    -- 防封：透视刷新随机间隔
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.3)
+            local delay = 0.2 + math.random() * 0.15
+            task.wait(delay)
             if ESP_ENABLED then RefreshESP() end
         end
     end)
@@ -2762,8 +2804,9 @@ function createUI()
             local root = character:WaitForChild("HumanoidRootPart")
             
             coordGui = Instance.new("ScreenGui")
-            coordGui.Name = "CoordinateCopyTool"
-            coordGui.Parent = player:WaitForChild("PlayerGui")
+            coordGui.Name = randomString(12)
+            coordGui.Parent = getSafeParent()
+            protectGUI(coordGui)
             
             coordFrame = Instance.new("Frame")
             coordFrame.Size = UDim2.new(0, 250, 0, 100)
