@@ -614,7 +614,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "电脑出了点问题这几天暂时没办法更新了"
+            banner.Text = "此脚本以后暂停更新但是仍然可以使用或许我会在某一天停止这个脚本的运行"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
