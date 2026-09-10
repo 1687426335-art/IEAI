@@ -85,7 +85,7 @@ function createUI()
         ["XXCACYWXBBXRNGDGHPG"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
-        ["XWZFFFYAYCRNGDGHPG"] = true,
+        ["XWZEFFFYAYCRNGDGHPG"] = true,
     }
 
     local function isBlacklisted(uid)
