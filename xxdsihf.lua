@@ -235,7 +235,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 仿iPhone灵动岛 ====================
+    -- ==================== 仿iPhone灵动岛（音乐可视化版） ====================
     local function createDynamicIsland()
         local gui = Instance.new("ScreenGui")
         gui.Name = "DynamicIsland"
@@ -245,10 +245,13 @@ function createUI()
 
         local TweenService = game:GetService("TweenService")
         local expanded = false
+        local musicPlaying = false
 
+        -- 药丸主容器（浮动基准位置）
+        local pillBaseY = 0
         local pill = Instance.new("Frame")
         pill.Size = UDim2.new(0, 140, 0, 34)
-        pill.Position = UDim2.new(0.5, -70, 0, 0)
+        pill.Position = UDim2.new(0.5, -70, 0, pillBaseY)
         pill.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
         pill.BorderSizePixel = 0
         pill.ClipsDescendants = true
@@ -265,16 +268,41 @@ function createUI()
         glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         glow.Parent = pill
 
+        -- 左侧图标容器（用于切换绿点和音符）
+        local iconHolder = Instance.new("Frame")
+        iconHolder.Size = UDim2.new(0, 14, 0, 14)
+        iconHolder.Position = UDim2.new(0, 10, 0.5, -7)
+        iconHolder.BackgroundTransparency = 1
+        iconHolder.Parent = pill
+
+        -- 绿色呼吸点（默认状态）
         local dot = Instance.new("Frame")
+        dot.Name = "GreenDot"
         dot.Size = UDim2.new(0, 7, 0, 7)
-        dot.Position = UDim2.new(0, 13, 0.5, -3.5)
+        dot.Position = UDim2.new(0, 3.5, 0, 3.5)
         dot.BackgroundColor3 = Color3.fromRGB(50, 220, 100)
         dot.BorderSizePixel = 0
-        dot.Parent = pill
+        dot.Parent = iconHolder
         local dotCorner = Instance.new("UICorner")
         dotCorner.CornerRadius = UDim.new(1, 0)
         dotCorner.Parent = dot
 
+        -- 音符图标（音乐播放时显示）
+        local noteLabel = Instance.new("TextLabel")
+        noteLabel.Name = "NoteIcon"
+        noteLabel.Size = UDim2.new(1, 0, 1, 0)
+        noteLabel.BackgroundTransparency = 1
+        noteLabel.Text = "♪"
+        noteLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        noteLabel.TextSize = 16
+        noteLabel.Font = Enum.Font.GothamBold
+        noteLabel.TextXAlignment = Enum.TextXAlignment.Center
+        noteLabel.TextYAlignment = Enum.TextYAlignment.Center
+        noteLabel.Rotation = 0
+        noteLabel.Visible = false
+        noteLabel.Parent = iconHolder
+
+        -- 右侧三小点
         for i = 1, 3 do
             local miniDot = Instance.new("Frame")
             miniDot.Name = "SignalDot"
@@ -289,32 +317,97 @@ function createUI()
             miniCorner.Parent = miniDot
         end
 
+        -- 呼吸动画（仅在未播放音乐时生效）
+        local breatheActive = true
         local function breatheLoop()
             while gui and gui.Parent do
-                local t1 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Transparency = 0.5
-                })
-                local t2 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Transparency = 0.9
-                })
-                local d1 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Size = UDim2.new(0, 9, 0, 9),
-                    Position = UDim2.new(0, 12, 0.5, -4.5)
-                })
-                local d2 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Size = UDim2.new(0, 7, 0, 7),
-                    Position = UDim2.new(0, 13, 0.5, -3.5)
-                })
-                t1:Play()
-                d1:Play()
-                task.wait(1.2)
-                t2:Play()
-                d2:Play()
-                task.wait(1.2)
+                if breatheActive then
+                    local t1 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                        Transparency = 0.5
+                    })
+                    local t2 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                        Transparency = 0.9
+                    })
+                    local d1 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                        Size = UDim2.new(0, 9, 0, 9),
+                        Position = UDim2.new(0, 2.5, 0, 2.5)
+                    })
+                    local d2 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                        Size = UDim2.new(0, 7, 0, 7),
+                        Position = UDim2.new(0, 3.5, 0, 3.5)
+                    })
+                    t1:Play()
+                    d1:Play()
+                    task.wait(1.2)
+                    t2:Play()
+                    d2:Play()
+                    task.wait(1.2)
+                else
+                    task.wait(0.1)
+                end
             end
         end
         task.spawn(breatheLoop)
 
+        -- 音符旋转动画
+        local noteSpinConn = nil
+        local function startNoteSpin()
+            if noteSpinConn then return end
+            local angle = 0
+            noteSpinConn = RunService.RenderStepped:Connect(function(dt)
+                angle = (angle + dt * 180) % 360
+                noteLabel.Rotation = angle
+            end)
+        end
+
+        local function stopNoteSpin()
+            if noteSpinConn then
+                noteSpinConn:Disconnect()
+                noteSpinConn = nil
+            end
+            noteLabel.Rotation = 0
+        end
+
+        -- 音乐播放时的上下浮动动画
+        local floatConn = nil
+        local floatTime = 0
+        local function startFloat()
+            if floatConn then return end
+            floatConn = RunService.RenderStepped:Connect(function(dt)
+                floatTime = floatTime + dt * 3
+                local offsetY = math.sin(floatTime) * 4
+                pill.Position = UDim2.new(0.5, -70, 0, pillBaseY + offsetY)
+            end)
+        end
+
+        local function stopFloat()
+            if floatConn then
+                floatConn:Disconnect()
+                floatConn = nil
+            end
+            floatTime = 0
+            pill.Position = UDim2.new(0.5, -70, 0, pillBaseY)
+        end
+
+        -- 切换音乐可视化状态
+        local function setMusicMode(isPlaying)
+            musicPlaying = isPlaying
+            if isPlaying then
+                dot.Visible = false
+                noteLabel.Visible = true
+                breatheActive = false
+                startNoteSpin()
+                startFloat()
+            else
+                dot.Visible = true
+                noteLabel.Visible = false
+                breatheActive = true
+                stopNoteSpin()
+                stopFloat()
+            end
+        end
+
+        -- 展开/收回逻辑
         local function toggleExpand()
             expanded = not expanded
             if expanded then
@@ -326,7 +419,7 @@ function createUI()
 
                 local tween = TweenService:Create(pill, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                     Size = UDim2.new(0, 280, 0, 48),
-                    Position = UDim2.new(0.5, -140, 0, 0)
+                    Position = UDim2.new(0.5, -140, 0, pillBaseY)
                 })
                 tween:Play()
 
@@ -347,7 +440,7 @@ function createUI()
             else
                 local tween = TweenService:Create(pill, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
                     Size = UDim2.new(0, 140, 0, 34),
-                    Position = UDim2.new(0.5, -70, 0, 0)
+                    Position = UDim2.new(0.5, -70, 0, pillBaseY)
                 })
                 tween:Play()
 
@@ -366,10 +459,10 @@ function createUI()
         clicker.Parent = pill
         clicker.MouseButton1Click:Connect(toggleExpand)
 
-        return gui, pill
+        return gui, pill, setMusicMode
     end
 
-    local islandGui, islandPill = createDynamicIsland()
+    local islandGui, islandPill, setIslandMusicMode = createDynamicIsland()
 
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
@@ -683,37 +776,6 @@ function createUI()
     end
     AntiFlingLoop()
 
-    -- 无限跳逻辑
-    _G.CatInfJump_Enabled = _G.CatInfJump_Enabled or false
-    if not _G.CatInfJump_Running then
-        _G.CatInfJump_Running = true
-        UserInputService.JumpRequest:Connect(function()
-            if not _G.CatInfJump_Enabled then return end
-            pcall(function()
-                local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
-            end)
-        end)
-    end
-
-    -- 穿墙逻辑
-    _G.CatNoclip_Enabled = _G.CatNoclip_Enabled or false
-    if not _G.CatNoclip_Running then
-        _G.CatNoclip_Running = true
-        RunService.Stepped:Connect(function()
-            local s = _G.CatNoclip_Enabled
-            pcall(function()
-                local char = player.Character
-                if not char then return end
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = not s
-                    end
-                end
-            end)
-        end)
-    end
-
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -748,7 +810,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5提示",
-        Desc = "修复所有已知问题",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -1340,17 +1402,26 @@ function createUI()
         Title = "启用人物穿墙",
         Value = false,
         Callback = function(value)
-            _G.CatNoclip_Enabled = value
             Settings.NoclipEnabled = value
-        end
-    })
-
-    A:Divider({ Text = "无限跳" })
-    A:Toggle({
-        Title = "启用无限跳",
-        Value = false,
-        Callback = function(value)
-            _G.CatInfJump_Enabled = value
+            if value then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            else
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                end
+            end
         end
     })
 
@@ -2621,6 +2692,7 @@ function createUI()
             isMusicPlaying = value
             if value then
                 PlaySongByIndex(currentPlayIndex)
+                if setIslandMusicMode then setIslandMusicMode(true) end
             else
                 if musicSound then
                     musicSound:Stop()
@@ -2631,6 +2703,7 @@ function createUI()
                     endedConnection:Disconnect()
                     endedConnection = nil
                 end
+                if setIslandMusicMode then setIslandMusicMode(false) end
                 WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
             end
         end
