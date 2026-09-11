@@ -75,14 +75,14 @@ function createUI()
     end
     local DEVICE_UID = getDeviceUID()
 
-    local AUTHOR_UID = "XXCBYCYCDEAARNGDGHPG"
+    local AUTHOR_UID = "XXCBYYCDEAARNGDGHPG"
 
     local BLACKLIST = {
         ["XXCWZAYDAXZRNCDCHddc"] = true,
     }
 
     local WHITELIST = {
-        ["XXCBYCYCDEAARNGDGHPG"] = true,
+        ["XXCBYYCDEAARNGDGHPG"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
         ["XWZFFFYAYCRNGDGHPG"] = true,
