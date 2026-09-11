@@ -82,10 +82,10 @@ function createUI()
     }
 
     local WHITELIST = {
-        ["XXCACYWXBBXRNGDGHPG"] = true,
+        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
         ["XXCWZZCACWARNGDGHPG"] = true,
         ["XXCXXFEXWXARNGDGHPG"] = true,
-        ["XWZEFFFYAYCRNGDGHPG"] = true,
+        ["XWZFFFYAYCRNGDGHPG"] = true,
     }
 
     local function isBlacklisted(uid)
@@ -235,7 +235,7 @@ function createUI()
         authorTag.Parent = player
     end
 
-    -- ==================== 仿iPhone灵动岛（修复三小点消失问题） ====================
+    -- ==================== 仿iPhone灵动岛 ====================
     local function createDynamicIsland()
         local gui = Instance.new("ScreenGui")
         gui.Name = "DynamicIsland"
@@ -246,7 +246,6 @@ function createUI()
         local TweenService = game:GetService("TweenService")
         local expanded = false
 
-        -- 药丸主容器
         local pill = Instance.new("Frame")
         pill.Size = UDim2.new(0, 140, 0, 34)
         pill.Position = UDim2.new(0.5, -70, 0, 0)
@@ -266,7 +265,6 @@ function createUI()
         glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         glow.Parent = pill
 
-        -- 左侧绿色呼吸点
         local dot = Instance.new("Frame")
         dot.Size = UDim2.new(0, 7, 0, 7)
         dot.Position = UDim2.new(0, 13, 0.5, -3.5)
@@ -277,8 +275,6 @@ function createUI()
         dotCorner.CornerRadius = UDim.new(1, 0)
         dotCorner.Parent = dot
 
-        -- 右侧三小点（永久存在，不会被误删）
-        local signalDots = {}
         for i = 1, 3 do
             local miniDot = Instance.new("Frame")
             miniDot.Name = "SignalDot"
@@ -291,10 +287,8 @@ function createUI()
             local miniCorner = Instance.new("UICorner")
             miniCorner.CornerRadius = UDim.new(1, 0)
             miniCorner.Parent = miniDot
-            table.insert(signalDots, miniDot)
         end
 
-        -- 呼吸动画
         local function breatheLoop()
             while gui and gui.Parent do
                 local t1 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
@@ -321,11 +315,9 @@ function createUI()
         end
         task.spawn(breatheLoop)
 
-        -- 展开/收回逻辑（修复三小点不丢失）
         local function toggleExpand()
             expanded = not expanded
             if expanded then
-                -- 先清理之前展开遗留的点（如果有）
                 for _, child in ipairs(pill:GetChildren()) do
                     if child:IsA("Frame") and child.Name == "ExpandedDot" then
                         child:Destroy()
@@ -338,7 +330,6 @@ function createUI()
                 })
                 tween:Play()
 
-                -- 展开时添加的圆点（带标记 ExpandedDot）
                 for i = 1, 6 do
                     local miniDot = Instance.new("Frame")
                     miniDot.Name = "ExpandedDot"
@@ -360,7 +351,6 @@ function createUI()
                 })
                 tween:Play()
 
-                -- 只删除展开时添加的带标记点，不动其他任何东西
                 for _, child in ipairs(pill:GetChildren()) do
                     if child:IsA("Frame") and child.Name == "ExpandedDot" then
                         child:Destroy()
@@ -614,7 +604,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "此脚本以后暂停更新但是仍然可以使用或许我会在某一天停止这个脚本的运行"
+            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -693,6 +683,37 @@ function createUI()
     end
     AntiFlingLoop()
 
+    -- 无限跳逻辑
+    _G.CatInfJump_Enabled = _G.CatInfJump_Enabled or false
+    if not _G.CatInfJump_Running then
+        _G.CatInfJump_Running = true
+        UserInputService.JumpRequest:Connect(function()
+            if not _G.CatInfJump_Enabled then return end
+            pcall(function()
+                local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+            end)
+        end)
+    end
+
+    -- 穿墙逻辑
+    _G.CatNoclip_Enabled = _G.CatNoclip_Enabled or false
+    if not _G.CatNoclip_Running then
+        _G.CatNoclip_Running = true
+        RunService.Stepped:Connect(function()
+            local s = _G.CatNoclip_Enabled
+            pcall(function()
+                local char = player.Character
+                if not char then return end
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = not s
+                    end
+                end
+            end)
+        end)
+    end
+
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -727,7 +748,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v2.0.5提示",
-        Desc = "修复所有已知问题",
+        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -1319,26 +1340,17 @@ function createUI()
         Title = "启用人物穿墙",
         Value = false,
         Callback = function(value)
+            _G.CatNoclip_Enabled = value
             Settings.NoclipEnabled = value
-            if value then
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            else
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
-                    end
-                end
-            end
+        end
+    })
+
+    A:Divider({ Text = "无限跳" })
+    A:Toggle({
+        Title = "启用无限跳",
+        Value = false,
+        Callback = function(value)
+            _G.CatInfJump_Enabled = value
         end
     })
 
