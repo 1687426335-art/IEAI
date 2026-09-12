@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.0"
+local version = "v3.0.7"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -60,7 +60,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- 原代码里的 PlayerConfig
     PlayerConfig = {
         playernamedied = nil,
         dropdown = {},
@@ -68,12 +67,10 @@ function createUI()
         LoopBring = false,
     }
 
-    -- 原代码的 Notify（改成 wdfex脚本）
     local function Notify(title, content, icon, duration)
         WindUI:Notify({ Title = title, Content = content, Duration = duration or 3 })
     end
 
-    -- 原代码的 shuaxinlb
     local function shuaxinlb(silent)
         PlayerConfig.dropdown = {}
         for _, p in ipairs(Players:GetPlayers()) do
@@ -86,6 +83,66 @@ function createUI()
         end
     end
     shuaxinlb(true)
+
+    -- ==================== 获取目标玩家 CFrame（多方法尝试） ====================
+    local function getTargetCFrame(targetPlayer)
+        if not targetPlayer then return nil end
+        local ok, char = pcall(function() return targetPlayer.Character end)
+        if not ok or not char then return nil end
+        -- 方法1：HumanoidRootPart
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local ok2, cf = pcall(function() return hrp.CFrame end)
+            if ok2 and cf then return cf end
+        end
+        -- 方法2：PrimaryPart
+        local pp = char.PrimaryPart
+        if pp then
+            local ok2, cf = pcall(function() return pp.CFrame end)
+            if ok2 and cf then return cf end
+        end
+        -- 方法3：GetPivot
+        local ok2, pivot = pcall(function() return char:GetPivot() end)
+        if ok2 and pivot then return pivot end
+        -- 方法4：任意 BasePart
+        local anyPart = char:FindFirstChildWhichIsA("BasePart")
+        if anyPart then
+            local ok3, cf = pcall(function() return anyPart.CFrame end)
+            if ok3 and cf then return cf end
+        end
+        return nil
+    end
+
+    -- ==================== 设置目标玩家 CFrame（多方法尝试） ====================
+    local function setTargetCFrame(targetPlayer, cframe)
+        if not targetPlayer then return false end
+        local ok, char = pcall(function() return targetPlayer.Character end)
+        if not ok or not char then return false end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local ok2 = pcall(function() hrp.CFrame = cframe end)
+            if ok2 then return true end
+        end
+        local pp = char.PrimaryPart
+        if pp then
+            local ok2 = pcall(function() pp.CFrame = cframe end)
+            if ok2 then return true end
+        end
+        local ok2 = pcall(function() char:PivotTo(cframe) end)
+        if ok2 then return true end
+        return false
+    end
+
+    -- ==================== 请求加载目标周围地形 ====================
+    local function requestStreamAround(targetPlayer)
+        if not targetPlayer then return end
+        local cf = getTargetCFrame(targetPlayer)
+        if cf then
+            pcall(function()
+                player:RequestStreamAroundAsync(cf.Position)
+            end)
+        end
+    end
 
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -325,7 +382,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.0提示",
+        Title = "v3.0.7提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -383,9 +440,22 @@ function createUI()
         Callback = function()
             local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
             local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
-                localRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
+            if targetPlayer then
+                local cf = getTargetCFrame(targetPlayer)
+                if cf and localRootPart then
+                    localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
+                    Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
+                else
+                    requestStreamAround(targetPlayer)
+                    task.wait(0.3)
+                    cf = getTargetCFrame(targetPlayer)
+                    if cf and localRootPart then
+                        localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
+                        Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
+                    else
+                        Notify("wdfex脚本", "无法传送 原因: 玩家位置未加载", "rbxassetid://18941716391", 5)
+                    end
+                end
             else
                 Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
             end
@@ -403,12 +473,14 @@ function createUI()
                     while PlayerConfig.LoopTeleport and not isDestroyed do
                         local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                        if localRootPart and targetPlayer and targetPlayer.Character then
-                            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if targetRoot then
+                        if localRootPart and targetPlayer then
+                            local cf = getTargetCFrame(targetPlayer)
+                            if cf then
                                 pcall(function()
-                                    localRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+                                    localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
                                 end)
+                            else
+                                requestStreamAround(targetPlayer)
                             end
                         end
                         task.wait()
@@ -426,9 +498,20 @@ function createUI()
         Callback = function()
             local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
             local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-            if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
-                targetPlayer.Character.HumanoidRootPart.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
-                Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
+            if targetPlayer and localRootPart then
+                local ok = setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
+                if ok then
+                    Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
+                else
+                    requestStreamAround(targetPlayer)
+                    task.wait(0.3)
+                    ok = setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
+                    if ok then
+                        Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
+                    else
+                        Notify("wdfex脚本", "无法传送 原因: 玩家位置未加载", "rbxassetid://18941716391", 5)
+                    end
+                end
             else
                 Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
             end
@@ -446,13 +529,8 @@ function createUI()
                     while PlayerConfig.LoopBring and not isDestroyed do
                         local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                        if localRootPart and targetPlayer and targetPlayer.Character then
-                            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if targetRoot then
-                                pcall(function()
-                                    targetRoot.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
-                                end)
-                            end
+                        if localRootPart and targetPlayer then
+                            setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
                         end
                         task.wait()
                     end
@@ -488,8 +566,13 @@ function createUI()
         Value = false,
         Callback = function(enabled)
             if enabled then
-                game:GetService("Workspace").CurrentCamera.CameraSubject = game:GetService("Players"):FindFirstChild(PlayerConfig.playernamedied).Character.Humanoid
-                Notify("wdfex脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
+                local tp = game:GetService("Players"):FindFirstChild(PlayerConfig.playernamedied)
+                if tp and tp.Character and tp.Character:FindFirstChildOfClass("Humanoid") then
+                    game:GetService("Workspace").CurrentCamera.CameraSubject = tp.Character:FindFirstChildOfClass("Humanoid")
+                    Notify("wdfex脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
+                else
+                    Notify("wdfex脚本", "玩家未加载", "rbxassetid://18941716391", 5)
+                end
             else
                 game:GetService("Workspace").CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
                 Notify("wdfex脚本", "已关闭查看玩家", "rbxassetid://18941716391", 5)
@@ -1018,12 +1101,13 @@ function createUI()
                 while r0_462 do
                     local r1_462 = workspace.CurrentCamera
                     local r2_462 = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                    local r3_462 = r2_462 and r2_462.Character and r2_462.Character.HumanoidRootPart
-                    if r3_462 and r1_462 then
-                        r1_462.CFrame = CFrame.new(r1_462.CFrame.Position, r1_462.CFrame.Position + (r3_462.Position - r1_462.CFrame.Position).unit)
+                    local cf = getTargetCFrame(r2_462)
+                    if cf and r1_462 then
+                        r1_462.CFrame = CFrame.new(r1_462.CFrame.Position, r1_462.CFrame.Position + (cf.Position - r1_462.CFrame.Position).unit)
                         wait()
                     else
-                        break
+                        if r2_462 then requestStreamAround(r2_462) end
+                        wait(0.3)
                     end
                 end
             end
@@ -1031,7 +1115,7 @@ function createUI()
     })
 
     -- ============================================================
-    -- 以下全部保持之前不变
+    -- 以下全部保持不变
     -- ============================================================
 
     local policeDodgeEnabled = false
