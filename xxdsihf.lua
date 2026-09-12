@@ -60,7 +60,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -93,7 +92,7 @@ function createUI()
                     Type = "Button", 
                     Text = "wdfex-Hub",
                     Style = "Subtle", 
-                    Size = UDim2.new(1, -able20, 0, 30),
+                    Size = UDim2.new(1, -20, 0, 30),
                     Callback = function()
                     end
                 }
@@ -107,7 +106,7 @@ function createUI()
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
-        Dragg = true,
+        Draggable = true,
     })
 
     Window:EditOpenButton({
@@ -1564,7 +1563,7 @@ function createUI()
         end
     })
 
-    -- ==================== 传送点 Tab ====================
+    -- ==================== 传送点 ====================
     D:Toggle({
         Title = "启用传送",
         Value = false,
@@ -1573,44 +1572,20 @@ function createUI()
         end
     })
 
-    -- 通用传送分组函数
-    local function createTeleportGroup(tab, title, list)
-        local names = {}
-        for _, data in ipairs(list) do table.insert(names, data.n) end
-        local selected = names[1] or ""
-        tab:Divider({ Text = title })
-        tab:Dropdown({
-            Title = title,
-            Values = names,
-            Value = names[1],
-            Callback = function(value)
-                selected = value
-            end
-        })
-        tab:Button({
-            Title = "传送到选定地点",
-            Callback = function()
-                if not Settings.TeleportEnabled then
-                    WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
-                    return
-                end
-                for _, data in ipairs(list) do
-                    if data.n == selected then
-                        local char = player.Character
-                        local root = char and char:FindFirstChild("HumanoidRootPart")
-                        if root then
-                            root.CFrame = CFrame.new(data.p)
-                            WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
-                        end
-                        return
-                    end
-                end
-                WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
-            end
-        })
+    local function doTeleport(pos, name)
+        if not Settings.TeleportEnabled then
+            WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+            return
+        end
+        local char = player.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.CFrame = CFrame.new(pos)
+            WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. name, Duration = 2 })
+        end
     end
 
-    -- ==================== 常规传送（已删银行/队伍/加油站/维修） ====================
+    -- ==================== 常规传送（已删除银行、队伍、加油站、载具维修相关） ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
         {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
@@ -1627,7 +1602,6 @@ function createUI()
         {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771)},
         {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693)},
         {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689)},
-        {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839)},
         {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670)},
         {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433)},
         {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529)},
@@ -1646,13 +1620,31 @@ function createUI()
         {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300)},
     }
 
-    createTeleportGroup(D, "常规传送", FIXED_TELEPORTS)
+    local teleNames = {}
+    for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
+    local selectedTeleport = teleNames[1] or ""
 
-    -- ==================== 偷车传送 ====================
-    local CAR_TELEPORTS = {
-        {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
-    }
-    createTeleportGroup(D, "偷车能用到的传送地点", CAR_TELEPORTS)
+    D:Divider({ Text = "常规传送" })
+    D:Dropdown({
+        Title = "常规传送",
+        Values = teleNames,
+        Value = teleNames[1],
+        Callback = function(value)
+            selectedTeleport = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定地点",
+        Callback = function()
+            for _, data in ipairs(FIXED_TELEPORTS) do
+                if data.n == selectedTeleport then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 售货机传送 ====================
     local VENDING_TELEPORTS = {
@@ -1661,14 +1653,62 @@ function createUI()
         {n = "医院售货机", p = Vector3.new(3943.85, -337.12, -201.67)},
         {n = "当铺售货机", p = Vector3.new(-208.57, -337.05, -97.18)},
     }
-    createTeleportGroup(D, "售货机传送", VENDING_TELEPORTS)
+    local vendingNames = {}
+    for _, data in ipairs(VENDING_TELEPORTS) do table.insert(vendingNames, data.n) end
+    local selectedVending = vendingNames[1] or ""
+
+    D:Divider({ Text = "售货机传送" })
+    D:Dropdown({
+        Title = "售货机传送",
+        Values = vendingNames,
+        Value = vendingNames[1],
+        Callback = function(value)
+            selectedVending = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定售货机",
+        Callback = function()
+            for _, data in ipairs(VENDING_TELEPORTS) do
+                if data.n == selectedVending then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 银行传送 ====================
     local BANK_TELEPORTS = {
         {n = "小银行", p = Vector3.new(-678.77, -337.12, -104.65)},
         {n = "大银行", p = Vector3.new(3134.90, -321.84, -270.04)},
     }
-    createTeleportGroup(D, "银行传送", BANK_TELEPORTS)
+    local bankNames = {}
+    for _, data in ipairs(BANK_TELEPORTS) do table.insert(bankNames, data.n) end
+    local selectedBank = bankNames[1] or ""
+
+    D:Divider({ Text = "银行传送" })
+    D:Dropdown({
+        Title = "银行传送",
+        Values = bankNames,
+        Value = bankNames[1],
+        Callback = function(value)
+            selectedBank = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定银行",
+        Callback = function()
+            for _, data in ipairs(BANK_TELEPORTS) do
+                if data.n == selectedBank then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 队伍传送 ====================
     local TEAM_TELEPORTS = {
@@ -1681,7 +1721,31 @@ function createUI()
         {n = "圣奥里平民重生点", p = Vector3.new(3744.05, 2.63, -403.97)},
         {n = "约克镇平民重生点", p = Vector3.new(-250.24, 2.63, -82.67)},
     }
-    createTeleportGroup(D, "队伍传送", TEAM_TELEPORTS)
+    local teamNames = {}
+    for _, data in ipairs(TEAM_TELEPORTS) do table.insert(teamNames, data.n) end
+    local selectedTeam = teamNames[1] or ""
+
+    D:Divider({ Text = "队伍传送" })
+    D:Dropdown({
+        Title = "队伍传送",
+        Values = teamNames,
+        Value = teamNames[1],
+        Callback = function(value)
+            selectedTeam = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定队伍点",
+        Callback = function()
+            for _, data in ipairs(TEAM_TELEPORTS) do
+                if data.n == selectedTeam then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 加油站传送 ====================
     local GAS_TELEPORTS = {
@@ -1691,7 +1755,31 @@ function createUI()
         {n = "加油站4", p = Vector3.new(1150.41, 2.63, -841.89)},
         {n = "加油站5", p = Vector3.new(-1620.28, 2.63, 1795.99)},
     }
-    createTeleportGroup(D, "加油站传送", GAS_TELEPORTS)
+    local gasNames = {}
+    for _, data in ipairs(GAS_TELEPORTS) do table.insert(gasNames, data.n) end
+    local selectedGas = gasNames[1] or ""
+
+    D:Divider({ Text = "加油站传送" })
+    D:Dropdown({
+        Title = "加油站传送",
+        Values = gasNames,
+        Value = gasNames[1],
+        Callback = function(value)
+            selectedGas = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定加油站",
+        Callback = function()
+            for _, data in ipairs(GAS_TELEPORTS) do
+                if data.n == selectedGas then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 载具维修类传送 ====================
     local REPAIR_TELEPORTS = {
@@ -1699,7 +1787,61 @@ function createUI()
         {n = "圣奥里车辆维修", p = Vector3.new(2783.67, 2.63, -413.05)},
         {n = "约克镇车辆维修", p = Vector3.new(-399.23, 2.63, -8.15)},
     }
-    createTeleportGroup(D, "载具维修类传送", REPAIR_TELEPORTS)
+    local repairNames = {}
+    for _, data in ipairs(REPAIR_TELEPORTS) do table.insert(repairNames, data.n) end
+    local selectedRepair = repairNames[1] or ""
+
+    D:Divider({ Text = "载具维修类传送" })
+    D:Dropdown({
+        Title = "载具维修类传送",
+        Values = repairNames,
+        Value = repairNames[1],
+        Callback = function(value)
+            selectedRepair = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定维修点",
+        Callback = function()
+            for _, data in ipairs(REPAIR_TELEPORTS) do
+                if data.n == selectedRepair then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
+
+    -- ==================== 偷车传送 ====================
+    local CAR_TELEPORTS = {
+        {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
+    }
+    local carTeleNames = {}
+    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
+    local selectedCarTeleport = carTeleNames[1] or ""
+
+    D:Divider({ Text = "偷车能用到的传送地点" })
+    D:Dropdown({
+        Title = "偷车能用到的传送地点",
+        Values = carTeleNames,
+        Value = carTeleNames[1],
+        Callback = function(value)
+            selectedCarTeleport = value
+        end
+    })
+    D:Button({
+        Title = "传送到选定地点",
+        Callback = function()
+            for _, data in ipairs(CAR_TELEPORTS) do
+                if data.n == selectedCarTeleport then
+                    doTeleport(data.p, data.n)
+                    return
+                end
+            end
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+        end
+    })
 
     -- ==================== 透视 ====================
     local ESP_ENABLED = false
@@ -2020,6 +2162,7 @@ function createUI()
         RemoveESP(p.UserId)
     end)
 
+    -- ==================== 音乐 ====================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
@@ -2189,7 +2332,7 @@ function createUI()
         end
     })
 
-    -- ==================== 设置 Tab（卡密验证） ====================
+    -- ==================== 设置（卡密验证） ====================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
     local adminVerified = false
