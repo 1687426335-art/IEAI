@@ -60,6 +60,32 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
+    -- 原代码里的 PlayerConfig
+    PlayerConfig = {
+        playernamedied = nil,
+        dropdown = {},
+        LoopTeleport = false,
+    }
+
+    -- 原代码的 Notify（适配 WindUI）
+    local function Notify(title, content, icon, duration)
+        WindUI:Notify({ Title = title, Content = content, Duration = duration or 3 })
+    end
+
+    -- 原代码的 shuaxinlb
+    local function shuaxinlb(silent)
+        PlayerConfig.dropdown = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(PlayerConfig.dropdown, p.Name)
+            end
+        end
+        if not silent then
+            Notify("皮脚本", "已刷新玩家列表", "rbxassetid://18941716391", 3)
+        end
+    end
+    shuaxinlb(true)
+
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -221,6 +247,8 @@ function createUI()
     end)
 
     local Settings = {
+        HoldTime = 0,
+        Distance = 25,
         HitboxEnabled = false,
         HitboxSize = 10,
         WhitelistEnabled = false,
@@ -315,12 +343,681 @@ function createUI()
 
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
+    local TeleportFlingTab = AddTab(MainSection, "传送与甩飞", "zap")
     local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
+
+    -- ============================================================
+    -- 传送与甩飞（原代码逻辑）
+    -- ============================================================
+    local dropdownMethod = "Dropdown"
+    local dropdownLabel = "选择玩家名称"
+    local playerDropdown = TeleportFlingTab:Dropdown({
+        Title = "选择玩家名称",
+        Values = PlayerConfig.dropdown,
+        Value = PlayerConfig.dropdown[1],
+        Callback = function(selectedPlayer)
+            PlayerConfig.playernamedied = selectedPlayer
+        end
+    })
+
+    TeleportFlingTab:Button({
+        Title = "刷新玩家名称",
+        Callback = function()
+            shuaxinlb(true)
+            if playerDropdown then
+                pcall(function()
+                    playerDropdown:Refresh(PlayerConfig.dropdown)
+                end)
+            end
+        end
+    })
+
+    TeleportFlingTab:Button({
+        Title = "传送到玩家旁边",
+        Callback = function()
+            local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
+                localRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                Notify("皮脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
+            else
+                Notify("皮脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "循环锁定传送",
+        Value = false,
+        Callback = function(enabled)
+            if enabled then
+                PlayerConfig.LoopTeleport = true
+                Notify("皮脚本", "已开启循环传送", "rbxassetid://18941716391", 5)
+                while PlayerConfig.LoopTeleport do
+                    local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+                    local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+                    if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
+                        localRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                    end
+                    wait()
+                end
+            else
+                PlayerConfig.LoopTeleport = false
+                Notify("皮脚本", "已关闭循环传送", "rbxassetid://18941716391", 5)
+            end
+        end
+    })
+
+    TeleportFlingTab:Button({
+        Title = "把玩家传送过来",
+        Callback = function()
+            local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+            if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
+                targetPlayer.Character.HumanoidRootPart.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
+                Notify("皮脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
+            else
+                Notify("皮脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "循环传送玩家过来",
+        Value = false,
+        Callback = function(enabled)
+            if enabled then
+                PlayerConfig.LoopTeleport = true
+                Notify("皮脚本", "已开启循环传送玩家过来", "rbxassetid://", 5)
+                while PlayerConfig.LoopTeleport do
+                    local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+                    local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+                    if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
+                        targetPlayer.Character.HumanoidRootPart.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
+                    end
+                    wait()
+                end
+            else
+                PlayerConfig.LoopTeleport = false
+                Notify("皮脚本", "已关闭循环传送玩家过来", "rbxassetid://18941716391", 5)
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "吸全部玩家",
+        Value = false,
+        Callback = function(enabled)
+            if enabled then
+                while enabled do
+                    for _, player_ in next, game:GetService("Players"):GetPlayers() do
+                        if player_.Name ~= game:GetService("Players").LocalPlayer.Name then
+                            local localPosition = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position
+                            local lookVector = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame.lookVector
+                            player_.Character.HumanoidRootPart.CFrame = CFrame.new(localPosition + lookVector * 3, localPosition + lookVector * 4)
+                            wait()
+                        end
+                    end
+                end
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "查看玩家",
+        Value = false,
+        Callback = function(enabled)
+            if enabled then
+                game:GetService("Workspace").CurrentCamera.CameraSubject = game:GetService("Players"):FindFirstChild(PlayerConfig.playernamedied).Character.Humanoid
+                Notify("皮脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
+            else
+                game:GetService("Workspace").CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
+                Notify("皮脚本", "已关闭查看玩家", "rbxassetid://18941716391", 5)
+            end
+        end
+    })
+
+    TeleportFlingTab:Button({
+        Title = "甩飞一次",
+        Callback = function()
+            if PlayerConfig.playernamedied ~= nil and PlayerConfig.playernamedied ~= nil then
+                local targetNames = {
+                    PlayerConfig.playernamedied
+                }
+                local Players = game:GetService("Players")
+                local localPlayer = Players.LocalPlayer
+                local isAllOrOthers = false
+                local function FindPlayerByName(name)
+                    name = name:lower()
+                    if name == "all" or name == "others" then
+                        isAllOrOthers = true
+                        return 
+                    end
+                    if name == "random" then
+                        local allPlayers = Players:GetPlayers()
+                        if table.find(allPlayers, localPlayer) then
+                            table.remove(allPlayers, table.find(allPlayers, localPlayer))
+                        end
+                        return allPlayers[math.random(#allPlayers)]
+                    end
+                    if name ~= "random" and name ~= "all" and name ~= "others" then
+                        for _, player_ in next, Players:GetPlayers() do
+                            if player_ ~= localPlayer then
+                                if player_.Name:lower():match("^" .. name) then
+                                    return player_
+                                end
+                                if player_.DisplayName:lower():match("^" .. name) then
+                                    return player_
+                                end
+                            end
+                        end
+                    else
+                        return 
+                    end
+                end
+                local function SendNotification(title, text, duration)
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = title,
+                        Text = text,
+                        Duration = duration,
+                    })
+                end
+                local function ThrowPlayer(targetPlayer)
+                    local localCharacter = localPlayer.Character
+                    local localHumanoid = localCharacter and localCharacter:FindFirstChildOfClass("Humanoid")
+                    local localRootPart = localHumanoid and localHumanoid.RootPart
+                    local targetCharacter = targetPlayer.Character
+                    local targetHumanoid = nil
+                    local targetRootPart = nil
+                    local targetHead = nil
+                    local targetAccessory = nil
+                    local accessoryHandle = nil
+                    if targetCharacter:FindFirstChildOfClass("Humanoid") then
+                        targetHumanoid = targetCharacter:FindFirstChildOfClass("Humanoid")
+                    end
+                    if targetHumanoid and targetHumanoid.RootPart then
+                        targetRootPart = targetHumanoid.RootPart
+                    end
+                    if targetCharacter:FindFirstChild("Head") then
+                        targetHead = targetCharacter.Head
+                    end
+                    if targetCharacter:FindFirstChildOfClass("Accessory") then
+                        targetAccessory = targetCharacter:FindFirstChildOfClass("Accessory")
+                    end
+                    if Accessoy and targetAccessory:FindFirstChild("Handle") then
+                        accessoryHandle = targetAccessory.Handle
+                    end
+                    if localCharacter and localHumanoid and localRootPart then
+                        if localRootPart.Velocity.Magnitude < 50 then
+                            getgenv().OldPos = localRootPart.CFrame
+                        end
+                        if targetHumanoid and targetHumanoid.Sit and not isAllOrOthers then
+                            return SendNotification("玩家消失", "已停止", 5)
+                        end
+                        if targetHead then
+                            workspace.CurrentCamera.CameraSubject = targetHead
+                        elseif not targetHead and accessoryHandle then
+                            workspace.CurrentCamera.CameraSubject = accessoryHandle
+                        elseif targetHumanoid and targetRootPart then
+                            workspace.CurrentCamera.CameraSubject = targetHumanoid
+                        end
+                        if not targetCharacter:FindFirstChildWhichIsA("BasePart") then
+                            return 
+                        end
+                        local function ApplyThrowForce(part, offset, rotation)
+                            localRootPart.CFrame = CFrame.new(part.Position) * offset * rotation
+                            localCharacter:SetPrimaryPartCFrame(CFrame.new(part.Position) * offset * rotation)
+                            localRootPart.Velocity = Vector3.new(90000000, 900000000, 90000000)
+                            localRootPart.RotVelocity = Vector3.new(900000000, 900000000, 900000000)
+                        end
+                        local function PerformThrowAnimation(part)
+                            local timeoutDuration = 2
+                            local startTime = tick()
+                            local rotationAngle = 0
+                            while localRootPart do
+                                local velocityMagnitude = part.Velocity.Magnitude
+                                if velocityMagnitude < 50 then
+                                    rotationAngle = rotationAngle + 100
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, 0) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(2.25, 1.5, -2.25) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(-2.25, -1.5, 2.25) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, 0) + targetHumanoid.MoveDirection, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0) + targetHumanoid.MoveDirection, CFrame.Angles(math.rad(rotationAngle), 0, 0))
+                                    task.wait()
+                                else
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, -targetHumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, -targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(-90), 0, 0))
+                                    task.wait()
+                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                                    task.wait()
+                                end
+                                velocityMagnitude = part.Velocity.Magnitude
+                                if velocityMagnitude <= 500 then
+                                    local partParent = part.Parent
+                                    if partParent == targetPlayer.Character then
+                                        partParent = targetPlayer.Parent
+                                        if partParent == Players then
+                                            local hasCharacter = not targetPlayer.Character
+                                            if hasCharacter ~= targetCharacter then
+                                                local isSitting = targetHumanoid.Sit
+                                                if not isSitting then
+                                                    local health = localHumanoid.Health
+                                                    if health > 0 then
+                                                        local currentTime = tick()
+                                                        if startTime + timeoutDuration < currentTime then
+                                                            break
+                                                        end
+                                                    else
+                                                        break
+                                                    end
+                                                else
+                                                    break
+                                                end
+                                            else
+                                                break
+                                            end
+                                        else
+                                            break
+                                        end
+                                    else
+                                        break
+                                    end
+                                else
+                                    break
+                                end
+                            end
+                        end
+                        workspace.FallenPartsDestroyHeight = 0 / 0
+                        local bodyVelocity = Instance.new("BodyVelocity")
+                        bodyVelocity.Name = "EpixVel"
+                        bodyVelocity.Parent = localRootPart
+                        bodyVelocity.Velocity = Vector3.new(900000000, 900000000, 900000000)
+                        bodyVelocity.MaxForce = Vector3.new(1 / 0, 1 / 0, 1 / 0)
+                        localHumanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+                        if targetRootPart and targetHead then
+                            if (targetRootPart.CFrame.p - targetHead.CFrame.p).Magnitude > 5 then
+                                PerformThrowAnimation(targetHead)
+                            else
+                                PerformThrowAnimation(targetRootPart)
+                            end
+                        elseif targetRootPart and not targetHead then
+                            PerformThrowAnimation(targetRootPart)
+                        elseif not targetRootPart and targetHead then
+                            PerformThrowAnimation(targetHead)
+                        elseif not targetRootPart and not targetHead and targetAccessory and accessoryHandle then
+                            PerformThrowAnimation(accessoryHandle)
+                        else
+                            return SendNotification("皮脚本", "已开/关", 5)
+                        end
+                        bodyVelocity:Destroy()
+                        localHumanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+                        workspace.CurrentCamera.CameraSubject = localHumanoid
+                        repeat
+                            localRootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
+                            localCharacter:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
+                            localHumanoid:ChangeState("GettingUp")
+                            table.foreach(localCharacter:GetChildren(), function(_, child)
+                                if child:IsA("BasePart") then
+                                    local zeroVector = Vector3.new()
+                                    child.RotVelocity = Vector3.new()
+                                    child.Velocity = zeroVector
+                                end
+                            end)
+                            task.wait()
+                        until (localRootPart.Position - getgenv().OldPos.p).Magnitude < 25
+                        workspace.FallenPartsDestroyHeight = getgenv().FPDH
+                    else
+                        SendNotification("玩家消失", "已停止", 5)
+                    end
+                end
+                if targetNames[1] then
+                    for _, name in next, targetNames, nil do
+                        local foundPlayer = FindPlayerByName(name)
+                        if foundPlayer then
+                            ThrowPlayer(foundPlayer)
+                        end
+                    end
+                else
+                    return 
+                end
+                if isAllOrOthers then
+                    for _, player_ in next, Players:GetPlayers() do
+                        if player_ ~= localPlayer then
+                            ThrowPlayer(player_)
+                        end
+                    end
+                end
+                for _, name in next, targetNames, nil do
+                    local foundPlayer = FindPlayerByName(name)
+                    if foundPlayer and foundPlayer ~= localPlayer then
+                        if foundPlayer.UserId ~= 1414978355 then
+                            ThrowPlayer(foundPlayer)
+                        else
+                            SendNotification("检测到玩家消失", "己停止", 5)
+                        end
+                    elseif not FindPlayerByName(name) and not isAllOrOthers then
+                        SendNotification("未获取到玩家或工具", "已停止", 5)
+                    end
+                end
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "循环甩飞",
+        Value = false,
+        Callback = function(r0_53)
+            if PlayerConfig.playernamedied ~= nil and PlayerConfig.playernamedied ~= nil then
+                getgenv().autofling = r0_53
+                spawn(function()
+                    while autofling do
+                        wait()
+                        pcall(function()
+                            local r0_55 = {
+                                PlayerConfig.playernamedied
+                            }
+                            local r1_55 = game:GetService("Players")
+                            local r2_55 = r1_55.LocalPlayer
+                            local r3_55 = false
+                            local function r4_55(r0_61)
+                                r0_61 = r0_61:lower()
+                                if r0_61 == "all" or r0_61 == "others" then
+                                    r3_55 = true
+                                    return 
+                                end
+                                if r0_61 == "random" then
+                                    local r1_61 = r1_55:GetPlayers()
+                                    if table.find(r1_61, r2_55) then
+                                        table.remove(r1_61, table.find(r1_61, r2_55))
+                                    end
+                                    return r1_61[math.random(#r1_61)]
+                                end
+                                if r0_61 ~= "random" and r0_61 ~= "all" and r0_61 ~= "others" then
+                                    local r1_61 = next
+                                    local r2_61, r3_61 = r1_55:GetPlayers()
+                                    for r4_61, r5_61 in r1_61, r2_61, r3_61 do
+                                        if r5_61 ~= r2_55 then
+                                            if r5_61.Name:lower():match("^" .. r0_61) then
+                                                return r5_61
+                                            end
+                                            if r5_61.DisplayName:lower():match("^" .. r0_61) then
+                                                return r5_61
+                                            end
+                                        end
+                                    end
+                                else
+                                    return 
+                                end
+                            end
+                            local function r5_55(r0_60, r1_60, r2_60)
+                                game:GetService("StarterGui"):SetCore("SendNotification", {
+                                    Title = r0_60,
+                                    Text = r1_60,
+                                    Duration = r2_60,
+                                })
+                            end
+                            local function r6_55(r0_56)
+                                local r1_56 = r2_55.Character
+                                local r2_56 = r1_56 and r1_56:FindFirstChildOfClass("Humanoid")
+                                local r3_56 = r2_56 and r2_56.RootPart
+                                local r4_56 = r0_56.Character
+                                local r5_56 = nil
+                                local r6_56 = nil
+                                local r7_56 = nil
+                                local r8_56 = nil
+                                local r9_56 = nil
+                                if r4_56:FindFirstChildOfClass("Humanoid") then
+                                    r5_56 = r4_56:FindFirstChildOfClass("Humanoid")
+                                end
+                                if r5_56 and r5_56.RootPart then
+                                    r6_56 = r5_56.RootPart
+                                end
+                                if r4_56:FindFirstChild("Head") then
+                                    r7_56 = r4_56.Head
+                                end
+                                if r4_56:FindFirstChildOfClass("Accessory") then
+                                    r8_56 = r4_56:FindFirstChildOfClass("Accessory")
+                                end
+                                if Accessoy and r8_56:FindFirstChild("Handle") then
+                                    r9_56 = r8_56.Handle
+                                end
+                                if r1_56 and r2_56 and r3_56 then
+                                    if r3_56.Velocity.Magnitude < 50 then
+                                        getgenv().OldPos = r3_56.CFrame
+                                    end
+                                    if r5_56 and r5_56.Sit and not r3_55 then
+                                        return r5_55("皮脚本", "错误❌", 5)
+                                    end
+                                    if r7_56 then
+                                        workspace.CurrentCamera.CameraSubject = r7_56
+                                    elseif not r7_56 and r9_56 then
+                                        workspace.CurrentCamera.CameraSubject = r9_56
+                                    elseif r5_56 and r6_56 then
+                                        workspace.CurrentCamera.CameraSubject = r5_56
+                                    end
+                                    if not r4_56:FindFirstChildWhichIsA("BasePart") then
+                                        return 
+                                    end
+                                    local function r10_56(r0_58, r1_58, r2_58)
+                                        r3_56.CFrame = CFrame.new(r0_58.Position) * r1_58 * r2_58
+                                        r1_56:SetPrimaryPartCFrame(CFrame.new(r0_58.Position) * r1_58 * r2_58)
+                                        r3_56.Velocity = Vector3.new(90000000, 900000000, 90000000)
+                                        r3_56.RotVelocity = Vector3.new(900000000, 900000000, 900000000)
+                                    end
+                                    local function r11_56(r0_57)
+                                        local r1_57 = 2
+                                        local r2_57 = tick()
+                                        local r3_57 = 0
+                                        while r3_56 do
+                                            local r4_57 = r5_56
+                                            if r4_57 then
+                                                r4_57 = r0_57.Velocity.Magnitude
+                                                if r4_57 < 50 then
+                                                    r3_57 = r3_57 + 100
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, 0) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(2.25, 1.5, -2.25) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(-2.25, -1.5, 2.25) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, 0) + r5_56.MoveDirection, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0) + r5_56.MoveDirection, CFrame.Angles(math.rad(r3_57), 0, 0))
+                                                    task.wait()
+                                                else
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, r5_56.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, -r5_56.WalkSpeed), CFrame.Angles(0, 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, r5_56.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, -r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, 1.5, r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(-90), 0, 0))
+                                                    task.wait()
+                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                                                    task.wait()
+                                                end
+                                                r4_57 = r0_57.Velocity.Magnitude
+                                                if r4_57 <= 500 then
+                                                    r4_57 = r0_57.Parent
+                                                    if r4_57 == r0_56.Character then
+                                                        r4_57 = r0_56.Parent
+                                                        if r4_57 == r1_55 then
+                                                            r4_57 = not r0_56.Character
+                                                            if r4_57 ~= r4_56 then
+                                                                r4_57 = r5_56.Sit
+                                                                if not r4_57 then
+                                                                    r4_57 = r2_56.Health
+                                                                    if r4_57 > 0 then
+                                                                        r4_57 = tick()
+                                                                        if r2_57 + r1_57 < r4_57 then
+                                                                            break
+                                                                        end
+                                                                    else
+                                                                        break
+                                                                    end
+                                                                else
+                                                                    break
+                                                                end
+                                                            else
+                                                                break
+                                                            end
+                                                        else
+                                                            break
+                                                        end
+                                                    else
+                                                        break
+                                                    end
+                                                else
+                                                    break
+                                                end
+                                            else
+                                                break
+                                            end
+                                        end
+                                    end
+                                    workspace.FallenPartsDestroyHeight = 0 / 0
+                                    local r12_56 = Instance.new("BodyVelocity")
+                                    r12_56.Name = "EpixVel"
+                                    r12_56.Parent = r3_56
+                                    r12_56.Velocity = Vector3.new(900000000, 900000000, 900000000)
+                                    r12_56.MaxForce = Vector3.new(1 / 0, 1 / 0, 1 / 0)
+                                    r2_56:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+                                    if r6_56 and r7_56 then
+                                        if (r6_56.CFrame.p - r7_56.CFrame.p).Magnitude > 5 then
+                                            r11_56(r7_56)
+                                        else
+                                            r11_56(r6_56)
+                                        end
+                                    elseif r6_56 and not r7_56 then
+                                        r11_56(r6_56)
+                                    elseif not r6_56 and r7_56 then
+                                        r11_56(r7_56)
+                                    elseif not r6_56 and not r7_56 and r8_56 and r9_56 then
+                                        r11_56(r9_56)
+                                    else
+                                        return r5_55("皮脚本", "已开/关", 5)
+                                    end
+                                    r12_56:Destroy()
+                                    r2_56:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+                                    workspace.CurrentCamera.CameraSubject = r2_56
+                                    repeat
+                                        r3_56.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
+                                        r1_56:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
+                                        r2_56:ChangeState("GettingUp")
+                                        table.foreach(r1_56:GetChildren(), function(r0_59, r1_59)
+                                            if r1_59:IsA("BasePart") then
+                                                local r2_59 = Vector3.new()
+                                                r1_59.RotVelocity = Vector3.new()
+                                                r1_59.Velocity = r2_59
+                                            end
+                                        end)
+                                        task.wait()
+                                    until (r3_56.Position - getgenv().OldPos.p).Magnitude < 25
+                                    workspace.FallenPartsDestroyHeight = getgenv().FPDH
+                                else
+                                    local r10_56 = r5_55
+                                    local r11_56 = "玩家消失"
+                                    local r12_56 = "已停止"
+                                    local r13_56 = 5
+                                    r10_56(r11_56, r12_56, r13_56)
+                                end
+                            end
+                            if r0_55[1] then
+                                for r10_55, r11_55 in next, r0_55, nil do
+                                    r4_55(r11_55)
+                                end
+                            else
+                                return 
+                            end
+                            if r3_55 then
+                                local r7_55 = next
+                                local r8_55, r9_55 = r1_55:GetPlayers()
+                                for r10_55, r11_55 in r7_55, r8_55, r9_55 do
+                                    r6_55(r11_55)
+                                end
+                            end
+                            for r10_55, r11_55 in next, r0_55, nil do
+                                if r4_55(r11_55) and r4_55(r11_55) ~= r2_55 then
+                                    if r4_55(r11_55).UserId ~= 1414978355 then
+                                        local r12_55 = r4_55(r11_55)
+                                        if r12_55 then
+                                            r6_55(r12_55)
+                                        end
+                                    else
+                                        r5_55("检测到玩家消失", "已停止", 5)
+                                    end
+                                elseif not r4_55(r11_55) and not r3_55 then
+                                    r5_55("未获取到玩家或工具", "已停止", 5)
+                                end
+                            end
+                        end)
+                    end
+                end)
+            end
+        end
+    })
+
+    TeleportFlingTab:Toggle({
+        Title = "开启指定自瞄目标",
+        Value = false,
+        Callback = function(r0_462)
+            if r0_462 then
+                while r0_462 do
+                    local r1_462 = workspace.CurrentCamera
+                    local r2_462 = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+                    local r3_462 = r2_462 and r2_462.Character and r2_462.Character.HumanoidRootPart
+                    if r3_462 and r1_462 then
+                        r1_462.CFrame = CFrame.new(r1_462.CFrame.Position, r1_462.CFrame.Position + (r3_462.Position - r1_462.CFrame.Position).unit)
+                        wait()
+                    else
+                        break
+                    end
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 以下全部保持之前不变
+    -- ============================================================
 
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
@@ -440,14 +1137,14 @@ function createUI()
         end
     })
 
-    -- ==================== 互动（只保留快速互动开关） ====================
     local interactEnabled = false
 
     local function ScanPrompts()
         if isDestroyed or not interactEnabled then return end
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = 0
+                obj.HoldDuration = Settings.HoldTime
+                obj.MaxActivationDistance = Settings.Distance
             end
         end
     end
@@ -467,11 +1164,11 @@ function createUI()
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
-            obj.HoldDuration = 0
+            obj.HoldDuration = Settings.HoldTime
+            obj.MaxActivationDistance = Settings.Distance
         end
     end)
 
-    -- ==================== 飞天与加速 ====================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -855,7 +1552,7 @@ function createUI()
         end
     end
 
-    -- ==================== 伤害免疫 ====================
+    -- 玩家修改
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -867,7 +1564,6 @@ function createUI()
     })
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
 
-    -- ==================== 穿墙 ====================
     A:Divider({ Text = "穿墙" })
     A:Toggle({
         Title = "启用人物穿墙",
@@ -896,7 +1592,6 @@ function createUI()
         end
     })
 
-    -- ==================== 体力 ====================
     A:Divider({ Text = "体力" })
     local staminaOn = false
 
@@ -972,7 +1667,6 @@ function createUI()
         end
     })
 
-    -- ==================== 防甩飞 ====================
     A:Divider({ Text = "防甩飞" })
     A:Toggle({
         Title = "防甩飞",
@@ -982,7 +1676,6 @@ function createUI()
         end
     })
 
-    -- ==================== 防摔 ====================
     A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
     local antiFallConnection = nil
@@ -1018,7 +1711,7 @@ function createUI()
         end
     })
 
-    -- ==================== 枪械功能 ====================
+    -- 枪械功能
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
         Title = "超快射速",
@@ -1285,7 +1978,7 @@ function createUI()
         end
     })
 
-    -- ==================== 杀戮光环 ====================
+    -- 杀戮光环
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
     local KANearestOnly = false
@@ -1584,7 +2277,7 @@ function createUI()
         end
     })
 
-    -- ==================== 传送点 ====================
+    -- 传送点
     D:Toggle({
         Title = "启用传送",
         Value = false,
@@ -1857,7 +2550,7 @@ function createUI()
         end
     })
 
-    -- ==================== 透视 ====================
+    -- 透视
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
@@ -2176,7 +2869,7 @@ function createUI()
         RemoveESP(p.UserId)
     end)
 
-    -- ==================== 音乐 ====================
+    -- 音乐
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
@@ -2346,7 +3039,7 @@ function createUI()
         end
     })
 
-    -- ==================== 设置（卡密验证） ====================
+    -- 设置（卡密验证）
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
     local adminVerified = false
