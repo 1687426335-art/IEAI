@@ -1,12 +1,668 @@
 --[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
+███████╗██╗   ██╗██╗██╗         █████╗ ██╗  ██╗███████╗
+██╔════╝██║   ██║██║██║        ██╔══██╗╚██╗██╔╝██╔════╝
+█████╗  ██║   ██║██║██║        ███████║ ╚███╔╝ █████╗
+██╔══╝  ╚██╗ ██╔╝██║██║        ██╔══██║ ██╔██╗ ██╔══╝
+███████╗ ╚████╔╝ ██║███████╗   ██║  ██║██╔╝ ██╗███████╗
+╚══════╝  ╚═══╝  ╚═╝╚══════╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
 
-]]--
+        STUDIOS V2 OBFUSCATOR By MAX
+        https://eaxe.net
 
-local v0=tonumber;local v1=string.byte;local v2=string.char;local v3=string.sub;local v4=string.gsub;local v5=string.rep;local v6=table.concat;local v7=table.insert;local v8=math.ldexp;local v9=getfenv or function() return _ENV;end ;local v10=setmetatable;local v11=pcall;local v12=select;local v13=unpack or table.unpack ;local v14=tonumber;local function v15(v16,v17,...) local v18=1;local v19;v16=v4(v3(v16,5),"..",function(v30) if (v1(v30,2)==81) then v19=v0(v3(v30,1,1));return "";else local v87=0;local v88;while true do if (v87==0) then v88=v2(v0(v30,16));if v19 then local v122=v5(v88,v19);v19=nil;return v122;else return v88;end break;end end end end);local function v20(v31,v32,v33) if v33 then local v89=(v31/((5 -3)^(v32-(2 -1))))%((3 -1)^(((v33-(1 + 0)) -(v32-(878 -(282 + 595)))) + (1638 -(1523 + 114)))) ;return v89-(v89%(2 -1)) ;else local v90=2^(v32-(620 -(555 + 64))) ;return (((v31%(v90 + v90))>=v90) and ((2202 -(226 + 1044)) -(857 + (322 -248)))) or (568 -(367 + 201)) ;end end local function v21() local v34=v1(v16,v18,v18);v18=v18 + 1 ;return v34;end local function v22() local v35,v36=v1(v16,v18,v18 + (119 -(32 + 85)) );v18=v18 + 2 + 0 ;return (v36 * (57 + 199)) + v35 ;end local function v23() local v37=0;local v38;local v39;local v40;local v41;while true do if (v37==(957 -(892 + 48 + 17))) then v38,v39,v40,v41=v1(v16,v18,v18 + (7 -4) );v18=v18 + (6 -2) ;v37=1;end if (v37==((3 -2) -0)) then return (v41 * (16777566 -((213 -126) + 263))) + (v40 * (65716 -(67 + 113))) + (v39 * (188 + 68)) + v38 ;end end end local function v24() local v42=952 -(802 + 150) ;local v43;local v44;local v45;local v46;local v47;local v48;while true do if (v42==(7 -4)) then if (v47==(0 -0)) then if (v46==(0 + 0)) then return v48 * 0 ;else v47=998 -(915 + 82) ;v45=0 -0 ;end elseif (v47==(1193 + 854)) then return ((v46==(0 -0)) and (v48 * ((1188 -(1069 + 118))/(0 -0)))) or (v48 * NaN) ;end return v8(v48,v47-(2237 -(1986 -(201 + 571))) ) * (v45 + (v46/((1 + 1)^(92 -40)))) ;end if (v42==(1 + 0)) then v45=(1930 -(116 + 1022)) -((1531 -1163) + 423) ;v46=(v20(v44,1,20) * (2^(100 -68))) + v43 ;v42=20 -(10 + 8) ;end if (v42==(7 -(3 + 2))) then v47=v20(v44,463 -((1518 -1102) + 26) ,98 -67 );v48=((v20(v44,14 + 18 )==(1 -0)) and  -(439 -(145 + 293))) or (431 -(44 + 386)) ;v42=(5287 -3798) -(998 + 488) ;end if (v42==(0 + 0)) then v43=v23();v44=v23();v42=1 + 0 ;end end end local function v25(v49) local v50;if  not v49 then local v91=859 -(814 + 45) ;while true do if (v91==(0 -0)) then v49=v23();if (v49==((0 -0) + 0)) then return "";end break;end end end v50=v3(v16,v18,(v18 + v49) -(1 + 0) );v18=v18 + v49 ;local v51={};for v67=886 -(261 + 624) , #v50 do v51[v67]=v2(v1(v3(v50,v67,v67)));end return v6(v51);end local v26=v23;local function v27(...) return {...},v12("#",...);end local function v28() local v52=(function() return function(v92,v93,v94,v95,v96,v97,v98,v99) local v92=(function() return 0 + 0 ;end)();local v93=(function() return;end)();local v95=(function() return;end)();while true do if (v92~=(0 + 0)) then else local v117=(function() return 396 -(115 + 281) ;end)();local v118=(function() return;end)();while true do if (v117==(0 -0)) then v118=(function() return 0;end)();while true do if (v118~=(1 + 0)) then else v92=(function() return  #"!";end)();break;end if (v118~=0) then else v93=(function() return v94();end)();v95=(function() return nil;end)();v118=(function() return 1;end)();end end break;end end end if (v92== #">") then if (v93== #"|") then v95=(function() return v94()~=(0 + 0) ;end)();elseif (v93==(3 -1)) then v95=(function() return v96();end)();elseif (v93~= #"asd") then else v95=(function() return v97();end)();end v98[v99]=(function() return v95;end)();break;end end return v92,v93,v94,v95,v96,v97,v98,v99;end;end)();local v53=(function() return function(v100,v101,v102) local v103=(function() return 1467 -(899 + 568) ;end)();local v104=(function() return;end)();while true do if (0==v103) then v104=(function() return 0 -0 ;end)();while true do if (v104~=(0 -0)) then else local v123=(function() return 0;end)();while true do if (0~=v123) then else v100[v101-#"[" ]=(function() return v102();end)();return v100,v101,v102;end end end end break;end end end;end)();local v54=(function() return {};end)();local v55=(function() return {};end)();local v56=(function() return {};end)();local v57=(function() return {v54,v55,nil,v56};end)();local v58=(function() return v23();end)();local v59=(function() return {};end)();for v69= #"<",v58 do FlatIdent_C460,Type,v21,Cons,v24,v25,v59,v69=(function() return v52(FlatIdent_C460,Type,v21,Cons,v24,v25,v59,v69);end)();end v57[ #"xnx"]=(function() return v21();end)();for v70= #"}",v23() do local v71=(function() return v21();end)();if (v20(v71, #"}", #"{")~=0) then else local v108=(function() return 867 -(550 + 317) ;end)();local v109=(function() return;end)();local v110=(function() return;end)();local v111=(function() return;end)();local v112=(function() return;end)();while true do if ((0 -0)~=v108) then else local v120=(function() return 0;end)();while true do if (v120==(1 -0)) then v108=(function() return 2 -1 ;end)();break;end if (0==v120) then v109=(function() return 290 -(60 + 230) ;end)();v110=(function() return nil;end)();v120=(function() return 286 -(134 + 151) ;end)();end end end if (v108~=(1667 -(970 + 695))) then else while true do if ( #"}"==v109) then local v126=(function() return 0;end)();local v127=(function() return;end)();while true do if (v126==(572 -(426 + 146))) then v127=(function() return 0 + 0 ;end)();while true do if (v127==1) then v109=(function() return 2;end)();break;end if (v127==(1456 -(282 + 1174))) then v112=(function() return {v22(),v22(),nil,nil};end)();if (v110==0) then local v217=(function() return 0;end)();local v218=(function() return;end)();while true do if (v217==0) then v218=(function() return 0 -0 ;end)();while true do if (v218~=0) then else v112[ #"19("]=(function() return v22();end)();v112[ #"?id="]=(function() return v22();end)();break;end end break;end end elseif (v110== #">") then v112[ #"nil"]=(function() return v23();end)();elseif (v110==(1992 -(582 + 1408))) then v112[ #"19("]=(function() return v23() -(2^(55 -39)) ;end)();elseif (v110~= #"xxx") then else local v225=(function() return 0 -0 ;end)();local v226=(function() return;end)();while true do if (v225==(0 -0)) then v226=(function() return 1824 -(1195 + 629) ;end)();while true do if (v226==(0 -0)) then v112[ #"gha"]=(function() return v23() -((243 -(187 + 54))^16) ;end)();v112[ #"0313"]=(function() return v22();end)();break;end end break;end end end v127=(function() return 781 -(162 + 618) ;end)();end end break;end end end if (v109==(0 + 0)) then local v128=(function() return 0 + 0 ;end)();local v129=(function() return;end)();while true do if ((0 + 0)==v128) then v129=(function() return 0 -0 ;end)();while true do if (v129~=(1 -0)) then else v109=(function() return  #" ";end)();break;end if (v129==0) then v110=(function() return v20(v71,2 + 0 , #"-19");end)();v111=(function() return v20(v71, #".com",1 + 5 );end)();v129=(function() return 1637 -(1373 + 263) ;end)();end end break;end end end if ( #"-19"==v109) then if (v20(v111, #"xxx", #"91(")~= #"|") then else v112[ #"asd1"]=(function() return v59[v112[ #"xnxx"]];end)();end v54[v70]=(function() return v112;end)();break;end if (v109~=(1002 -(451 + 549))) then else local v131=(function() return 0 + 0 ;end)();local v132=(function() return;end)();while true do if ((0 -0)~=v131) then else v132=(function() return 0 -0 ;end)();while true do if (v132==(0 + 0)) then if (v20(v111, #" ", #"]")== #"}") then v112[1386 -(746 + 638) ]=(function() return v59[v112[1 + 1 ]];end)();end if (v20(v111,1 + 1 ,1 + 1 )~= #"/") then else v112[ #"91("]=(function() return v59[v112[ #"xnx"]];end)();end v132=(function() return 1;end)();end if (v132==1) then v109=(function() return  #"-19";end)();break;end end break;end end end end break;end if (v108~=(1 + 0)) then else local v121=(function() return 0 -0 ;end)();while true do if (1~=v121) then else v108=(function() return 343 -(218 + 123) ;end)();break;end if (v121==0) then v111=(function() return nil;end)();v112=(function() return nil;end)();v121=(function() return 1;end)();end end end end end end for v72= #" ",v23() do v55,v72,v28=(function() return v53(v55,v72,v28);end)();end return v57;end local function v29(v61,v62,v63) local v64=v61[1770 -(1749 + 20) ];local v65=v61[1 + 1 ];local v66=v61[1325 -(1249 + 73) ];return function(...) local v73=v64;local v74=v65;local v75=v66;local v76=v27;local v77=1126 -(936 + (594 -(255 + 150))) ;local v78= -(1 + 0);local v79={};local v80={...};local v81=v12("#",...) -(1614 -(1233 + 332 + 48)) ;local v82={};local v83={};for v105=1145 -(466 + 679) ,v81 do if (v105>=v75) then v79[v105-v75 ]=v80[v105 + (2 -(1 + 0)) ];else v83[v105]=v80[v105 + (2 -1) ];end end local v84=(v81-v75) + (2 -1) ;local v85;local v86;while true do v85=v73[v77];v86=v85[1 -(0 -0) ];if ((v86<=(1906 -(106 + 1794))) or (1731>=2115)) then if (v86<=(1 + 1)) then if (v86<=(0 + 0)) then local v124=v85[1 + (3 -2) ];v83[v124]=v83[v124](v13(v83,v124 + (2 -1) ,v78));elseif (v86>(2 -1)) then local v133=114 -(4 + 110) ;local v134;local v135;local v136;local v137;while true do if (v133==(586 -(57 + 527))) then for v211=v134,v78 do v137=v137 + (1428 -(41 + (3125 -(404 + 1335)))) ;v83[v211]=v135[v137];end break;end if (v133==(103 -(17 + (492 -(183 + 223))))) then v134=v85[2 + 0 ];v135,v136=v76(v83[v134](v13(v83,v134 + (2 -1) ,v85[6 -(3 -0) ])));v133=2 -1 ;end if (v133==(167 -(122 + 44))) then v78=(v136 + v134) -(1 -0) ;v137=0 -0 ;v133=613 -(602 + 9) ;end end else local v138=0 + 0 + 0 ;local v139;local v140;local v141;local v142;local v143;while true do if (v138==(0 + 0)) then v139=nil;v140,v141=nil;v142=nil;v143=nil;v138=1 -0 ;end if ((4429>=3120) and (v138==(67 -(30 + 35)))) then v142=v83[v85[3 + 0 ]];v83[v143 + (1258 -(1043 + 78 + 136)) ]=v142;v83[v143]=v142[v85[15 -11 ]];v77=v77 + 1 ;v138=1 + 2 ;end if ((969<=1905) and (v138==(1219 -(323 + (1226 -(10 + 327)))))) then v77=v77 + (441 -(382 + 58)) ;v85=v73[v77];v77=v85[7 -(3 + 1) ];break;end if (((586 -(361 + 219))==v138) or (3332==1473)) then v83[v143]=v83[v143](v13(v83,v143 + 1 + 0 ,v78));v77=v77 + (339 -(118 + 220)) ;v85=v73[v77];v83[v85[322 -(53 + 267) ]]();v138=20 -13 ;end if ((v138==(1206 -(902 + 303))) or (4051<=1157)) then v83[v85[1 + 1 ]]=v63[v85[416 -(15 + 398) ]];v77=v77 + (983 -(18 + 964)) ;v85=v73[v77];v143=v85[7 -5 ];v138=2 + 0 ;end if (v138==(3 + 1)) then v143=v85[(284 + 568) -((469 -(108 + 341)) + 830) ];v140,v141=v76(v83[v143](v13(v83,v143 + 1 + 0 + (0 -0) ,v85[129 -(116 + 10) ])));v78=(v141 + v143) -(2 -1) ;v139=0;v138=(1494 -(711 + 782)) + 4 ;end if (v138==((1476 -706) -(468 + 297))) then for v214=v143,v78 do v139=v139 + (739 -(542 + 196)) ;v83[v214]=v140[v139];end v77=v77 + (1 -0) ;v85=v73[v77];v143=v85[1 + 1 ];v138=4 + 2 ;end if ((604<2881) and (v138==(10 -7))) then v85=v73[v77];v83[v85[1 + 1 ]]=v85[7 -4 ];v77=v77 + 1 ;v85=v73[v77];v138=(478 -(270 + 199)) -5 ;end end end elseif (v86<=(1555 -(366 + 760 + 425))) then if (v86>((2227 -(580 + 1239)) -(118 + (852 -565)))) then v77=v85[(11 + 0) -8 ];else local v145=1121 -(118 + 1003) ;local v146;local v147;while true do if ((v145==(11 -7)) or (900==3377)) then v83[v147]=v83[v147](v13(v83,v147 + (378 -(142 + 235)) ,v85[13 -(1 + 9) ]));v77=v77 + 1 + 0 ;v85=v73[v77];v145=(428 + 554) -(553 + 424) ;end if ((4459>591) and (v145==(0 -0))) then v146=nil;v147=nil;v147=v85[2 + 0 ];v145=1 + 0 ;end if (v145==(2 + (0 -0))) then v77=v77 + 1 + 0 ;v85=v73[v77];v83[v85[165 -(92 + 71) ]]=v85[2 + 1 ];v145=2 + 1 ;end if ((3398>=2395) and (v145==(3 + 2))) then v83[v85[4 -2 ]]=v83[v85[3]];v77=v77 + 1 ;v85=v73[v77];v145=16 -10 ;end if (((17 -9)==v145) or (2183>=2824)) then v77=v85[1 + 2 ];break;end if (v145==(4 -3)) then v146=v83[v85[756 -(239 + 514) ]];v83[v147 + 1 + 0 ]=v146;v83[v147]=v146[v85[1794 -(573 + 1217) ]];v145=2;end if ((1936==1936) and (v145==(8 -5))) then v77=v77 + (1330 -(797 + 532)) ;v85=v73[v77];v147=v85[2 + 0 ];v145=2 + 2 ;end if ((((10 + 6) -9)==v145) or (4832<4313)) then v83[v85[(2371 -(645 + 522)) -(373 + 829) ]]=v85[734 -(476 + 255) ];v77=v77 + (1791 -(1010 + 780)) + 0 ;v85=v73[v77];v145=1138 -(369 + 761) ;end if ((4 + 2)==v145) then v83[v85[2 -0 ]]=v83[v85[5 -2 ]][v85[242 -(64 + 174) ]];v77=v77 + 1 + 0 ;v85=v73[v77];v145=10 -3 ;end end end elseif ((4088>3874) and (v86>(341 -(144 + 192)))) then if (v83[v85[218 -(42 + 174) ]]==v85[4 + 0 ]) then v77=v77 + 1 + 0 ;else v77=v85[2 + 1 ];end else do return;end end elseif (v86<=(1514 -(363 + 1141))) then if ((4332==4332) and (v86<=(1588 -(1183 + 397)))) then if (v86==7) then local v148=0 -0 ;local v149;while true do if (v148==(0 + 0)) then v149=v85[2 + 0 ];v83[v149]=v83[v149](v13(v83,v149 + (2 -1) ,v85[14 -11 ]));break;end end else v83[v85[(1798 + 0) -(503 + 1293) ]]=v83[v85[1978 -((9113 -7200) + 62) ]][v85[3 + 1 ]];end elseif ((3999>=2900) and (v86==(26 -17))) then v83[v85[(1841 -(1045 + 791)) -3 ]]=v85[3 + 0 ];else v83[v85[1935 -(565 + 1368) ]]();end elseif (v86<=(11 + 1)) then if ((v86>((103 -62) -30)) or (2525>4064)) then for v165=v85[1663 -(1477 + 184) ],v85[(4 -1) -0 ] do v83[v165]=nil;end else local v154=v85[2 + 0 ];local v155=v83[v85[859 -(564 + 292) ]];v83[v154 + ((1365 -(351 + 154)) -(240 + (2193 -(1281 + 293)))) ]=v155;v83[v154]=v155[v85[(272 -(28 + 238)) -2 ]];end elseif (v86>(38 -25)) then v83[v85[306 -(244 + 60) ]]=v63[v85[4 -1 ]];else v83[v85[2 + 0 ]]=v83[v85[479 -(41 + 435) ]];end v77=v77 + 1 ;end end;end return v29(v28(),{},v17)(...);end return v15("LOL!093Q00028Q00026Q00F03F030A3Q006C6F6164737472696E6703043Q0067616D6503073Q00482Q747047657403513Q00682Q7470733A2Q2F7261772E67697468756275736572636F6E74656E742E636F6D2F313638373432362Q33352D6172742F494541492F726566732F68656164732F6D61696E2F777978616D7A6F2E6C7561030A3Q004765745365727669636503073Q00506C6179657273030B3Q004C6F63616C506C6179657200173Q0012093Q00014Q000C000100023Q0026063Q000C00010002002Q043Q000C000100120E000300033Q001201000400043Q00202Q00040004000500122Q000600066Q000400066Q00033Q00024Q00030001000100044Q001600010026063Q000200010001002Q043Q0002000100120E000300043Q00200300030003000700122Q000500086Q0003000500024Q000100033Q00202Q00020001000900124Q00023Q00044Q000200012Q00053Q00017Q00",v9(),...);
+        Sponsored by
+        https://BloxDen.com
+--]]
+
+return (function(...)
+	local S = {
+			"oI=oSUYLQ&0P)Cc@",
+			"o`$K(Sm*G)ePl+",
+			"o",
+			"o90G`B>f",
+			"o>WJ*N)p`",
+			"o&a)V;`\'TK",
+			"o]2o.LK(hC>P:A]i>X[",
+			"oP55@D",
+			"o>s($hP_!",
+			"od,g7rPd",
+			"oF)f;lmE<&$FV=Dm",
+			"oE&3e[",
+			"o[>TsopmQ;=I6b+",
+			"o]Y9hSO&H=",
+			"om`9fu9H",
+			"om*G)ePl+",
+			"oI)a\'QJlo,^J_(Gb9H",
+			"od,g)Z",
+			"oO&HVE92PM5E&\"",
+			"o(jFQbCp8R[sm1E[e@u@TL5rq#-@O-V?apu5#/rktT4TMrG]CqT9NM9?O<Sm+<hEqI\'sdLuJM2[h(\'dnWS&dau;`>;n\'6\"q=uEYQ6dL",
+			"oE,6jX",
+			"om(GqXE&n",
+			"o^C?,:",
+			"od,gc3m`^YDE7_2",
+			"od,g-W9O3n",
+			"omB<HF927E+Eemps",
+		};
+	for W, s in ipairs({ { 120245209 % 5010217, -89126 + 89152 }, { -7567 + 7568, -507538 - (-507563) }, { -248831 - (-248857), 28109 + -28083 } }) do
+		while s[927400969 % 8587046] < s[2665078240 % 12937273] do
+			S[s[-375257 - (-375258)]], S[s[973606270 % 5865098]], s[-653034 + 653035], s[250543 - 250541] = S[s[-817505 - (-817507)]], S[s[650115 - 650114]], s[-555503 + 555504] + 417419225 % 12277036, s[3310787002 % 13243148] - (484811 + -484810);
+		end;
+	end;
+	local function W(W)
+		return S[W - (-731046 + 795671)];
+	end;
+	do
+		local W = {
+				c = -88863 - (-88919),
+				R = 595682929 % 2920014,
+				["\\"] = -431568 - (-431643),
+				u = 643915 + -643836,
+				[">"] = 201653 + -201617,
+				["4"] = -142909 - (-142952),
+				p = 54804519 % 10960903,
+				M = 87338 - 87256,
+				[")"] = -1038719 - (-1038757),
+				Y = -604141 - (-604165),
+				["["] = -135259 - (-135333),
+				["`"] = 29204349 % 4172045,
+				["&"] = 3686419150 % 16027909,
+				["."] = 416884 - 416813,
+				s = 606308090 % 3046774,
+				_ = 158168229 % 1977102,
+				["^"] = -535912 - (-535945),
+				["3"] = 25140769 % 2285519,
+				["$"] = -1038259 - (-1038331),
+				b = 331401 - 331318,
+				X = 1769264893 % 11197879,
+				["!"] = 2153896517 % 14077755,
+				i = 1784971971 % 8380150,
+				["%"] = 709531550 % 12025958,
+				O = 421581598 % 2702446,
+				L = 1357341893 % 10282893,
+				["-"] = 1310418972 % 12022192,
+				t = -404377 + 404422,
+				g = 377719456 % 13989608,
+				q = 706086 + -706072,
+				k = 388320 + -388270,
+				[";"] = 848233 - 848233,
+				f = 119415686 % 1066211,
+				["9"] = 331864121 % 5822177,
+				["/"] = 621430 + -621372,
+				D = 57723316 % 296017,
+				["("] = 712403 + -712340,
+				["@"] = -383226 - (-383272),
+				["8"] = 848486 - 848439,
+				m = 624294463 % 3075342,
+				j = 277107368 % 7292299,
+				["+"] = -898532 - (-898537),
+				h = 1176595911 % 13524090,
+				I = 244371 - 244345,
+				["1"] = 660526 + -660465,
+				[","] = -862158 - (-862213),
+				r = 9601 - 9542,
+				["*"] = 984085 - 984076,
+				G = 1356956408 % 7798600,
+				["\'"] = -900544 + 900547,
+				["<"] = 164514 - 164472,
+				J = 664253 - 664238,
+				n = 527901 + -527817,
+				A = 692250 + -692238,
+				K = -842258 - (-842285),
+				T = -318082 + 318139,
+				e = 498594 + -498569,
+				Q = -456858 + 456935,
+				["6"] = -997713 - (-997731),
+				U = 86051 + -85983,
+				H = 683991 + -683952,
+				["?"] = 2564142770 % 13149450,
+				d = 312645 + -312615,
+				["2"] = 1953853783 % 10794772,
+				P = -833718 + 833753,
+				N = -228185 - (-228195),
+				["7"] = 235553459 % 7137982,
+				E = 675204 + -675173,
+				S = 309955 + -309879,
+				B = 1028477149 % 15582987,
+				Z = -763870 + 763922,
+				l = 170784 - 170743,
+				["#"] = -382272 + 382321,
+				a = 507499 + -507437,
+				["]"] = 3126522479 % 14474641,
+				C = 935683215 % 12311621,
+				["5"] = -963795 - (-963808),
+				F = 2891401781 % 16713305,
+				["\""] = -554974 + 555003,
+				[":"] = 184728 - 184658,
+				V = -926204 - (-926271),
+				o = 3107128368 % 16182960,
+				W = 34176170 % 3797345,
+				["0"] = -402137 - (-402215),
+				["="] = -420686 + 420752,
+			};
+		local s = math.floor;
+		local l = string.len;
+		local B = {
+				Y = 1037777897 % 10589570,
+				T = 148458659 % 738600,
+				H = 13085090 % 152152,
+				G = 131320167 % 9380009,
+				e = 662199 - 662155,
+				I = -276597 - (-276643),
+				h = 123309374 % 2126023,
+				["4"] = 271795624 % 10066503,
+				d = 712597 - 712584,
+				["+"] = 788042 + -787989,
+				W = 846067 - 846057,
+				k = -182544 - (-182549),
+				M = 365615 - 365566,
+				["3"] = 576375 + -576313,
+				l = -769127 - (-769149),
+				Q = 2320812788 % 9875799,
+				g = 410252447 % 3983033,
+				p = 56323 + -56309,
+				U = -282800 - (-282856),
+				C = 3210833056 % 12741401,
+				N = -357397 - (-357451),
+				o = -1034079 + 1034112,
+				["9"] = -490668 - (-490680),
+				i = 338982 - 338932,
+				Z = -657580 - (-657610),
+				v = 897472837 % 4377916,
+				a = 206266 - 206227,
+				r = 360304 + -360262,
+				F = 108285 - 108266,
+				j = 189822914 % 2207243,
+				["7"] = 231212 + -231174,
+				K = -440427 - (-440459),
+				["/"] = -457155 - (-457202),
+				S = -598404 - (-598433),
+				w = 1244430443 % 11110986,
+				t = -883166 - (-883169),
+				["0"] = 685667935 % 3219098,
+				u = 4137983457 % 16227386,
+				z = -966802 + 966802,
+				J = -970547 + 970562,
+				y = 555074 + -555029,
+				x = -716526 - (-716543),
+				["5"] = 119990 + -119965,
+				c = -655110 - (-655168),
+				s = -873930 - (-873939),
+				E = -254324 + 254326,
+				["2"] = 739420188 % 9128644,
+				["6"] = 175463065 % 13497154,
+				q = 246919717 % 9496911,
+				D = 295761521 % 5915230,
+				n = 85342 + -85308,
+				["1"] = -497256 - (-497291),
+				P = -514571 - (-514607),
+				L = 951692 - 951666,
+				["8"] = 226242 + -226191,
+				B = -660489 - (-660496),
+				R = -955383 - (-955443),
+				X = -81897 - (-81898),
+				f = -114440 + 114492,
+				b = -191225 - (-191253),
+				A = 721800 - 721780,
+				m = 927183 - 927175,
+				O = 344406 + -344351,
+				V = -371037 + 371043,
+			};
+		local f = S;
+		local V = type;
+		local n = string.char;
+		local U = table.insert;
+		local T = table.concat;
+		local x = string.sub;
+		for S = 91876 + -91875, #f, 182037873 % 3138584 do
+			local K = f[S];
+			if V(K) == "string" then
+				local V = x(K, 465428 + -465427, 74303623 % 12383937);
+				if V == "A" then
+					K = x(K, 966714 - 966712);
+					local W = l(K);
+					local V = {};
+					local u = 92351 - 92350;
+					local d = -931449 - (-931449);
+					local O = 388411 - 388411;
+					while u <= W do
+						local S = x(K, u, u);
+						local l = B[S];
+						if l then
+							d = d + l * ((-380883 + 380947) ^ (((205575 + -205572) - O)));
+							O = O + (54317 + -54316);
+							if O == -399428 + 399432 then
+								O = -23655 - (-23655);
+								local S = s(d / (2584724254 % 12486274));
+								local W = s((d % (-89929 - (-155465))) / (-663340 - (-663596)));
+								local l = d % (294761510 % 2151542);
+								U(V, n(S, W, l));
+								d = 440290598 % 2137333;
+							end;
+						elseif S == "=" then
+							U(V, n(s(d / (-107084 + 172620))));
+							if u >= W or x(K, u + (101420 + -101419), u + (-814397 - (-814398))) ~= "=" then
+								U(V, n(s((d % (-830630 + 896166)) / (1021819 + -1021563))));
+							end;
+							break;
+						end;
+						u = u + 1605228055 % 8771738;
+					end;
+					f[S] = T(V);
+				elseif V == "o" then
+					K = x(K, 444225917 % 2188305);
+					local B = l(K);
+					local V = {};
+					local u = 593998 - 593997;
+					while u <= B do
+						local S = (B - u) + 872450166 % 5352455;
+						local l = S >= 604155412 % 9904187 and -866560 + 866565 or S;
+						local f = 3314152080 % 13808967;
+						local T = l > -474772 + 474773;
+						for S = 264477 + -264477, 336780 - 336776, -671517 - (-671518) do
+							local s;
+							if S < l then
+								local l = x(K, u + S, u + S);
+								s = W[l];
+								if not s then
+									T = false;
+									break;
+								end;
+							else
+								s = 695176 - 695092;
+							end;
+							f = f * (987278652 % 14735501) + s;
+						end;
+						if T then
+							local S = s(f / (15794927 - (-982289))) % (563058 + -562802);
+							local W = s(f / (868494488 % 6385507)) % (-97491 - (-97747));
+							local B = s(f / (932465 - 932209)) % (1437442381 % 6116775);
+							local T = f % (-81673 + 81929);
+							if l == 684363 - 684358 then
+								U(V, n(S, W, B, T));
+							elseif l == -924197 - (-924201) then
+								U(V, n(S, W, B));
+							elseif l == -855251 - (-855254) then
+								U(V, n(S, W));
+							elseif l == -27110 - (-27112) then
+								U(V, n(S));
+							end;
+						end;
+						u = u + l;
+					end;
+					f[S] = T(V);
+				end;
+			end;
+		end;
+	end;
+	return (function(V, S, U, n, l, f, B, s, K, Z, O, u, j, R, x, d, T, v)
+		Z, d, v, x, T, O, s, R, u, j, K = function(S)
+				x[S] = x[S] - (-405250 + 405251);
+				if -613341 + 613341 == x[S] then
+					x[S], T[S] = nil, nil;
+				end;
+			end, function(S)
+				for W = 48283390 % 282359, #S, 1883314497 % 7414624 do
+					x[S[W]] = x[S[W]] + (-721318 + 721319);
+				end;
+				if B then
+					local s = B(true);
+					local l = V(s);
+					l[W(-922963 - (-987612))], l[W(-915940 + 980582)], l[W(1086364 - 1021730)] = S, O, function()
+							return 599576 + 2248329;
+						end;
+					return s;
+				else
+					return f({}, { [W(345406552 % 10157115)] = O, [W(533037 + -468388)] = S, [W(15546221 % 127947)] = function()
+							return 3843947 - 996042;
+						end });
+				end;
+			end, function(S, W)
+				local l = d(W);
+				local B = function(...)
+						return s(S, { ... }, W, l);
+					end;
+				return B;
+			end, {}, {}, function(S)
+				local W, s = 475716 + -475715, S[480702419 % 11179126];
+				while s do
+					x[s], W = x[s] - 544986820 % 4658007, (-433634 + 433635) + W;
+					if x[s] == 496717 + -496717 then
+						x[s], T[s] = nil, nil;
+					end;
+					s = S[W];
+				end;
+			end, function(s, B, f, V)
+				local p, G, w, x, O, J, U, b, Y, z, u, r, F, C, d, v, q, A, e, N, L;
+				while s do
+					if s < 629019 + 9191644 then
+						if s < 441708 + 7376043 then
+							if 6203088 - (-570844) > s then
+								if -236995 + 5089394 > s then
+									U, s = { u }, S[W(565043 - 500412)];
+								elseif 3034137803 % 20323369 > s then
+									x, O, s, p = B, W(622231 - 557592), nil, W(-763437 - (-828077));
+									v = K();
+									u, U = s, nil;
+									w = K();
+									d = U;
+									U = S[O];
+									O = W(1538000164 % 10321715);
+									s = U[O];
+									O = s;
+									s = {};
+									T[v] = s;
+									U = S[p];
+									p = W(808059 - 743423);
+									s = U[p];
+									C, p = W(-284083 + 348715), s;
+									U = S[C];
+									A = 104838 + -104582;
+									r = K();
+									C = W(472840 - 408212);
+									s = U[C];
+									C = K();
+									T[C] = s;
+									e, s = W(-795804 + 860436), {};
+									q = s;
+									s = 197992 - 197990;
+									T[r] = s;
+									U = S[e];
+									e = W(-129478 - (-194111));
+									s = U[e];
+									e, U = s, 868254 + -868253;
+									s = -869564 + 869564;
+									T[w] = s;
+									J = A;
+									A = 1542476313 % 14831503;
+									F = A;
+									A = 447397 - 447397;
+									Y = F < A;
+									A, s = U - F, -476494 + 14593689;
+								else
+									G = A;
+									s = G;
+									q[G] = s;
+									G, s = nil, -174981 + 14292176;
+								end;
+							else
+								if 881326 + 6507069 > s then
+									s = T[f[-19 + 20]];
+									d, x, u = s, B[1036323 - 1036322], B[-840141 - (-840143)];
+									s = d[u];
+									s = s and 3646652 - (-693847) or -945165 + 11729880;
+								else
+									d = 30901 + -30728;
+									u = T[f[756797 + -756795]];
+									x = u * d;
+									u = 33676993457896 - (-921177);
+									U = x + u;
+									x = 35184371430640 - (-658192);
+									s = U % x;
+									T[f[910088402 % 4009200]] = s;
+									s = 2149986525 % 20935570;
+								end;
+							end;
+						else
+							if s < 7519803 - (-556460) then
+								r, O, C, s = q, nil, nil, 2026413460 % 11390946;
+								d[u] = r;
+								p, q = nil, nil;
+							elseif 5580693972 % 22378033 > s then
+								b, N, O = nil, W(79828 - 15179), nil;
+								F = K();
+								s, Y = {}, {};
+								A = K();
+								J = K();
+								T[A] = s;
+								s = R(8059723 - (-774493), {
+										A,
+										w,
+										r,
+										C,
+									});
+								U = W(536344 + -471694);
+								T[J] = s;
+								O, s = W(1656787719 % 12943149), {};
+								T[F] = s;
+								s = S[U];
+								C = Z(C);
+								z, p, e = W(468546602 % 2072929), nil, nil;
+								L = T[F];
+								G = { [N] = L, [z] = b };
+								U = s(Y, G);
+								s = j(8046803 - 1046283, {
+										F,
+										A,
+										v,
+										w,
+										r,
+										J,
+									});
+								v = Z(v);
+								w = Z(w);
+								d, q, C = s, nil, W(-200822 + 265452);
+								A = Z(A);
+								r = Z(r);
+								w = W(-573698 + 638342);
+								J = Z(J);
+								q, u = -167734 + 33456996174865, U;
+								s = S[O];
+								A = 19614227898744 - (-606773);
+								p = d(C, q);
+								v = u[p];
+								O = W(190171131 % 3655894);
+								O, C = s[O], W(367902 - 303265);
+								F = Z(F);
+								O = O(s, v);
+								q = -395274 + 30896373940285;
+								p = d(C, q);
+								v = u[p];
+								q = W(222252 + -157605);
+								s = O[v];
+								O, v, p = nil, s, W(-601518 + 666144);
+								s = S[p];
+								C = S[q];
+								e = d(w, A);
+								r = u[e];
+								v, d, e = nil, nil, W(1020320 + -955682);
+								e, U = C[e], {};
+								q = { e(C, r) };
+								p = s(l(q));
+								s = p();
+								s, u = S[W(1062383 - 997732)], nil;
+							elseif 9757230 - 627468 > s then
+								x = T[f[34319622 % 4902803]];
+								U = #x;
+								x = 245476056 % 10228169;
+								s = U == x;
+								s = s and 8295487 - 519216 or 783489 + 9678926;
+							else
+								U = 441370 - 441369;
+								A = #q;
+								s = e(U, A);
+								A, Y = s, 2447085088 % 10070309;
+								s = O(q, A);
+								J = s;
+								s = T[v];
+								F = J - Y;
+								U = p(F);
+								F = 151594548 % 12632879;
+								s[J] = U;
+								U = #q;
+								A, J = nil, nil;
+								s = U == F;
+								s = s and 1364294160 % 12792461 or -983904 + 10409213;
+							end;
+						end;
+					else
+						if 310138 + 14430573 > s then
+							if 916351 + 11534604 > s then
+								if s < -457894 + 10797110 then
+									s, U = S[W(1625822955 % 15938807)], { u };
+								elseif s < 580861415 % 24792950 then
+									u = T[f[2094565609 % 8875278]];
+									x = #u;
+									s = S[W(1086229689 % 7099118)];
+									d = T[f[691200 - 691199]];
+									u = d[x];
+									O = nil;
+									U = { u };
+									d = T[f[942838237 % 6686796]];
+									d[x] = O;
+								else
+									v, s = 35184372268445 - 179613, {};
+									T[f[491798322 % 9457660]] = s;
+									C = -284926 + 285181;
+									U = T[f[-777641 + 777644]];
+									O = U;
+									U = u % v;
+									T[f[412955 + -412951]] = U;
+									p = u % C;
+									C, s = 2642632722 % 10786256, 417505672 % 30939804;
+									v = p + C;
+									T[f[-415916 + 415921]] = v;
+									C, q = W(408778725 % 15719773), W(-826497 + 891124);
+									p = #x;
+									w = -986078 + 986079;
+									A, r = w, 1397319975 % 10427761;
+									d[u] = C;
+									e, w = p, 1016325 - 1016325;
+									J = A < w;
+									w, C = r - A, 627577 - 627411;
+								end;
+							else
+								if s < 145656145 % 26263671 then
+									A, G = A + F, not Y;
+									U = A <= J;
+									U = G and U;
+									G = A >= J;
+									G = Y and G;
+									U = G or U;
+									G = 6069989 - (-477356);
+									s = U and G;
+									U = 14091264 - (-831774);
+									s = s or U;
+								else
+									d = -365492 - (-365495);
+									u = T[f[246961817 % 5743298]];
+									x = u * d;
+									u, d = 627404 - 627147, 185962 - 185961;
+									U = x % u;
+									T[f[506731008 % 15355485]] = U;
+									u = T[f[411075075 % 6423048]];
+									x = u ~= d;
+									s = x and 7707002581 % 30522792 or 514290 + 14044095;
+								end;
+							end;
+						else
+							if 1031221 + 14059796 > s then
+								s = 9971311 - 546002;
+							elseif s < 15113703 - (-159905) then
+								d, s = -763063 - (-763095), -210352 + 10672767;
+								u = T[f[-42106 - (-42109)]];
+								x = u % d;
+								d = 1399497271 % 7647526;
+								p = T[f[-6934 + 6937]];
+								v = p - x;
+								p = 1086565493 % 4546299;
+								O = v / p;
+								u = d - O;
+								e = 552399 - 552397;
+								v = T[f[1456340404 % 10113475]];
+								q = T[f[-131984 - (-131986)]];
+								r = e ^ u;
+								C = q / r;
+								p = v(C);
+								v = 4293933814 - (-1033482);
+								O = p % v;
+								p = 264056 + -264054;
+								v = p ^ x;
+								F, A, r = -713872 + 714128, 232429 - 232173, 583201 - 583200;
+								d = O / v;
+								v = T[f[944241 - 944237]];
+								q = d % r;
+								r = 4295876219 - 908923;
+								C = q * r;
+								p = v(C);
+								v = T[f[302850079 % 1408605]];
+								u, q = nil, -18011 - (-83547);
+								C = v(d);
+								r = 486991320 % 5180756;
+								O = p + C;
+								p, d = 1880296747 % 7490961, nil;
+								v = O % p;
+								C = O - v;
+								p = C / q;
+								x, O = nil, nil;
+								q = v % r;
+								w = v % A;
+								e = v - w;
+								v, w = nil, 684930 - 684674;
+								r = e / w;
+								w = 248466 - 248210;
+								e = p % w;
+								J = p % F;
+								A = p - J;
+								J = 2858389642 % 16522482;
+								w = A / J;
+								C, p = {
+										q,
+										r,
+										e,
+										w,
+									}, nil;
+								T[f[585741 - 585740]] = C;
+							elseif s < 15187222 - (-399329) then
+								F, w = not J, w + A;
+								r = w <= e;
+								r = F and r;
+								F = e <= w;
+								F = J and F;
+								r = F or r;
+								F = 685711 + 15199171;
+								s = r and F;
+								r = 3568452351 % 19456793;
+								s = s or r;
+							else
+								z, r = W(-262280 + 326920), w;
+								L = S[z];
+								z = W(-512718 - (-577363));
+								N = L[z];
+								L = N(x, r);
+								N = T[f[-832291 - (-832297)]];
+								z = N();
+								G = L + z;
+								Y = G + C;
+								L, G = 760329 + -760328, 821662 + -821406;
+								F = Y % G;
+								C = F;
+								N = C + L;
+								G = O[N];
+								s = 3563480536 % 31124494;
+								Y = q .. G;
+								q, r = Y, nil;
+							end;
+						end;
+					end;
+				end;
+				s = #V;
+				return l(U);
+			end, function(S, W)
+				local l = d(W);
+				local B = function(B)
+						return s(S, { B }, W, l);
+					end;
+				return B;
+			end, 27752876 % 167186, function(S, W)
+				local l = d(W);
+				local B = function(B, f, V)
+						return s(S, { B, f, V }, W, l);
+					end;
+				return B;
+			end, function()
+				u = 902298097 % 6265959 + u;
+				x[u] = 626325 + -626324;
+				return u;
+			end;
+		return (v(-598857 + 5963157, {}))(l(U));
+	end)(getmetatable, getfenv and getfenv() or _ENV, { ... }, select, unpack or table[W(287322 + -222676)], setmetatable, newproxy);
+end)(...);
