@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v2.0.5"
+local version = "v3.0.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -60,410 +60,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    local function getDeviceUID()
-        local userId = player.UserId
-        local success, machineId = pcall(function()
-            return game:GetService("HttpService"):GetMachineId()
-        end)
-        if not success then machineId = "unknown" end
-        local combined = userId .. "_" .. machineId
-        local uid = ""
-        for i = 1, #combined do
-            uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
-        end
-        return uid:sub(1, 32)
-    end
-    local DEVICE_UID = getDeviceUID()
-
-    local AUTHOR_UID = "XXCBEFCXEAYRNGDGHPG"
-
-    local BLACKLIST = {
-        ["XXCWZAYDAXZRNCDCHddc"] = true,
-    }
-
-    local WHITELIST = {
-        ["XXCBYYCDEAARNG"] = true,
-        ["XXCWZZCACWARNGDGHPG"] = true,
-        ["XXCXXFEXWXARNGDGHPG"] = true,
-        ["XWZFFFYAYCRNGDGHPG"] = true,
-    }
-
-    local function isBlacklisted(uid)
-        return BLACKLIST[uid] == true
-    end
-
-    local function isAuthorized(uid)
-        if uid == AUTHOR_UID then return true end
-        return WHITELIST[uid] == true
-    end
-
-    if isBlacklisted(DEVICE_UID) then
-        local blockGui = Instance.new("ScreenGui")
-        blockGui.Name = "BlockedScreen"
-        blockGui.ResetOnSpawn = false
-        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        blockGui.Parent = player:WaitForChild("PlayerGui")
-
-        local blockFrame = Instance.new("Frame")
-        blockFrame.Size = UDim2.new(0, 500, 0, 200)
-        blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
-        blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-        blockFrame.BorderSizePixel = 3
-        blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        blockFrame.Parent = blockGui
-
-        local blockCorner = Instance.new("UICorner")
-        blockCorner.CornerRadius = UDim.new(0, 12)
-        blockCorner.Parent = blockFrame
-
-        local blockTitle = Instance.new("TextLabel")
-        blockTitle.Size = UDim2.new(1, 0, 0, 40)
-        blockTitle.Position = UDim2.new(0, 0, 0, 10)
-        blockTitle.BackgroundTransparency = 1
-        blockTitle.Text = "已被拉黑"
-        blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
-        blockTitle.TextSize = 28
-        blockTitle.Font = Enum.Font.GothamBold
-        blockTitle.TextXAlignment = Enum.TextXAlignment.Center
-        blockTitle.Parent = blockFrame
-
-        local blockDesc = Instance.new("TextLabel")
-        blockDesc.Size = UDim2.new(1, -40, 0, 50)
-        blockDesc.Position = UDim2.new(0, 20, 0, 60)
-        blockDesc.BackgroundTransparency = 1
-        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
-        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
-        blockDesc.TextSize = 18
-        blockDesc.Font = Enum.Font.GothamBold
-        blockDesc.TextXAlignment = Enum.TextXAlignment.Center
-        blockDesc.Parent = blockFrame
-
-        local blockUid = Instance.new("TextLabel")
-        blockUid.Size = UDim2.new(1, -40, 0, 30)
-        blockUid.Position = UDim2.new(0, 20, 0, 125)
-        blockUid.BackgroundTransparency = 1
-        blockUid.Text = "设备UID: " .. DEVICE_UID
-        blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
-        blockUid.TextSize = 14
-        blockUid.Font = Enum.Font.Gotham
-        blockUid.TextXAlignment = Enum.TextXAlignment.Center
-        blockUid.Parent = blockFrame
-
-        return
-    end
-
-    if not isAuthorized(DEVICE_UID) then
-        local authGui = Instance.new("ScreenGui")
-        authGui.Name = "AuthScreen"
-        authGui.ResetOnSpawn = false
-        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        authGui.Parent = player:WaitForChild("PlayerGui")
-
-        local authFrame = Instance.new("Frame")
-        authFrame.Size = UDim2.new(0, 520, 0, 220)
-        authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
-        authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
-        authFrame.BorderSizePixel = 3
-        authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
-        authFrame.Parent = authGui
-
-        local authCorner = Instance.new("UICorner")
-        authCorner.CornerRadius = UDim.new(0, 12)
-        authCorner.Parent = authFrame
-
-        local authTitle = Instance.new("TextLabel")
-        authTitle.Size = UDim2.new(1, 0, 0, 40)
-        authTitle.Position = UDim2.new(0, 0, 0, 10)
-        authTitle.BackgroundTransparency = 1
-        authTitle.Text = "未授权"
-        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
-        authTitle.TextSize = 28
-        authTitle.Font = Enum.Font.GothamBold
-        authTitle.TextXAlignment = Enum.TextXAlignment.Center
-        authTitle.Parent = authFrame
-
-        local authDesc = Instance.new("TextLabel")
-        authDesc.Size = UDim2.new(1, -40, 0, 50)
-        authDesc.Position = UDim2.new(0, 20, 0, 60)
-        authDesc.BackgroundTransparency = 1
-        authDesc.Text = "你没有被授权\n你无法使用此脚本"
-        authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
-        authDesc.TextSize = 18
-        authDesc.Font = Enum.Font.GothamBold
-        authDesc.TextXAlignment = Enum.TextXAlignment.Center
-        authDesc.Parent = authFrame
-
-        local authContact = Instance.new("TextLabel")
-        authContact.Size = UDim2.new(1, -40, 0, 25)
-        authContact.Position = UDim2.new(0, 20, 0, 118)
-        authContact.BackgroundTransparency = 1
-        authContact.Text = "请联系作者或管理员授权"
-        authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
-        authContact.TextSize = 14
-        authContact.Font = Enum.Font.Gotham
-        authContact.TextXAlignment = Enum.TextXAlignment.Center
-        authContact.Parent = authFrame
-
-        local authUid = Instance.new("TextLabel")
-        authUid.Size = UDim2.new(1, -40, 0, 30)
-        authUid.Position = UDim2.new(0, 20, 0, 150)
-        authUid.BackgroundTransparency = 1
-        authUid.Text = "设备UID: " .. DEVICE_UID
-        authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
-        authUid.TextSize = 14
-        authUid.Font = Enum.Font.Gotham
-        authUid.TextXAlignment = Enum.TextXAlignment.Center
-        authUid.Parent = authFrame
-
-        return
-    end
-
-    local scriptTag = Instance.new("BoolValue")
-    scriptTag.Name = "wdfexScript"
-    scriptTag.Value = true
-    scriptTag.Parent = player
-
-    local uidTag = Instance.new("StringValue")
-    uidTag.Name = "wdfexDeviceUID"
-    uidTag.Value = DEVICE_UID
-    uidTag.Parent = player
-
-    if DEVICE_UID == AUTHOR_UID then
-        local authorTag = Instance.new("BoolValue")
-        authorTag.Name = "wdfexAuthor"
-        authorTag.Value = true
-        authorTag.Parent = player
-    end
-
-    -- ==================== 仿iPhone灵动岛（音乐可视化版） ====================
-    local function createDynamicIsland()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "DynamicIsland"
-        gui.ResetOnSpawn = false
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        gui.Parent = player:WaitForChild("PlayerGui")
-
-        local TweenService = game:GetService("TweenService")
-        local expanded = false
-        local musicPlaying = false
-
-        -- 药丸主容器（浮动基准位置）
-        local pillBaseY = 0
-        local pill = Instance.new("Frame")
-        pill.Size = UDim2.new(0, 140, 0, 34)
-        pill.Position = UDim2.new(0.5, -70, 0, pillBaseY)
-        pill.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-        pill.BorderSizePixel = 0
-        pill.ClipsDescendants = true
-        pill.Parent = gui
-
-        local pillCorner = Instance.new("UICorner")
-        pillCorner.CornerRadius = UDim.new(1, 0)
-        pillCorner.Parent = pill
-
-        local glow = Instance.new("UIStroke")
-        glow.Thickness = 1.2
-        glow.Color = Color3.fromRGB(255, 255, 255)
-        glow.Transparency = 0.9
-        glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        glow.Parent = pill
-
-        -- 左侧图标容器（用于切换绿点和音符）
-        local iconHolder = Instance.new("Frame")
-        iconHolder.Size = UDim2.new(0, 14, 0, 14)
-        iconHolder.Position = UDim2.new(0, 10, 0.5, -7)
-        iconHolder.BackgroundTransparency = 1
-        iconHolder.Parent = pill
-
-        -- 绿色呼吸点（默认状态）
-        local dot = Instance.new("Frame")
-        dot.Name = "GreenDot"
-        dot.Size = UDim2.new(0, 7, 0, 7)
-        dot.Position = UDim2.new(0, 3.5, 0, 3.5)
-        dot.BackgroundColor3 = Color3.fromRGB(50, 220, 100)
-        dot.BorderSizePixel = 0
-        dot.Parent = iconHolder
-        local dotCorner = Instance.new("UICorner")
-        dotCorner.CornerRadius = UDim.new(1, 0)
-        dotCorner.Parent = dot
-
-        -- 音符图标（音乐播放时显示）
-        local noteLabel = Instance.new("TextLabel")
-        noteLabel.Name = "NoteIcon"
-        noteLabel.Size = UDim2.new(1, 0, 1, 0)
-        noteLabel.BackgroundTransparency = 1
-        noteLabel.Text = "♪"
-        noteLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        noteLabel.TextSize = 16
-        noteLabel.Font = Enum.Font.GothamBold
-        noteLabel.TextXAlignment = Enum.TextXAlignment.Center
-        noteLabel.TextYAlignment = Enum.TextYAlignment.Center
-        noteLabel.Rotation = 0
-        noteLabel.Visible = false
-        noteLabel.Parent = iconHolder
-
-        -- 右侧三小点
-        for i = 1, 3 do
-            local miniDot = Instance.new("Frame")
-            miniDot.Name = "SignalDot"
-            miniDot.Size = UDim2.new(0, 3, 0, 3)
-            miniDot.Position = UDim2.new(1, -16 - (i-1)*8, 0.5, -1.5)
-            miniDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            miniDot.BackgroundTransparency = 0.5
-            miniDot.BorderSizePixel = 0
-            miniDot.Parent = pill
-            local miniCorner = Instance.new("UICorner")
-            miniCorner.CornerRadius = UDim.new(1, 0)
-            miniCorner.Parent = miniDot
-        end
-
-        -- 呼吸动画（仅在未播放音乐时生效）
-        local breatheActive = true
-        local function breatheLoop()
-            while gui and gui.Parent do
-                if breatheActive then
-                    local t1 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                        Transparency = 0.5
-                    })
-                    local t2 = TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                        Transparency = 0.9
-                    })
-                    local d1 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                        Size = UDim2.new(0, 9, 0, 9),
-                        Position = UDim2.new(0, 2.5, 0, 2.5)
-                    })
-                    local d2 = TweenService:Create(dot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                        Size = UDim2.new(0, 7, 0, 7),
-                        Position = UDim2.new(0, 3.5, 0, 3.5)
-                    })
-                    t1:Play()
-                    d1:Play()
-                    task.wait(1.2)
-                    t2:Play()
-                    d2:Play()
-                    task.wait(1.2)
-                else
-                    task.wait(0.1)
-                end
-            end
-        end
-        task.spawn(breatheLoop)
-
-        -- 音符旋转动画
-        local noteSpinConn = nil
-        local function startNoteSpin()
-            if noteSpinConn then return end
-            local angle = 0
-            noteSpinConn = RunService.RenderStepped:Connect(function(dt)
-                angle = (angle + dt * 180) % 360
-                noteLabel.Rotation = angle
-            end)
-        end
-
-        local function stopNoteSpin()
-            if noteSpinConn then
-                noteSpinConn:Disconnect()
-                noteSpinConn = nil
-            end
-            noteLabel.Rotation = 0
-        end
-
-        -- 音乐播放时的上下浮动动画
-        local floatConn = nil
-        local floatTime = 0
-        local function startFloat()
-            if floatConn then return end
-            floatConn = RunService.RenderStepped:Connect(function(dt)
-                floatTime = floatTime + dt * 3
-                local offsetY = math.sin(floatTime) * 4
-                pill.Position = UDim2.new(0.5, -70, 0, pillBaseY + offsetY)
-            end)
-        end
-
-        local function stopFloat()
-            if floatConn then
-                floatConn:Disconnect()
-                floatConn = nil
-            end
-            floatTime = 0
-            pill.Position = UDim2.new(0.5, -70, 0, pillBaseY)
-        end
-
-        -- 切换音乐可视化状态
-        local function setMusicMode(isPlaying)
-            musicPlaying = isPlaying
-            if isPlaying then
-                dot.Visible = false
-                noteLabel.Visible = true
-                breatheActive = false
-                startNoteSpin()
-                startFloat()
-            else
-                dot.Visible = true
-                noteLabel.Visible = false
-                breatheActive = true
-                stopNoteSpin()
-                stopFloat()
-            end
-        end
-
-        -- 展开/收回逻辑
-        local function toggleExpand()
-            expanded = not expanded
-            if expanded then
-                for _, child in ipairs(pill:GetChildren()) do
-                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
-                        child:Destroy()
-                    end
-                end
-
-                local tween = TweenService:Create(pill, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(0, 280, 0, 48),
-                    Position = UDim2.new(0.5, -140, 0, pillBaseY)
-                })
-                tween:Play()
-
-                for i = 1, 6 do
-                    local miniDot = Instance.new("Frame")
-                    miniDot.Name = "ExpandedDot"
-                    miniDot.Size = UDim2.new(0, 4, 0, 4)
-                    miniDot.Position = UDim2.new(0, 30 + (i-1)*35, 0.5, -2)
-                    miniDot.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-                    miniDot.BackgroundTransparency = 0.3
-                    miniDot.BorderSizePixel = 0
-                    miniDot.Parent = pill
-                    local miniCorner = Instance.new("UICorner")
-                    miniCorner.CornerRadius = UDim.new(1, 0)
-                    miniCorner.Parent = miniDot
-                    task.wait(0.05)
-                end
-            else
-                local tween = TweenService:Create(pill, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-                    Size = UDim2.new(0, 140, 0, 34),
-                    Position = UDim2.new(0.5, -70, 0, pillBaseY)
-                })
-                tween:Play()
-
-                for _, child in ipairs(pill:GetChildren()) do
-                    if child:IsA("Frame") and child.Name == "ExpandedDot" then
-                        child:Destroy()
-                    end
-                end
-            end
-        end
-
-        local clicker = Instance.new("TextButton")
-        clicker.Size = UDim2.new(1, 0, 1, 0)
-        clicker.BackgroundTransparency = 1
-        clicker.Text = ""
-        clicker.Parent = pill
-        clicker.MouseButton1Click:Connect(toggleExpand)
-
-        return gui, pill, setMusicMode
-    end
-
-    local islandGui, islandPill, setIslandMusicMode = createDynamicIsland()
-
     -- ==================== 主UI ====================
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -480,108 +76,7 @@ function createUI()
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
         User = {
-            Enabled = true,
-            Callback = function()
-                local userId = player.UserId
-                local thumbType = Enum.ThumbnailType.HeadShot
-                local thumbSize = Enum.ThumbnailSize.Size420x420
-                local success, thumbnail = pcall(function()
-                    return Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
-                end)
-                local avatarUrl = success and thumbnail or "rbxassetid://0"
-
-                local name = player.Name
-
-                local pwdLen = math.random(10, 15)
-                local stars = string.rep("*", pwdLen)
-
-                local days = player.AccountAge
-                local regTime = days .. " 天前"
-
-                local popupGui = Instance.new("ScreenGui")
-                popupGui.Name = "UserInfoPopup"
-                popupGui.ResetOnSpawn = false
-                popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-                popupGui.Parent = player:WaitForChild("PlayerGui")
-
-                local frame = Instance.new("Frame")
-                frame.Size = UDim2.new(0, 300, 0, 250)
-                frame.Position = UDim2.new(0.5, -150, 0.5, -125)
-                frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-                frame.BorderSizePixel = 2
-                frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
-                frame.Active = true
-                frame.Draggable = true
-                frame.Parent = popupGui
-
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 10)
-                corner.Parent = frame
-
-                local avatar = Instance.new("ImageLabel")
-                avatar.Size = UDim2.new(0, 60, 0, 60)
-                avatar.Position = UDim2.new(0.5, -30, 0, 15)
-                avatar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-                avatar.Image = avatarUrl
-                avatar.ScaleType = Enum.ScaleType.Fit
-                avatar.Parent = frame
-
-                local avatarCorner = Instance.new("UICorner")
-                avatarCorner.CornerRadius = UDim.new(1, 0)
-                avatarCorner.Parent = avatar
-
-                local nameLabel = Instance.new("TextLabel")
-                nameLabel.Size = UDim2.new(1, -20, 0, 30)
-                nameLabel.Position = UDim2.new(0, 10, 0, 85)
-                nameLabel.BackgroundTransparency = 1
-                nameLabel.Text = "名字: " .. name
-                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                nameLabel.TextSize = 16
-                nameLabel.Font = Enum.Font.GothamBold
-                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-                nameLabel.Parent = frame
-
-                local pwdLabel = Instance.new("TextLabel")
-                pwdLabel.Size = UDim2.new(1, -20, 0, 30)
-                pwdLabel.Position = UDim2.new(0, 10, 0, 120)
-                pwdLabel.BackgroundTransparency = 1
-                pwdLabel.Text = "密码: " .. stars
-                pwdLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                pwdLabel.TextSize = 16
-                pwdLabel.Font = Enum.Font.Gotham
-                pwdLabel.TextXAlignment = Enum.TextXAlignment.Left
-                pwdLabel.Parent = frame
-
-                local timeLabel = Instance.new("TextLabel")
-                timeLabel.Size = UDim2.new(1, -20, 0, 30)
-                timeLabel.Position = UDim2.new(0, 10, 0, 155)
-                timeLabel.BackgroundTransparency = 1
-                timeLabel.Text = "注册: " .. regTime
-                timeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-                timeLabel.TextSize = 16
-                timeLabel.Font = Enum.Font.Gotham
-                timeLabel.TextXAlignment = Enum.TextXAlignment.Left
-                timeLabel.Parent = frame
-
-                local closeBtn = Instance.new("TextButton")
-                closeBtn.Size = UDim2.new(0, 60, 0, 30)
-                closeBtn.Position = UDim2.new(0.5, -30, 1, -40)
-                closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-                closeBtn.Text = "关闭"
-                closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                closeBtn.TextSize = 14
-                closeBtn.Font = Enum.Font.GothamBold
-                closeBtn.Parent = frame
-
-                local btnCorner = Instance.new("UICorner")
-                btnCorner.CornerRadius = UDim.new(0, 5)
-                btnCorner.Parent = closeBtn
-
-                closeBtn.MouseButton1Click:Connect(function()
-                    popupGui:Destroy()
-                end)
-            end,
-            Anonymous = false
+            Enabled = false,
         },
         SideBarWidth = 250,
         Search = {
@@ -613,11 +108,6 @@ function createUI()
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
-    })
-
-    Window:Tag({
-        Title = DEVICE_UID,
-        Color = Color3.fromHex("#00ffff") 
     })
 
     Window:EditOpenButton({
@@ -697,7 +187,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "请免费分享请勿倒卖被我发现我将会删除你的授权"
+            banner.Text = "已更新最新的绕过反作弊"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
@@ -809,8 +299,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v2.0.5提示",
-        Desc = "修复所有已知问题\n更换了悬浮窗\n新增自动躲警察功能",
+        Title = "v3.0.0提示",
+        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -2371,29 +1861,6 @@ function createUI()
             local hp = GetHealth(p)
             local dist = GetDist(p)
 
-            local isWdfexUser = false
-            local isAuthor = false
-            
-            for _, child in ipairs(p:GetChildren()) do
-                if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
-                    isWdfexUser = true
-                end
-                if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
-                    isAuthor = true
-                end
-            end
-            
-            if p.Character then
-                for _, child in ipairs(p.Character:GetDescendants()) do
-                    if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then
-                        isWdfexUser = true
-                    end
-                    if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then
-                        isAuthor = true
-                    end
-                end
-            end
-
             if ESP_SHOW_NAME then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 20)
@@ -2413,26 +1880,6 @@ function createUI()
                 l.TextXAlignment = Enum.TextXAlignment.Center
                 l.Parent = f
                 y = y + 22
-                lines = lines + 1
-            end
-
-            if ESP_SHOW_PEERS and isWdfexUser then
-                local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
-                local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
-                
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                l.Text = displayText
-                l.TextColor3 = textColor
-                l.TextSize = 13
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
                 lines = lines + 1
             end
 
@@ -2692,7 +2139,6 @@ function createUI()
             isMusicPlaying = value
             if value then
                 PlaySongByIndex(currentPlayIndex)
-                if setIslandMusicMode then setIslandMusicMode(true) end
             else
                 if musicSound then
                     musicSound:Stop()
@@ -2703,7 +2149,6 @@ function createUI()
                     endedConnection:Disconnect()
                     endedConnection = nil
                 end
-                if setIslandMusicMode then setIslandMusicMode(false) end
                 WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
             end
         end
@@ -2740,184 +2185,35 @@ function createUI()
         end
     })
 
+    -- ==================== 设置 Tab（卡密验证） ====================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
-    if DEVICE_UID == AUTHOR_UID then
+    local adminVerified = false
+
+    local KeySection = SettingsTab:Section({ Title = "开发者验证", Opened = true })
+    KeySection:Paragraph({
+        Title = "说明",
+        Desc = "请输入开发者卡密才能进入开发者后台"
+    })
+    KeySection:Divider()
+
+    local keyInputValue = ""
+    KeySection:Input({
+        Title = "卡密",
+        Placeholder = "请输入开发者卡密...",
+        Callback = function(value)
+            keyInputValue = value
+        end
+    })
+
+    local function buildAdminPanel()
         local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         AdminGroup:Paragraph({
             Title = "已授权",
-            Desc = "当前身份: 作者"
+            Desc = "当前身份: 开发者"
         })
-        AdminGroup:Divider()
-
-        AdminGroup:Paragraph({
-            Title = "黑名单管理",
-            Desc = "输入要拉黑的设备UID，点击拉黑即可"
-        })
-
-        local blacklistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要拉黑的设备UID...",
-            Callback = function(value)
-                blacklistInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "拉黑设备",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    if blacklistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 })
-                        return
-                    end
-                    BLACKLIST[blacklistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "从黑名单移除",
-            Callback = function()
-                if blacklistInput and blacklistInput ~= "" then
-                    BLACKLIST[blacklistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Divider({ Text = "授权管理" })
-        AdminGroup:Paragraph({
-            Title = "说明",
-            Desc = "输入要授权的设备UID，点击授权即可"
-        })
-
-        local whitelistInput = nil
-        AdminGroup:Input({
-            Title = "输入UID",
-            Placeholder = "请输入要授权的设备UID...",
-            Callback = function(value)
-                whitelistInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "授权设备",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    if whitelistInput == DEVICE_UID then
-                        WindUI:Notify({ Title = "提示", Content = "你已拥有最高权限", Duration = 3 })
-                        return
-                    end
-                    WHITELIST[whitelistInput] = true
-                    WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "移除授权",
-            Callback = function()
-                if whitelistInput and whitelistInput ~= "" then
-                    WHITELIST[whitelistInput] = nil
-                    WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                end
-            end
-        })
-
-        AdminGroup:Divider()
-        AdminGroup:Button({
-            Title = "查看当前黑名单",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(BLACKLIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "查看当前授权列表",
-            Callback = function()
-                local list = {}
-                for uid, _ in pairs(WHITELIST) do
-                    table.insert(list, uid)
-                end
-                if #list == 0 then
-                    WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 })
-                end
-            end
-        })
-
-        AdminGroup:Divider({ Text = "用户查询" })
-        AdminGroup:Paragraph({
-            Title = "通过设备UID查看Roblox用户名",
-            Desc = "输入已授权或任意在线玩家的设备UID，点击查询即可显示对应的游戏名字"
-        })
-
-        local searchUidInput = nil
-        AdminGroup:Input({
-            Title = "输入设备UID",
-            Placeholder = "请输入要查询的设备UID...",
-            Callback = function(value)
-                searchUidInput = value
-            end
-        })
-
-        AdminGroup:Button({
-            Title = "查询用户名",
-            Callback = function()
-                if not searchUidInput or searchUidInput == "" then
-                    WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 })
-                    return
-                end
-
-                local found = false
-                local resultName = "未找到"
-                
-                for _, p in ipairs(Players:GetPlayers()) do
-                    local uidTag = p:FindFirstChild("wdfexDeviceUID")
-                    if uidTag and uidTag:IsA("StringValue") and uidTag.Value == searchUidInput then
-                        found = true
-                        resultName = p.Name
-                        break
-                    end
-                end
-
-                if found then
-                    WindUI:Notify({ 
-                        Title = "查询结果", 
-                        Content = "设备UID: " .. searchUidInput .. "\n用户名: " .. resultName, 
-                        Duration = 5 
-                    })
-                else
-                    WindUI:Notify({ 
-                        Title = "查询结果", 
-                        Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", 
-                        Duration = 4 
-                    })
-                end
-            end
-        })
-
         AdminGroup:Divider({ Text = "坐标显示" })
+
         local coordEnabled = false
         local coordGui = nil
         local coordFrame = nil
@@ -3032,14 +2328,24 @@ function createUI()
                 end
             end
         })
-
-    else
-        local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
-        BlockGroup:Paragraph({
-            Title = "禁止访问",
-            Desc = "你无法进入开发者后台"
-        })
     end
+
+    KeySection:Button({
+        Title = "验证并进入",
+        Callback = function()
+            if adminVerified then
+                WindUI:Notify({ Title = "提示", Content = "已通过验证，无需重复", Duration = 2 })
+                return
+            end
+            if keyInputValue == "2639zako" then
+                adminVerified = true
+                WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 })
+                buildAdminPanel()
+            else
+                WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 })
+            end
+        end
+    })
 
     WindUI:Notify({
         Title = "wdfex-Hub",
