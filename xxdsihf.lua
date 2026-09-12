@@ -965,12 +965,12 @@ function createUI()
         end
     })
 
-    A:Divider({ Text = "防摔" })
+    A:Divider({ Text = "防摔（一定要开）" })
     local antiFallEnabled = false
     local antiFallConnection = nil
 
     A:Toggle({
-        Title = "防摔",
+        Title = "防摔（一定要开）",
         Value = false,
         Callback = function(value)
             antiFallEnabled = value
