@@ -368,25 +368,56 @@ function createUI()
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
     local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
 
-    -- ==================== 远程购买（解密电路） ====================
+    -- ==================== 远程购买（下拉框+购买按钮） ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
     
-    -- 说明提示已删除
+    -- 物品列表（按照你截图的路径和槽位写死）
+    local buyItemsList = {
+        { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
+        { name = "撬锁装置", id = "2", itemName = "Lockpick Device" },
+        { name = "入侵工具", id = "3", itemName = "Hacking Tool" },
+        { name = "C4", id = "4", itemName = "C4" },
+        { name = "绿色USB", id = "5", itemName = "Green USB" },
+        { name = "工作人员涂鸦", id = "8", itemName = "Crew Graffiti" }
+    }
+
+    local itemNameOptions = {}
+    for _, v in ipairs(buyItemsList) do
+        table.insert(itemNameOptions, v.name)
+    end
+
+    local selectedBuyItem = itemNameOptions[1]
+
+    RemoteBuyTab:Dropdown({
+        Title = "选择物品",
+        Values = itemNameOptions,
+        Value = itemNameOptions[1],
+        Callback = function(value)
+            selectedBuyItem = value
+        end
+    })
 
     RemoteBuyTab:Button({
-        Title = "一键购买 解密电路",
+        Title = "购买",
         Callback = function()
-            -- 移除了所有限制，点一次买一次，无速度限制
             local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
             local stuff = ReplicatedStorage:FindFirstChild("Stuff")
             
             if event and stuff then
                 local blackMarket = stuff:FindFirstChild("Black Market")
                 local targetItem = nil
+                local displayName = ""
+                
                 if blackMarket then
-                    local slot1 = blackMarket:FindFirstChild("1")
-                    if slot1 then
-                        targetItem = slot1:FindFirstChild("Decryption Circuit")
+                    for _, itemInfo in ipairs(buyItemsList) do
+                        if itemInfo.name == selectedBuyItem then
+                            local slot = blackMarket:FindFirstChild(itemInfo.id)
+                            if slot then
+                                targetItem = slot:FindFirstChild(itemInfo.itemName)
+                                displayName = itemInfo.name
+                            end
+                            break
+                        end
                     end
                 end
                 
@@ -398,10 +429,10 @@ function createUI()
                         })
                     end)
                     if success then
-                        showBuySuccess("解密电路")
+                        showBuySuccess(displayName)
                     end
                 else
-                    WindUI:Notify({ Title = "购买失败", Content = "没找到解密电路，可能商店刷新了", Duration = 3 })
+                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedBuyItem .. "，可能商店刷新了", Duration = 3 })
                 end
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
