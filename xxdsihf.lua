@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.3"
+local version = "v3.0.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -325,7 +325,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.3提示",
+        Title = "v3.0.0提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -3153,4 +3153,72 @@ function createUI()
                 local rootPart = char:FindFirstChild("HumanoidRootPart")
                 if not rootPart then return end
                 local pos = rootPart.Position
-                local formattedPos = string.format("%.2f, %.2f, %.2
+                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+                if coordTextBox and not coordTextBox:IsFocused() then
+                    coordTextBox.Text = formattedPos
+                end
+            end)
+            table.insert(connections, coordRenderConn)
+            
+            coordCopyBtn.MouseButton1Click:Connect(function()
+                if not coordTextBox then return end
+                coordTextBox:CaptureFocus()
+                coordTextBox.SelectionStart = 1
+                coordTextBox.CursorPosition = #coordTextBox.Text + 1
+                coordCopyBtn.Text = "现在按下 Ctrl + C 复制！"
+                task.wait(2)
+                coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
+            end)
+        end
+
+        local function DestroyCoordDisplay()
+            if coordRenderConn then
+                coordRenderConn:Disconnect()
+                coordRenderConn = nil
+            end
+            if coordGui then
+                coordGui:Destroy()
+                coordGui = nil
+                coordFrame = nil
+                coordTextBox = nil
+                coordCopyBtn = nil
+            end
+        end
+
+        AdminGroup:Toggle({
+            Title = "启用坐标显示",
+            Value = false,
+            Callback = function(value)
+                coordEnabled = value
+                if value then
+                    CreateCoordDisplay()
+                else
+                    DestroyCoordDisplay()
+                end
+            end
+        })
+    end
+
+    KeySection:Button({
+        Title = "验证并进入",
+        Callback = function()
+            if adminVerified then
+                WindUI:Notify({ Title = "提示", Content = "已通过验证，无需重复", Duration = 2 })
+                return
+            end
+            if keyInputValue == "2639zako" then
+                adminVerified = true
+                WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 })
+                buildAdminPanel()
+            else
+                WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 })
+            end
+        end
+    })
+
+    WindUI:Notify({
+        Title = "wdfex-Hub",
+        Content = "脚本已加载成功，欢迎使用！",
+        Duration = 3,
+    })
+end
