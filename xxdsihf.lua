@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.0"
+local version = "v3.0.3"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -65,9 +65,10 @@ function createUI()
         playernamedied = nil,
         dropdown = {},
         LoopTeleport = false,
+        LoopBring = false,
     }
 
-    -- 原代码的 Notify（适配 WindUI）
+    -- 原代码的 Notify（改成 wdfex脚本）
     local function Notify(title, content, icon, duration)
         WindUI:Notify({ Title = title, Content = content, Duration = duration or 3 })
     end
@@ -81,7 +82,7 @@ function createUI()
             end
         end
         if not silent then
-            Notify("皮脚本", "已刷新玩家列表", "rbxassetid://18941716391", 3)
+            Notify("wdfex脚本", "已刷新玩家列表", "rbxassetid://18941716391", 3)
         end
     end
     shuaxinlb(true)
@@ -324,7 +325,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.0提示",
+        Title = "v3.0.3提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -352,7 +353,7 @@ function createUI()
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
     -- ============================================================
-    -- 传送与甩飞（原代码逻辑）
+    -- 传送与甩飞
     -- ============================================================
     local dropdownMethod = "Dropdown"
     local dropdownLabel = "选择玩家名称"
@@ -384,9 +385,9 @@ function createUI()
             local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
                 localRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                Notify("皮脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "已经传送到玩家身边", "rbxassetid://18941716391", 5)
             else
-                Notify("皮脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
             end
         end
     })
@@ -397,18 +398,25 @@ function createUI()
         Callback = function(enabled)
             if enabled then
                 PlayerConfig.LoopTeleport = true
-                Notify("皮脚本", "已开启循环传送", "rbxassetid://18941716391", 5)
-                while PlayerConfig.LoopTeleport do
-                    local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
-                    local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                    if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
-                        localRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                Notify("wdfex脚本", "已开启循环传送", "rbxassetid://18941716391", 5)
+                task.spawn(function()
+                    while PlayerConfig.LoopTeleport and not isDestroyed do
+                        local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+                        if localRootPart and targetPlayer and targetPlayer.Character then
+                            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if targetRoot then
+                                pcall(function()
+                                    localRootPart.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+                                end)
+                            end
+                        end
+                        task.wait()
                     end
-                    wait()
-                end
+                end)
             else
                 PlayerConfig.LoopTeleport = false
-                Notify("皮脚本", "已关闭循环传送", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "已关闭循环传送", "rbxassetid://18941716391", 5)
             end
         end
     })
@@ -420,9 +428,9 @@ function createUI()
             local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
             if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
                 targetPlayer.Character.HumanoidRootPart.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
-                Notify("皮脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "已将玩家传送过来", "rbxassetid://18941716391", 5)
             else
-                Notify("皮脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "无法传送 原因: 玩家已消失", "rbxassetid://18941716391", 5)
             end
         end
     })
@@ -432,19 +440,26 @@ function createUI()
         Value = false,
         Callback = function(enabled)
             if enabled then
-                PlayerConfig.LoopTeleport = true
-                Notify("皮脚本", "已开启循环传送玩家过来", "rbxassetid://", 5)
-                while PlayerConfig.LoopTeleport do
-                    local localRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
-                    local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
-                    if targetPlayer and targetPlayer.Character and targetPlayer.Character.HumanoidRootPart then
-                        targetPlayer.Character.HumanoidRootPart.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
+                PlayerConfig.LoopBring = true
+                Notify("wdfex脚本", "已开启循环传送玩家过来", "rbxassetid://18941716391", 5)
+                task.spawn(function()
+                    while PlayerConfig.LoopBring and not isDestroyed do
+                        local localRootPart = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local targetPlayer = game.Players:FindFirstChild(PlayerConfig.playernamedied)
+                        if localRootPart and targetPlayer and targetPlayer.Character then
+                            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if targetRoot then
+                                pcall(function()
+                                    targetRoot.CFrame = localRootPart.CFrame + Vector3.new(0, 3, 0)
+                                end)
+                            end
+                        end
+                        task.wait()
                     end
-                    wait()
-                end
+                end)
             else
-                PlayerConfig.LoopTeleport = false
-                Notify("皮脚本", "已关闭循环传送玩家过来", "rbxassetid://18941716391", 5)
+                PlayerConfig.LoopBring = false
+                Notify("wdfex脚本", "已关闭循环传送玩家过来", "rbxassetid://18941716391", 5)
             end
         end
     })
@@ -474,10 +489,10 @@ function createUI()
         Callback = function(enabled)
             if enabled then
                 game:GetService("Workspace").CurrentCamera.CameraSubject = game:GetService("Players"):FindFirstChild(PlayerConfig.playernamedied).Character.Humanoid
-                Notify("皮脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "已开启查看玩家", "rbxassetid://18941716391", 5)
             else
                 game:GetService("Workspace").CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
-                Notify("皮脚本", "已关闭查看玩家", "rbxassetid://18941716391", 5)
+                Notify("wdfex脚本", "已关闭查看玩家", "rbxassetid://18941716391", 5)
             end
         end
     })
@@ -673,7 +688,7 @@ function createUI()
                         elseif not targetRootPart and not targetHead and targetAccessory and accessoryHandle then
                             PerformThrowAnimation(accessoryHandle)
                         else
-                            return SendNotification("皮脚本", "已开/关", 5)
+                            return SendNotification("wdfex脚本", "已开/关", 5)
                         end
                         bodyVelocity:Destroy()
                         localHumanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
@@ -812,7 +827,7 @@ function createUI()
                                         getgenv().OldPos = r3_56.CFrame
                                     end
                                     if r5_56 and r5_56.Sit and not r3_55 then
-                                        return r5_55("皮脚本", "错误❌", 5)
+                                        return r5_55("wdfex脚本", "错误❌", 5)
                                     end
                                     if r7_56 then
                                         workspace.CurrentCamera.CameraSubject = r7_56
@@ -933,7 +948,7 @@ function createUI()
                                     elseif not r6_56 and not r7_56 and r8_56 and r9_56 then
                                         r11_56(r9_56)
                                     else
-                                        return r5_55("皮脚本", "已开/关", 5)
+                                        return r5_55("wdfex脚本", "已开/关", 5)
                                     end
                                     r12_56:Destroy()
                                     r2_56:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
@@ -3138,72 +3153,4 @@ function createUI()
                 local rootPart = char:FindFirstChild("HumanoidRootPart")
                 if not rootPart then return end
                 local pos = rootPart.Position
-                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                if coordTextBox and not coordTextBox:IsFocused() then
-                    coordTextBox.Text = formattedPos
-                end
-            end)
-            table.insert(connections, coordRenderConn)
-            
-            coordCopyBtn.MouseButton1Click:Connect(function()
-                if not coordTextBox then return end
-                coordTextBox:CaptureFocus()
-                coordTextBox.SelectionStart = 1
-                coordTextBox.CursorPosition = #coordTextBox.Text + 1
-                coordCopyBtn.Text = "现在按下 Ctrl + C 复制！"
-                task.wait(2)
-                coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
-            end)
-        end
-
-        local function DestroyCoordDisplay()
-            if coordRenderConn then
-                coordRenderConn:Disconnect()
-                coordRenderConn = nil
-            end
-            if coordGui then
-                coordGui:Destroy()
-                coordGui = nil
-                coordFrame = nil
-                coordTextBox = nil
-                coordCopyBtn = nil
-            end
-        end
-
-        AdminGroup:Toggle({
-            Title = "启用坐标显示",
-            Value = false,
-            Callback = function(value)
-                coordEnabled = value
-                if value then
-                    CreateCoordDisplay()
-                else
-                    DestroyCoordDisplay()
-                end
-            end
-        })
-    end
-
-    KeySection:Button({
-        Title = "验证并进入",
-        Callback = function()
-            if adminVerified then
-                WindUI:Notify({ Title = "提示", Content = "已通过验证，无需重复", Duration = 2 })
-                return
-            end
-            if keyInputValue == "2639zako" then
-                adminVerified = true
-                WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 })
-                buildAdminPanel()
-            else
-                WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 })
-            end
-        end
-    })
-
-    WindUI:Notify({
-        Title = "wdfex-Hub",
-        Content = "脚本已加载成功，欢迎使用！",
-        Duration = 3,
-    })
-end
+                local formattedPos = string.format("%.2f, %.2f, %.2
