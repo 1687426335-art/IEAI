@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.1"
+local version = "v3.0.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -221,8 +221,6 @@ function createUI()
     end)
 
     local Settings = {
-        HoldTime = 0,
-        Distance = 25,
         HitboxEnabled = false,
         HitboxSize = 10,
         WhitelistEnabled = false,
@@ -298,7 +296,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.1提示",
+        Title = "v3.0.0提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
@@ -442,14 +440,14 @@ function createUI()
         end
     })
 
+    -- ==================== 互动（只保留快速互动开关） ====================
     local interactEnabled = false
 
     local function ScanPrompts()
         if isDestroyed or not interactEnabled then return end
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = Settings.HoldTime
-                obj.MaxActivationDistance = Settings.Distance
+                obj.HoldDuration = 0
             end
         end
     end
@@ -465,33 +463,15 @@ function createUI()
             end
         end
     })
-    InteractTab:Slider({
-        Title = "按住时间",
-        Step = 0.1,
-        Value = { Min = 0, Max = 10, Default = 0 },
-        Callback = function(value)
-            Settings.HoldTime = value
-            if interactEnabled then ScanPrompts() end
-        end
-    })
-    InteractTab:Slider({
-        Title = "触发距离",
-        Step = 1,
-        Value = { Min = 5, Max = 150, Default = 25 },
-        Callback = function(value)
-            Settings.Distance = value
-            if interactEnabled then ScanPrompts() end
-        end
-    })
 
     workspace.DescendantAdded:Connect(function(obj)
         task.wait(0.1)
         if obj:IsA("ProximityPrompt") and interactEnabled then
-            obj.HoldDuration = Settings.HoldTime
-            obj.MaxActivationDistance = Settings.Distance
+            obj.HoldDuration = 0
         end
     end)
 
+    -- ==================== 飞天与加速 ====================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -916,7 +896,7 @@ function createUI()
         end
     })
 
-    -- ==================== 体力（修复版，值改为 9999999） ====================
+    -- ==================== 体力 ====================
     A:Divider({ Text = "体力" })
     local staminaOn = false
 
