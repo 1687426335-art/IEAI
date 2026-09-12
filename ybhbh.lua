@@ -56,9 +56,60 @@ function createUI()
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
+
+    -- 购买成功提示（右下角）
+    local function showBuySuccess(itemName)
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "BuySuccessGui"
+        sg.ResetOnSpawn = false
+        sg.DisplayOrder = 999
+        sg.Parent = player:WaitForChild("PlayerGui")
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 220, 0, 50)
+        frame.Position = UDim2.new(1, 0, 1, -80) -- 屏幕外右侧
+        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        frame.BorderSizePixel = 0
+        frame.Parent = sg
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = frame
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(0, 255, 100)
+        stroke.Thickness = 2
+        stroke.Parent = frame
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -20, 1, -10)
+        label.Position = UDim2.new(0, 10, 0, 5)
+        label.BackgroundTransparency = 1
+        label.Text = "购买成功: " .. itemName
+        label.TextColor3 = Color3.fromRGB(0, 255, 100)
+        label.TextSize = 16
+        label.Font = Enum.Font.GothamBold
+        label.Parent = frame
+
+        local tweenIn = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -230, 1, -80)
+        })
+        tweenIn:Play()
+
+        task.wait(2)
+
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = UDim2.new(1, 0, 1, -80)
+        })
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            sg:Destroy()
+        end)
+    end
 
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
@@ -187,7 +238,6 @@ function createUI()
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
             
-            local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
             local hue = 0
@@ -320,22 +370,13 @@ function createUI()
 
     -- ==================== 远程购买（解密电路） ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
-    RemoteBuyTab:Paragraph({
-        Title = "说明",
-        Desc = "一键购买黑市里面的“解密电路”（入侵工具）。\n原名 Decryption Circuit，单价 600。\n请确保钱够再点，千万别狂点！"
-    })
-
-    local buyDebounce = false
+    
+    -- 说明提示已删除
 
     RemoteBuyTab:Button({
         Title = "一键购买 解密电路",
         Callback = function()
-            if buyDebounce then
-                WindUI:Notify({ Title = "购买", Content = "点太快了，等前面一次买完！", Duration = 3 })
-                return
-            end
-            buyDebounce = true
-            
+            -- 移除了所有限制，点一次买一次，无速度限制
             local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
             local stuff = ReplicatedStorage:FindFirstChild("Stuff")
             
@@ -350,24 +391,20 @@ function createUI()
                 end
                 
                 if targetItem then
-                    task.spawn(function()
-                        pcall(function()
-                            event:InvokeServer("purchase", {
-                                isRestaurant = false,
-                                item = targetItem
-                            })
-                            WindUI:Notify({ Title = "购买成功", Content = "已发送购买解密电路的请求", Duration = 3 })
-                        end)
-                        task.wait(1.5) -- 防连点缓冲
-                        buyDebounce = false
+                    local success = pcall(function()
+                        event:InvokeServer("purchase", {
+                            isRestaurant = false,
+                            item = targetItem
+                        })
                     end)
+                    if success then
+                        showBuySuccess("解密电路")
+                    end
                 else
                     WindUI:Notify({ Title = "购买失败", Content = "没找到解密电路，可能商店刷新了", Duration = 3 })
-                    buyDebounce = false
                 end
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
-                buyDebounce = false
             end
         end
     })
