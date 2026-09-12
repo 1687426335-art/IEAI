@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.0"
+local version = "v3.0.1"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -298,7 +298,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.0提示",
+        Title = "v3.0.1提示",
         Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
