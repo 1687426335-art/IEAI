@@ -1,2355 +1,784 @@
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
-local Confirmed = false
-
-local gradientColors = {
-    "rgb(255, 230, 235)",
-    "rgb(255, 210, 220)",
-    "rgb(255, 190, 205)",
-    "rgb(255, 170, 190)",
-    "rgb(255, 150, 175)",
-    "rgb(245, 140, 180)",
-    "rgb(235, 130, 185)",
-    "rgb(225, 120, 190)",
-    "rgb(215, 110, 195)",
-    "rgb(205, 100, 200)"
-}
-
-local username = game.Players.LocalPlayer.Name
-local coloredUsername = ""
-for i = 1, #username do
-    local colorIndex = (i - 1) % #gradientColors + 1
-    coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
-end
-
-local version = "v3.0.0"
-local coloredVersion = ""
-for i = 1, #version do
-    local colorIndex = (i - 1) % #gradientColors + 1
-    coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
-end
-
-WindUI:Popup({
-    Title = '<font color="' .. gradientColors[1] .. '">wdf</font><font color="' .. gradientColors[5] .. '">ex</font>',
-    IconThemed = true,
-    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
-    Buttons = {
-        {
-            Title = "取消",
-            Callback = function() end,
-            Variant = "Secondary",
-        },
-        {
-            Title = "执行",
-            Icon = "arrow-right",
-            Callback = function() 
-                Confirmed = true
-                createUI()
-            end,
-            Variant = "Primary",
-        }
-    }
-})
-
-function createUI()
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Workspace = game:GetService("Workspace")
-    local RunService = game:GetService("RunService")
-    local UserInputService = game:GetService("UserInputService")
-    local player = Players.LocalPlayer
-    local isDestroyed = false
-    local connections = {}
-
-    -- ==================== 主UI ====================
-    local Window = WindUI:CreateWindow({
-        Title = 'wdfex-Hub',
-        Icon = "heart",
-        IconThemed = true,
-        Author = version,
-        Folder = "CloudHub",
-        Size = UDim2.fromOffset(580, 440),
-        Transparent = true,
-        Theme = "Dark",
-        HideSearchBar = false,
-        ScrollBarEnabled = true,
-        Resizable = true,
-        Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
-        BackgroundImageTransparency = 0.5,
-        User = {
-            Enabled = false,
-        },
-        SideBarWidth = 250,
-        Search = {
-            Enabled = true,
-            Placeholder = "搜索...",
-            Callback = function(searchText)
-                print("搜索内容:", searchText)
-            end
-        },
-        SidePanel = {
-            Enabled = true,
-            Content = {
-                {
-                    Type = "Button", 
-                    Text = "wdfex-Hub",
-                    Style = "Subtle", 
-                    Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
-                }
-            }
-        }
-    })
-
-    Window:EditOpenButton({
-        Title = "wdfex-Hub",
-        Icon = "rbxassetid://105677776902677",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 4,
-        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
-        Draggable = true,
-    })
-
-    Window:EditOpenButton({
-        Title = "wdfex-Hub",
-        Icon = "heart",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 4,
-        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
-        Draggable = true,
-    })
-
-    task.wait(0.1)
-    local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
-    if mainGui then
-        local mainFrame = mainGui:FindFirstChildOfClass("Frame")
-        if mainFrame then
-            local stroke1 = Instance.new("UIStroke")
-            stroke1.Thickness = 3
-            stroke1.Color = Color3.fromHSV(0, 1, 1)
-            stroke1.Transparency = 0.5
-            stroke1.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            stroke1.Parent = mainFrame
-
-            local stroke2 = Instance.new("UIStroke")
-            stroke2.Thickness = 5
-            stroke2.Color = Color3.fromHSV(0.5, 1, 1)
-            stroke2.Transparency = 0.3
-            stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            stroke2.Parent = mainFrame
-
-            local hue1 = 0
-            local hue2 = 0.5
-            local colorConn = RunService.Heartbeat:Connect(function()
-                hue1 = (hue1 + 0.01) % 1
-                hue2 = (hue2 - 0.01) % 1
-                stroke1.Color = Color3.fromHSV(hue1, 1, 1)
-                stroke2.Color = Color3.fromHSV(hue2, 1, 1)
-            end)
-            table.insert(connections, colorConn)
-        end
-    end
-
-    spawn(function()
-        while true do
-            for hue = 0, 1, 0.01 do  
-                local color = Color3.fromHSV(hue, 0.8, 1)  
-                Window:EditOpenButton({
-                    Color = ColorSequence.new(color)
-                })
-                wait(0.04)  
-            end
-        end
-    end)
-
-    task.spawn(function()
-        pcall(function()
-            local sound = Instance.new("Sound")
-            sound.SoundId = "rbxassetid://80701295792893"
-            sound.Volume = 0.5
-            sound.Parent = player:WaitForChild("PlayerGui")
-            sound:Play()
-            task.wait(7)
-            sound:Stop()
-            sound:Destroy()
-        end)
-    end)
-
-    task.spawn(function()
-        pcall(function()
-            local bannerGui = Instance.new("ScreenGui")
-            bannerGui.Name = "BannerGui"
-            bannerGui.ResetOnSpawn = false
-            bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            bannerGui.Parent = player:WaitForChild("PlayerGui")
-            
-            local banner = Instance.new("TextLabel")
-            banner.Size = UDim2.new(0, 160, 0, 28)
-            banner.Position = UDim2.new(0, -160, 0, 2)
-            banner.BackgroundTransparency = 1
-            banner.Text = "已更新最新的绕过反作弊"
-            banner.TextSize = 18
-            banner.Font = Enum.Font.GothamBold
-            banner.TextScaled = false
-            banner.TextStrokeTransparency = 0.3
-            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            banner.Parent = bannerGui
-            
-            local TweenService = game:GetService("TweenService")
-            local textWidth = 160
-            
-            local hue = 0
-            local colorConn = RunService.Heartbeat:Connect(function()
-                hue = (hue + 0.005) % 1
-                banner.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
-            end)
-            table.insert(connections, colorConn)
-            
-            local function startAnimation()
-                local tween1 = TweenService:Create(banner, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
-                    Position = UDim2.new(1, 10, 0, 2)
-                })
-                tween1:Play()
-                tween1.Completed:Connect(function()
-                    banner.Position = UDim2.new(0, -textWidth, 0, 2)
-                    startAnimation()
-                end)
-            end
-            
-            task.wait(0.5)
-            startAnimation()
-        end)
-    end)
-
-    local Settings = {
-        HoldTime = 0,
-        Distance = 25,
-        HitboxEnabled = false,
-        HitboxSize = 10,
-        WhitelistEnabled = false,
-        TeleportEnabled = false,
-        NoclipEnabled = false,
-    }
-    local Whitelist = {}
-    local affectedHeads = {}
-    local frameCount = 0
-
-    _G.CatAntiFling_Enabled = false
-    _G.CatAntiFling_Running = false
-    local function AntiFlingLoop()
-        if _G.CatAntiFling_Running then return end
-        _G.CatAntiFling_Running = true
-        task.spawn(function()
-            while not isDestroyed do
-                if _G.CatAntiFling_Enabled then
-                    pcall(function()
-                        local char = player.Character
-                        if not char then return end
-                        local root = char:FindFirstChild("HumanoidRootPart")
-                        if not root then return end
-                        local vel = root.Velocity
-                        if vel.Magnitude > 500 or math.abs(vel.Y) > 300 then
-                            root.Velocity = Vector3.new(0, 0, 0)
-                            root.RotVelocity = Vector3.new(0, 0, 0)
-                        end
-                        for _, obj in ipairs(root:GetChildren()) do
-                            if (obj:IsA("BodyVelocity") or obj:IsA("BodyAngularVelocity")) and obj.Name ~= "CatAntiFling" and obj.Name ~= "CatAntiFlingAngular" then
-                                obj:Destroy()
-                            end
-                        end
-                    end)
-                end
-                task.wait()
-            end
-            _G.CatAntiFling_Running = false
-        end)
-    end
-    AntiFlingLoop()
-
-    local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
-    local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
-    AuthorSection:Paragraph({
-        Title = "",
-        Desc = "",
-        Thumbnail = "rbxassetid://74369447499630",
-        ThumbnailSize = 150,
-        ThumbnailShape = "Square",
-    })
-    AuthorSection:Paragraph({
-        Title = "作者QQ：1687426335",
-        Desc = "",
-    })
-
-    local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
-    local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
-    NoticeSection:Divider()
-    NoticeSection:Paragraph({
-        Title = "注意事项",
-        Desc = "已更换悬浮窗添加了一些功能\n杀戮光环的优先攻击最近目标如果选择距离内没有人\n那这个选项就不会生效杀戮光环正常生效\n修复了透视卡顿的问题\n修复了杀戮光环攻击有延迟的问题\n如果你使用的过程中出现一些bug请联系作者修复\n被封永久了就是被挂DC了如果你要是执行其他脚本之后被封的那你也活该"
-    })
-
-    local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
-    local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
-    infoSection:Divider()
-    infoSection:Paragraph({
-        Title = "关于",
-        Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新",
-        ThumbnailSize = 190,
-    })
-    local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
-    infoSection2:Divider()
-    infoSection2:Paragraph({
-        Title = "v3.0.0提示",
-        Desc = "已更新最新绕过反作弊你如果没有执行其他脚本没有被挂DC封了我直接跳了",
-        ThumbnailSize = 190,
-    })
-    infoTab:Select()
-
-    AuthorTab:Select()
-
-    local MainSection = Window:Section({
-        Title = "主功能",
-        Opened = true,
-    })
-
-    local function AddTab(section, title, icon)
-        return section:Tab({ Title = title, Icon = icon })
-    end
-
-    local A = AddTab(MainSection, "玩家修改", "user")
-    local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
-    local InteractTab = AddTab(MainSection, "互动", "hand")
-    local B = AddTab(MainSection, "枪械功能", "target")
-    local C = AddTab(MainSection, "杀戮光环", "skull")
-    local D = AddTab(MainSection, "传送点", "map-pin")
-    local E = AddTab(MainSection, "透视", "eye")
-    local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-
-    local policeDodgeEnabled = false
-    local policeDodgeDistance = 30
-    local policeDodgeForce = 50
-    local policeDodgeWallCheck = true
-    local policeDodgeConn = nil
-
-    local function isVisible(fromPos, toPos, ignoreInstances)
-        local direction = (toPos - fromPos).Unit
-        local distance = (toPos - fromPos).Magnitude
-        if distance < 0.1 then return true end
-        local params = RaycastParams.new()
-        params.FilterType = Enum.RaycastFilterType.Exclude
-        params.FilterDescendantsInstances = ignoreInstances or {}
-        local result = workspace:Raycast(fromPos, direction * distance, params)
-        return result == nil
-    end
-
-    local function startPoliceDodge()
-        if policeDodgeConn then return end
-        policeDodgeConn = RunService.Heartbeat:Connect(function()
-            if not policeDodgeEnabled then return end
-            local char = player.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            local myHead = char:FindFirstChild("Head")
-            if not myHead then myHead = root end
-
-            local myPos = myHead.Position
-            local forceVec = Vector3.zero
-            local foundAny = false
-
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p == player then continue end
-                local team = p.Team
-                if team then
-                    local teamName = team.Name
-                    if teamName:find("Police") or teamName:find("警察") or teamName:find("Cop") then
-                        local pChar = p.Character
-                        if pChar then
-                            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
-                            local pHead = pChar:FindFirstChild("Head")
-                            local targetPart = pHead or pRoot
-                            if targetPart then
-                                local dist = (targetPart.Position - myPos).Magnitude
-                                if dist < policeDodgeDistance then
-                                    if policeDodgeWallCheck then
-                                        local ignoreList = {char, pChar}
-                                        local visible = isVisible(myPos, targetPart.Position, ignoreList)
-                                        if not visible then
-                                            continue
-                                        end
-                                    end
-                                    foundAny = true
-                                    local dir = (myPos - targetPart.Position).Unit
-                                    forceVec = forceVec + dir * (1 / (dist + 0.1))
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            if foundAny and forceVec.Magnitude > 0 then
-                local finalDir = forceVec.Unit
-                local speed = policeDodgeForce * 5
-                root.Velocity = finalDir * speed
-            end
-        end)
-    end
-
-    local function stopPoliceDodge()
-        if policeDodgeConn then
-            policeDodgeConn:Disconnect()
-            policeDodgeConn = nil
-        end
-    end
-
-    PoliceDodgeTab:Divider({ Text = "警察躲避设置" })
-    PoliceDodgeTab:Toggle({
-        Title = "启用自动躲警察",
-        Value = false,
-        Callback = function(value)
-            policeDodgeEnabled = value
-            if value then
-                startPoliceDodge()
-            else
-                stopPoliceDodge()
-            end
-        end
-    })
-
-    PoliceDodgeTab:Slider({
-        Title = "触发距离",
-        Step = 1,
-        Value = { Min = 1, Max = 100, Default = 30 },
-        Callback = function(value)
-            policeDodgeDistance = value
-        end
-    })
-
-    PoliceDodgeTab:Slider({
-        Title = "弹开力度",
-        Step = 1,
-        Value = { Min = 1, Max = 100, Default = 50 },
-        Callback = function(value)
-            policeDodgeForce = value
-        end
-    })
-
-    PoliceDodgeTab:Toggle({
-        Title = "墙体检测",
-        Value = true,
-        Callback = function(value)
-            policeDodgeWallCheck = value
-        end
-    })
-
-    local interactEnabled = false
-
-    local function ScanPrompts()
-        if isDestroyed or not interactEnabled then return end
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = Settings.HoldTime
-                obj.MaxActivationDistance = Settings.Distance
-            end
-        end
-    end
-
-    InteractTab:Divider({ Text = "快速互动" })
-    InteractTab:Toggle({
-        Title = "启用快速互动",
-        Value = false,
-        Callback = function(value)
-            interactEnabled = value
-            if value then
-                ScanPrompts()
-            end
-        end
-    })
-    InteractTab:Slider({
-        Title = "按住时间",
-        Step = 0.1,
-        Value = { Min = 0, Max = 10, Default = 0 },
-        Callback = function(value)
-            Settings.HoldTime = value
-            if interactEnabled then ScanPrompts() end
-        end
-    })
-    InteractTab:Slider({
-        Title = "触发距离",
-        Step = 1,
-        Value = { Min = 5, Max = 150, Default = 25 },
-        Callback = function(value)
-            Settings.Distance = value
-            if interactEnabled then ScanPrompts() end
-        end
-    })
-
-    workspace.DescendantAdded:Connect(function(obj)
-        task.wait(0.1)
-        if obj:IsA("ProximityPrompt") and interactEnabled then
-            obj.HoldDuration = Settings.HoldTime
-            obj.MaxActivationDistance = Settings.Distance
-        end
-    end)
-
-    local FlySpeed = 35
-    local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
-    local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
-    local FlyControl
-    task.spawn(function()
-        pcall(function()
-            local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
-            if pm then FlyControl = require(pm):GetControls() end
-        end)
-    end)
-
-    local function flyRefreshParts()
-        local char = player.Character
-        if not char then flyState.hrp = nil flyState.hum = nil flyAnchor.hrp = nil flyAnchor.head = nil flyAnchor.hum = nil return end
-        flyState.hrp = char:FindFirstChild("HumanoidRootPart")
-        flyState.hum = char:FindFirstChildOfClass("Humanoid")
-        flyAnchor.hrp = flyState.hrp
-        flyAnchor.head = char:FindFirstChild("Head")
-        flyAnchor.hum = flyState.hum
-    end
-
-    local function flyDetectWall()
-        local hrp = flyAnchor.hrp
-        if not hrp then return false end
-        local pos = hrp.Position
-        local params = RaycastParams.new()
-        params.FilterType = Enum.RaycastFilterType.Blacklist
-        params.FilterDescendantsInstances = { player.Character }
-        for i = 1, flyAnchor.rayCount do
-            local angle = (i / flyAnchor.rayCount) * 2 * math.pi
-            local dx = math.cos(angle)
-            local dz = math.sin(angle)
-            for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
-                local dir = Vector3.new(dx, j * 0.5, dz).Unit
-                local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
-                if result and result.Instance and result.Instance.CanCollide and result.Instance.Transparency < 0.9 then
-                    return true
-                end
-            end
-        end
-        return false
-    end
-
-    local function flyEnterAnchor()
-        if flyAnchor.active then return end
-        if not flyAnchor.head or not flyAnchor.hrp or not flyAnchor.hum then return end
-        flyAnchor.head.Anchored = true
-        flyAnchor.hum.PlatformStand = true
-        flyAnchor.active = true
-    end
-
-    local function flyExitAnchor()
-        if not flyAnchor.active then return end
-        if flyAnchor.head and flyAnchor.hum then
-            flyAnchor.head.Anchored = false
-            flyAnchor.hum.PlatformStand = false
-        end
-        flyAnchor.active = false
-    end
-
-    local function flyMicroStepLoop()
-        flyState.targetPos = flyState.hrp.Position
-        flyState.lastTime = tick()
-        while flyState.enabled do
-            local now = tick()
-            local dt = now - flyState.lastTime
-            flyState.lastTime = now
-            if not flyState.hrp or not flyState.hrp.Parent then break end
-            local inWall = flyDetectWall()
-            if inWall and not flyAnchor.active then
-                flyEnterAnchor()
-            elseif not inWall and flyAnchor.active then
-                flyExitAnchor()
-            end
-            local moveDir
-            if FlyControl then
-                local mv = FlyControl:GetMoveVector()
-                local cf = workspace.CurrentCamera.CFrame
-                moveDir = (cf.LookVector * -mv.Z) + (cf.RightVector * mv.X)
-            else
-                moveDir = (flyState.hum and flyState.hum.MoveDirection) or Vector3.zero
-            end
-            local vertical = 0
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                vertical = 1
-            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                vertical = -1
-            end
-            local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
-            flyState.targetPos = flyState.targetPos + delta
-            local currentPos = flyState.hrp.Position
-            local remaining = flyState.targetPos - currentPos
-            local distance = remaining.Magnitude
-            if distance > 0 then
-                local steps = math.ceil(distance / 10)
-                local stepVec = remaining / steps
-                for i = 1, steps do
-                    if not flyState.enabled then break end
-                    currentPos = currentPos + stepVec
-                    flyState.hrp.CFrame = CFrame.new(currentPos) * flyState.hrp.CFrame.Rotation
-                    flyState.hrp.Velocity = Vector3.zero
-                end
-            else
-                flyState.hrp.CFrame = CFrame.new(flyState.targetPos) * flyState.hrp.CFrame.Rotation
-                flyState.hrp.Velocity = Vector3.zero
-            end
-            if flyState.hum then
-                flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
-            end
-            task.wait(0.001)
-        end
-    end
-
-    local function flyHealthLockLoop()
-        while flyState.enabled do
-            if flyState.hum and flyState.hum.Health <= 0 then
-                flyState.hum.Health = flyState.hum.MaxHealth
-            end
-            task.wait(0.1)
-        end
-    end
-
-    local function startFly()
-        if flyState.enabled then return end
-        flyRefreshParts()
-        if not flyState.hrp or not flyState.hum then return end
-        flyState.enabled = true
-        flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing)
-        flyState.microThread = task.spawn(flyMicroStepLoop)
-        flyState.healthThread = task.spawn(flyHealthLockLoop)
-        flyState.diedConn = flyState.hum.Died:Connect(function()
-            if flyState.hum and flyState.enabled then
-                flyState.hum.Health = flyState.hum.MaxHealth
-                flyState.hum:ChangeState(Enum.HumanoidStateType.Running)
-            end
-        end)
-    end
-
-    local function stopFly()
-        flyState.enabled = false
-        flyExitAnchor()
-        if flyState.microThread then task.cancel(flyState.microThread) flyState.microThread = nil end
-        if flyState.healthThread then task.cancel(flyState.healthThread) flyState.healthThread = nil end
-        if flyState.diedConn then flyState.diedConn:Disconnect() flyState.diedConn = nil end
-        if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Running) end
-    end
-
-    player.CharacterAdded:Connect(function()
-        if flyState.enabled then
-            stopFly()
-            task.wait(0.2)
-            startFly()
-        end
-    end)
-
-    FlyTab:Divider({ Text = "飞行" })
-    FlyTab:Toggle({
-        Title = "飞行（绕过）",
-        Value = false,
-        Callback = function(value)
-            if value then startFly() else stopFly() end
-        end
-    })
-    FlyTab:Slider({
-        Title = "飞行速度",
-        Step = 1,
-        Value = { Min = 10, Max = 620, Default = 35 },
-        Callback = function(value)
-            FlySpeed = value
-        end
-    })
-
-    local flyQuickToggle = false
-    local flyQuickScreenGui = nil
-    local flyQuickButton = nil
-    local flyQuickStatusLabel = nil
-
-    local function DestroyFlyQuickToggle()
-        if flyQuickScreenGui then
-            flyQuickScreenGui:Destroy()
-            flyQuickScreenGui = nil
-            flyQuickButton = nil
-            flyQuickStatusLabel = nil
-        end
-    end
-
-    local function CreateFlyQuickToggle()
-        if flyQuickButton then return end
-        flyQuickScreenGui = Instance.new("ScreenGui")
-        flyQuickScreenGui.Name = "FlyQuickToggle"
-        flyQuickScreenGui.ResetOnSpawn = false
-        flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-
-        local button = Instance.new("ImageButton")
-        button.Size = UDim2.new(0, 60, 0, 60)
-        button.Position = UDim2.new(0.5, -30, 0.15, 0)
-        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.15
-        button.BorderSizePixel = 2
-        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://74369447499630"
-        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
-        button.ScaleType = Enum.ScaleType.Fit
-        button.Parent = flyQuickScreenGui
-        flyQuickButton = button
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = button
-
-        flyQuickStatusLabel = Instance.new("TextLabel")
-        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
-        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
-        flyQuickStatusLabel.BackgroundTransparency = 1
-        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flyQuickStatusLabel.TextSize = 12
-        flyQuickStatusLabel.Font = Enum.Font.GothamBold
-        flyQuickStatusLabel.TextStrokeTransparency = 0.3
-        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        flyQuickStatusLabel.Text = "飞行: 关"
-        flyQuickStatusLabel.Parent = button
-
-        local function updateFlyStatus()
-            if flyQuickStatusLabel then
-                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                if flyQuickButton then
-                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                end
-            end
-        end
-
-        button.MouseButton1Click:Connect(function()
-            if flyState.enabled then stopFly() else startFly() end
-            updateFlyStatus()
-        end)
-
-        local dragging = false
-        local dragStart = nil
-        local startPos = nil
-
-        button.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = button.Position
-            end
-        end)
-
-        button.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                local newPos = UDim2.new(
-                    startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y,
-                    startPos.Y.Offset + delta.Y
-                )
-                button.Position = newPos
-            end
-        end)
-
-        button.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
-        updateFlyStatus()
-
-        local statusConn = RunService.Heartbeat:Connect(function()
-            if flyQuickToggle and flyQuickStatusLabel then
-                updateFlyStatus()
-            end
-        end)
-        table.insert(connections, statusConn)
-    end
-
-    FlyTab:Toggle({
-        Title = "飞天快捷开关",
-        Value = false,
-        Callback = function(value)
-            flyQuickToggle = value
-            if value then
-                CreateFlyQuickToggle()
-            else
-                DestroyFlyQuickToggle()
-            end
-        end
-    })
-
-    FlyTab:Divider({ Text = "移速" })
-    local speedBypassOn = false
-    local speedBypassValue = 20
-    FlyTab:Toggle({
-        Title = "修改移速（绕过）",
-        Value = false,
-        Callback = function(value)
-            speedBypassOn = value
-        end
-    })
-    FlyTab:Slider({
-        Title = "移速",
-        Step = 1,
-        Value = { Min = 5, Max = 150, Default = 20 },
-        Callback = function(value)
-            speedBypassValue = value
-        end
-    })
-    RunService.Heartbeat:Connect(function(dt)
-        if not speedBypassOn then return end
-        local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if hum and root and hum.MoveDirection.Magnitude > 0 then
-            root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt
-        end
-    end)
-
-    local function ApplyHitbox()
-        if isDestroyed or not Settings.HitboxEnabled then return end
-        local players = Players:GetPlayers()
-        local newAffected = {}
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player and p.Character then
-                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
-                else
-                    local char = p.Character
-                    local head = char:FindFirstChild("Head")
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 and head then
-                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
-                        head.Transparency = 1
-                        head.Color = Color3.fromRGB(255, 215, 0)
-                        head.Material = Enum.Material.Neon
-                        head.CanCollide = false
-                        newAffected[head] = true
-                    end
-                end
-            end
-        end
-        for head, _ in pairs(affectedHeads) do
-            if not newAffected[head] and head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = newAffected
-    end
-
-    local function ResetHitbox()
-        for head, _ in pairs(affectedHeads) do
-            if head and head.Parent then
-                head.Size = Vector3.new(2, 1, 1)
-                head.Transparency = 0
-                head.CanCollide = true
-                head.Color = Color3.new(1, 1, 1)
-                head.Material = Enum.Material.Plastic
-            end
-        end
-        affectedHeads = {}
-    end
-
-    local function UpdateWhitelist()
-        if isDestroyed then return end
-        Whitelist = {}
-        local players = Players:GetPlayers()
-        for i = 1, #players do
-            local p = players[i]
-            if p ~= player then
-                pcall(function()
-                    if p:IsFriendsWith(player.UserId) then
-                        Whitelist[p.UserId] = true
-                    end
-                end)
-            end
-        end
-    end
-
-    A:Divider({ Text = "伤害免疫" })
-    local godOn = false
-    A:Toggle({
-        Title = "免疫部分伤害",
-        Value = false,
-        Callback = function(value)
-            godOn = value
-        end
-    })
-    A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
-
-    A:Divider({ Text = "穿墙" })
-    A:Toggle({
-        Title = "启用人物穿墙",
-        Value = false,
-        Callback = function(value)
-            Settings.NoclipEnabled = value
-            if value then
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            else
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = true
-                        end
-                    end
-                end
-            end
-        end
-    })
-
-    A:Divider({ Text = "体力" })
-    local staminaOn = false
-    local StaminaEvent
-    pcall(function()
-        StaminaEvent = ReplicatedStorage:WaitForChild("Remote", 5):WaitForChild("PlayerEvent", 5)
-    end)
-    if StaminaEvent then
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            if self == StaminaEvent and method == "FireServer" then
-                if args[1] == "setStaminaOrFood" and args[2] == "stamina" and staminaOn then
-                    args[3] = 100
-                    return oldNamecall(self, unpack(args))
-                end
-                if args[1] == "takeDamage" and godOn then
-                    return
-                end
-            end
-            return oldNamecall(self, ...)
-        end)
-    end
-    task.spawn(function()
-        while not isDestroyed do
-            if staminaOn and StaminaEvent then
-                pcall(function()
-                    StaminaEvent:FireServer("setStaminaOrFood", "stamina", 100)
-                end)
-            end
-            task.wait(0.3)
-        end
-    end)
-    A:Toggle({
-        Title = "无限体力",
-        Value = false,
-        Callback = function(value)
-            staminaOn = value
-        end
-    })
-
-    A:Divider({ Text = "防甩飞" })
-    A:Toggle({
-        Title = "防甩飞",
-        Value = false,
-        Callback = function(value)
-            _G.CatAntiFling_Enabled = value
-        end
-    })
-
-    A:Divider({ Text = "防摔" })
-    local antiFallEnabled = false
-    local antiFallConnection = nil
-
-    A:Toggle({
-        Title = "防摔",
-        Value = false,
-        Callback = function(value)
-            antiFallEnabled = value
-            if value then
-                if antiFallConnection then antiFallConnection:Disconnect() end
-                antiFallConnection = RunService.Heartbeat:Connect(function()
-                    if not antiFallEnabled then return end
-                    local char = player.Character
-                    if not char then return end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if not hum then return end
-                    
-                    local vel = root.Velocity
-                    if vel.Y < -20 and hum.PlatformStand == false then
-                        local newY = math.clamp(vel.Y, -40, -10)
-                        root.Velocity = Vector3.new(vel.X, newY, vel.Z)
-                    end
-                end)
-            else
-                if antiFallConnection then
-                    antiFallConnection:Disconnect()
-                    antiFallConnection = nil
-                end
-            end
-        end
-    })
-
-    B:Divider({ Text = "枪械强化" })
-    B:Toggle({
-        Title = "超快射速",
-        Value = false,
-        Callback = function(value)
-            if not value then return end
-            local function ModifyWeaponStats()
-                local garbage = getgc(true)
-                for _, tbl in pairs(garbage) do
-                    if type(tbl) == "table" then
-                        if rawget(tbl, "SHOOT_MODE") then
-                            rawset(tbl, "SHOOT_MODE", 2)
-                        end
-                        if rawget(tbl, "RPM") then
-                            rawset(tbl, "RPM", math.huge)
-                        end
-                        if rawget(tbl, "DAMAGE") then
-                            rawset(tbl, "DAMAGE", math.huge)
-                        end
-                    end
-                end
-            end
-            ModifyWeaponStats()
-            local char = player.Character
-            if char then
-                local humanoid = char:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid.Died:Connect(ModifyWeaponStats)
-                end
-            end
-            WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
-        end
-    })
-
-    local infAmmoEnabled = false
-    B:Toggle({
-        Title = "无限子弹",
-        Value = false,
-        Callback = function(value)
-            infAmmoEnabled = value
-        end
-    })
-    task.spawn(function()
-        while not isDestroyed do
-            if infAmmoEnabled then
-                local characterFolder = Workspace:FindFirstChild("Characters") and Workspace.Characters:FindFirstChild(player.Name)
-                if characterFolder then
-                    for _, gun in ipairs(characterFolder:GetChildren()) do
-                        local config = gun:FindFirstChild("Config")
-                        if config then
-                            local ammo = config:FindFirstChild("Ammo")
-                            local totalAmmo = config:FindFirstChild("TotalAmmo")
-                            if ammo then ammo.Value = math.huge end
-                            if totalAmmo then totalAmmo.Value = math.huge end
-                        end
-                    end
-                end
-            end
-            RunService.Heartbeat:Wait()
-        end
-    end)
-
-    B:Divider({ Text = "碰撞箱扩展" })
-    B:Toggle({
-        Title = "启用头部碰撞箱（推荐20-25）",
-        Value = false,
-        Callback = function(value)
-            Settings.HitboxEnabled = value
-            if value then ApplyHitbox() else ResetHitbox() end
-        end
-    })
-    B:Slider({
-        Title = "头部大小",
-        Step = 1,
-        Value = { Min = 5, Max = 400, Default = 10 },
-        Callback = function(value)
-            Settings.HitboxSize = value
-            if Settings.HitboxEnabled then ApplyHitbox() end
-        end
-    })
-    B:Toggle({
-        Title = "好友检测 (白名单)",
-        Value = false,
-        Callback = function(value)
-            Settings.WhitelistEnabled = value
-            if value then UpdateWhitelist() end
-        end
-    })
-
-    B:Divider({ Text = "子追" })
-    local zzEnabled = false
-    local zzDistance = 40
-    local zzAffected = nil
-
-    local function zzRestore()
-        if zzAffected and zzAffected.Parent then
-            pcall(function()
-                zzAffected.Size = Vector3.new(2, 1, 1)
-                zzAffected.Transparency = 0
-            end)
-        end
-        zzAffected = nil
-    end
-
-    task.spawn(function()
-        while not isDestroyed do
-            if zzEnabled then
-                local char = player.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                local best, bestDist = nil, zzDistance
-                if root then
-                    for _, p in ipairs(Players:GetPlayers()) do
-                        if p ~= player and p.Character then
-                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                            local head = p.Character:FindFirstChild("Head")
-                            if hum and hum.Health > 0 and head then
-                                local d = (head.Position - root.Position).Magnitude
-                                if d < bestDist then
-                                    bestDist = d
-                                    best = head
-                                end
-                            end
-                        end
-                    end
-                end
-                if best ~= zzAffected then
-                    zzRestore()
-                    if best then
-                        zzAffected = best
-                        pcall(function()
-                            best.Size = Vector3.new(500, 500, 500)
-                            best.Transparency = 1
-                            best.CanCollide = false
-                        end)
-                    end
-                end
-            else
-                zzRestore()
-            end
-            task.wait(0.2)
-        end
-    end)
-
-    B:Toggle({
-        Title = "启用子追",
-        Value = false,
-        Callback = function(value)
-            zzEnabled = value
-            if not value then zzRestore() end
-        end
-    })
-    B:Slider({
-        Title = "判定距离",
-        Step = 1,
-        Value = { Min = 0, Max = 1000, Default = 40 },
-        Callback = function(value)
-            zzDistance = value
-        end
-    })
-
-    B:Divider({ Text = "自瞄" })
-    local aimOn = false
-    local aimFOV = 150
-    local aimNoTeam = true
-    local aimWall = true
-    local aimGui, aimCircle
-
-    local function aimEnsureCircle()
-        if aimGui then return end
-        aimGui = Instance.new("ScreenGui")
-        aimGui.Name = "SA_AimFOV"
-        aimGui.ResetOnSpawn = false
-        aimGui.IgnoreGuiInset = true
-        aimGui.Parent = player:WaitForChild("PlayerGui")
-        aimCircle = Instance.new("Frame")
-        aimCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-        aimCircle.Position = UDim2.fromScale(0.5, 0.5)
-        aimCircle.BackgroundTransparency = 1
-        aimCircle.Parent = aimGui
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = 1.5
-        stroke.Color = Color3.fromRGB(255, 255, 255)
-        stroke.Transparency = 0.4
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.Parent = aimCircle
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = aimCircle
-    end
-
-    RunService.RenderStepped:Connect(function()
-        if not aimOn then
-            if aimGui then aimGui.Enabled = false end
-            return
-        end
-        aimEnsureCircle()
-        aimGui.Enabled = true
-        aimCircle.Size = UDim2.fromOffset(aimFOV * 2, aimFOV * 2)
-        local camera = workspace.CurrentCamera
-        if not camera then return end
-        local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-        local best, bestDist = nil, aimFOV
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                local head = p.Character:FindFirstChild("Head")
-                if hum and hum.Health > 0 and head then
-                    local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
-                    if not skip then
-                        local sp, onScreen = camera:WorldToViewportPoint(head.Position)
-                        if onScreen then
-                            local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                            if d < bestDist then
-                                local visible = true
-                                if aimWall then
-                                    local rp = RaycastParams.new()
-                                    rp.FilterType = Enum.RaycastFilterType.Exclude
-                                    rp.FilterDescendantsInstances = { player.Character }
-                                    local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
-                                    visible = (not res) or res.Instance:IsDescendantOf(p.Character)
-                                end
-                                if visible then
-                                    bestDist = d
-                                    best = head
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        if best then
-            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, best.Position)
-        end
-    end)
-
-    B:Toggle({
-        Title = "自瞄",
-        Value = false,
-        Callback = function(value)
-            aimOn = value
-        end
-    })
-    B:Slider({
-        Title = "FOV圈大小",
-        Step = 1,
-        Value = { Min = 30, Max = 400, Default = 150 },
-        Callback = function(value)
-            aimFOV = value
-        end
-    })
-    B:Toggle({
-        Title = "不瞄准队友",
-        Value = true,
-        Callback = function(value)
-            aimNoTeam = value
-        end
-    })
-    B:Toggle({
-        Title = "墙壁检测",
-        Value = true,
-        Callback = function(value)
-            aimWall = value
-        end
-    })
-
-    local KA_MAX_DISTANCE = 300
-    local kaEnabled = false
-    local KANearestOnly = false
-    local KA_NEAREST_DISTANCE = 25
-    local KATargetPoliceOnly = false
-    local KATargetCivilianOnly = false
-    local KAIgnoreDead = true
-    local showTarget = true
-    local currentTarget = nil
-    local targetDisplayGui = nil
-    local targetDisplayLabel = nil
-
-    local function CreateTargetDisplay()
-        if targetDisplayGui then return end
-        targetDisplayGui = Instance.new("ScreenGui")
-        targetDisplayGui.Name = "KillAuraTargetDisplay"
-        targetDisplayGui.ResetOnSpawn = false
-        targetDisplayGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        targetDisplayGui.Parent = player:WaitForChild("PlayerGui")
-
-        targetDisplayLabel = Instance.new("TextLabel")
-        targetDisplayLabel.Size = UDim2.new(0, 220, 0, 30)
-        targetDisplayLabel.Position = UDim2.new(1, -230, 1, -50)
-        targetDisplayLabel.BackgroundTransparency = 1
-        targetDisplayLabel.Text = "未检测到目标"
-        targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        targetDisplayLabel.TextSize = 18
-        targetDisplayLabel.Font = Enum.Font.GothamBold
-        targetDisplayLabel.TextStrokeTransparency = 0.2
-        targetDisplayLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        targetDisplayLabel.TextXAlignment = Enum.TextXAlignment.Right
-        targetDisplayLabel.Parent = targetDisplayGui
-    end
-
-    local function DestroyTargetDisplay()
-        if targetDisplayGui then
-            targetDisplayGui:Destroy()
-            targetDisplayGui = nil
-            targetDisplayLabel = nil
-        end
-    end
-
-    local function UpdateTargetDisplay()
-        if not showTarget or not kaEnabled then
-            if targetDisplayGui then targetDisplayGui.Enabled = false end
-            return
-        end
-        if not targetDisplayGui then CreateTargetDisplay() end
-        targetDisplayGui.Enabled = true
-        if currentTarget then
-            targetDisplayLabel.Text = currentTarget.Name
-            targetDisplayLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-        else
-            targetDisplayLabel.Text = "未检测到目标"
-            targetDisplayLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
-        end
-    end
-
-    local function kaGetNearestEnemy()
-        local char = player.Character
-        if not char then return nil end
-        local myHead = char:FindFirstChild("Head")
-        if not myHead then return nil end
-        local bestPlayer, bestDist = nil, KA_MAX_DISTANCE
-
-        local function isTargetAllowed(p)
-            if KATargetPoliceOnly and KATargetCivilianOnly then return false end
-            local teamName = p.Team and p.Team.Name or ""
-            local isPolice = teamName:find("警察") or teamName:find("Police") or teamName:find("Cop")
-            local isCivilian = false
-            if p.Team then
-                local tn = p.Team.Name
-                isCivilian = tn:find("平民") or tn:find("Citizen") or tn:find("圣奥里公民")
-            else
-                isCivilian = true
-            end
-            if KATargetPoliceOnly then
-                if not isPolice then return false end
-            elseif KATargetCivilianOnly then
-                if not isCivilian then return false end
-            end
-            if KAIgnoreDead then
-                local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-                if not hum or hum.Health <= 0 then return false end
-            end
-            return true
-        end
-
-        if KANearestOnly then
-            local nearestInRange = nil
-            local nearestDistInRange = 9999
-            local anyEnemy = nil
-            local anyDist = 9999
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then
-                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local head = p.Character:FindFirstChild("Head")
-                        if head and isTargetAllowed(p) then
-                            local dist = (head.Position - myHead.Position).Magnitude
-                            if dist < anyDist then
-                                anyDist = dist
-                                anyEnemy = p
-                            end
-                            if dist <= KA_NEAREST_DISTANCE and dist < nearestDistInRange then
-                                nearestDistInRange = dist
-                                nearestInRange = p
-                            end
-                        end
-                    end
-                end
-            end
-            if nearestInRange then return nearestInRange else return anyEnemy end
-        end
-
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head and isTargetAllowed(p) then
-                        local dist = (head.Position - myHead.Position).Magnitude
-                        if dist < bestDist then
-                            bestDist = dist
-                            bestPlayer = p
-                        end
-                    end
-                end
-            end
-        end
-        return bestPlayer
-    end
-
-    local function performAttack()
-        if not kaEnabled then return end
-        
-        local target = kaGetNearestEnemy()
-        currentTarget = target
-        
-        if target then
-            local targetHead = target.Character and target.Character:FindFirstChild("Head")
-            if targetHead then
-                local myHead = player.Character and player.Character:FindFirstChild("Head")
-                if myHead then
-                    local origin = myHead.Position
-                    local hitPos = targetHead.Position
-                    local direction = (hitPos - origin).Unit
-                    local damage = 999999999
-                    pcall(function()
-                        ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", {
-                            bodyParts = { { "Head", damage } },
-                            shotCode = { origin, direction },
-                            target = target,
-                            pos = hitPos
-                        })
-                    end)
-                    pcall(function()
-                        local handleShots = ReplicatedStorage:FindFirstChild("Events")
-                        handleShots = handleShots and handleShots:FindFirstChild("HandleShots")
-                        if handleShots then
-                            handleShots:FireServer("2", "Shoot")
-                        end
-                    end)
-                end
-            end
-        end
-        UpdateTargetDisplay()
-    end
-
-    task.spawn(function()
-        while not isDestroyed do
-            if kaEnabled then
-                performAttack()
-            end
-            task.wait(0.05)
-        end
-    end)
-
-    player.CharacterAdded:Connect(function()
-        if kaEnabled then
-            task.wait(0.05)
-            performAttack()
-        end
-    end)
-
-    local function onToolAdded(tool)
-        if kaEnabled then
-            performAttack()
-        end
-    end
-
-    local function setupToolListener(char)
-        if char then
-            char.DescendantAdded:Connect(function(desc)
-                if desc:IsA("Tool") then
-                    onToolAdded(desc)
-                end
-            end)
-        end
-    end
-
-    if player.Character then
-        setupToolListener(player.Character)
-    end
-
-    player.CharacterAdded:Connect(function(char)
-        setupToolListener(char)
-    end)
-
-    C:Divider({ Text = "杀戮光环" })
-    C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
-    C:Toggle({
-        Title = "启用杀戮光环",
-        Value = false,
-        Callback = function(value)
-            kaEnabled = value
-            if value then
-                if showTarget then CreateTargetDisplay() end
-                task.wait(0.1)
-                performAttack()
-            else
-                currentTarget = nil
-                if showTarget then UpdateTargetDisplay() end
-            end
-        end
-    })
-    C:Slider({
-        Title = "攻击距离",
-        Step = 1,
-        Value = { Min = 50, Max = 1000, Default = 300 },
-        Callback = function(value)
-            KA_MAX_DISTANCE = value
-        end
-    })
-
-    C:Divider({ Text = "显示设置" })
-    C:Toggle({
-        Title = "显示攻击目标",
-        Value = true,
-        Callback = function(value)
-            showTarget = value
-            if value then
-                if kaEnabled then
-                    CreateTargetDisplay()
-                    UpdateTargetDisplay()
-                end
-            else
-                DestroyTargetDisplay()
-            end
-        end
-    })
-
-    C:Divider({ Text = "过滤" })
-    C:Toggle({
-        Title = "只攻击警察",
-        Value = false,
-        Callback = function(value)
-            KATargetPoliceOnly = value
-            if value and KATargetCivilianOnly then
-                KATargetCivilianOnly = false
-            end
-        end
-    })
-    C:Toggle({
-        Title = "只攻击平民",
-        Value = false,
-        Callback = function(value)
-            KATargetCivilianOnly = value
-            if value and KATargetPoliceOnly then
-                KATargetPoliceOnly = false
-            end
-        end
-    })
-    C:Toggle({
-        Title = "不攻击血量为0的玩家",
-        Value = true,
-        Callback = function(value)
-            KAIgnoreDead = value
-        end
-    })
-
-    C:Divider({ Text = "优先攻击" })
-    C:Toggle({
-        Title = "优先攻击最近目标",
-        Value = false,
-        Callback = function(value)
-            KANearestOnly = value
-        end
-    })
-    C:Slider({
-        Title = "优先攻击距离",
-        Step = 1,
-        Value = { Min = 5, Max = 100, Default = 25 },
-        Callback = function(value)
-            KA_NEAREST_DISTANCE = value
-        end
-    })
-
-    D:Toggle({
-        Title = "启用传送",
-        Value = false,
-        Callback = function(value)
-            Settings.TeleportEnabled = value
-        end
-    })
-
-    local FIXED_TELEPORTS = {
-        {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
-        {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
-        {n = "警察局", p = Vector3.new(3364.273193359375, 3.9188079834, -394.7233581542969)},
-        {n = "圣奥里修车店", p = Vector3.new(2782.46875, 2.630995750427246, -418.59930419921875)},
-        {n = "圣奥里银行", p = Vector3.new(3134.05419921875, 6.116048336029053, -171.36976623535156)},
-        {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
-        {n = "圣奥里平民重生", p = Vector3.new(3741.114990234375, 3.720573663711548, -438.1059875488281)},
-        {n = "圣奥里码头", p = Vector3.new(4527.65625, -23.968238830566406, -280.59356689453125)},
-        {n = "圣奥里餐饮店", p = Vector3.new(3182.416748046875, 3.01859188079834, 426.5179138183594)},
-        {n = "消防部门", p = Vector3.new(3578.676025390625, 8.408823013305664, 579.6567993164062)},
-        {n = "宠物店", p = Vector3.new(3678.237305, 3.017920, 693.114624)},
-        {n = "圣奥里大码头", p = Vector3.new(2736.307617, 2.630299, -1120.333008)},
-        {n = "圣奥里海滩桥下(消星点)", p = Vector3.new(3964.504395, -25.068211, -854.057251)},
-        {n = "大景超市", p = Vector3.new(3936.582764, 3.038293, 1136.326416)},
-        {n = "转镜中心", p = Vector3.new(4152.919922, 2.631675, 941.446045)},
-        {n = "道路服务", p = Vector3.new(4271.332520, 2.628108, 1200.086914)},
-        {n = "大景餐饮店", p = Vector3.new(4476.997559, 3.037825, 906.802979)},
-        {n = "送货中心", p = Vector3.new(4399.419434, 3.038999, 1609.455933)},
-        {n = "大景卖车店", p = Vector3.new(3434.377441, 42.931786, 2687.997070)},
-        {n = "莱斯维尔餐饮店", p = Vector3.new(753.757812, 3.039824, 998.132996)},
-        {n = "莱斯维尔服装店", p = Vector3.new(820.745117, 2.766988, 1047.445679)},
-        {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771)},
-        {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693)},
-        {n = "米尔顿左上加油站", p = Vector3.new(1145.635742, 2.630916, -864.273682)},
-        {n = "米尔顿右下加油站", p = Vector3.new(-1646.802734, 2.630164, 1812.894653)},
-        {n = "米尔顿上方加油站", p = Vector3.new(-900.701660, 2.630927, 1124.683105)},
-        {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689)},
-        {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839)},
-        {n = "约克镇修车厂", p = Vector3.new(-407.163025, 3.076807, -6.098211)},
-        {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670)},
-        {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433)},
-        {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529)},
-        {n = "约克镇卫星车", p = Vector3.new(-302.093567, 3.037825, -167.621017)},
-        {n = "约克镇中心点", p = Vector3.new(-275.995209, 2.630996, -139.985352)},
-        {n = "黑市", p = Vector3.new(1038.969849, -22.732950, 895.430237)},
-        {n = "渔夫码头", p = Vector3.new(-50.147552, -24.555279, 1462.145996)},
-        {n = "农场", p = Vector3.new(-1268.339233, 2.572412, 2560.060303)},
-        {n = "监狱门口", p = Vector3.new(-1697.931885, 2.630666, 1284.567383)},
-        {n = "监狱广场", p = Vector3.new(-1600.602417, 2.631028, 1268.060059)},
-        {n = "代尔山", p = Vector3.new(847.062988, 194.115753, -326.212708)},
-        {n = "瀑布洞穴(消星点)", p = Vector3.new(3040.956055, 109.688538, 2711.069336)},
-        {n = "大桥", p = Vector3.new(949.014954, 25.215754, 2897.654785)},
-        {n = "地图右下(消星点)", p = Vector3.new(-1651.385010, 2.414712, 3225.278320)},
-        {n = "下部加油站", p = Vector3.new(2270.378174, 2.630927, 154.161484)},
-        {n = "游戏厅", p = Vector3.new(2934.893799, 2.956458, 1693.660034)},
-        {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300)},
-        {n = "修船厂", p = Vector3.new(4096.405273, -30.401447, 2865.045166)},
-    }
-
-    local teleNames = {}
-    for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
-    local selectedTeleport = teleNames[1] or ""
-
-    local CAR_TELEPORTS = {
-        {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
-    }
-
-    local carTeleNames = {}
-    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
-    local selectedCarTeleport = carTeleNames[1] or ""
-
-    D:Divider({ Text = "常规传送" })
-    D:Dropdown({
-        Title = "常规传送",
-        Values = teleNames,
-        Value = teleNames[1],
-        Callback = function(value)
-            selectedTeleport = value
-        end
-    })
-
-    D:Button({
-        Title = "传送到选定地点",
-        Callback = function()
-            if not Settings.TeleportEnabled then
-                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
-                return
-            end
-            for _, data in ipairs(FIXED_TELEPORTS) do
-                if data.n == selectedTeleport then
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = CFrame.new(data.p)
-                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
-                    end
-                    return
-                end
-            end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
-        end
-    })
-
-    D:Divider({ Text = "偷车能用到的传送地点" })
-    D:Dropdown({
-        Title = "偷车能用到的传送地点",
-        Values = carTeleNames,
-        Value = carTeleNames[1],
-        Callback = function(value)
-            selectedCarTeleport = value
-        end
-    })
-
-    D:Button({
-        Title = "传送到选定地点",
-        Callback = function()
-            if not Settings.TeleportEnabled then
-                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
-                return
-            end
-            for _, data in ipairs(CAR_TELEPORTS) do
-                if data.n == selectedCarTeleport then
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = CFrame.new(data.p)
-                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
-                    end
-                    return
-                end
-            end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
-        end
-    })
-
-    local ESP_ENABLED = false
-    local ESP_SHOW_NAME = true
-    local ESP_SHOW_TEAM = true
-    local ESP_SHOW_HEALTH = true
-    local ESP_SHOW_DIST = true
-    local ESP_SHOW_SELF = false
-    local ESP_SHOW_PEERS = true
-    local ESP_LIST = {}
-    local ESP_REFRESH_COUNT = 0
-
-    local function GetTeam(p)
-        if p.Team then
-            local teamName = p.Team.Name
-            local teamMap = {
-                ["Police"] = "警察",
-                ["Fire"] = "火焰",
-                ["Medical"] = "医疗",
-                ["Road"] = "道路",
-                ["Civilian"] = "平民",
-                ["Citizen"] = "平民",
-                ["Criminal"] = "匪徒",
-                ["Gang"] = "黑帮",
-                ["Military"] = "军人",
-                ["Delivery"] = "送货",
-                ["Farmer"] = "农民",
-                ["Banker"] = "银行家",
-                ["Mayor"] = "市长",
-                ["Journalist"] = "记者",
-                ["Lawyer"] = "律师",
-                ["Prisoner"] = "囚犯",
-                ["Guard"] = "狱警",
-                ["Driver"] = "司机",
-                ["Chef"] = "厨师",
-                ["Builder"] = "建筑工",
-                ["Miner"] = "矿工",
-                ["Fisherman"] = "渔夫",
-                ["Merchant"] = "商人",
-                ["Student"] = "学生",
-                ["Teacher"] = "老师",
-                ["Engineer"] = "工程师",
-                ["Scientist"] = "科学家",
-                ["Pilot"] = "飞行员",
-                ["Courier"] = "快递员",
-                ["BusDriver"] = "公交车司机",
-            }
-            return teamMap[teamName] or teamName
-        end
-        return "平民"
-    end
-
-    local function GetTeamColor(p)
-        if p.Team then return p.Team.TeamColor.Color end
-        return Color3.fromRGB(200, 200, 200)
-    end
-
-    local function GetHealth(p)
-        local c = p.Character
-        if not c then return 0 end
-        local h = c:FindFirstChildOfClass("Humanoid")
-        if not h then return 0 end
-        return math.floor(h.Health)
-    end
-
-    local function GetDist(p)
-        local mc = player.Character
-        if not mc then return 0 end
-        local mr = mc:FindFirstChild("HumanoidRootPart")
-        if not mr then return 0 end
-        local tc = p.Character
-        if not tc then return 0 end
-        local tr = tc:FindFirstChild("HumanoidRootPart")
-        if not tr then return 0 end
-        return math.floor((mr.Position - tr.Position).Magnitude)
-    end
-
-    local function RemoveESP(id)
-        local d = ESP_LIST[id]
-        if d then
-            if d.Billboard then d.Billboard:Destroy() end
-            ESP_LIST[id] = nil
-        end
-    end
-
-    local function BuildESP(p)
-        if not p.Character then return end
-        if not ESP_SHOW_SELF and p == player then return end
-        
-        local head = p.Character:FindFirstChild("Head")
-        if not head then return end
-        if ESP_LIST[p.UserId] then
-            if ESP_LIST[p.UserId].Billboard then
-                ESP_LIST[p.UserId].Billboard.Enabled = true
-            end
-            return
-        end
-
-        local bb = Instance.new("BillboardGui")
-        bb.Size = UDim2.new(0, 200, 0, 100)
-        bb.StudsOffset = Vector3.new(0, 3, 0)
-        bb.AlwaysOnTop = true
-        bb.MaxDistance = 764
-        bb.Parent = head
-
-        local f = Instance.new("Frame")
-        f.Size = UDim2.new(1, 0, 1, 0)
-        f.BackgroundTransparency = 1
-        f.Parent = bb
-
-        ESP_LIST[p.UserId] = { Billboard = bb, Frame = f }
-    end
-
-    local function RefreshESP()
-        if not ESP_ENABLED then
-            for _, d in pairs(ESP_LIST) do
-                if d.Billboard then d.Billboard.Enabled = false end
-            end
-            return
-        end
-
-        ESP_REFRESH_COUNT = ESP_REFRESH_COUNT + 1
-        if ESP_REFRESH_COUNT % 3 ~= 0 then
-            return
-        end
-
-        for _, p in ipairs(Players:GetPlayers()) do
-            if not ESP_SHOW_SELF and p == player then
-                RemoveESP(p.UserId)
-                continue
-            end
-            
-            if not p.Character then
-                RemoveESP(p.UserId)
-                continue
-            end
-            
-            if ESP_REFRESH_COUNT % 30 == 0 and ESP_LIST[p.UserId] then
-                RemoveESP(p.UserId)
-            end
-            
-            if not ESP_LIST[p.UserId] then
-                BuildESP(p)
-            end
-            
-            local d = ESP_LIST[p.UserId]
-            if not d then continue end
-            if not d.Billboard or not d.Billboard.Parent then
-                ESP_LIST[p.UserId] = nil
-                BuildESP(p)
-                d = ESP_LIST[p.UserId]
-                if not d then continue end
-            end
-            d.Billboard.Enabled = true
-
-            local f = d.Frame
-            for _, c in ipairs(f:GetChildren()) do c:Destroy() end
-
-            local y = 0
-            local lines = 0
-            local team = GetTeam(p)
-            local color = GetTeamColor(p)
-            local hp = GetHealth(p)
-            local dist = GetDist(p)
-
-            if ESP_SHOW_NAME then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 20)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                if p == player then
-                    l.Text = p.Name .. " (你)"
-                    l.TextColor3 = Color3.fromRGB(0, 255, 255)
-                else
-                    l.Text = p.Name
-                    l.TextColor3 = color
-                end
-                l.TextSize = 15
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 22
-                lines = lines + 1
-            end
-
-            if ESP_SHOW_TEAM then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                l.Text = "[" .. team .. "]"
-                l.TextColor3 = color
-                l.TextSize = 13
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
-                lines = lines + 1
-            end
-
-            if ESP_SHOW_HEALTH then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                local c = hp > 70 and Color3.fromRGB(0, 255, 100) or hp > 40 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 50, 50)
-                l.Text = hp .. "HP"
-                l.TextColor3 = c
-                l.TextSize = 13
-                l.Font = Enum.Font.GothamBold
-                l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
-                lines = lines + 1
-            end
-
-            if ESP_SHOW_DIST then
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 0, 18)
-                l.Position = UDim2.new(0, 0, 0, y)
-                l.BackgroundTransparency = 1
-                l.Text = dist .. "m"
-                l.TextColor3 = Color3.fromRGB(200, 200, 200)
-                l.TextSize = 13
-                l.Font = Enum.Font.Gotham
-                l.TextStrokeTransparency = 0.3
-                l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.TextXAlignment = Enum.TextXAlignment.Center
-                l.Parent = f
-                y = y + 20
-                lines = lines + 1
-            end
-
-            d.Billboard.Size = UDim2.new(0, 200, 0, lines * 20 + 10)
-        end
-    end
-
-    E:Toggle({
-        Title = "透视总开关",
-        Value = false,
-        Callback = function(value)
-            ESP_ENABLED = value
-            if value then
-                RefreshESP()
-            end
-        end
-    })
-    E:Divider()
-    E:Toggle({
-        Title = "显示名字",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_NAME = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示队伍",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_TEAM = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示血量",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_HEALTH = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "显示距离",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_DIST = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Divider()
-    E:Toggle({
-        Title = "透视自己",
-        Value = false,
-        Callback = function(value)
-            ESP_SHOW_SELF = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-    E:Toggle({
-        Title = "同行显示",
-        Value = true,
-        Callback = function(value)
-            ESP_SHOW_PEERS = value
-            if ESP_ENABLED then RefreshESP() end
-        end
-    })
-
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(0.3)
-            if ESP_ENABLED then RefreshESP() end
-        end
-    end)
-    Players.PlayerAdded:Connect(function(p)
-        p.CharacterAdded:Connect(function()
-            task.wait(0.3)
-            if ESP_ENABLED then RefreshESP() end
-        end)
-    end)
-    Players.PlayerRemoving:Connect(function(p)
-        RemoveESP(p.UserId)
-    end)
-
-    local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
-    local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
-
-    local SONG_LIST = {
-        { name = "半壶纱", id = "140168001118478" },
-        { name = "对你有感觉", id = "113476583412576" },
-        { name = "失眠", id = "124928120639248" },
-        { name = "中国人能飞", id = "79254667830418" },
-        { name = "忘情牛肉面", id = "72954292508946" },
-        { name = "无需多言", id = "114940361500053" },
-        { name = "出山", id = "108542841138539" },
-        { name = "来个好梗绷一绷", id = "120070812635771" },
-        { name = "孤独患者", id = "88257174439605" },
-        { name = "幻昼", id = "103093530102792" },
-        { name = "海屿你", id = "76421239273915" },
-        { name = "于是", id = "132959953803661" },
-        { name = "罗生门", id = "79952466129206" },
-        { name = "茫", id = "72194943092340" },
-        { name = "忘不掉的你", id = "91111816286323" },
-        { name = "DearD", id = "139047831212058" },
-        { name = "戒烟", id = "137671588958836" },
-        { name = "IQOO进行曲", id = "109693244185458" },
-        { name = "祖国人进行曲", id = "86555185586884" },
-        { name = "十年咕嘎无人知", id = "78729794283728" },
-        { name = "unhappy", id = "88523902860927" },
-    }
-
-    local selectedSong = SONG_LIST[1]
-    local musicSound = nil
-    local isMusicPlaying = false
-    local currentPlayIndex = 1
-    local playMode = "顺序播放"
-    local endedConnection = nil
-
-    local songNames = {}
-    for _, song in ipairs(SONG_LIST) do
-        table.insert(songNames, song.name)
-    end
-
-    local function PlaySongByIndex(index)
-        if index < 1 or index > #SONG_LIST then
-            if playMode == "顺序播放" then
-                index = 1
-            elseif playMode == "循环播放" then
-                index = 1
-            elseif playMode == "随机播放" then
-                index = math.random(1, #SONG_LIST)
-            end
-        end
-        
-        if index < 1 or index > #SONG_LIST then return end
-        
-        local song = SONG_LIST[index]
-        selectedSong = song
-        currentPlayIndex = index
-        
-        if musicSound then
-            musicSound:Stop()
-            musicSound:Destroy()
-            musicSound = nil
-        end
-        if endedConnection then
-            endedConnection:Disconnect()
-            endedConnection = nil
-        end
-        
-        pcall(function()
-            musicSound = Instance.new("Sound")
-            musicSound.SoundId = "rbxassetid://" .. song.id
-            musicSound.Volume = 0.5
-            musicSound.Looped = false
-            musicSound.Parent = player:WaitForChild("PlayerGui")
-            musicSound:Play()
-            WindUI:Notify({ Title = "音乐", Content = "正在播放: " .. song.name, Duration = 2 })
-            
-            endedConnection = musicSound.Ended:Connect(function()
-                if not isMusicPlaying then return end
-                if playMode == "循环播放" then
-                    PlaySongByIndex(currentPlayIndex)
-                elseif playMode == "顺序播放" then
-                    local nextIndex = currentPlayIndex + 1
-                    if nextIndex > #SONG_LIST then
-                        nextIndex = 1
-                    end
-                    PlaySongByIndex(nextIndex)
-                elseif playMode == "随机播放" then
-                    local randomIndex = math.random(1, #SONG_LIST)
-                    while randomIndex == currentPlayIndex and #SONG_LIST > 1 do
-                        randomIndex = math.random(1, #SONG_LIST)
-                    end
-                    PlaySongByIndex(randomIndex)
-                end
-            end)
-        end)
-    end
-
-    MusicGroup:Dropdown({
-        Title = "选择歌曲",
-        Values = songNames,
-        Value = songNames[1],
-        Callback = function(value)
-            for i, song in ipairs(SONG_LIST) do
-                if song.name == value then
-                    selectedSong = song
-                    currentPlayIndex = i
-                    break
-                end
-            end
-            if isMusicPlaying then
-                PlaySongByIndex(currentPlayIndex)
-            end
-        end
-    })
-
-    MusicGroup:Divider()
-
-    MusicGroup:Toggle({
-        Title = "播放音乐",
-        Value = false,
-        Callback = function(value)
-            isMusicPlaying = value
-            if value then
-                PlaySongByIndex(currentPlayIndex)
-            else
-                if musicSound then
-                    musicSound:Stop()
-                    musicSound:Destroy()
-                    musicSound = nil
-                end
-                if endedConnection then
-                    endedConnection:Disconnect()
-                    endedConnection = nil
-                end
-                WindUI:Notify({ Title = "音乐", Content = "已停止播放", Duration = 2 })
-            end
-        end
-    })
-
-    MusicGroup:Slider({
-        Title = "音量",
-        Step = 0.1,
-        Value = { Min = 0, Max = 7, Default = 1 },
-        Callback = function(value)
-            if musicSound then
-                local actualVolume = math.min(value, 1)
-                musicSound.Volume = actualVolume
-            end
-        end
-    })
-
-    MusicGroup:Divider()
-    MusicGroup:Paragraph({
-        Title = "播放模式",
-        Desc = "选择音乐的播放方式"
-    })
-
-    MusicGroup:Dropdown({
-        Title = "播放模式",
-        Values = { "顺序播放", "循环播放", "随机播放" },
-        Value = "顺序播放",
-        Callback = function(value)
-            playMode = value
-            WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 })
-            if isMusicPlaying then
-                PlaySongByIndex(currentPlayIndex)
-            end
-        end
-    })
-
-    -- ==================== 设置 Tab（卡密验证） ====================
-    local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
-
-    local adminVerified = false
-
-    local KeySection = SettingsTab:Section({ Title = "开发者验证", Opened = true })
-    KeySection:Paragraph({
-        Title = "说明",
-        Desc = "请输入开发者卡密才能进入开发者后台"
-    })
-    KeySection:Divider()
-
-    local keyInputValue = ""
-    KeySection:Input({
-        Title = "卡密",
-        Placeholder = "请输入开发者卡密...",
-        Callback = function(value)
-            keyInputValue = value
-        end
-    })
-
-    local function buildAdminPanel()
-        local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
-        AdminGroup:Paragraph({
-            Title = "已授权",
-            Desc = "当前身份: 开发者"
-        })
-        AdminGroup:Divider({ Text = "坐标显示" })
-
-        local coordEnabled = false
-        local coordGui = nil
-        local coordFrame = nil
-        local coordTextBox = nil
-        local coordCopyBtn = nil
-        local coordDragging = false
-        local coordDragStart, coordStartPos
-        local coordRenderConn = nil
-
-        local function CreateCoordDisplay()
-            if coordGui then return end
-            
-            local character = player.Character or player.CharacterAdded:Wait()
-            local root = character:WaitForChild("HumanoidRootPart")
-            
-            coordGui = Instance.new("ScreenGui")
-            coordGui.Name = "CoordinateCopyTool"
-            coordGui.Parent = player:WaitForChild("PlayerGui")
-            
-            coordFrame = Instance.new("Frame")
-            coordFrame.Size = UDim2.new(0, 250, 0, 100)
-            coordFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
-            coordFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            coordFrame.Active = true
-            coordFrame.Parent = coordGui
-            
-            coordTextBox = Instance.new("TextBox")
-            coordTextBox.Size = UDim2.new(0.9, 0, 0, 30)
-            coordTextBox.Position = UDim2.new(0.05, 0, 0.15, 0)
-            coordTextBox.Text = "加载中..."
-            coordTextBox.ClearTextOnFocus = false
-            coordTextBox.TextEditable = false
-            coordTextBox.Parent = coordFrame
-            
-            coordCopyBtn = Instance.new("TextButton")
-            coordCopyBtn.Size = UDim2.new(0.9, 0, 0, 35)
-            coordCopyBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-            coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
-            coordCopyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            coordCopyBtn.TextColor3 = Color3.new(1, 1, 1)
-            coordCopyBtn.Parent = coordFrame
-            
-            coordFrame.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    coordDragging = true
-                    coordDragStart = input.Position
-                    coordStartPos = coordFrame.Position
-                end
-            end)
-            
-            coordFrame.InputChanged:Connect(function(input)
-                if coordDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - coordDragStart
-                    coordFrame.Position = UDim2.new(coordStartPos.X.Scale, coordStartPos.X.Offset + delta.X, coordStartPos.Y.Scale, coordStartPos.Y.Offset + delta.Y)
-                end
-            end)
-            
-            coordFrame.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    coordDragging = false
-                end
-            end)
-            
-            coordRenderConn = RunService.RenderStepped:Connect(function()
-                if not coordEnabled then return end
-                local char = player.Character
-                if not char then return end
-                local rootPart = char:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-                local pos = rootPart.Position
-                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                if coordTextBox and not coordTextBox:IsFocused() then
-                    coordTextBox.Text = formattedPos
-                end
-            end)
-            table.insert(connections, coordRenderConn)
-            
-            coordCopyBtn.MouseButton1Click:Connect(function()
-                if not coordTextBox then return end
-                coordTextBox:CaptureFocus()
-                coordTextBox.SelectionStart = 1
-                coordTextBox.CursorPosition = #coordTextBox.Text + 1
-                coordCopyBtn.Text = "现在按下 Ctrl + C 复制！"
-                task.wait(2)
-                coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
-            end)
-        end
-
-        local function DestroyCoordDisplay()
-            if coordRenderConn then
-                coordRenderConn:Disconnect()
-                coordRenderConn = nil
-            end
-            if coordGui then
-                coordGui:Destroy()
-                coordGui = nil
-                coordFrame = nil
-                coordTextBox = nil
-                coordCopyBtn = nil
-            end
-        end
-
-        AdminGroup:Toggle({
-            Title = "启用坐标显示",
-            Value = false,
-            Callback = function(value)
-                coordEnabled = value
-                if value then
-                    CreateCoordDisplay()
-                else
-                    DestroyCoordDisplay()
-                end
-            end
-        })
-    end
-
-    KeySection:Button({
-        Title = "验证并进入",
-        Callback = function()
-            if adminVerified then
-                WindUI:Notify({ Title = "提示", Content = "已通过验证，无需重复", Duration = 2 })
-                return
-            end
-            if keyInputValue == "2639zako" then
-                adminVerified = true
-                WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 })
-                buildAdminPanel()
-            else
-                WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 })
-            end
-        end
-    })
-
-    WindUI:Notify({
-        Title = "wdfex-Hub",
-        Content = "脚本已加载成功，欢迎使用！",
-        Duration = 3,
-    })
-end
+--[[
+███████╗██╗   ██╗██╗██╗         █████╗ ██╗  ██╗███████╗
+██╔════╝██║   ██║██║██║        ██╔══██╗╚██╗██╔╝██╔════╝
+█████╗  ██║   ██║██║██║        ███████║ ╚███╔╝ █████╗
+██╔══╝  ╚██╗ ██╔╝██║██║        ██╔══██║ ██╔██╗ ██╔══╝
+███████╗ ╚████╔╝ ██║███████╗   ██║  ██║██╔╝ ██╗███████╗
+╚══════╝  ╚═══╝  ╚═╝╚══════╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+
+        STUDIOS V2 OBFUSCATOR By MAX
+        https://eaxe.net
+
+        Sponsored by
+        https://BloxDen.com
+--]]
+
+return (function(...)
+	local C = {
+			"B4IF",
+			"B#T5*;2G&808V#ZM",
+			"Bob]1\'Q?(YI\\=9J0?pp",
+			"B?KtBt2&Y`<",
+			"B$8.7?k,Dt<?\\p4",
+			"B0.4?2Ro!49",
+			"B4gu&`?4",
+			"B#BljV",
+			"B#A]oV?c0",
+			"B;)+?\\8U-.EobRk;",
+			"B2G?W=BU",
+			"B8l3VF",
+			"B?7!,lVWtsR2%-\"^;u\\",
+			"B?@@D(",
+			"Br^[=b2H>K",
+			"B4guK3#_rR(8&<G",
+			"BJ_unHPaJ:K_q,ZtrN-",
+			"B4guSf2\'3>",
+			"B:**c+<$H?",
+			"B",
+			"B\'l*O82G?a@8l:",
+			"BRPLO#Qt&0Z=+ErA",
+			"BBf=A/oZ_",
+			"BBML!Y?<6",
+			"BEE?W^P>Mb>=St#C#,",
+			"Br^-gW",
+			"B#?i-rBfGBT",
+			"B#_2U12*",
+			"BER2Y$\'l*k",
+			"B8gJeq",
+			"B4guoI",
+			"B2,]_TBU",
+			"BlbW*W/%(FQ6nO!i9J6ZVVI,/-LMQ?B3_0>qEGWc2n-\';(DCJ]5B&b.aJ3cC8%iELY4V>5`Y(o$#ZoV",
+			"B;\"\\lrH*Rp[B>29p_JDK!T:r>#$n+E\\3CFKqQNFn#5i,l<$1YQHIOcQlnbtrtu_-J7%:`m2V@!Y.4pkAFfAF5Ldofh=IT.d1/q00IOc",
+			"B#L])q8l>",
+			"B_!QL$#A]oV?c0",
+		};
+	for j, W in ipairs({ { 443902 + -443901, 630913738 % 3544459 }, { 743936 - 743935, 346508066 % 1604204 }, { 1100569953 % 8152370, 62936416 % 1210315 } }) do
+		while W[1995434050 % 15468481] < W[794842710 % 6258604] do
+			C[W[-981972 - (-981973)]], C[W[736915 - 736913]], W[904568 + -904567], W[987694866 % 9497066] = C[W[-431072 + 431074]], C[W[407587741 % 5822682]], W[571121 + -571120] + 33769324 % 155619, W[-850468 - (-850470)] - (-710610 + 710611);
+		end;
+	end;
+	local function j(j)
+		return C[j + (-950844 - (-1015788))];
+	end;
+	do
+		local j = type;
+		local W = C;
+		local U = {
+				["-"] = -227218 - (-227238),
+				k = 630754 - 630688,
+				A = 314569 + -314560,
+				["^"] = -499148 + 499167,
+				["$"] = -90244 - (-90320),
+				["]"] = 43288222 % 1396394,
+				f = 2923317035 % 13920557,
+				["\""] = -846001 + 846062,
+				[")"] = 1483650077 % 11325573,
+				s = 482192 - 482145,
+				["8"] = 468074659 % 5572317,
+				L = 1767413799 % 13389498,
+				R = 13443630 % 2240601,
+				["\\"] = 1056476777 % 9267340,
+				["`"] = 302328673 % 2175026,
+				["!"] = -756408 - (-756480),
+				["="] = 534061 + -534046,
+				["3"] = 84336526 % 1016102,
+				c = -637217 + 637258,
+				["?"] = 2503316863 % 11225636,
+				["7"] = 372897032 % 3271026,
+				["5"] = 1046228 + -1046186,
+				["<"] = 942625344 % 12912675,
+				["1"] = 736258129 % 3272258,
+				B = -279995 + 280031,
+				n = 1436539243 % 5633487,
+				W = 2996026274 % 12431644,
+				u = -653564 + 653604,
+				["&"] = 882558 - 882505,
+				["+"] = -819822 - (-819865),
+				E = -506796 - (-506819),
+				[":"] = -757193 - (-757222),
+				T = 337770 - 337763,
+				J = -836589 + 836607,
+				Y = 926702 + -926621,
+				D = 1769166802 % 9026361,
+				j = -420925 + 420996,
+				["4"] = -292875 - (-292905),
+				H = -556703 - (-556753),
+				S = -302690 - (-302734),
+				[";"] = -142528 + 142544,
+				V = -146992 + 147017,
+				b = -732239 + 732322,
+				I = 519963 + -519911,
+				["#"] = -799748 + 799785,
+				["/"] = 846606 + -846596,
+				e = -597909 + 597915,
+				["9"] = -30974 + 31000,
+				["*"] = 190963 + -190924,
+				["%"] = 505510 - 505433,
+				O = 1726482867 % 8632414,
+				m = 274010315 % 3468485,
+				["."] = 1038800056 % 5092157,
+				K = 255648334 % 15038134,
+				["["] = -92888 - (-92945),
+				i = 1764988 % 1764913,
+				X = -215624 + 215627,
+				G = 385069 - 385018,
+				p = 529545778 % 15574874,
+				l = -133256 - (-133336),
+				N = -196736 + 196781,
+				["@"] = 1259074243 % 12343865,
+				h = 687283 + -687234,
+				["("] = -584652 + 584653,
+				r = -825162 + 825195,
+				P = 307705 - 307684,
+				C = 541872859 % 6947087,
+				a = -507401 + 507483,
+				Q = -487003 + 487030,
+				F = 397584 - 397510,
+				d = -90231 + 90279,
+				U = 192374938 % 7399034,
+				g = 2580168427 % 11073684,
+				["6"] = 133054 - 133052,
+				o = 1492551120 % 15878203,
+				["\'"] = 767995 - 767973,
+				["2"] = 378747 - 378715,
+				[","] = -525256 - (-525334),
+				_ = 253836 - 253802,
+				M = -14082 - (-14146),
+				t = 979181 - 979169,
+				Z = -461992 - (-461996),
+				["0"] = 693519 + -693514,
+				q = 1161733961 % 4964675,
+				[">"] = 407506 + -407422,
+			};
+		local d = table.concat;
+		local N = {
+				d = 1402222139 % 7662416,
+				h = 305042 - 305021,
+				z = -480059 + 480059,
+				["5"] = -487499 + 487550,
+				S = 665275231 % 3737501,
+				Z = -505793 - (-505803),
+				c = 343853 - 343808,
+				["9"] = 712404 + -712391,
+				y = 546055 - 546016,
+				["/"] = 91404225 % 662349,
+				X = 287736262 % 13701725,
+				n = 441300 + -441285,
+				p = -632596 + 632642,
+				g = 365285 - 365258,
+				B = -720025 - (-720044),
+				C = 1526576324 % 8434123,
+				O = -797715 - (-797717),
+				M = 447952 + -447927,
+				E = 3483943575 % 16280110,
+				q = 440733 - 440685,
+				i = 391072 - 391028,
+				a = 1027839 - 1027803,
+				V = 695836 + -695830,
+				["+"] = -776813 - (-776837),
+				W = 1147654667 % 5653471,
+				I = 777609 - 777589,
+				l = 147523203 % 11347938,
+				["3"] = -523732 + 523750,
+				x = 285403917 % 3068859,
+				u = 4001785133 % 16201559,
+				N = -608264 + 608314,
+				H = 383307 - 383251,
+				s = 123493122 % 633298,
+				b = 559103 + -559054,
+				G = 676678696 % 9398315,
+				["0"] = -212488 - (-212492),
+				Y = -380460 + 380468,
+				f = 505580521 % 2956611,
+				k = -824074 - (-824103),
+				A = -485577 - (-485636),
+				e = 1033160 + -1033103,
+				["1"] = 439929 - 439907,
+				["4"] = 157381139 % 3576844,
+				t = 195191 + -195158,
+				["6"] = 971811 + -971764,
+				m = -841836 + 841870,
+				r = 3028186591 % 16368576,
+				["7"] = 1028384244 % 9984313,
+				["8"] = 1008632 + -1008631,
+				D = -426840 + 426882,
+				T = -323294 - (-323332),
+				R = -301627 + 301634,
+				v = 1359187406 % 7386888,
+				J = 621378 + -621350,
+				K = 605276 + -605233,
+				L = 406005 - 405979,
+				["2"] = 811302 + -811247,
+				j = 9939423 % 1419913,
+				o = 1671372266 % 11526705,
+				P = -484116 - (-484174),
+				w = 1814740514 % 14402702,
+				Q = -426461 - (-426513),
+				U = -621681 + 621704,
+				F = 1389259633 % 11976376,
+			};
+		local b = string.sub;
+		local t = string.len;
+		local w = string.char;
+		local F = table.insert;
+		local V = math.floor;
+		for C = 324411873 % 1763108, #W, 65731076 % 13146215 do
+			local B = W[C];
+			if j(B) == "string" then
+				local j = b(B, -320132 + 320133, 62776 - 62775);
+				if j == "<" then
+					B = b(B, 453118 - 453116);
+					local j = t(B);
+					local U = {};
+					local A = 1045130 - 1045129;
+					local s = -40218 - (-40218);
+					local L = -1002768 - (-1002768);
+					while A <= j do
+						local C = b(B, A, A);
+						local W = N[C];
+						if W then
+							s = s + W * ((1276784408 % 8399897) ^ ((1435740442 % 7072613 - L)));
+							L = L + (163316 + -163315);
+							if L == 757211 - 757207 then
+								L = -902748 + 902748;
+								local C = V(s / (-468861 - (-534397)));
+								local j = V((s % (122549 - 57013)) / (1769676951 % 15388493));
+								local W = s % (-578440 + 578696);
+								F(U, w(C, j, W));
+								s = -744598 + 744598;
+							end;
+						elseif C == "=" then
+							F(U, w(V(s / (1343592126 % 5483782))));
+							if A >= j or b(B, A + (754993 - 754992), A + (15226 + -15225)) ~= "=" then
+								F(U, w(V((s % (-172258 + 237794)) / (467710 - 467454))));
+							end;
+							break;
+						end;
+						A = A + (-43675 - (-43676));
+					end;
+					W[C] = d(U);
+				elseif j == "B" then
+					B = b(B, -71518 - (-71520));
+					local j = t(B);
+					local N = {};
+					local A = 749807 + -749806;
+					while A <= j do
+						local C = (j - A) + (-23869 - (-23870));
+						local W = C >= 297593670 % 12938855 and -455864 - (-455869) or C;
+						local d = 334137312 % 3093864;
+						local t = W > 443224 + -443223;
+						for C = 144901 - 144901, 707520 + -707516, -258548 + 258549 do
+							local j;
+							if C < W then
+								local W = b(B, A + C, A + C);
+								j = U[W];
+								if not j then
+									t = false;
+									break;
+								end;
+							else
+								j = -241707 - (-241791);
+							end;
+							d = d * (814170 + -814085) + j;
+						end;
+						if t then
+							local C = V(d / (5188207974 % 30600182)) % (866112 - 865856);
+							local j = V(d / (416637 + -351101)) % (-521674 + 521930);
+							local U = V(d / (1456760632 % 6744261)) % (-473099 - (-473355));
+							local b = d % (609043 + -608787);
+							if W == -371809 + 371814 then
+								F(N, w(C, j, U, b));
+							elseif W == 990506 - 990502 then
+								F(N, w(C, j, U));
+							elseif W == 699848 - 699845 then
+								F(N, w(C, j));
+							elseif W == 804853 + -804851 then
+								F(N, w(C));
+							end;
+						end;
+						A = A + W;
+					end;
+					W[C] = d(N);
+				end;
+			end;
+		end;
+	end;
+	return (function(N, d, C, b, w, t, U, W, l, A, s, F, L, k, D, a, V, B, u)
+		l, u, s, B, V, W, A, D, F, L, a, k = function(C, j)
+				local U = s(j);
+				local d = function(d, N, b, t)
+						return W(C, {
+							d,
+							N,
+							b,
+							t,
+						}, j, U);
+					end;
+				return d;
+			end, function(C)
+				V[C] = V[C] - (358627 + -358626);
+				if -119849 + 119849 == V[C] then
+					V[C], F[C] = nil, nil;
+				end;
+			end, function(C)
+				for j = -348689 - (-348690), #C, 1485500225 % 7141828 do
+					V[C[j]] = (448192 + -448191) + V[C[j]];
+				end;
+				if d then
+					local W = d(true);
+					local U = b(W);
+					U[j(741655 - 806579)], U[j(423275 + -488186)], U[j(-1029353 + 964418)] = C, L, function()
+							return -624322 - 952488;
+						end;
+					return W;
+				else
+					return N({}, { [j(375503 + -440414)] = L, [j(638847 - 703771)] = C, [j(736418 + -801353)] = function()
+							return 317226 + -1894036;
+						end });
+				end;
+			end, function()
+				A = (536014 + -536013) + A;
+				V[A] = 814556 + -814555;
+				return A;
+			end, {}, function(W, d, N, b)
+				local R, I, G, Q, i, f, D, w, s, T, H, o, y, v, z, L, q, V, A, K, S;
+				while W do
+					if W < 9431019 - 358711 then
+						if 5772434 - 224102 > W then
+							if W < 195070630 % 5460090 then
+								if W < -936676 + 2693612 then
+									R, H = not o, H + v;
+									K = H <= q;
+									K = R and K;
+									R = q <= H;
+									R = o and R;
+									K = R or K;
+									R = 1574877974 % 12213707;
+									W = K and R;
+									K = 3407261 - (-116320);
+									W = W or K;
+								elseif 788284 + 2162739 > W then
+									v, W = 34637818860266 - (-1027095), Q;
+									G = W(i);
+									Q = F[A];
+									K = F[s];
+									H = j(-159825 + 94903);
+									q = K(H, v);
+									i = Q[q];
+									W = G == i;
+									W = W and 5205320711 % 20368038 or 2877108922 % 23855030;
+								elseif W < 267249 + 3462141 then
+									W, K, L, i, G = 405619 + 11271199, Q, nil, nil, nil;
+									s[A] = K;
+									Q = nil;
+								else
+									W, w = C[j(720287 - 785216)], { A };
+								end;
+							else
+								if W < 4946121 - 476645 then
+									W = -443585 + 5382777;
+								elseif W < -732684 + 5932793 then
+									v = #q;
+									w, T = -735112 - (-735113), 484433 + -484432;
+									W = H(w, v);
+									v = W;
+									W = i(q, v);
+									o = W;
+									W = F[K];
+									R = o - T;
+									w = D(R);
+									W[o] = w;
+									R = -689872 + 689872;
+									w = #q;
+									v = nil;
+									W = w == R;
+									W, o = W and 1460268002 % 20693855 or 5027346 - 88154, nil;
+								else
+									z, v = not T, R + v;
+									w = o >= v;
+									w = z and w;
+									z = v >= o;
+									z = T and z;
+									w = z or w;
+									z = 6754881 - (-258197);
+									W = w and z;
+									w = 930694785 % 5036386;
+									W = W or w;
+								end;
+							end;
+						else
+							if W < -757958 + 8255058 then
+								if 740546 + 5583812 > W then
+									H, W = j(909896 - 974824), nil;
+									A = B();
+									G, V = j(-280815 + 215887), d;
+									Q = B();
+									F[A] = W;
+									w = nil;
+									s = B();
+									F[s] = w;
+									L = B();
+									W, D = 270485184 % 4226331, j(852027 - 916960);
+									F[L] = W;
+									i = j(100834 - 165748);
+									w = C[D];
+									D = j(387381 + -452311);
+									W = w[D];
+									w = C[G];
+									G, D = j(801146 - 866056), W;
+									W = w[G];
+									G = B();
+									F[G] = W;
+									w = C[i];
+									i = j(-308678 + 243759);
+									W = w[i];
+									i = W;
+									K = B();
+									W = 1956712970 % 15529468;
+									F[Q] = W;
+									W = {};
+									F[K] = W;
+									W = {};
+									q = W;
+									w = C[H];
+									H = j(-273730 - (-208812));
+									W = w[H];
+									H, w, v = W, -879694 - (-879695), 922154 + -921898;
+									o = v;
+									v = 717359 - 717358;
+									R = v;
+									v = 95645 - 95645;
+									T, W = v > R, -389129 + 5850155;
+									v = w - R;
+								elseif W < 7771178 - 619101 then
+									z = v;
+									W = z;
+									q[z] = W;
+									W, z = 214699266 % 6974608, nil;
+								else
+									w = j(434310 + -499237);
+									W = C[w];
+									w = { W() };
+									w, W = { U(w) }, C[j(343268 - 408207)];
+								end;
+							else
+								if W < 7590751 - (-258242) then
+									V, s = j(698886 + -763820), j(-980100 + 915173);
+									w = C[V];
+									A = C[s];
+									V = w(A);
+									A = F[N[426289 - 426288]];
+									s = F[N[645882 + -645880]];
+									G, D = 384726 + 27504516764465, j(-664392 - (-599456));
+									L = s(D, G);
+									w = A[L];
+									W = V == w;
+									W = W and 1730061272 % 8570996 or 14931028 - 284250;
+								elseif W < 1494006958 % 23966825 then
+									s = -651901 - (-652098);
+									A = F[N[2438625762 % 10333160]];
+									V = A * s;
+									A = -302449 + 27418011422542;
+									w = V + A;
+									V = -409710 + 35184372498542;
+									W = w % V;
+									F[N[-813631 - (-813633)]] = W;
+									W = 8150975 - 18220;
+								else
+									A = F[N[966658 + -966655]];
+									s = 3125627301 % 14272270;
+									V = A * s;
+									s, A = -1036938 + 1036939, 382954517 % 9819340;
+									w = V % A;
+									F[N[437430 - 437427]] = w;
+									A = F[N[2193030953 % 13968350]];
+									V = A ~= s;
+									W = V and 563617 + 15074189 or 4884922321 % 20152023;
+								end;
+							end;
+						end;
+					else
+						if W < 781244 + 11709294 then
+							if W > 4322191801 % 20429832 then
+								if 1092141542 % 17428087 > W then
+									K, f = H, j(-815457 - (-750524));
+									S = C[f];
+									f = j(-581379 - (-516467));
+									y = S[f];
+									S = y(V, K);
+									y = F[N[1108158266 % 5925980]];
+									f = y();
+									z = S + f;
+									T = z + i;
+									S, z = -374722 + 374723, 2890614177 % 13079701;
+									R = T % z;
+									W, i = 1324257 - 188851, R;
+									y = i + S;
+									z = L[y];
+									K = nil;
+									T = Q .. z;
+									Q = T;
+								elseif 10898863 - (-788622) > W then
+									W, w = C[j(-52844 + -12088)], { A };
+								else
+									v = B();
+									o = B();
+									W, y = {}, j(58377 - 123301);
+									F[v] = W;
+									W = l(2745331679 % 19390067, {
+											v,
+											L,
+											Q,
+											G,
+										});
+									R = B();
+									D = nil;
+									F[o] = W;
+									w, W = j(-464520 + 399580), {};
+									F[R] = W;
+									T, H, I = {}, nil, nil;
+									W = C[w];
+									S = F[R];
+									q, f = nil, j(-645498 - (-580572));
+									z, i = { [y] = S, [f] = I }, nil;
+									G = u(G);
+									w = W(T, z);
+									F[A] = w;
+									W = a(13439692 - (-259646), {
+											R,
+											v,
+											K,
+											L,
+											Q,
+											o,
+										});
+									G = j(704387 - 769302);
+									F[s] = W;
+									K = u(K);
+									o = u(o);
+									R = u(R);
+									T = 87275881615599 % 2128680152762;
+									W = k(6703464 - (-999661), { A, s });
+									v = u(v);
+									L = u(L);
+									L = W;
+									Q = u(Q);
+									W = L();
+									R, D = j(-59722 - 5216), W;
+									W = C[G];
+									Q = W;
+									H = F[A];
+									v = F[s];
+									o = v(R, T);
+									q = H[o];
+									K = D[q];
+									W, i = K and 560153453 % 11383163 or 718458 + 9293403, K;
+								end;
+							else
+								if W < -718389 + 11390435 then
+									q = F[A];
+									W, R = 729764631 % 13225203, 23282186668684 - 73779;
+									H = F[s];
+									o = j(-337375 + 272453);
+									v = H(o, R);
+									K = q[v];
+									i = K;
+								elseif W < 11233583 - (-168043) then
+									V = F[N[1445914413 % 7019002]];
+									w = #V;
+									V = -345540 - (-345540);
+									W = w == V;
+									W = W and -881508 + 8876370 or 5677695937 % 28464387;
+								else
+									i, o, v = j(-456149 + 391218), 23837828286370 - (-844730), j(-411727 - (-346818));
+									W = C[i];
+									K = F[A];
+									q = F[s];
+									H = q(v, o);
+									Q = K[H];
+									K = -700250 - (-700250);
+									i = W(Q, K);
+									W = -56898 + 14562220;
+								end;
+							end;
+						else
+							if -143595 + 14719645 > W then
+								if W < 12998426 - (-492705) then
+									A = F[N[487802905 % 4475256]];
+									V = #A;
+									s = F[N[1241699713 % 9406816]];
+									L = nil;
+									A = s[V];
+									s = F[N[155756246 % 5370905]];
+									w = { A };
+									s[V] = L;
+									W = C[j(-88404 + 23487)];
+								elseif 14721433 - 619103 > W then
+									V, A = d[-874711 + 874712], d[-684761 + 684763];
+									W = F[N[1575935818 % 16246761]];
+									s = W;
+									W = s[A];
+									W = W and 4571368 - 636169 or 2755624149 % 22088048;
+								else
+									q, D, w = j(-825679 + 760756), nil, {};
+									D, H = j(749146 + -814062), 265716 + 2501604193944;
+									W = C[D];
+									i = F[A];
+									G = nil;
+									Q = F[s];
+									R, D = j(207339 + -272247), j(151836 + -216757);
+									K = Q(q, H);
+									G = i[K];
+									D = W[D];
+									D = D(W, G);
+									i = F[A];
+									L = nil;
+									Q = F[s];
+									q, H, T = j(821552 - 886489), 732057 + 18148236932457, -999595 + 28579363157159;
+									K = Q(q, H);
+									G = i[K];
+									W = D[G];
+									i, K, G = j(481399 + -546341), j(-449100 + 384184), W;
+									W = C[i];
+									Q = C[K];
+									H = F[A];
+									v = F[s];
+									o = v(R, T);
+									q = H[o];
+									G = nil;
+									s = u(s);
+									A = u(A);
+									H = j(-684986 - (-620073));
+									H = Q[H];
+									K = { H(Q, q) };
+									i = W(U(K));
+									W = i();
+									W, D = C[j(-435525 - (-370600))], nil;
+								end;
+							else
+								if W < 15069977 - (-72315) then
+									w = j(570277 - 635218);
+									W = C[w];
+									w = { W };
+									W = C[j(-988657 + 923737)];
+								elseif W < 16763554 - 591553 then
+									A = F[N[3554404041 % 16010829]];
+									s, W, q = 351870404 % 1795257, -716304 + 13999228, 910324 + -910322;
+									V = A % s;
+									s, R = 133685173 % 547890, 1479169080 % 9361828;
+									G = F[N[606716103 % 4044774]];
+									D = G - V;
+									G = 765009248 % 15937692;
+									L = D / G;
+									A = s - L;
+									D = F[N[-36491 + 36495]];
+									Q = F[N[1013885 - 1013883]];
+									K = q ^ A;
+									i = Q / K;
+									G = D(i);
+									D = -685235 + 4295652531;
+									L = G % D;
+									G = 171918 + -171916;
+									D = G ^ V;
+									K = 522518751 % 8856250;
+									s = L / D;
+									v = 12194774 % 6097259;
+									D = F[N[572367 - 572363]];
+									Q = s % K;
+									K = 137493328898 % 4296721342;
+									i = Q * K;
+									G = D(i);
+									D = F[N[-203622 - (-203626)]];
+									i = D(s);
+									L = G + i;
+									G = 11403550 % 5669007;
+									D = L % G;
+									K, Q, V = 40449364 % 10112277, 600732256 % 7508334, nil;
+									i = L - D;
+									G = i / Q;
+									Q = D % K;
+									H = D % v;
+									q = D - H;
+									H = 389362666 % 8652498;
+									K = q / H;
+									A, H = nil, -627886 - (-628142);
+									q = G % H;
+									L = nil;
+									o = G % R;
+									v = G - o;
+									o, s = 1861466266 % 9080322, nil;
+									H = v / o;
+									i = {
+											Q,
+											K,
+											q,
+											H,
+										};
+									F[N[-19534 - (-19535)]] = i;
+									D, G = nil, nil;
+								else
+									W = {};
+									F[N[-985469 - (-985471)]] = W;
+									w = F[N[474293 - 474290]];
+									H, i, L, D = -891598 + 891599, 694594 - 694339, w, -694810 + 35184372783642;
+									w = A % D;
+									F[N[-15401 + 15405]] = w;
+									G = A % i;
+									i = 356650912 % 6484562;
+									D = G + i;
+									i = j(638013 - 702935);
+									F[N[-180497 - (-180502)]] = D;
+									W = 1636118564 % 14729578;
+									G = #V;
+									K = -565487 + 565488;
+									s[A] = i;
+									Q, i = j(48253 + -113175), -700106 - (-700313);
+									q, v = G, H;
+									H = 2841916784 % 16522772;
+									o = H > v;
+									H = K - v;
+								end;
+							end;
+						end;
+					end;
+				end;
+				W = #b;
+				return U(w);
+			end, -574218 - (-574218), function(C, j)
+				local U = s(j);
+				local d = function(...)
+						return W(C, { ... }, j, U);
+					end;
+				return d;
+			end, {}, function(C)
+				local j, W = 305512976 % 12220519, C[253650033 % 15853127];
+				while W do
+					V[W], j = V[W] - (-321565 + 321566), (156099 + -156098) + j;
+					if V[W] == 591712848 % 8218234 then
+						V[W], F[W] = nil, nil;
+					end;
+					W = C[j];
+				end;
+			end, function(C, j)
+				local U = s(j);
+				local d = function(d, N, b, t, w, F)
+						return W(C, {
+							d,
+							N,
+							b,
+							t,
+							w,
+							F,
+						}, j, U);
+					end;
+				return d;
+			end, function(C, j)
+				local U = s(j);
+				local d = function()
+						return W(C, {}, j, U);
+					end;
+				return d;
+			end;
+		return (D(-765712 + 6401351, {}))(U(w));
+	end)(setmetatable, newproxy, getfenv and getfenv() or _ENV, getmetatable, { ... }, select, unpack or table[j(820980 + -885923)]);
+end)(...);
