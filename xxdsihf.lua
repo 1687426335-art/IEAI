@@ -265,6 +265,35 @@ function createUI()
     end
     AntiFlingLoop()
 
+    -- ==================== 穿墙持续循环（修复失效问题） ====================
+    task.spawn(function()
+        while not isDestroyed do
+            if Settings.NoclipEnabled then
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+            RunService.Heartbeat:Wait()
+        end
+    end)
+
+    -- 角色重生时如果穿墙开着，重新应用
+    player.CharacterAdded:Connect(function(char)
+        if Settings.NoclipEnabled then
+            task.wait(0.2)
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({
@@ -299,7 +328,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.0.1提示",
-        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
+        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出\n修复了穿墙过了两三秒之后没效果问题",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -892,16 +921,7 @@ function createUI()
         Value = false,
         Callback = function(value)
             Settings.NoclipEnabled = value
-            if value then
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            else
+            if not value then
                 local char = player.Character
                 if char then
                     for _, part in ipairs(char:GetDescendants()) do
@@ -1585,7 +1605,6 @@ function createUI()
         end
     end
 
-    -- ==================== 常规传送（已删除银行、队伍、加油站、载具维修相关） ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
         {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
@@ -1646,7 +1665,6 @@ function createUI()
         end
     })
 
-    -- ==================== 售货机传送 ====================
     local VENDING_TELEPORTS = {
         {n = "游戏厅售货机", p = Vector3.new(2905.10, -337.11, 1733.39)},
         {n = "警察局售货机", p = Vector3.new(3372.79, -337.46, -476.88)},
@@ -1679,7 +1697,6 @@ function createUI()
         end
     })
 
-    -- ==================== 银行传送 ====================
     local BANK_TELEPORTS = {
         {n = "小银行", p = Vector3.new(-678.77, -337.12, -104.65)},
         {n = "大银行", p = Vector3.new(3134.90, -321.84, -270.04)},
@@ -1710,7 +1727,6 @@ function createUI()
         end
     })
 
-    -- ==================== 队伍传送 ====================
     local TEAM_TELEPORTS = {
         {n = "警察局", p = Vector3.new(3315.72, 3.02, -481.83)},
         {n = "医院", p = Vector3.new(3895.47, 3.02, -179.65)},
@@ -1747,7 +1763,6 @@ function createUI()
         end
     })
 
-    -- ==================== 加油站传送 ====================
     local GAS_TELEPORTS = {
         {n = "加油站1", p = Vector3.new(4517.21, -24.83, 111.44)},
         {n = "加油站2", p = Vector3.new(-918.75, 2.63, 1110.16)},
@@ -1781,7 +1796,6 @@ function createUI()
         end
     })
 
-    -- ==================== 载具维修类传送 ====================
     local REPAIR_TELEPORTS = {
         {n = "船艇维修店", p = Vector3.new(4091.92, -17.28, 2861.75)},
         {n = "圣奥里车辆维修", p = Vector3.new(2783.67, 2.63, -413.05)},
@@ -1813,7 +1827,6 @@ function createUI()
         end
     })
 
-    -- ==================== 偷车传送 ====================
     local CAR_TELEPORTS = {
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
