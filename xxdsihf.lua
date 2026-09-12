@@ -93,7 +93,7 @@ function createUI()
                     Type = "Button", 
                     Text = "wdfex-Hub",
                     Style = "Subtle", 
-                    Size = UDim2.new(1, -20, 0, 30),
+                    Size = UDim2.new(1, -able20, 0, 30),
                     Callback = function()
                     end
                 }
@@ -107,7 +107,7 @@ function createUI()
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
-        Draggable = true,
+        Dragg = true,
     })
 
     Window:EditOpenButton({
@@ -300,7 +300,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.0.0提示",
-        Desc = "已更新最新绕过反作弊你如果没有执行其他脚本没有被挂DC封了我直接跳了",
+        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -965,12 +965,12 @@ function createUI()
         end
     })
 
-    A:Divider({ Text = "防摔（一定要开）" })
+    A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
     local antiFallConnection = nil
 
     A:Toggle({
-        Title = "防摔（一定要开）",
+        Title = "防摔",
         Value = false,
         Callback = function(value)
             antiFallEnabled = value
@@ -1564,6 +1564,7 @@ function createUI()
         end
     })
 
+    -- ==================== 传送点 Tab ====================
     D:Toggle({
         Title = "启用传送",
         Value = false,
@@ -1572,36 +1573,61 @@ function createUI()
         end
     })
 
+    -- 通用传送分组函数
+    local function createTeleportGroup(tab, title, list)
+        local names = {}
+        for _, data in ipairs(list) do table.insert(names, data.n) end
+        local selected = names[1] or ""
+        tab:Divider({ Text = title })
+        tab:Dropdown({
+            Title = title,
+            Values = names,
+            Value = names[1],
+            Callback = function(value)
+                selected = value
+            end
+        })
+        tab:Button({
+            Title = "传送到选定地点",
+            Callback = function()
+                if not Settings.TeleportEnabled then
+                    WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
+                    return
+                end
+                for _, data in ipairs(list) do
+                    if data.n == selected then
+                        local char = player.Character
+                        local root = char and char:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            root.CFrame = CFrame.new(data.p)
+                            WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
+                        end
+                        return
+                    end
+                end
+                WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
+            end
+        })
+    end
+
+    -- ==================== 常规传送（已删银行/队伍/加油站/维修） ====================
     local FIXED_TELEPORTS = {
         {n = "车辆经销商", p = Vector3.new(3719.9501953125, 3.018573522567749, -333.3118591308594)},
-        {n = "医院", p = Vector3.new(3980.091064453125, 2.876060724258423, -138.79454040527344)},
-        {n = "警察局", p = Vector3.new(3364.273193359375, 3.9188079834, -394.7233581542969)},
-        {n = "圣奥里修车店", p = Vector3.new(2782.46875, 2.630995750427246, -418.59930419921875)},
-        {n = "圣奥里银行", p = Vector3.new(3134.05419921875, 6.116048336029053, -171.36976623535156)},
         {n = "圣奥里服装店", p = Vector3.new(3617.91259765625, 3.1072206497192383, -452.8206481933594)},
-        {n = "圣奥里平民重生", p = Vector3.new(3741.114990234375, 3.720573663711548, -438.1059875488281)},
         {n = "圣奥里码头", p = Vector3.new(4527.65625, -23.968238830566406, -280.59356689453125)},
         {n = "圣奥里餐饮店", p = Vector3.new(3182.416748046875, 3.01859188079834, 426.5179138183594)},
-        {n = "消防部门", p = Vector3.new(3578.676025390625, 8.408823013305664, 579.6567993164062)},
         {n = "宠物店", p = Vector3.new(3678.237305, 3.017920, 693.114624)},
         {n = "圣奥里大码头", p = Vector3.new(2736.307617, 2.630299, -1120.333008)},
         {n = "圣奥里海滩桥下(消星点)", p = Vector3.new(3964.504395, -25.068211, -854.057251)},
         {n = "大景超市", p = Vector3.new(3936.582764, 3.038293, 1136.326416)},
-        {n = "转镜中心", p = Vector3.new(4152.919922, 2.631675, 941.446045)},
-        {n = "道路服务", p = Vector3.new(4271.332520, 2.628108, 1200.086914)},
         {n = "大景餐饮店", p = Vector3.new(4476.997559, 3.037825, 906.802979)},
-        {n = "送货中心", p = Vector3.new(4399.419434, 3.038999, 1609.455933)},
         {n = "大景卖车店", p = Vector3.new(3434.377441, 42.931786, 2687.997070)},
         {n = "莱斯维尔餐饮店", p = Vector3.new(753.757812, 3.039824, 998.132996)},
         {n = "莱斯维尔服装店", p = Vector3.new(820.745117, 2.766988, 1047.445679)},
         {n = "莱斯维尔自由广场", p = Vector3.new(926.523376, 2.630995, 865.764771)},
         {n = "莱斯维尔码头(游艇)", p = Vector3.new(947.840210, -22.529087, 1216.085693)},
-        {n = "米尔顿左上加油站", p = Vector3.new(1145.635742, 2.630916, -864.273682)},
-        {n = "米尔顿右下加油站", p = Vector3.new(-1646.802734, 2.630164, 1812.894653)},
-        {n = "米尔顿上方加油站", p = Vector3.new(-900.701660, 2.630927, 1124.683105)},
         {n = "米尔顿居民区", p = Vector3.new(-528.565552, 2.630996, 1331.981689)},
         {n = "约克镇小银行", p = Vector3.new(-668.217224, 2.630995, -65.347839)},
-        {n = "约克镇修车厂", p = Vector3.new(-407.163025, 3.076807, -6.098211)},
         {n = "约克镇枪店", p = Vector3.new(-323.869293, 3.037825, 37.149670)},
         {n = "约克镇重生点", p = Vector3.new(-219.560318, 3.039824, -85.725433)},
         {n = "约克镇当铺", p = Vector3.new(-168.513733, 3.039000, -106.926529)},
@@ -1616,88 +1642,66 @@ function createUI()
         {n = "瀑布洞穴(消星点)", p = Vector3.new(3040.956055, 109.688538, 2711.069336)},
         {n = "大桥", p = Vector3.new(949.014954, 25.215754, 2897.654785)},
         {n = "地图右下(消星点)", p = Vector3.new(-1651.385010, 2.414712, 3225.278320)},
-        {n = "下部加油站", p = Vector3.new(2270.378174, 2.630927, 154.161484)},
         {n = "游戏厅", p = Vector3.new(2934.893799, 2.956458, 1693.660034)},
         {n = "高尔夫", p = Vector3.new(2280.767090, 3.037836, 1982.357300)},
-        {n = "修船厂", p = Vector3.new(4096.405273, -30.401447, 2865.045166)},
     }
 
-    local teleNames = {}
-    for _, data in ipairs(FIXED_TELEPORTS) do table.insert(teleNames, data.n) end
-    local selectedTeleport = teleNames[1] or ""
+    createTeleportGroup(D, "常规传送", FIXED_TELEPORTS)
 
+    -- ==================== 偷车传送 ====================
     local CAR_TELEPORTS = {
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
+    createTeleportGroup(D, "偷车能用到的传送地点", CAR_TELEPORTS)
 
-    local carTeleNames = {}
-    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
-    local selectedCarTeleport = carTeleNames[1] or ""
+    -- ==================== 售货机传送 ====================
+    local VENDING_TELEPORTS = {
+        {n = "游戏厅售货机", p = Vector3.new(2905.10, -337.11, 1733.39)},
+        {n = "警察局售货机", p = Vector3.new(3372.79, -337.46, -476.88)},
+        {n = "医院售货机", p = Vector3.new(3943.85, -337.12, -201.67)},
+        {n = "当铺售货机", p = Vector3.new(-208.57, -337.05, -97.18)},
+    }
+    createTeleportGroup(D, "售货机传送", VENDING_TELEPORTS)
 
-    D:Divider({ Text = "常规传送" })
-    D:Dropdown({
-        Title = "常规传送",
-        Values = teleNames,
-        Value = teleNames[1],
-        Callback = function(value)
-            selectedTeleport = value
-        end
-    })
+    -- ==================== 银行传送 ====================
+    local BANK_TELEPORTS = {
+        {n = "小银行", p = Vector3.new(-678.77, -337.12, -104.65)},
+        {n = "大银行", p = Vector3.new(3134.90, -321.84, -270.04)},
+    }
+    createTeleportGroup(D, "银行传送", BANK_TELEPORTS)
 
-    D:Button({
-        Title = "传送到选定地点",
-        Callback = function()
-            if not Settings.TeleportEnabled then
-                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
-                return
-            end
-            for _, data in ipairs(FIXED_TELEPORTS) do
-                if data.n == selectedTeleport then
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = CFrame.new(data.p)
-                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
-                    end
-                    return
-                end
-            end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
-        end
-    })
+    -- ==================== 队伍传送 ====================
+    local TEAM_TELEPORTS = {
+        {n = "警察局", p = Vector3.new(3315.72, 3.02, -481.83)},
+        {n = "医院", p = Vector3.new(3895.47, 3.02, -179.65)},
+        {n = "火焰", p = Vector3.new(3579.31, 8.41, 579.73)},
+        {n = "转运", p = Vector3.new(4150.27, 2.63, 942.63)},
+        {n = "送货", p = Vector3.new(4401.01, 3.04, 1607.59)},
+        {n = "道路服务", p = Vector3.new(4274.56, 2.63, 1200.60)},
+        {n = "圣奥里平民重生点", p = Vector3.new(3744.05, 2.63, -403.97)},
+        {n = "约克镇平民重生点", p = Vector3.new(-250.24, 2.63, -82.67)},
+    }
+    createTeleportGroup(D, "队伍传送", TEAM_TELEPORTS)
 
-    D:Divider({ Text = "偷车能用到的传送地点" })
-    D:Dropdown({
-        Title = "偷车能用到的传送地点",
-        Values = carTeleNames,
-        Value = carTeleNames[1],
-        Callback = function(value)
-            selectedCarTeleport = value
-        end
-    })
+    -- ==================== 加油站传送 ====================
+    local GAS_TELEPORTS = {
+        {n = "加油站1", p = Vector3.new(4517.21, -24.83, 111.44)},
+        {n = "加油站2", p = Vector3.new(-918.75, 2.63, 1110.16)},
+        {n = "加油站3", p = Vector3.new(2252.20, 2.63, 92.21)},
+        {n = "加油站4", p = Vector3.new(1150.41, 2.63, -841.89)},
+        {n = "加油站5", p = Vector3.new(-1620.28, 2.63, 1795.99)},
+    }
+    createTeleportGroup(D, "加油站传送", GAS_TELEPORTS)
 
-    D:Button({
-        Title = "传送到选定地点",
-        Callback = function()
-            if not Settings.TeleportEnabled then
-                WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 })
-                return
-            end
-            for _, data in ipairs(CAR_TELEPORTS) do
-                if data.n == selectedCarTeleport then
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = CFrame.new(data.p)
-                        WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. data.n, Duration = 2 })
-                    end
-                    return
-                end
-            end
-            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
-        end
-    })
+    -- ==================== 载具维修类传送 ====================
+    local REPAIR_TELEPORTS = {
+        {n = "船艇维修店", p = Vector3.new(4091.92, -17.28, 2861.75)},
+        {n = "圣奥里车辆维修", p = Vector3.new(2783.67, 2.63, -413.05)},
+        {n = "约克镇车辆维修", p = Vector3.new(-399.23, 2.63, -8.15)},
+    }
+    createTeleportGroup(D, "载具维修类传送", REPAIR_TELEPORTS)
 
+    -- ==================== 透视 ====================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = true
     local ESP_SHOW_TEAM = true
