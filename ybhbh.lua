@@ -300,7 +300,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.0.0提示",
-        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
+        Desc = "已更新最新绕过反作弊你如果没有执行其他脚本没有被挂DC封了我直接跳了",
         ThumbnailSize = 190,
     })
     infoTab:Select()
