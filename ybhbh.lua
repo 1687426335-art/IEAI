@@ -74,16 +74,12 @@ function createUI()
         Resizable = true,
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
-        User = {
-            Enabled = false,
-        },
+        User = { Enabled = false },
         SideBarWidth = 250,
         Search = {
             Enabled = true,
             Placeholder = "搜索...",
-            Callback = function(searchText)
-                print("搜索内容:", searchText)
-            end
+            Callback = function(searchText) end
         },
         SidePanel = {
             Enabled = true,
@@ -93,8 +89,7 @@ function createUI()
                     Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
+                    Callback = function() end
                 }
             }
         }
@@ -153,9 +148,7 @@ function createUI()
         while true do
             for hue = 0, 1, 0.01 do  
                 local color = Color3.fromHSV(hue, 0.8, 1)  
-                Window:EditOpenButton({
-                    Color = ColorSequence.new(color)
-                })
+                Window:EditOpenButton({ Color = ColorSequence.new(color) })
                 wait(0.04)  
             end
         end
@@ -299,7 +292,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.0.4提示",
-        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
+        Desc = "新增物品ID查询功能，输入物品名字即可获取SpecialId",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -323,199 +316,96 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
+    local ItemIdTab = AddTab(MainSection, "物品ID查询", "search")
 
-    -- ==================== 远程购买 ====================
-    local scannedRemotes = {}
-    local selectedRemoteName = ""
-    local remoteArgsText = ""
-    local autoBuyEnabled = false
-    local autoBuyDelay = 0.5
-    local autoBuyConn = nil
-
-    local function ScanRemotes()
-        scannedRemotes = {}
-        local function scan(container)
-            for _, obj in ipairs(container:GetDescendants()) do
-                if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                    local path = obj:GetFullName()
-                    if not scannedRemotes[path] then
-                        scannedRemotes[path] = obj
-                    end
-                end
-            end
+    -- ==================== 物品ID查询（圣奥里专用） ====================
+    local function FindItemId(itemName)
+        local marketItems = ReplicatedStorage:FindFirstChild("MarketItems")
+        if not marketItems then
+            return nil, "未找到 MarketItems 文件夹"
         end
-        scan(ReplicatedStorage)
-        scan(Workspace)
-        scan(player:WaitForChild("PlayerGui"))
-
-        local list = {}
-        for path, _ in pairs(scannedRemotes) do
-            table.insert(list, path)
-        end
-        table.sort(list)
-        return list
-    end
-
-    local function ParseArgs(text)
-        if not text or text == "" then return {} end
-        local args = {}
-        for token in string.gmatch(text, "([^,]+)") do
-            token = token:match("^%s*(.-)%s*$")
-            if token ~= "" then
-                local num = tonumber(token)
-                if num then
-                    table.insert(args, num)
-                elseif token == "true" then
-                    table.insert(args, true)
-                elseif token == "false" then
-                    table.insert(args, false)
+        for _, item in ipairs(marketItems:GetDescendants()) do
+            if item.Name:lower() == itemName:lower() then
+                local specialId = item:GetAttribute("SpecialId")
+                if specialId then
+                    return specialId, nil
                 else
-                    table.insert(args, token)
+                    return nil, "找到物品但该物品没有 SpecialId 属性"
                 end
             end
         end
-        return args
+        return nil, "未找到名字为 " .. itemName .. " 的物品"
     end
 
-    local function FireRemote()
-        if selectedRemoteName == "" then
-            WindUI:Notify({ Title = "远程购买", Content = "请先选择或输入远程事件", Duration = 3 })
-            return
-        end
-        local remote = scannedRemotes[selectedRemoteName]
-        if not remote then
-            remote = ReplicatedStorage:FindFirstChild(selectedRemoteName, true)
-        end
-        if not remote then
-            WindUI:Notify({ Title = "远程购买", Content = "未找到远程事件: " .. selectedRemoteName, Duration = 3 })
-            return
-        end
+    local itemNameInput = ""
+    local resultLabel = nil
 
-        local args = ParseArgs(remoteArgsText)
-
-        if remote:IsA("RemoteEvent") then
-            pcall(function()
-                remote:FireServer(unpack(args))
-            end)
-        elseif remote:IsA("RemoteFunction") then
-            pcall(function()
-                remote:InvokeServer(unpack(args))
-            end)
-        end
-
-        WindUI:Notify({ Title = "远程购买", Content = "已触发: " .. selectedRemoteName, Duration = 2 })
-    end
-
-    local function StartAutoBuy()
-        if autoBuyConn then return end
-        autoBuyConn = task.spawn(function()
-            while autoBuyEnabled and not isDestroyed do
-                FireRemote()
-                task.wait(autoBuyDelay)
-            end
-            autoBuyConn = nil
-        end)
-    end
-
-    local function StopAutoBuy()
-        autoBuyEnabled = false
-        if autoBuyConn then
-            task.cancel(autoBuyConn)
-            autoBuyConn = nil
-        end
-    end
-
-    RemoteBuyTab:Divider({ Text = "远程事件扫描" })
-    RemoteBuyTab:Paragraph({
+    ItemIdTab:Divider({ Text = "物品ID查询" })
+    ItemIdTab:Paragraph({
         Title = "说明",
-        Desc = "点击下方按钮扫描游戏内所有 RemoteEvent / RemoteFunction，然后从下拉框选择购买事件。"
+        Desc = "输入物品的名字（比如 SpeedCoil），点击查询，自动从 MarketItems 里读取 SpecialId。"
     })
 
-    local remoteDropdown = nil
+    ItemIdTab:Input({
+        Title = "物品名字",
+        Placeholder = "例如: SpeedCoil",
+        Callback = function(value)
+            itemNameInput = value
+        end
+    })
 
-    RemoteBuyTab:Button({
-        Title = "扫描远程事件",
+    ItemIdTab:Button({
+        Title = "查询ID",
         Callback = function()
-            local list = ScanRemotes()
-            if #list == 0 then
-                WindUI:Notify({ Title = "远程购买", Content = "未找到任何远程事件", Duration = 3 })
+            if itemNameInput == "" then
+                WindUI:Notify({ Title = "查询", Content = "请先输入物品名字", Duration = 3 })
                 return
             end
-            WindUI:Notify({ Title = "远程购买", Content = "已扫描到 " .. #list .. " 个远程事件", Duration = 3 })
-            if remoteDropdown then
-                pcall(function()
-                    remoteDropdown:Refresh(list)
-                end)
-            end
-        end
-    })
-
-    RemoteBuyTab:Divider({ Text = "选择远程事件" })
-
-    remoteDropdown = RemoteBuyTab:Dropdown({
-        Title = "远程事件列表",
-        Values = { "请先点击上方扫描" },
-        Value = "请先点击上方扫描",
-        Callback = function(value)
-            selectedRemoteName = value
-        end
-    })
-
-    RemoteBuyTab:Input({
-        Title = "手动输入远程事件名",
-        Placeholder = "例如: BuyItem / Purchase / BuyTool",
-        Callback = function(value)
-            if value and value ~= "" then
-                selectedRemoteName = value
-            end
-        end
-    })
-
-    RemoteBuyTab:Divider({ Text = "参数设置" })
-    RemoteBuyTab:Paragraph({
-        Title = "参数格式",
-        Desc = "多个参数用英文逗号分隔。字符串直接写，数字写数字，布尔写 true/false。\n例如: SpeedCoil, 1, true"
-    })
-
-    RemoteBuyTab:Input({
-        Title = "参数",
-        Placeholder = "例如: SpeedCoil, 1, true",
-        Callback = function(value)
-            remoteArgsText = value
-        end
-    })
-
-    RemoteBuyTab:Divider({ Text = "执行购买" })
-
-    RemoteBuyTab:Button({
-        Title = "单次购买",
-        Callback = function()
-            FireRemote()
-        end
-    })
-
-    RemoteBuyTab:Divider({ Text = "自动购买" })
-
-    RemoteBuyTab:Toggle({
-        Title = "启用自动购买",
-        Value = false,
-        Callback = function(value)
-            autoBuyEnabled = value
-            if value then
-                StartAutoBuy()
+            local id, err = FindItemId(itemNameInput)
+            if id then
+                WindUI:Notify({
+                    Title = "查询成功",
+                    Content = "物品: " .. itemNameInput .. "\nID: " .. tostring(id),
+                    Duration = 6
+                })
             else
-                StopAutoBuy()
+                WindUI:Notify({
+                    Title = "查询失败",
+                    Content = err or "未知错误",
+                    Duration = 4
+                })
             end
         end
     })
 
-    RemoteBuyTab:Slider({
-        Title = "购买间隔（秒）",
-        Step = 0.1,
-        Value = { Min = 0.1, Max = 5, Default = 0.5 },
-        Callback = function(value)
-            autoBuyDelay = value
+    ItemIdTab:Divider({ Text = "全部物品列表" })
+
+    ItemIdTab:Button({
+        Title = "列出所有物品和ID",
+        Callback = function()
+            local marketItems = ReplicatedStorage:FindFirstChild("MarketItems")
+            if not marketItems then
+                WindUI:Notify({ Title = "查询", Content = "未找到 MarketItems 文件夹", Duration = 3 })
+                return
+            end
+            local list = {}
+            for _, item in ipairs(marketItems:GetDescendants()) do
+                local specialId = item:GetAttribute("SpecialId")
+                if specialId then
+                    table.insert(list, item.Name .. " = " .. tostring(specialId))
+                end
+            end
+            if #list == 0 then
+                WindUI:Notify({ Title = "查询", Content = "MarketItems 里没有带 SpecialId 的物品", Duration = 3 })
+                return
+            end
+            table.sort(list)
+            local text = table.concat(list, "\n")
+            WindUI:Notify({
+                Title = "物品列表 (" .. #list .. "个)",
+                Content = text,
+                Duration = 10
+            })
         end
     })
 
