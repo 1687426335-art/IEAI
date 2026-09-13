@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.4"
+local version = "v3.0.6"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -71,7 +71,7 @@ function createUI()
 
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(0, 220, 0, 50)
-        frame.Position = UDim2.new(1, 0, 1, -80) -- 屏幕外右侧
+        frame.Position = UDim2.new(1, 0, 1, -80)
         frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         frame.BorderSizePixel = 0
         frame.Parent = sg
@@ -341,8 +341,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.4提示",
-        Desc = "已新增黑市远程购买，一键买解密电路",
+        Title = "v3.0.6提示",
+        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -358,21 +358,22 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
+    -- ==================== Tab 顺序 ====================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
+    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart") -- 放到飞天与加速下面
     local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
-    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
 
-    -- ==================== 远程购买（下拉框+购买按钮） ====================
+    -- ==================== 远程购买（工具和武器） ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
-    
-    -- 物品列表（按照你截图的路径和槽位写死）
-    local buyItemsList = {
+
+    -- 工具列表
+    local toolItems = {
         { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
         { name = "撬锁装置", id = "2", itemName = "Lockpick Device" },
         { name = "入侵工具", id = "3", itemName = "Hacking Tool" },
@@ -381,22 +382,30 @@ function createUI()
         { name = "工作人员涂鸦", id = "8", itemName = "Crew Graffiti" }
     }
 
-    local itemNameOptions = {}
-    for _, v in ipairs(buyItemsList) do
-        table.insert(itemNameOptions, v.name)
-    end
+    -- 武器列表（洛克17放在第一位）
+    local weaponItems = {
+        { name = "洛克17", id = "5", itemName = "Glock 17" },
+        { name = "战斧", id = "2", itemName = "Battle Axe" },
+        { name = "球棒", id = "3", itemName = "Bat" },
+        { name = "大砍刀", id = "4", itemName = "Machete" },
+        { name = "小刀", id = "1", itemName = "Knife" }
+    }
 
-    local selectedBuyItem = itemNameOptions[1]
+    -- 工具下拉框
+    local toolNameOptions = {}
+    for _, v in ipairs(toolItems) do table.insert(toolNameOptions, v.name) end
+    local selectedToolItem = toolNameOptions[1]
 
     RemoteBuyTab:Dropdown({
-        Title = "选择物品",
-        Values = itemNameOptions,
-        Value = itemNameOptions[1],
+        Title = "工具",
+        Values = toolNameOptions,
+        Value = toolNameOptions[1],
         Callback = function(value)
-            selectedBuyItem = value
+            selectedToolItem = value
         end
     })
 
+    -- 工具购买按钮
     RemoteBuyTab:Button({
         Title = "购买",
         Callback = function()
@@ -409,8 +418,8 @@ function createUI()
                 local displayName = ""
                 
                 if blackMarket then
-                    for _, itemInfo in ipairs(buyItemsList) do
-                        if itemInfo.name == selectedBuyItem then
+                    for _, itemInfo in ipairs(toolItems) do
+                        if itemInfo.name == selectedToolItem then
                             local slot = blackMarket:FindFirstChild(itemInfo.id)
                             if slot then
                                 targetItem = slot:FindFirstChild(itemInfo.itemName)
@@ -432,7 +441,67 @@ function createUI()
                         showBuySuccess(displayName)
                     end
                 else
-                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedBuyItem .. "，可能商店刷新了", Duration = 3 })
+                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedToolItem .. "，可能商店刷新了", Duration = 3 })
+                end
+            else
+                WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
+            end
+        end
+    })
+
+    RemoteBuyTab:Divider({ Text = "武器" })
+
+    -- 武器下拉框
+    local weaponNameOptions = {}
+    for _, v in ipairs(weaponItems) do table.insert(weaponNameOptions, v.name) end
+    local selectedWeaponItem = weaponNameOptions[1]
+
+    RemoteBuyTab:Dropdown({
+        Title = "武器",
+        Values = weaponNameOptions,
+        Value = weaponNameOptions[1],
+        Callback = function(value)
+            selectedWeaponItem = value
+        end
+    })
+
+    -- 武器购买按钮
+    RemoteBuyTab:Button({
+        Title = "购买",
+        Callback = function()
+            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+            local stuff = ReplicatedStorage:FindFirstChild("Stuff")
+            
+            if event and stuff then
+                local weaponsFolder = stuff:FindFirstChild("Weapons")
+                local targetItem = nil
+                local displayName = ""
+                
+                if weaponsFolder then
+                    for _, itemInfo in ipairs(weaponItems) do
+                        if itemInfo.name == selectedWeaponItem then
+                            local slot = weaponsFolder:FindFirstChild(itemInfo.id)
+                            if slot then
+                                targetItem = slot:FindFirstChild(itemInfo.itemName)
+                                displayName = itemInfo.name
+                            end
+                            break
+                        end
+                    end
+                end
+                
+                if targetItem then
+                    local success = pcall(function()
+                        event:InvokeServer("purchase", {
+                            isRestaurant = false,
+                            item = targetItem
+                        })
+                    end)
+                    if success then
+                        showBuySuccess(displayName)
+                    end
+                else
+                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedWeaponItem .. "，可能商店刷新了", Duration = 3 })
                 end
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
