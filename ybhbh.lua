@@ -111,92 +111,6 @@ function createUI()
         end)
     end
 
-    -- ==================== 自定义顶部标签 (wdfex脚本NB + 北京时间) ====================
-    local tagGui = Instance.new("ScreenGui")
-    tagGui.Name = "WdfexTopTags"
-    tagGui.ResetOnSpawn = false
-    tagGui.DisplayOrder = 999
-    tagGui.Parent = player:WaitForChild("PlayerGui")
-
-    -- 标签1：wdfex脚本NB
-    local tag1Frame = Instance.new("Frame")
-    tag1Frame.Size = UDim2.new(0, 130, 0, 28)
-    tag1Frame.Position = UDim2.new(0, 110, 0, 5) -- 放在大概你圈的位置
-    tag1Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    tag1Frame.BackgroundTransparency = 0.4
-    tag1Frame.BorderSizePixel = 0
-    tag1Frame.Parent = tagGui
-
-    local corner1 = Instance.new("UICorner")
-    corner1.CornerRadius = UDim.new(0, 6)
-    corner1.Parent = tag1Frame
-
-    local tag1Label = Instance.new("TextLabel")
-    tag1Label.Size = UDim2.new(1, 0, 1, 0)
-    tag1Label.BackgroundTransparency = 1
-    tag1Label.Text = "wdfex脚本NB"
-    tag1Label.TextColor3 = Color3.fromRGB(0, 255, 255)
-    tag1Label.TextSize = 14
-    tag1Label.Font = Enum.Font.GothamBold
-    tag1Label.Parent = tag1Frame
-
-    -- 标签1 彩虹描边
-    local stroke1 = Instance.new("UIStroke")
-    stroke1.Thickness = 1.5
-    stroke1.Parent = tag1Label
-    
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 255))
-    })
-    gradient.Parent = stroke1
-
-    -- 标签1 描边旋转动画
-    task.spawn(function()
-        while tagGui.Parent and not isDestroyed do
-            gradient.Rotation = (gradient.Rotation + 2) % 360
-            task.wait(0.03)
-        end
-    end)
-
-    -- 标签2：北京时间
-    local tag2Frame = Instance.new("Frame")
-    tag2Frame.Size = UDim2.new(0, 130, 0, 28)
-    tag2Frame.Position = UDim2.new(0, 250, 0, 5) -- 放在标签1右边
-    tag2Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    tag2Frame.BackgroundTransparency = 0.4
-    tag2Frame.BorderSizePixel = 0
-    tag2Frame.Parent = tagGui
-
-    local corner2 = Instance.new("UICorner")
-    corner2.CornerRadius = UDim.new(0, 6)
-    corner2.Parent = tag2Frame
-
-    local tag2Label = Instance.new("TextLabel")
-    tag2Label.Size = UDim2.new(1, 0, 1, 0)
-    tag2Label.BackgroundTransparency = 1
-    tag2Label.Text = "北京时间: 00:00:00"
-    tag2Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tag2Label.TextSize = 14
-    tag2Label.Font = Enum.Font.GothamBold
-    tag2Label.Parent = tag2Frame
-
-    -- 标签2 动态更新时间
-    task.spawn(function()
-        while tagGui.Parent and not isDestroyed do
-            local now = os.date("!*t")
-            now.hour = now.hour + 8
-            if now.hour >= 24 then
-                now.hour = now.hour - 24
-            end
-            local timeStr = string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
-            tag2Label.Text = "北京时间: " .. timeStr
-            task.wait(1)
-        end
-    end)
-
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -250,10 +164,94 @@ function createUI()
         Draggable = true,
     })
 
-    task.wait(0.1)
+    -- ==================== 悬浮窗内部左上角标签 ====================
+    task.wait(0.2)
     local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
     if mainGui then
         local mainFrame = mainGui:FindFirstChildOfClass("Frame")
+        if mainFrame then
+            -- 标签1：wdfex脚本NB
+            local tag1Frame = Instance.new("Frame")
+            tag1Frame.Size = UDim2.new(0, 120, 0, 24)
+            tag1Frame.Position = UDim2.new(0, 10, 0, 38) -- 悬浮窗左上角靠下一点，避免和标题重叠
+            tag1Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            tag1Frame.BackgroundTransparency = 0.4
+            tag1Frame.BorderSizePixel = 0
+            tag1Frame.Parent = mainFrame
+
+            local corner1 = Instance.new("UICorner")
+            corner1.CornerRadius = UDim.new(0, 6)
+            corner1.Parent = tag1Frame
+
+            local tag1Label = Instance.new("TextLabel")
+            tag1Label.Size = UDim2.new(1, 0, 1, 0)
+            tag1Label.BackgroundTransparency = 1
+            tag1Label.Text = "wdfex脚本NB"
+            tag1Label.TextColor3 = Color3.fromRGB(0, 255, 255)
+            tag1Label.TextSize = 13
+            tag1Label.Font = Enum.Font.GothamBold
+            tag1Label.Parent = tag1Frame
+
+            local stroke1 = Instance.new("UIStroke")
+            stroke1.Thickness = 1.5
+            stroke1.Parent = tag1Label
+            
+            local gradient = Instance.new("UIGradient")
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 255))
+            })
+            gradient.Parent = stroke1
+
+            -- 标签2：北京时间
+            local tag2Frame = Instance.new("Frame")
+            tag2Frame.Size = UDim2.new(0, 135, 0, 24)
+            tag2Frame.Position = UDim2.new(0, 10, 0, 68) -- 标签1下面
+            tag2Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            tag2Frame.BackgroundTransparency = 0.4
+            tag2Frame.BorderSizePixel = 0
+            tag2Frame.Parent = mainFrame
+
+            local corner2 = Instance.new("UICorner")
+            corner2.CornerRadius = UDim.new(0, 6)
+            corner2.Parent = tag2Frame
+
+            local tag2Label = Instance.new("TextLabel")
+            tag2Label.Size = UDim2.new(1, 0, 1, 0)
+            tag2Label.BackgroundTransparency = 1
+            tag2Label.Text = "北京时间: 00:00:00"
+            tag2Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tag2Label.TextSize = 13
+            tag2Label.Font = Enum.Font.GothamBold
+            tag2Label.Parent = tag2Frame
+
+            -- 彩色描边旋转动画
+            task.spawn(function()
+                while mainFrame.Parent and not isDestroyed do
+                    gradient.Rotation = (gradient.Rotation + 2) % 360
+                    task.wait(0.03)
+                end
+            end)
+
+            -- 北京时间循环更新
+            task.spawn(function()
+                while mainFrame.Parent and not isDestroyed do
+                    local now = os.date("!*t")
+                    now.hour = now.hour + 8
+                    if now.hour >= 24 then now.hour = now.hour - 24 end
+                    local timeStr = string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
+                    tag2Label.Text = "北京时间: " .. timeStr
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+
+    task.wait(0.1)
+    local mainGui2 = player.PlayerGui:FindFirstChild("CloudHub")
+    if mainGui2 then
+        local mainFrame = mainGui2:FindFirstChildOfClass("Frame")
         if mainFrame then
             local stroke1 = Instance.new("UIStroke")
             stroke1.Thickness = 3
@@ -428,7 +426,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.7提示",
-        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀，新增顶部标签和北京时间",
+        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀，悬浮窗内置标签和北京时间",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -444,7 +442,6 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- ==================== Tab 顺序 ====================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
