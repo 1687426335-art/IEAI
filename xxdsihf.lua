@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.5"
+local version = "v3.8"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -80,17 +80,15 @@ function createUI()
         Search = {
             Enabled = true,
             Placeholder = "搜索...",
- })
-
-               Callback = function(searchText Window:) end
+            Callback = function(searchText) end
         },
-        SideEditPanel = {
+        SidePanel = {
             Enabled = true,
             Content = {
                 {
                     Type = "Button", 
-                    Text =Open "wdfex-Hub",
-                    Style = "ButtonSubtle", 
+                    Text = "wdfex-Hub",
+                    Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function() end
                 }
@@ -105,7 +103,9 @@ function createUI()
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
-   ({
+    })
+
+    Window:EditOpenButton({
         Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
@@ -291,8 +291,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.5提示",
-        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、球棒、大砍刀等武器",
+        Title = "v3.8更新",
+        Desc = "已更新远程购买",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -308,7 +308,6 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
-    -- 调整了Tab顺序，将远程购买移至飞天与加速下方
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
@@ -322,7 +321,6 @@ function createUI()
     -- ==================== 远程购买（工具和武器） ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
 
-    -- 工具列表
     local toolItems = {
         { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
         { name = "撬锁装置", id = "2", itemName = "Lockpick Device" },
@@ -332,7 +330,6 @@ function createUI()
         { name = "工作人员涂鸦", id = "8", itemName = "Crew Graffiti" }
     }
 
-    -- 武器列表（洛克17放在第一位）
     local weaponItems = {
         { name = "洛克17", id = "5", itemName = "Glock 17" },
         { name = "球棒", id = "3", itemName = "Bat" },
@@ -341,7 +338,6 @@ function createUI()
         { name = "大砍刀", id = "4", itemName = "Machete" }
     }
 
-    -- 工具下拉框
     local toolNameOptions = {}
     for _, v in ipairs(toolItems) do table.insert(toolNameOptions, v.name) end
     local selectedToolItem = toolNameOptions[1]
@@ -355,7 +351,6 @@ function createUI()
         end
     })
 
-    -- 工具购买按钮
     RemoteBuyTab:Button({
         Title = "购买",
         Callback = function()
@@ -401,7 +396,6 @@ function createUI()
 
     RemoteBuyTab:Divider({ Text = "武器购买" })
 
-    -- 武器下拉框
     local weaponNameOptions = {}
     for _, v in ipairs(weaponItems) do table.insert(weaponNameOptions, v.name) end
     local selectedWeaponItem = weaponNameOptions[1]
@@ -415,7 +409,6 @@ function createUI()
         end
     })
 
-    -- 武器购买按钮
     RemoteBuyTab:Button({
         Title = "购买",
         Callback = function()
