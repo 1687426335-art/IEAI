@@ -425,6 +425,92 @@ function createUI()
         end
     end })
 
+    -- 超市物品
+    RemoteBuyTab:Divider({ Text = "超市物品" })
+    local supermarketItems = {
+        { name = "望远镜", itemName = "Binoculars" },
+        { name = "金属探测器", itemName = "Metal Detector" },
+        { name = "铲子", itemName = "Trowel" },
+        { name = "新闻摄像头", itemName = "News Camera" },
+        { name = "新闻麦克风", itemName = "News Microphone" },
+        { name = "雨伞", itemName = "Blue Umbrella" },
+        { name = "钓鱼杆", itemName = "Fishing Rod" }
+    }
+    local supermarketNames = {}
+    for _, v in ipairs(supermarketItems) do table.insert(supermarketNames, v.name) end
+    local selectedSupermarketItem = supermarketNames[1]
+    RemoteBuyTab:Dropdown({ Title = "超市物品", Values = supermarketNames, Value = supermarketNames[1], Callback = function(value) selectedSupermarketItem = value end })
+    RemoteBuyTab:Button({ Title = "购买", Callback = function()
+        local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+        local stuff = ReplicatedStorage:FindFirstChild("Stuff")
+        if event and stuff then
+            local itemsFolder = stuff:FindFirstChild("Items")
+            local targetItem = nil
+            local displayName = ""
+            if itemsFolder then
+                for _, itemInfo in ipairs(supermarketItems) do
+                    if itemInfo.name == selectedSupermarketItem then
+                        targetItem = itemsFolder:FindFirstChild(itemInfo.itemName)
+                        displayName = itemInfo.name
+                        break
+                    end
+                end
+            end
+            if targetItem then
+                local success = pcall(function() event:InvokeServer("purchase", { isRestaurant = false, item = targetItem }) end)
+                if success then showBuySuccess(displayName) end
+            else
+                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedSupermarketItem, Duration = 3 })
+            end
+        else
+            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
+        end
+    end })
+
+    -- 食物
+    RemoteBuyTab:Divider({ Text = "食物" })
+    local foodItems = {
+        { name = "培根和鸡蛋", itemName = "Bacon And Eggs" },
+        { name = "面条", itemName = "Spaghetti" },
+        { name = "鸡肉和薯条", itemName = "Chicken And Fries" },
+        { name = "沙拉", itemName = "Salad" },
+        { name = "豆汁", itemName = "Bean Soup" },
+        { name = "松饼卷", itemName = "Croissant" },
+        { name = "煎饼", itemName = "Pancake" },
+        { name = "冰茶", itemName = "Iced Tea" },
+        { name = "一盒牛奶", itemName = "Box Of Milk" }
+    }
+    local foodNames = {}
+    for _, v in ipairs(foodItems) do table.insert(foodNames, v.name) end
+    local selectedFoodItem = foodNames[1]
+    RemoteBuyTab:Dropdown({ Title = "食物", Values = foodNames, Value = foodNames[1], Callback = function(value) selectedFoodItem = value end })
+    RemoteBuyTab:Button({ Title = "购买", Callback = function()
+        local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+        local stuff = ReplicatedStorage:FindFirstChild("Stuff")
+        if event and stuff then
+            local foodFolder = stuff:FindFirstChild("Food")
+            local targetItem = nil
+            local displayName = ""
+            if foodFolder then
+                for _, itemInfo in ipairs(foodItems) do
+                    if itemInfo.name == selectedFoodItem then
+                        targetItem = foodFolder:FindFirstChild(itemInfo.itemName)
+                        displayName = itemInfo.name
+                        break
+                    end
+                end
+            end
+            if targetItem then
+                local success = pcall(function() event:InvokeServer("purchase", { isRestaurant = true, quantity = 1, item = targetItem }) end)
+                if success then showBuySuccess(displayName) end
+            else
+                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedFoodItem, Duration = 3 })
+            end
+        else
+            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
+        end
+    end })
+
     -- 自动躲警察
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
     local function isVisible(fromPos, toPos, ignoreInstances)
