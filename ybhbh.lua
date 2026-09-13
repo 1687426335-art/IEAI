@@ -342,13 +342,21 @@ WindUI:Notify({Title="购买失败",Content="没找到购买事件或物品路�
 end
 end})
 HackTab:Divider({Text="黑客小游戏破解"})
-HackTab:Button({Title="一键破解所有黑客小游戏",Callback=function()
+HackTab:Toggle({Title="一键破解所有黑客小游戏",Value=false,Callback=function(value)
+_G.HackEnabled=value
+if value then
+task.spawn(function()
+while _G.HackEnabled do
 local Event=ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
 local char=player.Character
 local root=char and char:FindFirstChild("HumanoidRootPart")
 if Event and root then
 pcall(function()
 Event:InvokeServer("selectiveObjReplicaSystem","playSound",root,true,nil)
+end)
+end
+task.wait(1.5)
+end
 end)
 end
 end})
@@ -414,7 +422,7 @@ end
 end)
 end
 local function stopPoliceDodge()
-if policeDodgeConn then policeDodgeConn:Disconnect() policeDodgeConn=nil end
+if policeDodgeConn then policeDodgeConn:Disconnect()policeDodgeConn=nil end
 end
 PoliceDodgeTab:Divider({Text="警察躲避设置"})
 PoliceDodgeTab:Toggle({Title="启用自动躲警察",Value=false,Callback=function(value)policeDodgeEnabled=value if value then startPoliceDodge()else stopPoliceDodge()end end})
