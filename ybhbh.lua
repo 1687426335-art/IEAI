@@ -125,7 +125,95 @@ function createUI()
         Resizable = true,
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
-        User = { Enabled = false },
+        User = {
+            Enabled = true, -- 这里改成了 true，恢复左下角头像和名字
+            Callback = function()
+                local userId = player.UserId
+                local thumbType = Enum.ThumbnailType.HeadShot
+                local thumbSize = Enum.ThumbnailSize.Size420x420
+                local success, thumbnail = pcall(function()
+                    return Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+                end)
+                local avatarUrl = success and thumbnail or "rbxassetid://0"
+
+                local name = player.Name
+                local days = player.AccountAge
+                local regTime = days .. " 天前"
+
+                local popupGui = Instance.new("ScreenGui")
+                popupGui.Name = "UserInfoPopup"
+                popupGui.ResetOnSpawn = false
+                popupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                popupGui.Parent = player:WaitForChild("PlayerGui")
+
+                local frame = Instance.new("Frame")
+                frame.Size = UDim2.new(0, 300, 0, 250)
+                frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+                frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+                frame.BorderSizePixel = 2
+                frame.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                frame.Active = true
+                frame.Draggable = true
+                frame.Parent = popupGui
+
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 10)
+                corner.Parent = frame
+
+                local avatar = Instance.new("ImageLabel")
+                avatar.Size = UDim2.new(0, 60, 0, 60)
+                avatar.Position = UDim2.new(0.5, -30, 0, 15)
+                avatar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+                avatar.Image = avatarUrl
+                avatar.ScaleType = Enum.ScaleType.Fit
+                avatar.Parent = frame
+
+                local avatarCorner = Instance.new("UICorner")
+                avatarCorner.CornerRadius = UDim.new(1, 0)
+                avatarCorner.Parent = avatar
+
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, -20, 0, 30)
+                nameLabel.Position = UDim2.new(0, 10, 0, 85)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = "名字: " .. name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextSize = 16
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nameLabel.Parent = frame
+
+                local timeLabel = Instance.new("TextLabel")
+                timeLabel.Size = UDim2.new(1, -20, 0, 30)
+                timeLabel.Position = UDim2.new(0, 10, 0, 120)
+                timeLabel.BackgroundTransparency = 1
+                timeLabel.Text = "注册: " .. regTime
+                timeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                timeLabel.TextSize = 16
+                timeLabel.Font = Enum.Font.Gotham
+                timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+                timeLabel.Parent = frame
+
+                local closeBtn = Instance.new("TextButton")
+                closeBtn.Size = UDim2.new(0, 60, 0, 30)
+                closeBtn.Position = UDim2.new(0.5, -30, 1, -40)
+                closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+                closeBtn.Text = "关闭"
+                closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                closeBtn.TextSize = 14
+                closeBtn.Font = Enum.Font.GothamBold
+                closeBtn.Parent = frame
+
+                local btnCorner = Instance.new("UICorner")
+                btnCorner.CornerRadius = UDim.new(0, 5)
+                btnCorner.Parent = closeBtn
+
+                closeBtn.MouseButton1Click:Connect(function()
+                    popupGui:Destroy()
+                end)
+            end,
+            Anonymous = false
+        },
         SideBarWidth = 250,
         Search = {
             Enabled = true,
@@ -146,6 +234,13 @@ function createUI()
         }
     })
 
+    -- ⬇⬇⬇ 这里是你要的【wdfex脚本NB】标签 ⬇⬇⬇
+    Window:Tag({
+        Title = "wdfex脚本NB",
+        Color = Color3.fromHex("#00ffff")
+    })
+    -- ⬆⬆⬆ 上面这5行就是新加的 ⬆⬆⬆
+
     Window:EditOpenButton({
         Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
@@ -164,94 +259,10 @@ function createUI()
         Draggable = true,
     })
 
-    -- ==================== 悬浮窗内部左上角标签 ====================
-    task.wait(0.2)
+    task.wait(0.1)
     local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
     if mainGui then
         local mainFrame = mainGui:FindFirstChildOfClass("Frame")
-        if mainFrame then
-            -- 标签1：wdfex脚本NB
-            local tag1Frame = Instance.new("Frame")
-            tag1Frame.Size = UDim2.new(0, 120, 0, 24)
-            tag1Frame.Position = UDim2.new(0, 10, 0, 38) -- 悬浮窗左上角靠下一点，避免和标题重叠
-            tag1Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            tag1Frame.BackgroundTransparency = 0.4
-            tag1Frame.BorderSizePixel = 0
-            tag1Frame.Parent = mainFrame
-
-            local corner1 = Instance.new("UICorner")
-            corner1.CornerRadius = UDim.new(0, 6)
-            corner1.Parent = tag1Frame
-
-            local tag1Label = Instance.new("TextLabel")
-            tag1Label.Size = UDim2.new(1, 0, 1, 0)
-            tag1Label.BackgroundTransparency = 1
-            tag1Label.Text = "wdfex脚本NB"
-            tag1Label.TextColor3 = Color3.fromRGB(0, 255, 255)
-            tag1Label.TextSize = 13
-            tag1Label.Font = Enum.Font.GothamBold
-            tag1Label.Parent = tag1Frame
-
-            local stroke1 = Instance.new("UIStroke")
-            stroke1.Thickness = 1.5
-            stroke1.Parent = tag1Label
-            
-            local gradient = Instance.new("UIGradient")
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 255))
-            })
-            gradient.Parent = stroke1
-
-            -- 标签2：北京时间
-            local tag2Frame = Instance.new("Frame")
-            tag2Frame.Size = UDim2.new(0, 135, 0, 24)
-            tag2Frame.Position = UDim2.new(0, 10, 0, 68) -- 标签1下面
-            tag2Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            tag2Frame.BackgroundTransparency = 0.4
-            tag2Frame.BorderSizePixel = 0
-            tag2Frame.Parent = mainFrame
-
-            local corner2 = Instance.new("UICorner")
-            corner2.CornerRadius = UDim.new(0, 6)
-            corner2.Parent = tag2Frame
-
-            local tag2Label = Instance.new("TextLabel")
-            tag2Label.Size = UDim2.new(1, 0, 1, 0)
-            tag2Label.BackgroundTransparency = 1
-            tag2Label.Text = "北京时间: 00:00:00"
-            tag2Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            tag2Label.TextSize = 13
-            tag2Label.Font = Enum.Font.GothamBold
-            tag2Label.Parent = tag2Frame
-
-            -- 彩色描边旋转动画
-            task.spawn(function()
-                while mainFrame.Parent and not isDestroyed do
-                    gradient.Rotation = (gradient.Rotation + 2) % 360
-                    task.wait(0.03)
-                end
-            end)
-
-            -- 北京时间循环更新
-            task.spawn(function()
-                while mainFrame.Parent and not isDestroyed do
-                    local now = os.date("!*t")
-                    now.hour = now.hour + 8
-                    if now.hour >= 24 then now.hour = now.hour - 24 end
-                    local timeStr = string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
-                    tag2Label.Text = "北京时间: " .. timeStr
-                    task.wait(1)
-                end
-            end)
-        end
-    end
-
-    task.wait(0.1)
-    local mainGui2 = player.PlayerGui:FindFirstChild("CloudHub")
-    if mainGui2 then
-        local mainFrame = mainGui2:FindFirstChildOfClass("Frame")
         if mainFrame then
             local stroke1 = Instance.new("UIStroke")
             stroke1.Thickness = 3
@@ -302,6 +313,7 @@ function createUI()
         end)
     end)
 
+    -- ==================== 滚动文字横幅（修改为彩色描边） ====================
     task.spawn(function()
         pcall(function()
             local bannerGui = Instance.new("ScreenGui")
@@ -318,8 +330,8 @@ function createUI()
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
-            banner.TextStrokeTransparency = 0.3
-            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            banner.TextStrokeTransparency = 0.0  -- 描边透明度设为0，完全不透明
+            banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0) -- 初始颜色，后面会循环改变
             banner.Parent = bannerGui
             
             local textWidth = 160
@@ -327,7 +339,10 @@ function createUI()
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
+                -- 文字颜色
                 banner.TextColor3 = Color3.fromHSV(hue, 0.9, 1)
+                -- 彩色描边：和文字颜色形成对比/偏移的彩虹色
+                banner.TextStrokeColor3 = Color3.fromHSV((hue + 0.5) % 1, 1, 1)
             end)
             table.insert(connections, colorConn)
             
@@ -426,7 +441,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.7提示",
-        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀，悬浮窗内置标签和北京时间",
+        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -442,6 +457,7 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
+    -- ==================== Tab 顺序 ====================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
@@ -455,6 +471,7 @@ function createUI()
     -- ==================== 远程购买（工具和武器） ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
 
+    -- 工具列表
     local toolItems = {
         { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
         { name = "撬锁装置", id = "2", itemName = "Lockpick Device" },
@@ -464,6 +481,7 @@ function createUI()
         { name = "工作人员涂鸦", id = "8", itemName = "Crew Graffiti" }
     }
 
+    -- 武器列表（洛克17放在第一位）
     local weaponItems = {
         { name = "洛克17", id = "5", itemName = "Glock 17" },
         { name = "战斧", id = "2", itemName = "Battle Axe" },
@@ -472,6 +490,7 @@ function createUI()
         { name = "小刀", id = "1", itemName = "Knife" }
     }
 
+    -- 工具下拉框
     local toolNameOptions = {}
     for _, v in ipairs(toolItems) do table.insert(toolNameOptions, v.name) end
     local selectedToolItem = toolNameOptions[1]
@@ -485,6 +504,7 @@ function createUI()
         end
     })
 
+    -- 工具购买按钮
     RemoteBuyTab:Button({
         Title = "购买",
         Callback = function()
@@ -530,6 +550,7 @@ function createUI()
 
     RemoteBuyTab:Divider({ Text = "武器" })
 
+    -- 武器下拉框
     local weaponNameOptions = {}
     for _, v in ipairs(weaponItems) do table.insert(weaponNameOptions, v.name) end
     local selectedWeaponItem = weaponNameOptions[1]
@@ -543,6 +564,7 @@ function createUI()
         end
     })
 
+    -- 武器购买按钮
     RemoteBuyTab:Button({
         Title = "购买",
         Callback = function()
