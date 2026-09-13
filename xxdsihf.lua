@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.4"
+local version = "v3.0.5"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -56,6 +56,7 @@ function createUI()
     local Workspace = game:GetService("Workspace")
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
@@ -74,27 +75,24 @@ function createUI()
         Resizable = true,
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
-        User = {
-            Enabled = false,
-        },
+        User = { Enabled = false },
         SideBarWidth = 250,
         Search = {
             Enabled = true,
             Placeholder = "搜索...",
-            Callback = function(searchText)
-                print("搜索内容:", searchText)
-            end
+ })
+
+               Callback = function(searchText Window:) end
         },
-        SidePanel = {
+        SideEditPanel = {
             Enabled = true,
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex-Hub",
-                    Style = "Subtle", 
+                    Text =Open "wdfex-Hub",
+                    Style = "ButtonSubtle", 
                     Size = UDim2.new(1, -20, 0, 30),
-                    Callback = function()
-                    end
+                    Callback = function() end
                 }
             }
         }
@@ -107,9 +105,7 @@ function createUI()
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
-    })
-
-    Window:EditOpenButton({
+   ({
         Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
@@ -153,9 +149,7 @@ function createUI()
         while true do
             for hue = 0, 1, 0.01 do  
                 local color = Color3.fromHSV(hue, 0.8, 1)  
-                Window:EditOpenButton({
-                    Color = ColorSequence.new(color)
-                })
+                Window:EditOpenButton({ Color = ColorSequence.new(color) })
                 wait(0.04)  
             end
         end
@@ -194,7 +188,6 @@ function createUI()
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
             
-            local TweenService = game:GetService("TweenService")
             local textWidth = 160
             
             local hue = 0
@@ -298,8 +291,8 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.4提示",
-        Desc = "已更新最新绕过反作弊但可能还是可能有概率会被服务器踢出",
+        Title = "v3.0.5提示",
+        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、球棒、大砍刀等武器",
         ThumbnailSize = 190,
     })
     infoTab:Select()
@@ -315,8 +308,10 @@ function createUI()
         return section:Tab({ Title = title, Icon = icon })
     end
 
+    -- 调整了Tab顺序，将远程购买移至飞天与加速下方
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
+    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
     local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
@@ -324,6 +319,147 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
+    -- ==================== 远程购买（工具和武器） ====================
+    RemoteBuyTab:Divider({ Text = "黑市购买" })
+
+    -- 工具列表
+    local toolItems = {
+        { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
+        { name = "撬锁装置", id = "2", itemName = "Lockpick Device" },
+        { name = "入侵工具", id = "3", itemName = "Hacking Tool" },
+        { name = "C4", id = "4", itemName = "C4" },
+        { name = "绿色USB", id = "5", itemName = "Green USB" },
+        { name = "工作人员涂鸦", id = "8", itemName = "Crew Graffiti" }
+    }
+
+    -- 武器列表（洛克17放在第一位）
+    local weaponItems = {
+        { name = "洛克17", id = "5", itemName = "Glock 17" },
+        { name = "球棒", id = "3", itemName = "Bat" },
+        { name = "小刀", id = "1", itemName = "Knife" },
+        { name = "战斧", id = "2", itemName = "Battle Axe" },
+        { name = "大砍刀", id = "4", itemName = "Machete" }
+    }
+
+    -- 工具下拉框
+    local toolNameOptions = {}
+    for _, v in ipairs(toolItems) do table.insert(toolNameOptions, v.name) end
+    local selectedToolItem = toolNameOptions[1]
+
+    RemoteBuyTab:Dropdown({
+        Title = "工具",
+        Values = toolNameOptions,
+        Value = toolNameOptions[1],
+        Callback = function(value)
+            selectedToolItem = value
+        end
+    })
+
+    -- 工具购买按钮
+    RemoteBuyTab:Button({
+        Title = "购买",
+        Callback = function()
+            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+            local stuff = ReplicatedStorage:FindFirstChild("Stuff")
+            
+            if event and stuff then
+                local blackMarket = stuff:FindFirstChild("Black Market")
+                local targetItem = nil
+                local displayName = ""
+                
+                if blackMarket then
+                    for _, itemInfo in ipairs(toolItems) do
+                        if itemInfo.name == selectedToolItem then
+                            local slot = blackMarket:FindFirstChild(itemInfo.id)
+                            if slot then
+                                targetItem = slot:FindFirstChild(itemInfo.itemName)
+                                displayName = itemInfo.name
+                            end
+                            break
+                        end
+                    end
+                end
+                
+                if targetItem then
+                    local success = pcall(function()
+                        event:InvokeServer("purchase", {
+                            isRestaurant = false,
+                            item = targetItem
+                        })
+                    end)
+                    if success then
+                        WindUI:Notify({ Title = "购买成功", Content = "物品: " .. displayName, Duration = 3 })
+                    end
+                else
+                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedToolItem .. "，可能商店刷新了", Duration = 3 })
+                end
+            else
+                WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
+            end
+        end
+    })
+
+    RemoteBuyTab:Divider({ Text = "武器购买" })
+
+    -- 武器下拉框
+    local weaponNameOptions = {}
+    for _, v in ipairs(weaponItems) do table.insert(weaponNameOptions, v.name) end
+    local selectedWeaponItem = weaponNameOptions[1]
+
+    RemoteBuyTab:Dropdown({
+        Title = "武器",
+        Values = weaponNameOptions,
+        Value = weaponNameOptions[1],
+        Callback = function(value)
+            selectedWeaponItem = value
+        end
+    })
+
+    -- 武器购买按钮
+    RemoteBuyTab:Button({
+        Title = "购买",
+        Callback = function()
+            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+            local stuff = ReplicatedStorage:FindFirstChild("Stuff")
+            
+            if event and stuff then
+                local weapons = stuff:FindFirstChild("Weapons")
+                local targetItem = nil
+                local displayName = ""
+                
+                if weapons then
+                    for _, itemInfo in ipairs(weaponItems) do
+                        if itemInfo.name == selectedWeaponItem then
+                            local slot = weapons:FindFirstChild(itemInfo.id)
+                            if slot then
+                                targetItem = slot:FindFirstChild(itemInfo.itemName)
+                                displayName = itemInfo.name
+                            end
+                            break
+                        end
+                    end
+                end
+                
+                if targetItem then
+                    local success = pcall(function()
+                        event:InvokeServer("purchase", {
+                            isRestaurant = false,
+                            item = targetItem
+                        })
+                    end)
+                    if success then
+                        WindUI:Notify({ Title = "购买成功", Content = "武器: " .. displayName, Duration = 3 })
+                    end
+                else
+                    WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedWeaponItem .. "，可能商店刷新了", Duration = 3 })
+                end
+            else
+                WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
+            end
+        end
+    })
+
+    -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled = false
     local policeDodgeDistance = 30
     local policeDodgeForce = 50
@@ -1415,14 +1551,14 @@ function createUI()
     end
 
     local function performAttack()
-        if not kaEnabled then return " end
+        if not kaEnabled then return end
         
         local target = kaGetNearestEnemy()
         currentTarget = target
         
-        if target .. then
-            name local targetHead = target.Character and target.Character,:FindFirstChild(" DurationHead")
-            if targetHead then =
+        if target then
+            local targetHead = target.Character and target.Character:FindFirstChild("Head")
+            if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
                 if myHead then
                     local origin = myHead.Position
@@ -1596,7 +1732,7 @@ function createUI()
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if root then
             root.CFrame = CFrame.new(pos)
-            WindUI:Notify({ Title = "传送", Content = "正在传送至: 2 })
+            WindUI:Notify({ Title = "传送", Content = "正在传送至: " .. name, Duration = 2 })
         end
     end
 
@@ -1815,10 +1951,10 @@ function createUI()
             for _, data in ipairs(REPAIR_TELEPORTS) do
                 if data.n == selectedRepair then
                     doTeleport(data.p, data.n)
-.insert                    return
-(c                end
+                    return
+                end
             end
-            WindUIar:Notify({ Title = "传送", Content =Tele "未找到该地点Names",, Duration = 2 })
+            WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
         end
     })
 
@@ -1826,7 +1962,7 @@ function createUI()
         {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)},
     }
     local carTeleNames = {}
-    for _, data in ipairs(CAR_TELEPORTS) do table data.n) end
+    for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
     local selectedCarTeleport = carTeleNames[1] or ""
 
     D:Divider({ Text = "偷车能用到的传送地点" })
