@@ -441,7 +441,7 @@ function createUI()
     infoSection2:Divider()
     infoSection2:Paragraph({
         Title = "v3.7提示",
-        Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀",
+        Desc = "已更新远程购买\n目前没有发现任何bug如果你游玩的时候遇到了某些bug请联系作者修复\n远程购买还会继续增加一些物品",
         ThumbnailSize = 190,
     })
     infoTab:Select()
