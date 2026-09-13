@@ -21,7 +21,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.0.6"
+local version = "v3.7"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -112,7 +112,7 @@ function createUI()
     end
 
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex脚本NB', -- 改成了这里
+        Title = 'wdfex-Hub',
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -137,7 +137,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex脚本NB",
+                    Text = "wdfex-Hub",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function() end
@@ -146,8 +146,15 @@ function createUI()
         }
     })
 
+    -- ⬇⬇⬇ 这里是你要的【wdfex脚本NB】标签 ⬇⬇⬇
+    Window:Tag({
+        Title = "wdfex脚本NB",
+        Color = Color3.fromHex("#00ffff")
+    })
+    -- ⬆⬆⬆ 上面这5行就是新加的 ⬆⬆⬆
+
     Window:EditOpenButton({
-        Title = "wdfex脚本NB", -- 悬浮窗按钮标题
+        Title = "wdfex-Hub",
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -156,7 +163,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex脚本NB", -- 悬浮窗按钮标题
+        Title = "wdfex-Hub",
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -341,7 +348,7 @@ function createUI()
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
     infoSection2:Paragraph({
-        Title = "v3.0.6提示",
+        Title = "v3.7提示",
         Desc = "黑市远程购买已更新，支持工具和武器分类，新增洛克17、战斧、球棒、大砍刀",
         ThumbnailSize = 190,
     })
@@ -361,7 +368,7 @@ function createUI()
     -- ==================== Tab 顺序 ====================
     local A = AddTab(MainSection, "玩家修改", "user")
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
-    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart") -- 放到飞天与加速下面
+    local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
     local InteractTab = AddTab(MainSection, "互动", "hand")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
@@ -2686,7 +2693,7 @@ function createUI()
     })
 
     WindUI:Notify({
-        Title = "wdfex脚本NB",
+        Title = "wdfex-Hub",
         Content = "脚本已加载成功，欢迎使用！",
         Duration = 3,
     })
