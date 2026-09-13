@@ -112,7 +112,7 @@ function createUI()
     end
 
     local Window = WindUI:CreateWindow({
-        Title = 'wdfex-Hub',
+        Title = 'wdfex脚本NB', -- 改成了这里
         Icon = "heart",
         IconThemed = true,
         Author = version,
@@ -137,7 +137,7 @@ function createUI()
             Content = {
                 {
                     Type = "Button", 
-                    Text = "wdfex-Hub",
+                    Text = "wdfex脚本NB",
                     Style = "Subtle", 
                     Size = UDim2.new(1, -20, 0, 30),
                     Callback = function() end
@@ -147,7 +147,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = "wdfex脚本NB", -- 悬浮窗按钮标题
         Icon = "rbxassetid://105677776902677",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -156,7 +156,7 @@ function createUI()
     })
 
     Window:EditOpenButton({
-        Title = "wdfex-Hub",
+        Title = "wdfex脚本NB", -- 悬浮窗按钮标题
         Icon = "heart",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 4,
@@ -2686,7 +2686,7 @@ function createUI()
     })
 
     WindUI:Notify({
-        Title = "wdfex-Hub",
+        Title = "wdfex脚本NB",
         Content = "脚本已加载成功，欢迎使用！",
         Duration = 3,
     })
