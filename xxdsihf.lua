@@ -7,7 +7,7 @@ for i = 1, #username do
     local colorIndex = (i - 1) % #gradientColors + 1
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
-local version = "v3.7"
+local version = "v3.8"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -333,7 +333,7 @@ function createUI()
     infoSection:Paragraph({ Title = "关于", Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新", ThumbnailSize = 190 })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
-    infoSection2:Paragraph({ Title = "v3.7提示", Desc = "已更新远程购买", ThumbnailSize = 190 })
+    infoSection2:Paragraph({ Title = "v3.8提示", Desc = "已更新远程购买", ThumbnailSize = 190 })
     infoTab:Select()
     AuthorTab:Select()
     local MainSection = Window:Section({ Title = "主功能", Opened = true })
