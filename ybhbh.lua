@@ -84,7 +84,7 @@ task.spawn(function()
     end
 end)
 
--- 全局摇杆数据
+-- 全局移动数据
 getgenv().joyOffset = Vector2.new(0, 0)
 
 task.spawn(function()
@@ -104,7 +104,7 @@ task.spawn(function()
 
     local S = {
         reach  = 0.55, spread = 0.34, height = -0.25,
-        sens   = 0.0025, moveK = 0.16, look = true,
+        sens   = 0.005, moveK = 0.16, look = true, -- 灵敏度默认调大了一点点
         scale  = 10,
     }
 
@@ -444,7 +444,7 @@ task.spawn(function()
         if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
         if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
 
-        -- 摇杆输入
+        -- 方向键输入
         local jo = getgenv().joyOffset
         if jo and jo.Magnitude > 0.08 then
             mv += Vector3.new(jo.X, 0, jo.Y)
@@ -490,7 +490,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 手机面板
+    -- 手机手势面板
     local mobileOpen = false
     local mobileFrame, toggleBtn
     local function makeButton(parent, text, color, callback)
@@ -602,20 +602,23 @@ task.spawn(function()
             fill.BackgroundColor3 = color; fill.BorderSizePixel = 0
             local fc = Instance.new("UICorner", fill); fc.CornerRadius = UDim.new(0,4)
             local label = Instance.new("TextLabel", slider); label.Size = UDim2.new(1,0,1,0); label.BackgroundTransparency = 1
-            label.Text = name .. ": " .. string.format("%.2f", getFn()); label.TextColor3 = Color3.fromRGB(255,255,255)
+            label.Text = name .. ": " .. string.format("%.3f", getFn()); label.TextColor3 = Color3.fromRGB(255,255,255)
             label.Font = Enum.Font.Code; label.TextSize = 11
             local dragging = false
             local function update(input)
                 local rel = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
                 local val = minV + (maxV - minV) * rel
-                fill.Size = UDim2.new(rel, 0, 1, 0); label.Text = name .. ": " .. string.format("%.2f", val); setFn(val)
+                fill.Size = UDim2.new(rel, 0, 1, 0); label.Text = name .. ": " .. string.format("%.3f", val); setFn(val)
             end
             slider.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; update(input) end end)
             slider.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end end)
             UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
         end
+        
+        makeSlider("滑屏灵敏度", Color3.fromRGB(220, 100, 220), 0.001, 0.02, function() return S.sens end, function(v) S.sens = v end) -- 新增灵敏度滑动条
         makeSlider("水平旋转", Color3.fromRGB(100,150,220), -3.14, 3.14, function() return HandRot[rotTarget].yaw end, function(v) HandRot[rotTarget].yaw = v end)
         makeSlider("垂直旋转", Color3.fromRGB(220,150,100), -1.5, 1.5, function() return HandRot[rotTarget].pitch end, function(v) HandRot[rotTarget].pitch = v end)
+        
         makeCategory("体型 (点击 +/-)")
         local scaleRow = makeRow()
         local bScaleMinus = makeButton(scaleRow, "-", Color3.fromRGB(150,80,80), function() setScale(S.scale - 1) end); bScaleMinus.Size = UDim2.new(0, 60, 0, 34)
@@ -643,87 +646,94 @@ task.spawn(function()
     end)
 
     -- ============================================================
-    -- 左下角移动摇杆
+    -- 左下角方向键 (替换原来的轮盘)
     -- ============================================================
     pcall(function()
-        local jGui = Instance.new("ScreenGui")
-        jGui.Name = "NoVR_Joystick"
-        jGui.ResetOnSpawn = false
-        jGui.IgnoreGuiInset = true
-        jGui.DisplayOrder = 9999
-        jGui.Parent = lp:WaitForChild("PlayerGui")
+        local dpGui = Instance.new("ScreenGui")
+        dpGui.Name = "NoVR_DPad"
+        dpGui.ResetOnSpawn = false
+        dpGui.IgnoreGuiInset = true
+        dpGui.DisplayOrder = 9999
+        dpGui.Parent = lp:WaitForChild("PlayerGui")
 
-        local baseSize, knobSize = 150, 64
-        local maxDist = (baseSize - knobSize) / 2
-
-        local base = Instance.new("Frame", jGui)
-        base.AnchorPoint = Vector2.new(0, 1)
-        base.Position = UDim2.new(0, 30, 1, -30)
-        base.Size = UDim2.fromOffset(baseSize, baseSize)
-        base.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        base.BackgroundTransparency = 0.35
-        base.BorderSizePixel = 0
-        base.Active = true
-        local bc = Instance.new("UICorner", base); bc.CornerRadius = UDim.new(1, 0)
-        local bs = Instance.new("UIStroke", base)
-        bs.Color = Color3.fromRGB(0, 255, 170); bs.Thickness = 2; bs.Transparency = 0.4
-
-        local crossH = Instance.new("Frame", base)
-        crossH.AnchorPoint = Vector2.new(0.5, 0.5); crossH.Position = UDim2.new(0.5, 0, 0.5, 0)
-        crossH.Size = UDim2.new(1, -20, 0, 1); crossH.BackgroundColor3 = Color3.fromRGB(120, 120, 140)
-        crossH.BackgroundTransparency = 0.6; crossH.BorderSizePixel = 0
-
-        local crossV = Instance.new("Frame", base)
-        crossV.AnchorPoint = Vector2.new(0.5, 0.5); crossV.Position = UDim2.new(0.5, 0, 0.5, 0)
-        crossV.Size = UDim2.new(0, 1, 1, -20); crossV.BackgroundColor3 = Color3.fromRGB(120, 120, 140)
-        crossV.BackgroundTransparency = 0.6; crossV.BorderSizePixel = 0
-
-        local knob = Instance.new("Frame", base)
-        knob.AnchorPoint = Vector2.new(0.5, 0.5); knob.Position = UDim2.new(0.5, 0, 0.5, 0)
-        knob.Size = UDim2.fromOffset(knobSize, knobSize); knob.BackgroundColor3 = Color3.fromRGB(0, 200, 140)
-        knob.BackgroundTransparency = 0.15; knob.BorderSizePixel = 0
-        local kc = Instance.new("UICorner", knob); kc.CornerRadius = UDim.new(1, 0)
-        local ks = Instance.new("UIStroke", knob)
-        ks.Color = Color3.fromRGB(255, 255, 255); ks.Thickness = 2; ks.Transparency = 0.3
-
-        local active = false
-        local activeTouch = nil
-        local function getBaseCenter()
-            return Vector2.new(base.AbsolutePosition.X + base.AbsoluteSize.X / 2, base.AbsolutePosition.Y + base.AbsoluteSize.Y / 2)
-        end
-        local function setKnobFromPos(pos)
-            local center = getBaseCenter()
-            local delta = Vector2.new(pos.X - center.X, pos.Y - center.Y)
-            local mag = delta.Magnitude
-            if mag > maxDist then delta = delta.Unit * maxDist end
-            knob.Position = UDim2.new(0.5, delta.X, 0.5, delta.Y)
-            getgenv().joyOffset = Vector2.new(delta.X / maxDist, delta.Y / maxDist)
-        end
-        local function resetKnob()
-            knob.Position = UDim2.new(0.5, 0, 0.5, 0)
-            getgenv().joyOffset = Vector2.new(0, 0)
+        -- 状态
+        getgenv().dpadState = { up = false, down = false, left = false, right = false }
+        
+        local function updateDPad()
+            local x, y = 0, 0
+            if getgenv().dpadState.up then y = -1 end
+            if getgenv().dpadState.down then y = 1 end
+            if getgenv().dpadState.left then x = -1 end
+            if getgenv().dpadState.right then x = 1 end
+            getgenv().joyOffset = Vector2.new(x, y)
         end
 
-        base.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                active = true; activeTouch = input; setKnobFromPos(input.Position)
+        -- 主容器
+        local container = Instance.new("Frame", dpGui)
+        container.AnchorPoint = Vector2.new(0, 1)
+        container.Position = UDim2.new(0, 30, 1, -30)
+        container.Size = UDim2.fromOffset(220, 220)
+        container.BackgroundTransparency = 1
+
+        -- 按钮生成器
+        local function makeDpadBtn(text, pos, size, key)
+            local btn = Instance.new("TextButton", container)
+            btn.Position = pos
+            btn.Size = size
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+            btn.BackgroundTransparency = 0.3
+            btn.BorderSizePixel = 0
+            btn.Text = text
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 32
+            btn.Font = Enum.Font.GothamBold
+            local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 10)
+            local stroke = Instance.new("UIStroke", btn); stroke.Color = Color3.fromRGB(0, 255, 170); stroke.Thickness = 2; stroke.Transparency = 0.4
+
+            local function press()
+                if not getgenv().dpadState[key] then
+                    getgenv().dpadState[key] = true
+                    btn.BackgroundColor3 = Color3.fromRGB(0, 200, 140)
+                    updateDPad()
+                end
             end
-        end)
-        base.InputChanged:Connect(function(input)
-            if active and input == activeTouch then setKnobFromPos(input.Position) end
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if active and input == activeTouch then setKnobFromPos(input.Position) end
-        end)
-        UIS.InputEnded:Connect(function(input)
-            if active and input == activeTouch then
-                active = false; activeTouch = nil; resetKnob()
+            local function release()
+                if getgenv().dpadState[key] then
+                    getgenv().dpadState[key] = false
+                    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+                    updateDPad()
+                end
             end
-        end)
-        print("[NoVR Pro] 左下角摇杆已加载")
+
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    press()
+                end
+            end)
+            btn.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    release()
+                end
+            end)
+            -- 防止手指滑出按钮时卡住
+            UIS.InputEnded:Connect(function(input)
+                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) and getgenv().dpadState[key] then
+                    release()
+                end
+            end)
+            return btn
+        end
+
+        -- 创建四个方向键
+        makeDpadBtn("↑", UDim2.new(0.5, -35, 0, 0), UDim2.fromOffset(70, 70), "up")
+        makeDpadBtn("↓", UDim2.new(0.5, -35, 0, 150), UDim2.fromOffset(70, 70), "down")
+        makeDpadBtn("←", UDim2.new(0, 0, 0.5, -35), UDim2.fromOffset(70, 70), "left")
+        makeDpadBtn("→", UDim2.new(1, -70, 0.5, -35), UDim2.fromOffset(70, 70), "right")
+
+        print("[NoVR Pro] 左下角方向键已加载")
     end)
 
-    print("[NoVR Pro] 控制已激活。手机点击右上角【手势】按钮，左下角摇杆移动。")
+    print("[NoVR Pro] 控制已激活。手机点击右上角【手势】按钮，左下角方向键移动。")
 end)
 ]==]
 
