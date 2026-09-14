@@ -542,7 +542,7 @@ task.spawn(function()
             local rl = Instance.new("UIListLayout", row); rl.FillDirection = Enum.FillDirection.Horizontal
             rl.Padding = UDim.new(0,4); rl.SortOrder = Enum.SortOrder.LayoutOrder; return row
         end
-        makeCategory("快捷动作")
+        makeCategory("wdfex制作")
         local row1, row2 = makeRow(), makeRow()
         local presetBtnDefs = {
             { "张开", "Open", Color3.fromRGB(60,100,180) }, { "握拳", "Fist", Color3.fromRGB(180,60,60) },
