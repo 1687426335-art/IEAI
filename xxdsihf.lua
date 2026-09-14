@@ -111,7 +111,7 @@ function createUI()
         }
     })
 
-    Window:Tag({ Title = "wdfex脚本NB", Color = Color3.fromHex("#00ffff") })
+    Window:Tag({ Title = "wdfex-HUBNB", Color = Color3.fromHex("#00ffff") })
 
     Window:EditOpenButton({ Title = "wdfex-Hub", Icon = "rbxassetid://105677776902677", CornerRadius = UDim.new(0,16), StrokeThickness = 4, Color = ColorSequence.new(Color3.fromHex("FF6B6B")), Draggable = true })
     Window:EditOpenButton({ Title = "wdfex-Hub", Icon = "heart", CornerRadius = UDim.new(0,16), StrokeThickness = 4, Color = ColorSequence.new(Color3.fromHex("FF6B6B")), Draggable = true })
@@ -179,7 +179,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "已更新最新的绕过反作弊"
+            banner.Text = "已更新最新的绕过反作弊没被挂DC封了我没78"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextScaled = false
