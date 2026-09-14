@@ -1,1046 +1,1200 @@
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
-local SoundService = game:GetService("SoundService")
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
+local Confirmed = false
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-
--- 距离与资源设置
-local MAX_HP_DISTANCE = 100 
-local BACKGROUND_IMAGE_ID = "rbxassetid://13854737227" 
-
--- 移动端按钮图片
-local MOBILE_BTN_IMAGE_ID = "rbxassetid://97793851580916"
-
-local CLICK_SOUND_ID = "rbxassetid://535716488" 
-local RESET_SOUND_ID = "rbxassetid://80804836827311" 
-local INTRO_SOUND_ID = "rbxassetid://93122684397641" 
-
--- 界面颜色与透明度（黑白单色主题）
-local DARK_BG = Color3.fromRGB(10, 10, 10)
-local HEADER_BG = Color3.fromRGB(16, 16, 16)
-local PANEL_BG = Color3.fromRGB(20, 20, 20)
-local CARD_BG = Color3.fromRGB(25, 25, 25)
-local BORDER_COLOR = Color3.fromRGB(60, 60, 60)
-local ACCENT_WHITE = Color3.fromRGB(255, 255, 255)
-local ACCENT_GREY = Color3.fromRGB(180, 180, 180)
-local COLOR_ENABLED = Color3.fromRGB(240, 240, 240)
-local COLOR_ENABLED_TEXT = Color3.fromRGB(15, 15, 15)
-local COLOR_DISABLED = Color3.fromRGB(40, 40, 40)
-local COLOR_DISABLED_TEXT = Color3.fromRGB(180, 180, 180)
-local TEXT_WHITE = Color3.fromRGB(245, 245, 245)
-local TEXT_MUTED = Color3.fromRGB(130, 130, 130)
-
--- 按键与缩放
-local toggleKey = Enum.KeyCode.RightControl
-local tpToggleKey = Enum.KeyCode.V
-local isBinding = false
-local isBindingTP = false
-local blurEnabled = true -- 模糊效果开关
-
-local fullSize = UDim2.new(0, 640, 0, 400)
-local zeroSize = UDim2.new(0, 0, 0, 0)
-local currentScale = 1.0
-
--- 清理旧界面
-if PlayerGui:FindFirstChild("ShizukaExaminationUI") then
-	PlayerGui.ShizukaExaminationUI:Destroy()
-end
-if Lighting:FindFirstChild("ShizukaMenuBlur") then
-	Lighting.ShizukaMenuBlur:Destroy()
-end
-
--- 游戏背景模糊效果
-local MenuBlur = Instance.new("BlurEffect")
-MenuBlur.Name = "ShizukaMenuBlur"
-MenuBlur.Size = 0
-MenuBlur.Enabled = true
-MenuBlur.Parent = Lighting
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ShizukaExaminationUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
-
--- 音频实例
-local ClickSound = Instance.new("Sound")
-ClickSound.Name = "UIClickSound"
-ClickSound.SoundId = CLICK_SOUND_ID
-ClickSound.Volume = 0.5
-ClickSound.Parent = ScreenGui
-
-local ResetSound = Instance.new("Sound")
-ResetSound.Name = "UIResetSound"
-ResetSound.SoundId = RESET_SOUND_ID
-ResetSound.Volume = 0.7
-ResetSound.Parent = ScreenGui
-
-local IntroSound = Instance.new("Sound")
-IntroSound.Name = "UIIntroSound"
-IntroSound.SoundId = INTRO_SOUND_ID
-IntroSound.Volume = 1.0
-IntroSound.Parent = ScreenGui
-
-local function playClickSound()
-	SoundService:PlayLocalSound(ClickSound)
-end
-
-local function playResetSound()
-	SoundService:PlayLocalSound(ResetSound)
-end
-
--- 主窗口
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Size = zeroSize
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.BackgroundColor3 = DARK_BG
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Visible = false
-MainFrame.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = ACCENT_GREY
-MainStroke.Thickness = 1.2
-MainStroke.Transparency = 0.4
-MainStroke.Parent = MainFrame
-
--- 背景纹理
-local BackgroundImage = Instance.new("ImageLabel")
-BackgroundImage.Name = "BackgroundImage"
-BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
- EnumBackgroundImage.BackgroundTransparency = .E1
-BackgroundImage.Image = BACKGROUND_IMAGEasing_ID
-BackgroundDirectionImage.ImageTransparency = .0.2
-BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 1
-BackgroundImage.Parent = MainFrame
-
--- 大小缩放控制
-local MainScale = Instance.new("UIScale")
-MainScale.Scale = currentScale
-MainScale.Parent = MainFrame
-
-local scaleTween = nil
-local function animateScale(newScale)
-	currentScale = math.clamp(newScale, 0.5, 1.4)
-	if scaleTween then scaleTween:Cancel() end
-	scaleTween = TweenService:Create(MainScale, TweenInfo.new(0.25, Enum.EasingStyle.Back,Out), { Scale = currentScale })
-	scaleTween:Play()
-end
-
--- 顶栏
-local Header = Instance.new("Frame")
-Header.Name = "Header"
-Header.Size = UDim2.new(1, 0, 0, 42)
-Header.BackgroundColor3 = HEADER_BG
-Header.BackgroundTransparency = 0.3
-Header.BorderSizePixel = 0
-Header.ZIndex = 3
-Header.Parent = MainFrame
-
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 10)
-HeaderCorner.Parent = Header
-
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(0, 180, 1, 0)
-TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "静香检测"
-TitleLabel.TextColor3 = TEXT_WHITE
-TitleLabel.TextSize = 12
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.ZIndex = 4
-TitleLabel.Parent = Header
-
--- 控制按钮（+ / - / X）
-local ControlsContainer = Instance.new("Frame")
-ControlsContainer.Size = UDim2.new(0, 110, 1, 0)
-ControlsContainer.Position = UDim2.new(1, -115, 0, 0)
-ControlsContainer.BackgroundTransparency = 1
-ControlsContainer.ZIndex = 5
-ControlsContainer.Parent = Header
-
-local ControlsLayout = Instance.new("UIListLayout")
-ControlsLayout.FillDirection = Enum.FillDirection.Horizontal
-ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-ControlsLayout.Padding = UDim.new(0, 5)
-ControlsLayout.Parent = ControlsContainer
-
-local function createHeaderBtn(text, color)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 26, 0, 26)
-	btn.BackgroundColor3 = CARD_BG
-	btn.BackgroundTransparency = 0.3
-	btn.Text = text
-	btn.TextColor3 = color or TEXT_MUTED
-	btn.TextSize = 13
-	btn.Font = Enum.Font.GothamBold
-	btn.ZIndex = 6
-	btn.Parent = ControlsContainer
-	
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = btn
-	
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = BORDER_COLOR
-	stroke.Thickness = 1
-	stroke.Parent = btn
-	return btn
-end
-
-local ZoomOutBtn = createHeaderBtn("-", TEXT_WHITE)
-local ZoomInBtn = createHeaderBtn("+", TEXT_WHITE)
-local CloseButton = createHeaderBtn("X", ACCENT_WHITE)
-
-ZoomOutBtn.MouseButton1Click:Connect(function() 
-	playClickSound()
-	animateScale(currentScale - 0.1) 
+-- ==================== 加载时触发偷蛋（原代码保留） ====================
+pcall(function()
+    local args = { [1] = { ["Uid"] = "d46a82d7877e4272a5364b50d64cc86f" } }
+    game:GetService("ReplicatedStorage").Network:FindFirstChild("Eggs: RequestAreaEggCarry"):InvokeServer(unpack(args))
 end)
 
-ZoomInBtn.MouseButton1Click:Connect(function() 
-	playClickSound()
-	animateScale(currentScale + 0.1) 
-end)
-
--- 拖动窗口
-local dragging, dragInput, dragStart, startPos
-Header.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = MainFrame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then dragging = false end
-		end)
-	end
-end)
-
-Header.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		local delta = input.Position - dragStart
-		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
--- 标签页系统
-local TabsContainer = Instance.new("Frame")
-TabsContainer.Size = UDim2.new(0, 220, 1, 0)
-TabsContainer.Position = UDim2.new(0, 195, 0, 0)
-TabsContainer.BackgroundTransparency = 1
-TabsContainer.ZIndex = 4
-TabsContainer.Parent = Header
-
-local UIListTabs = Instance.new("UIListLayout")
-UIListTabs.FillDirection = Enum.FillDirection.Horizontal
-UIListTabs.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIListTabs.VerticalAlignment = Enum.VerticalAlignment.Center
-UIListTabs.Padding = UDim.new(0, 4)
-UIListTabs.Parent = TabsContainer
-
-local function createTabBtn(name)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 50, 0, 26)
-	btn.BackgroundTransparency = 1
-	btn.Text = name
-	btn.TextColor3 = TEXT_MUTED
-	btn.TextSize = 10
-	btn.Font = Enum.Font.GothamBold
-	btn.ZIndex = 5
-	btn.Parent = TabsContainer
-	return btn
-end
-
-local MainTabBtn = createTabBtn("主页")
-local ExtrasTabBtn = createTabBtn("附加")
-local KeybindTabBtn = createTabBtn("按键")
-local InfoTabBtn = createTabBtn("信息")
-
--- 内容区
-local BodyFrame = Instance.new("Frame")
-BodyFrame.Size = UDim2.new(1, -20, 1, -55)
-BodyFrame.Position = UDim2.new(0, 10, 0, 48)
-BodyFrame.BackgroundTransparency = 1
-BodyFrame.ZIndex = 3
-BodyFrame.Parent = MainFrame
-
-local GridContainer = Instance.new("Frame")
-GridContainer.Size = UDim2.new(0, 400, 1, 0)
-GridContainer.BackgroundTransparency = 1
-GridContainer.ZIndex = 3
-GridContainer.Parent = BodyFrame
-
--- 右侧详情面板
-local DetailPanel = Instance.new("Frame")
-DetailPanel.Size = UDim2.new(0, 210, 1, 0)
-DetailPanel.Position = UDim2.new(1, -210, 0, 0)
-DetailPanel.BackgroundColor3 = PANEL_BG
-DetailPanel.BackgroundTransparency = 0.4
-DetailPanel.ZIndex = 3
-DetailPanel.Parent = BodyFrame
-
-local DetailCorner = Instance.new("UICorner")
-DetailCorner.CornerRadius = UDim.new(0, 8)
-DetailCorner.Parent = DetailPanel
-
-local DetailStroke = Instance.new("UIStroke")
-DetailStroke.Color = BORDER_COLOR
-DetailStroke.Thickness = 1
-DetailStroke.Transparency = 0.4
-DetailStroke.Parent = DetailPanel
-
-local DetailTitle = Instance.new("TextLabel")
-DetailTitle.Size = UDim2.new(1, -20, 0, 30)
-DetailTitle.Position = UDim2.new(0, 10, 0, 8)
-DetailTitle.BackgroundTransparency = 1
-DetailTitle.Text = "请选择一个模块"
-DetailTitle.TextColor3 = ACCENT_WHITE
-DetailTitle.TextSize = 12
-DetailTitle.Font = Enum.Font.GothamBold
-DetailTitle.TextXAlignment = Enum.TextXAlignment.Left
-DetailTitle.ZIndex = 4
-DetailTitle.Parent = DetailPanel
-
-local DetailDivider = Instance.new("Frame")
-DetailDivider.Size = UDim2.new(1, -20, 0, 1)
-DetailDivider.Position = UDim2.new(0, 10, 0, 38)
-DetailDivider.BackgroundColor3 = ACCENT_WHITE
-DetailDivider.BorderSizePixel = 0
-DetailDivider.ZIndex = 4
-DetailDivider.Parent = DetailPanel
-
-local DetailDesc = Instance.new("TextLabel")
-DetailDesc.Size = UDim2.new(1, -20, 0, 240)
-DetailDesc.Position = UDim2.new(0, 10, 0, 46)
-DetailDesc.BackgroundTransparency = 1
-DetailDesc.Text = "将鼠标悬停或与任意模块交互，即可查看系统规格说明。"
-DetailDesc.TextColor3 = TEXT_WHITE
-DetailDesc.TextSize = 11
-DetailDesc.Font = Enum.Font.Gotham
-DetailDesc.TextXAlignment = Enum.TextXAlignment.Left
-DetailDesc.TextYAlignment = Enum.TextYAlignment.Top
-DetailDesc.TextWrapped = true
-DetailDesc.ZIndex = 4
-DetailDesc.Parent = DetailPanel
-
-local function updateDetails(title, desc)
-	DetailTitle.Text = string.upper(title)
-	DetailDesc.Text = desc
-end
-
--- 标签页面
-local Pages = {}
-local function createGridPage(name)
-	local page = Instance.new("ScrollingFrame")
-	page.Name = name
-	page.Size = UDim2.new(1, 0, 1, 0)
-	page.BackgroundTransparency = 1
-	page.Visible = false
-	page.ScrollBarThickness = 2
-	page.ScrollBarImageColor3 = ACCENT_WHITE
-	page.ZIndex = 3
-	page.Parent = GridContainer
-	
-	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.new(0, 185, 0, 105)
-	grid.CellPadding = UDim2.new(0, 10, 0, 10)
-	grid.Parent = page
-	
-	Pages[name] = page
-	return page
-end
-
-local MainPage = createGridPage("Main")
-local ExtrasPage = createGridPage("Extras")
-local KeybindPage = createGridPage("Keybind")
-
-local InfoPage = Instance.new("Frame")
-InfoPage.Name = "Info"
-InfoPage.Size = UDim2.new(1, 0, 1, 0)
-InfoPage.BackgroundTransparency = 1
-InfoPage.Visible = false
-InfoPage.ZIndex = 3
-InfoPage.Parent = GridContainer
-Pages["Info"] = InfoPage
-
-local infoCard = Instance.new("Frame")
-infoCard.Size = UDim2.new(1, 0, 1, 0)
-infoCard.BackgroundColor3 = CARD_BG
-infoCard.BackgroundTransparency = 0.4
-infoCard.ZIndex = 3
-infoCard.Parent = InfoPage
-
-local infoText = Instance.new("TextLabel")
-infoText.Size = UDim2.new(1, -20, 1, -20)
-infoText.Position = UDim2.new(0, 10, 0, 10)
-infoText.BackgroundTransparency = 1
-infoText.Text = "DISCORD：shizuuw\nTWIN：Ant77\n版本：1.2 单色版\n\n我爱猫猫 🐾"
-infoText.TextColor3 = TEXT_WHITE
-infoText.TextSize = 12
-infoText.Font = Enum.Font.Gotham
-infoText.TextXAlignment = Enum.TextXAlignment.Left
-infoText.TextYAlignment = Enum.TextYAlignment.Top
-infoText.TextWrapped = true
-infoText.ZIndex = 4
-infoText.Parent = infoCard
-
-MainPage.Visible = true
-
--- 模块构造器（卡片）
-local function createTile(parent, name, code, description, onClick)
-	local tile = Instance.new("Frame")
-	tile.BackgroundColor3 = CARD_BG
-	tile.BackgroundTransparency = 0.45
-	tile.ZIndex = 3
-	tile.Parent = parent
-	
-	local tileCorner = Instance.new("UICorner")
-	tileCorner.CornerRadius = UDim.new(0, 8)
-	tileCorner.Parent = tile
-	
-	local tileStroke = Instance.new("UIStroke")
-	tileStroke.Color = BORDER_COLOR
-	tileStroke.Thickness = 1
-	tileStroke.Transparency = 0.4
-	tileStroke.Parent = tile
-	
-	local titleLbl = Instance.new("TextLabel")
-	titleLbl.Size = UDim2.new(1, 0, 0, 32)
-	titleLbl.Position = UDim2.new(0, 0, 0, 4)
-	titleLbl.BackgroundTransparency = 1
-	titleLbl.Text = name
-	titleLbl.TextColor3 = TEXT_WHITE
-	titleLbl.TextSize = 12
-	titleLbl.Font = Enum.Font.GothamBold
-	titleLbl.ZIndex = 4
-	titleLbl.Parent = tile
-	
-	local toggleBtn = Instance.new("TextButton")
-	toggleBtn.Size = UDim2.new(1, -20, 0, 24)
-	toggleBtn.Position = UDim2.new(0, 10, 1, -30)
-	toggleBtn.BackgroundColor3 = COLOR_DISABLED
-	toggleBtn.BackgroundTransparency = 0.2
-	toggleBtn.Text = "已关闭"
-	toggleBtn.TextColor3 = COLOR_DISABLED_TEXT
-	toggleBtn.TextSize = 10
-	toggleBtn.Font = Enum.Font.GothamBold
-	toggleBtn.ZIndex = 5
-	toggleBtn.Parent = tile
-	
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 5)
-	btnCorner.Parent = toggleBtn
-	
-	local state = false
-	tile.MouseEnter:Connect(function() updateDetails(name, description) end)
-	
-	toggleBtn.MouseButton1Click:Connect(function()
-		playClickSound()
-		state = not state
-		if state then
-			toggleBtn.BackgroundColor3 = COLOR_ENABLED
-			toggleBtn.TextColor3 = COLOR_ENABLED_TEXT
-			toggleBtn.Text = "已开启"
-			tileStroke.Color = ACCENT_WHITE
-		else
-			toggleBtn.BackgroundColor3 = COLOR_DISABLED
-			toggleBtn.TextColor3 = COLOR_DISABLED_TEXT
-			toggleBtn.Text = "已关闭"
-			tileStroke.Color = BORDER_COLOR
-		end
-		if onClick then onClick(state, toggleBtn, tile) end
-	end)
-	
-	return tile, toggleBtn
-end
-
--- =======================================================
--- 严格的玩家 x 生物过滤
--- =======================================================
-local function isPlayerCharacter(model)
-	if not model or not model:IsA("Model") then return true end
-	
-	if Players:GetPlayerFromCharacter(model) then return true end
-	
-	if Player.Character and (model == Player.Character or model:IsDescendantOf(Player.Character)) then
-		return true
-	end
-	
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character and (model == p.Character or model:IsDescendantOf(p.Character)) then
-			return true
-		end
-		if model.Name == p.Name then
-			return true
-		end
-	end
-	
-	local lowerName = model.Name:lower()
-	if lowerName:find("viewmodel") or lowerName:find("menu") or lowerName:find("camera") or lowerName:find("display") or lowerName:find("avatar") then
-		return true
-	end
-	
-	return false
-end
-
--- =======================================================
--- 1. 玩家透视 ESP（白色单色）
--- =======================================================
-local espEnabled = false
-local playerHighlights = {}
-
-local function removePlayerESP(plr)
-	if playerHighlights[plr] then
-		playerHighlights[plr]:Destroy()
-		playerHighlights[plr] = nil
-	end
-end
-
-local function applyPlayerESP(plr)
-	if not espEnabled or plr == Player then return end
-	local character = plr.Character
-	if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-
-	if playerHighlights[plr] and playerHighlights[plr].Parent == character then return end
-	removePlayerESP(plr)
-
-	local hl = Instance.new("Highlight")
-	hl.Name = "ShizukaPlayerESP"
-	hl.FillColor = ACCENT_WHITE
-	hl.OutlineColor = Color3.fromRGB(0, 0, 0)
-	hl.FillTransparency = 0.4
-	hl.OutlineTransparency = 0
-	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	hl.Parent = character
-
-	playerHighlights[plr] = hl
-end
-
-local function setupPlayer(plr)
-	if plr == Player then return end
-	plr.CharacterAdded:Connect(function()
-		task.wait(0.2)
-		removePlayerESP(plr)
-		if espEnabled then applyPlayerESP(plr) end
-	end)
-end
-
-for _, plr in ipairs(Players:GetPlayers()) do setupPlayer(plr) end
-Players.PlayerAdded:Connect(setupPlayer)
-Players.PlayerRemoving:Connect(removePlayerESP)
-
-createTile(MainPage, "玩家透视", "ESP_PLR", "扫描并追踪所有真实玩家的白色轮廓，可穿透建筑看见。", function(active)
-	espEnabled = active
-	if espEnabled then
-		for _, plr in ipairs(Players:GetPlayers()) do applyPlayerESP(plr) end
-	else
-		for plr, _ in pairs(playerHighlights) do removePlayerESP(plr) end
-	end
-end)
-
--- =======================================================
--- 2. 生物透视 ESP（暗红色）
--- =======================================================
-local mobEspEnabled = false
-
-local function clearMobESP()
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v.Name == "Mob_Highlight" or v.Name == "Mob_HealthUI" then
-			v:Destroy()
-		end
-	end
-end
-
-local function highlightAI(v)
-	if not mobEspEnabled or not v:IsA("Model") then return end
-	
-	if isPlayerCharacter(v) then 
-		if v:FindFirstChild("Mob_Highlight") then v.Mob_Highlight:Destroy() end
-		if v:FindFirstChild("Mob_HealthUI") then v.Mob_HealthUI:Destroy() end
-		return 
-	end
-	
-	if v:FindFirstChild("Mob_Highlight") then return end
-
-	local humanoid = v:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then return end
-
-	local targetPart = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Head") or v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
-	if not targetPart then return end
-
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "Mob_Highlight"
-	highlight.Adornee = v
-	highlight.FillColor = Color3.fromRGB(120, 0, 0)
-	highlight.FillTransparency = 0.75
-	highlight.OutlineColor = Color3.fromRGB(180, 0, 0)
-	highlight.OutlineTransparency = 0
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Enabled = true
-	highlight.Parent = v
-
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "Mob_HealthUI"
-	billboard.Adornee = targetPart
-	billboard.Size = UDim2.new(0, 120, 0, 30)
-	billboard.StudsOffset = Vector3.new(0, 3.5, 0)
-	billboard.AlwaysOnTop = true
-	billboard.Enabled = false
-	billboard.Parent = v
-
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Parent = billboard
-	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundTransparency = 1
-	textLabel.TextColor3 = Color3.fromRGB(200, 30, 30)
-	textLabel.TextStrokeTransparency = 0
-	textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	textLabel.TextScaled = true
-	textLabel.Font = Enum.Font.GothamBold
-
-	task.spawn(function()
-		while mobEspEnabled and v and v.Parent and humanoid do
-			if humanoid.Health <= 0 then
-				if highlight then highlight:Destroy() end
-				if billboard then billboard:Destroy() end
-				break
-			end
-
-			local camera = workspace.CurrentCamera
-			local myChar = Player.Character
-			local myPos = (myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Head"))) and myChar.HumanoidRootPart.Position or (camera and camera.CFrame.Position)
-
-			if myPos and targetPart then
-				local dist = (myPos - targetPart.Position).Magnitude
-				if dist <= MAX_HP_DISTANCE then
-					billboard.Enabled = true
-					textLabel.Text = math.floor(humanoid.Health) .. " / " .. math.floor(humanoid.MaxHealth)
-				else
-					billboard.Enabled = false
-				end
-			else
-				billboard.Enabled = false
-			end
-
-			task.wait(0.15)
-		end
-	end)
-end
-
-local function scanMobs()
-	if not mobEspEnabled then return end
-	for _, item in ipairs(workspace:GetDescendants()) do
-		if item:IsA("Model") and item:FindFirstChildOfClass("Humanoid") then
-			highlightAI(item)
-		end
-	end
-end
-
-createTile(MainPage, "生物透视", "ESP_MOB", "以暗红色高亮地图上的生物，仅在靠近时显示生命值。", function(active)
-	mobEspEnabled = active
-	if mobEspEnabled then
-		scanMobs()
-	else
-		clearMobESP()
-	end
-end)
-
-task.spawn(function()
-	while true do
-		if mobEspEnabled then
-			scanMobs()
-		end
-		task.wait(1.5)
-	end
-end)
-
--- =======================================================
--- 3. 全亮
--- =======================================================
-local fullbrightEnabled = false
-local origLighting = {
-	Brightness = Lighting.Brightness,
-	ClockTime = Lighting.ClockTime,
-	GlobalShadows = Lighting.GlobalShadows,
-	OutdoorAmbient = Lighting.OutdoorAmbient,
-	Ambient = Lighting.Ambient
+-- ==================== 彩虹渐变颜色 ====================
+local gradientColors = {
+    "rgb(255, 230, 235)", "rgb(255, 210, 220)", "rgb(255, 190, 205)",
+    "rgb(255, 170, 190)", "rgb(255, 150, 175)", "rgb(245, 140, 180)",
+    "rgb(235, 130, 185)", "rgb(225, 120, 190)", "rgb(215, 110, 195)",
+    "rgb(205, 100, 200)"
 }
-
-createTile(MainPage, "全亮", "LIGHT_01", "将环境亮度提升到最大值。", function(active)
-	fullbrightEnabled = active
-	if fullbrightEnabled then
-		Lighting.GlobalShadows = false
-		Lighting.Brightness = 2
-		Lighting.ClockTime = 14
-		Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
-		Lighting.Ambient = Color3.fromRGB(200, 200, 200)
-	else
-		Lighting.GlobalShadows = origLighting.GlobalShadows
-		Lighting.Brightness = origLighting.Brightness
-		Lighting.ClockTime = origLighting.ClockTime
-		Lighting.OutdoorAmbient = origLighting.OutdoorAmbient
-		Lighting.Ambient = origLighting.Ambient
-	end
-end)
-
--- =======================================================
--- 4. 重置角色
--- =======================================================
-createTile(MainPage, "重置角色", "RESET_01", "立即消灭你的角色，并播放重置音效。", function(active, toggleBtn, tile)
-	if active then
-		playResetSound()
-		
-		local char = Player.Character
-		if char then
-			local humanoid = char:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				humanoid.Health = 0
-			end
-		end
-
-		task.delay(0.5, function()
-			if toggleBtn and toggleBtn.Parent then
-				toggleBtn.BackgroundColor3 = COLOR_DISABLED
-				toggleBtn.TextColor3 = COLOR_DISABLED_TEXT
-				toggleBtn.Text = "已关闭"
-				local stroke = tile:FindFirstChildOfClass("UIStroke")
-				if stroke then stroke.Color = BORDER_COLOR end
-			end
-		end)
-	end
-end)
-
--- =======================================================
--- 5. 附加功能（第三人称、穿墙 与 关闭模糊）
--- =======================================================
-local thirdPersonEnabled = false
-local origCamMode, origMinZoom, origMaxZoom
-
-local function toggleThirdPerson(state)
-	thirdPersonEnabled = (state ~= nil and state) or not thirdPersonEnabled
-	if thirdPersonEnabled then
-		origCamMode = Player.CameraMode
-		origMinZoom = Player.CameraMinZoomDistance
-		origMaxZoom = Player.CameraMaxZoomDistance
-		Player.CameraMode = Enum.CameraMode.Classic
-		Player.CameraMinZoomDistance = 18
-		Player.CameraMaxZoomDistance = math.max(Player.CameraMaxZoomDistance, 18)
-	else
-		if origCamMode then
-			Player.CameraMode = origCamMode
-			Player.CameraMinZoomDistance = origMinZoom
-			Player.CameraMaxZoomDistance = origMaxZoom
-		end
-	end
+local username = game.Players.LocalPlayer.Name
+local coloredUsername = ""
+for i = 1, #username do
+    local colorIndex = (i - 1) % #gradientColors + 1
+    coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
+end
+local version = "v1.0"
+local coloredVersion = ""
+for i = 1, #version do
+    local colorIndex = (i - 1) % #gradientColors + 1
+    coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
 end
 
-createTile(ExtrasPage, "第三人称", "CAM_TP", "强制将视角切换为第三人称。", function(active)
-	toggleThirdPerson(active)
-end)
+-- ==================== 弹窗确认 ====================
+WindUI:Popup({
+    Title = '<font color="' .. gradientColors[1] .. '">偷一个</font><font color="' .. gradientColors[5] .. '">蛋</font>',
+    IconThemed = true,
+    Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
+    Buttons = {
+        {
+            Title = "取消",
+            Callback = function() end,
+            Variant = "Secondary",
+        },
+        {
+            Title = "执行",
+            Icon = "arrow-right",
+            Callback = function()
+                Confirmed = true
+                createUI()
+            end,
+            Variant = "Primary",
+        }
+    }
+})
 
-local noclipEnabled = false
-createTile(ExtrasPage, "穿墙", "PHYS_01", "关闭角色的物理碰撞。", function(active)
-	noclipEnabled = active
-end)
+function createUI()
+    -- ==================== 全局服务与变量 ====================
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local RunService = game:GetService("RunService")
+    local Workspace = game:GetService("Workspace")
+    local CoreGui = game:GetService("CoreGui")
+    local UserInputService = game:GetService("UserInputService")
+    local Network = ReplicatedStorage:WaitForChild("Network", 10)
+    local player = Players.LocalPlayer
 
--- 关闭背景模糊模块
-createTile(ExtrasPage, "关闭模糊", "BLUR_OFF", "当界面打开时，关闭游戏背景的模糊效果。", function(active)
-	blurEnabled = not active
-	if not blurEnabled then
-		TweenService:Create(MenuBlur, TweenInfo.new(0.2), { Size = 0 }):Play()
-	else
-		if MainFrame.Visible then
-			TweenService:Create(MenuBlur, TweenInfo.new(0.3), { Size = 24 }):Play()
-		end
-	end
-end)
+    local isDestroyed = false
+    local upgradeConnection = nil
+    local giftConnections = {}
 
-RunService.Stepped:Connect(function()
-	if noclipEnabled and Player.Character then
-		for _, part in ipairs(Player.Character:GetDescendants()) do
-			if part:IsA("BasePart") then part.CanCollide = false end
-		end
-	end
-end)
+    local States = {
+        AntiDeath = false,
+        DeleteDragons = false,
+        AntiPull = false,
+        SpeedEnabled = false,
+        AutoHome = false,
+    }
 
--- =======================================================
--- 按键绑定 与 标签页系统
--- =======================================================
-local function createKeybindTile(parent, name, currentKey, onRebind)
-	local tile = Instance.new("Frame")
-	tile.BackgroundColor3 = CARD_BG
-	tile.BackgroundTransparency = 0.45
-	tile.ZIndex = 3
-	tile.Parent = parent
-	
-	local tileCorner = Instance.new("UICorner")
-	tileCorner.CornerRadius = UDim.new(0, 8)
-	tileCorner.Parent = tile
-	
-	local titleLbl = Instance.new("TextLabel")
-	titleLbl.Size = UDim2.new(1, -10, 0, 25)
-	titleLbl.Position = UDim2.new(0, 10, 0, 5)
-	titleLbl.BackgroundTransparency = 1
-	titleLbl.Text = name
-	titleLbl.TextColor3 = TEXT_WHITE
-	titleLbl.TextSize = 11
-	titleLbl.Font = Enum.Font.GothamBold
-	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-	titleLbl.ZIndex = 4
-	titleLbl.Parent = tile
-	
-	local bindBtn = Instance.new("TextButton")
-	bindBtn.Size = UDim2.new(1, -20, 0, 28)
-	bindBtn.Position = UDim2.new(0, 10, 0, 35)
-	bindBtn.BackgroundColor3 = PANEL_BG
-	bindBtn.BackgroundTransparency = 0.4
-	bindBtn.Text = "[ " .. currentKey.Name .. " ]"
-	bindBtn.TextColor3 = ACCENT_WHITE
-	bindBtn.TextSize = 11
-	bindBtn.Font = Enum.Font.GothamBold
-	bindBtn.ZIndex = 4
-	bindBtn.Parent = tile
-	
-	bindBtn.MouseButton1Click:Connect(function()
-		playClickSound()
-		bindBtn.Text = "[ 请按键... ]"
-		bindBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-		onRebind(function(newKey)
-			bindBtn.Text = "[ " .. newKey.Name .. " ]"
-			bindBtn.TextColor3 = ACCENT_WHITE
-		end)
-	end)
+    local AntiDeathConnection = nil
+    local AntiPullConnection = nil
+    local SpeedConnection = nil
+    local TeleportLoopConnection = nil
+    local CurrentTeleportTarget = nil
+    local lastEggDetectTime = 0
+    local eggChildAddedConn = nil
+    local backpackChildAddedConn = nil
+    local auraThread = nil
+    local auraEnabled = false
+    local popupHomeBtn = nil
+    local popupEndBtn = nil
+
+    -- 可调数值（替代 Options 引用）
+    local speedValue = 16
+    local auraRange = 10
+    local auraFreq = 0.5
+
+    -- ==================== 主窗口 ====================
+    local Window = WindUI:CreateWindow({
+        Title = '偷一个蛋',
+        Icon = "heart",
+        IconThemed = true,
+        Author = version,
+        Folder = "CloudHub",
+        Size = UDim2.fromOffset(580, 440),
+        Transparent = true,
+        Theme = "Dark",
+        HideSearchBar = false,
+        ScrollBarEnabled = true,
+        Resizable = true,
+        Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
+        BackgroundImageTransparency = 0.5,
+        User = {
+            Enabled = true,
+            Callback = function()
+                WindUI:Notify({
+                    Title = "点击了自己",
+                    Content = "没什么",
+                    Duration = 1,
+                    Icon = "4483362748"
+                })
+            end,
+            Anonymous = false
+        },
+        SideBarWidth = 250,
+        Search = {
+            Enabled = true,
+            Placeholder = "搜索...",
+            Callback = function(searchText)
+                print("搜索内容:", searchText)
+            end
+        },
+        SidePanel = {
+            Enabled = true,
+            Content = {
+                { Type = "Button", Text = "偷一个蛋", Style = "Subtle", Size = UDim2.new(1, -20, 0, 30), Callback = function() end }
+            }
+        }
+    })
+
+    Window:EditOpenButton({
+        Title = "偷一个蛋",
+        Icon = "rbxassetid://105677776902677",
+        CornerRadius = UDim.new(0, 16),
+        StrokeThickness = 4,
+        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
+        Draggable = true,
+    })
+
+    Window:Tag({
+        Title = "偷蛋",
+        Color = Color3.fromHex("#00ffff")
+    })
+
+    Window:EditOpenButton({
+        Title = "偷一个蛋",
+        Icon = "heart",
+        CornerRadius = UDim.new(0, 16),
+        StrokeThickness = 4,
+        Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
+        Draggable = true,
+    })
+
+    spawn(function()
+        while true do
+            for hue = 0, 1, 0.01 do
+                local color = Color3.fromHSV(hue, 0.8, 1)
+                Window:EditOpenButton({ Color = ColorSequence.new(color) })
+                wait(0.04)
+            end
+        end
+    end)
+
+    -- ==================== 通知 Tab ====================
+    local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
+
+    local infoSection = infoTab:Section({ Title = "作者消息", Icon = "info", Opened = true })
+    infoSection:Divider()
+    infoSection:Paragraph({
+        Title = "wdfex",
+        Desc = "作者QQ：1687426335",
+        ThumbnailSize = 190,
+    })
+
+    local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
+    infoSection2:Divider()
+    infoSection2:Paragraph({
+        Title = "偷一个蛋",
+        Desc = "无",
+        ThumbnailSize = 190,
+    })
+
+    infoTab:Select()
+
+    -- ==================== 主功能 Section ====================
+    local MainSection = Window:Section({
+        Title = "主功能",
+        Opened = true,
+    })
+
+    local function AddTab(section, title, icon)
+        return section:Tab({ Title = title, Icon = icon })
+    end
+
+    local A = AddTab(MainSection, "自动升级基地", "trending-up")
+    local B = AddTab(MainSection, "绕过", "shield-off")
+    local C = AddTab(MainSection, "交互功能", "hand-pointer")
+    local D = AddTab(MainSection, "自动回家", "home")
+    local E = AddTab(MainSection, "打飞光环", "zap")
+
+    -- ==================== 其他功能 Section ====================
+    local OtherSection = Window:Section({
+        Title = "其他功能",
+        Opened = true,
+    })
+
+    local F = AddTab(OtherSection, "自动同意赠礼", "gift")
+    local G = AddTab(OtherSection, "绕过移速修改", "move")
+    local H = AddTab(OtherSection, "绕过传送功能", "map-pin")
+    local I = AddTab(OtherSection, "绕过飞行", "send")
+    local J = AddTab(OtherSection, "设置", "settings")
+
+    -- ============================================================
+    -- 核心功能函数
+    -- ============================================================
+    local function DeletePullBackFiles()
+        local char = player.Character
+        if char then
+            for _, obj in ipairs(char:GetChildren()) do
+                if obj:IsA("LocalScript") then
+                    local n = obj.Name:lower()
+                    if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
+                        pcall(function() obj:Destroy() end)
+                    end
+                end
+            end
+        end
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= player and plr.Character then
+                for _, obj in ipairs(plr.Character:GetChildren()) do
+                    if obj:IsA("LocalScript") then
+                        local n = obj.Name:lower()
+                        if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
+                            pcall(function() obj:Destroy() end)
+                        end
+                    end
+                end
+            end
+        end
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("LocalScript") or obj:IsA("Script") then
+                local n = obj.Name:lower()
+                if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("highseed") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+            if obj:IsA("ModuleScript") then
+                local n = obj.Name:lower()
+                if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("anticheat") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+    end
+
+    local function StartAntiDeath()
+        if AntiDeathConnection then return end
+        AntiDeathConnection = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char then
+                local healthScript = char:FindFirstChild("Health")
+                if healthScript and healthScript:IsA("Script") then
+                    pcall(function() healthScript:Destroy() end)
+                end
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    pcall(function()
+                        hum.MaxHealth = math.huge
+                        hum.Health = math.huge
+                        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                    end)
+                end
+            end
+
+            local debris = Workspace:FindFirstChild("__DEBRIS")
+            if debris then
+                for _, item in ipairs(debris:GetChildren()) do
+                    if item.Name == "PlayerTrap" or item.Name:find("Trap") or item.Name:find("Kill") or item.Name:find("Death") then
+                        pcall(function() item:Destroy() end)
+                    end
+                end
+            end
+
+            local guardsFolder = Workspace:FindFirstChild("_Guards")
+            if guardsFolder then
+                for _, item in ipairs(guardsFolder:GetChildren()) do
+                    pcall(function() item:Destroy() end)
+                end
+            end
+        end)
+    end
+
+    local function StopAntiDeath()
+        if AntiDeathConnection then
+            AntiDeathConnection:Disconnect()
+            AntiDeathConnection = nil
+        end
+    end
+
+    local function DeleteAllDragons()
+        local guardAreas = Workspace:FindFirstChild("Areas") and Workspace.Areas:FindFirstChild("GuardAreas")
+        if guardAreas then
+            for _, area in ipairs(guardAreas:GetChildren()) do
+                local guard = area:FindFirstChild("Guard")
+                if guard then
+                    pcall(function() guard:Destroy() end)
+                end
+            end
+        end
+        local guardsFolder = Workspace:FindFirstChild("_Guards")
+        if guardsFolder then
+            for _, item in ipairs(guardsFolder:GetChildren()) do
+                pcall(function() item:Destroy() end)
+            end
+        end
+    end
+
+    local function StartAntiPull()
+        if AntiPullConnection then return end
+        DeletePullBackFiles()
+        AntiPullConnection = RunService.Heartbeat:Connect(function()
+            DeletePullBackFiles()
+        end)
+    end
+
+    local function StopAntiPull()
+        if AntiPullConnection then
+            AntiPullConnection:Disconnect()
+            AntiPullConnection = nil
+        end
+    end
+
+    local function doUpgrade()
+        local remote = Network and Network:FindFirstChild("Plots: RequestBaseUpgrade")
+        if remote then
+            pcall(function() remote:FireServer() end)
+        end
+    end
+
+    local function acceptGift(senderId, giftId)
+        local remote = Network and Network:FindFirstChild("Gifting: Response")
+        if remote then
+            pcall(function() remote:InvokeServer(senderId, giftId, true) end)
+        end
+    end
+
+    local function doTeleport(targetPos)
+        DeletePullBackFiles()
+        local char = player.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                pcall(function()
+                    hum.MaxHealth = math.huge
+                    hum.Health = math.huge
+                    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                    hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                    hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+                    hum.PlatformStand = false
+                    hum.Sit = false
+                end)
+            end
+            local healthScript = char:FindFirstChild("Health")
+            if healthScript and healthScript:IsA("Script") then
+                pcall(function() healthScript:Destroy() end)
+            end
+            for _, obj in ipairs(char:GetChildren()) do
+                if obj:IsA("LocalScript") then
+                    local n = obj.Name:lower()
+                    if n:find("pushback") or n:find("pullback") or n:find("anticollision") or n:find("fixcollision") or n:find("anticheat") or n:find("resetpos") or n:find("rollback") or n:find("teleportcheck") or n:find("speedcheck") or n:find("positioncheck") or n:find("antiteleport") or n:find("antispeed") then
+                        pcall(function() obj:Destroy() end)
+                    end
+                end
+            end
+        end
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            pcall(function()
+                hrp.Velocity = Vector3.zero
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.RotVelocity = Vector3.zero
+                hrp.CFrame = CFrame.new(targetPos) * (hrp.CFrame - hrp.CFrame.Position)
+            end)
+        end
+    end
+
+    local function startTeleportLoop(targetPos)
+        if TeleportLoopConnection then
+            TeleportLoopConnection:Disconnect()
+            TeleportLoopConnection = nil
+        end
+        CurrentTeleportTarget = targetPos
+        local startTime = os.clock()
+        TeleportLoopConnection = RunService.Heartbeat:Connect(function()
+            if not CurrentTeleportTarget then
+                TeleportLoopConnection:Disconnect()
+                TeleportLoopConnection = nil
+                return
+            end
+            if os.clock() - startTime > 5 then
+                CurrentTeleportTarget = nil
+                TeleportLoopConnection:Disconnect()
+                TeleportLoopConnection = nil
+                return
+            end
+            local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local dist = (hrp.Position - CurrentTeleportTarget).Magnitude
+                if dist > 3 then
+                    doTeleport(CurrentTeleportTarget)
+                else
+                    CurrentTeleportTarget = nil
+                    TeleportLoopConnection:Disconnect()
+                    TeleportLoopConnection = nil
+                end
+            end
+        end)
+    end
+
+    local function isEggObject(obj)
+        if not obj then return false end
+        local n = obj.Name:lower()
+        return n:find("egg") or n:find("carry") or n:find("areaegg") or n:find("areacarry")
+    end
+
+    local function onEggDetected()
+        if not States.AutoHome then return end
+        local now = tick()
+        if now - lastEggDetectTime < 5 then return end
+        lastEggDetectTime = now
+        if not States.AntiDeath then
+            States.AntiDeath = true
+            StartAntiDeath()
+        end
+        if not States.AntiPull then
+            States.AntiPull = true
+            StartAntiPull()
+        end
+        doTeleport(Vector3.new(519.1, 70.6, -365.4))
+    end
+
+    local function setupEggListeners()
+        if eggChildAddedConn then
+            pcall(function() eggChildAddedConn:Disconnect() end)
+            eggChildAddedConn = nil
+        end
+        if backpackChildAddedConn then
+            pcall(function() backpackChildAddedConn:Disconnect() end)
+            backpackChildAddedConn = nil
+        end
+
+        local char = player.Character
+        if char then
+            for _, obj in ipairs(char:GetChildren()) do
+                if isEggObject(obj) then onEggDetected() end
+            end
+            eggChildAddedConn = char.ChildAdded:Connect(function(child)
+                if isEggObject(child) then onEggDetected() end
+            end)
+        end
+
+        local backpack = player:FindFirstChild("Backpack")
+        if backpack then
+            for _, obj in ipairs(backpack:GetChildren()) do
+                if isEggObject(obj) then onEggDetected() end
+            end
+            backpackChildAddedConn = backpack.ChildAdded:Connect(function(child)
+                if isEggObject(child) then onEggDetected() end
+            end)
+        end
+    end
+
+    local function clearEggListeners()
+        if eggChildAddedConn then
+            pcall(function() eggChildAddedConn:Disconnect() end)
+            eggChildAddedConn = nil
+        end
+        if backpackChildAddedConn then
+            pcall(function() backpackChildAddedConn:Disconnect() end)
+            backpackChildAddedConn = nil
+        end
+    end
+
+    player.CharacterAdded:Connect(function()
+        if States.AutoHome then
+            task.wait(0.3)
+            setupEggListeners()
+        end
+    end)
+
+    -- ============================================================
+    -- 自动升级基地 Tab
+    -- ============================================================
+    A:Toggle({
+        Title = "自动升级基地",
+        Desc = "开启后自动发送基地升级请求",
+        Value = false,
+        Callback = function(state)
+            if state then
+                upgradeConnection = RunService.Heartbeat:Connect(function()
+                    doUpgrade()
+                end)
+            else
+                if upgradeConnection then
+                    upgradeConnection:Disconnect()
+                    upgradeConnection = nil
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 绕过 Tab
+    -- ============================================================
+    B:Toggle({
+        Title = "绕过反作弊击杀",
+        Desc = "持续删除死亡相关文件并设置无限血量",
+        Value = false,
+        Callback = function(state)
+            States.AntiDeath = state
+            if state then StartAntiDeath() else StopAntiDeath() end
+        end
+    })
+
+    B:Toggle({
+        Title = "删除所有龙",
+        Desc = "删除所有龙与守卫",
+        Value = false,
+        Callback = function(state)
+            States.DeleteDragons = state
+            if state then DeleteAllDragons() end
+        end
+    })
+
+    B:Toggle({
+        Title = "绕过反作弊回拉",
+        Desc = "持续删除回拉/反作弊相关脚本",
+        Value = false,
+        Callback = function(state)
+            States.AntiPull = state
+            if state then StartAntiPull() else StopAntiPull() end
+        end
+    })
+
+    -- ============================================================
+    -- 交互功能 Tab
+    -- ============================================================
+    C:Button({
+        Title = "全图交互",
+        Callback = function()
+            local wow_char = player.Character
+            if not wow_char then return end
+            local wow_runtime = workspace:FindFirstChild("Runtime")
+            local wow_scanRoot = wow_runtime and wow_runtime:FindFirstChild("LootPoints") or workspace
+            for _, wow_obj in ipairs(wow_scanRoot:GetDescendants()) do
+                if wow_obj:IsA("ProximityPrompt") then
+                    pcall(function() fireproximityprompt(wow_obj) end)
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 自动回家 Tab
+    -- ============================================================
+    D:Toggle({
+        Title = "检测到偷蛋立马传送回家",
+        Desc = "检测到身上或背包出现蛋道具时自动传送回家",
+        Value = false,
+        Callback = function(state)
+            States.AutoHome = state
+            if state then
+                setupEggListeners()
+            else
+                clearEggListeners()
+            end
+        end
+    })
+
+    D:Button({
+        Title = "偷蛋并回家",
+        Callback = function()
+            if not States.AntiDeath then
+                States.AntiDeath = true
+                StartAntiDeath()
+            end
+            if not States.AntiPull then
+                States.AntiPull = true
+                StartAntiPull()
+            end
+            local eggRemote = Network and Network:FindFirstChild("Eggs: RequestAreaEggCarry")
+            if eggRemote and eggRemote:IsA("RemoteFunction") then
+                pcall(function()
+                    eggRemote:InvokeServer({Uid = "d46a82d7877e4272a5364b50d64cc86f"})
+                end)
+            end
+            task.wait(1)
+            doTeleport(Vector3.new(519.1, 70.6, -365.4))
+        end
+    })
+
+    -- ============================================================
+    -- 打飞光环 Tab
+    -- ============================================================
+    E:Toggle({
+        Title = "打飞光环",
+        Desc = "开启后自动攻击周围玩家",
+        Value = false,
+        Callback = function(state)
+            auraEnabled = state
+            if state then
+                auraThread = task.spawn(function()
+                    while auraEnabled do
+                        local myChar = player.Character
+                        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                        if myHRP then
+                            for _, plr in ipairs(Players:GetPlayers()) do
+                                if plr ~= player and plr.Character then
+                                    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                                    if hrp then
+                                        local dist = (hrp.Position - myHRP.Position).Magnitude
+                                        if dist <= auraRange then
+                                            local batRemote = Network and Network:FindFirstChild("Bat:Activate")
+                                            if batRemote and batRemote:IsA("RemoteEvent") then
+                                                pcall(function()
+                                                    batRemote:FireServer(plr, "11406186857:16:1786605357845")
+                                                end)
+                                                pcall(function()
+                                                    batRemote:FireServer(plr, "11406186857:7:1786605352104")
+                                                end)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        task.wait(auraFreq)
+                    end
+                end)
+            else
+                auraEnabled = false
+                if auraThread then
+                    pcall(function() task.cancel(auraThread) end)
+                    auraThread = nil
+                end
+            end
+        end
+    })
+
+    E:Slider({
+        Title = "光环范围",
+        Step = 1,
+        Value = { Min = 5, Max = 100, Default = 10 },
+        Callback = function(value)
+            auraRange = value
+        end
+    })
+
+    E:Slider({
+        Title = "攻击频率",
+        Step = 0.1,
+        Value = { Min = 0.1, Max = 2, Default = 0.5 },
+        Callback = function(value)
+            auraFreq = value
+        end
+    })
+
+    -- ============================================================
+    -- 自动同意赠礼 Tab
+    -- ============================================================
+    F:Toggle({
+        Title = "自动同意赠礼",
+        Desc = "开启后自动同意收到的礼物",
+        Value = false,
+        Callback = function(state)
+            if state then
+                local requestNames = {"Gifting: Request", "Gifting: Offer", "Gifting: Incoming"}
+                for _, name in ipairs(requestNames) do
+                    local remote = Network and Network:FindFirstChild(name)
+                    if remote then
+                        if remote:IsA("RemoteEvent") then
+                            local conn = remote.OnClientEvent:Connect(function(senderId, giftId)
+                                acceptGift(senderId, giftId)
+                            end)
+                            table.insert(giftConnections, conn)
+                        elseif remote:IsA("RemoteFunction") then
+                            remote.OnClientInvoke = function(senderId, giftId)
+                                acceptGift(senderId, giftId)
+                            end
+                        end
+                    end
+                end
+            else
+                for _, conn in ipairs(giftConnections) do
+                    if conn then conn:Disconnect() end
+                end
+                giftConnections = {}
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 绕过移速修改 Tab
+    -- ============================================================
+    G:Toggle({
+        Title = "移速修改总开关",
+        Desc = "开启后修改人物移动速度并自动启用绕过",
+        Value = false,
+        Callback = function(state)
+            States.SpeedEnabled = state
+            if state then
+                if not States.AntiDeath then
+                    States.AntiDeath = true
+                    StartAntiDeath()
+                end
+                if not States.AntiPull then
+                    States.AntiPull = true
+                    StartAntiPull()
+                end
+                if SpeedConnection then SpeedConnection:Disconnect() end
+                SpeedConnection = RunService.Heartbeat:Connect(function()
+                    DeletePullBackFiles()
+                    local char = player.Character
+                    if char then
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        if hum then
+                            pcall(function()
+                                hum.WalkSpeed = speedValue
+                                hum.MaxHealth = math.huge
+                                hum.Health = math.huge
+                                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                            end)
+                        end
+                        local healthScript = char:FindFirstChild("Health")
+                        if healthScript and healthScript:IsA("Script") then
+                            pcall(function() healthScript:Destroy() end)
+                        end
+                    end
+                end)
+            else
+                if SpeedConnection then
+                    SpeedConnection:Disconnect()
+                    SpeedConnection = nil
+                end
+                local char = player.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then pcall(function() hum.WalkSpeed = 16 end) end
+                end
+            end
+        end
+    })
+
+    G:Slider({
+        Title = "移速数值",
+        Step = 1,
+        Value = { Min = 16, Max = 300, Default = 16 },
+        Callback = function(value)
+            speedValue = value
+            if States.SpeedEnabled then
+                local char = player.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then pcall(function() hum.WalkSpeed = value end) end
+                end
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 绕过传送功能 Tab
+    -- ============================================================
+    H:Button({
+        Title = "传送到最后区域",
+        Callback = function()
+            startTeleportLoop(Vector3.new(3405.4, 70.6, -353.4))
+        end
+    })
+
+    H:Button({
+        Title = "传送到家里",
+        Callback = function()
+            startTeleportLoop(Vector3.new(519.1, 70.6, -365.4))
+        end
+    })
+
+    -- ============================================================
+    -- 弹窗按钮（回家/终点）
+    -- ============================================================
+    local function makeDraggableButton(btn, onClick)
+        local isDragging = false
+        local hasMoved = false
+        local dragStartMouse = nil
+        local dragStartPos = nil
+        local dragConn = nil
+
+        btn.MouseButton1Down:Connect(function()
+            isDragging = true
+            hasMoved = false
+            dragStartMouse = UserInputService:GetMouseLocation()
+            dragStartPos = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
+
+            if dragConn then
+                pcall(function() dragConn:Disconnect() end)
+                dragConn = nil
+            end
+
+            dragConn = RunService.RenderStepped:Connect(function()
+                if not isDragging then return end
+                local mousePos = UserInputService:GetMouseLocation()
+                local delta = mousePos - dragStartMouse
+                if delta.Magnitude > 3 then hasMoved = true end
+                btn.Position = UDim2.new(0, dragStartPos.X + delta.X, 0, dragStartPos.Y + delta.Y)
+            end)
+        end)
+
+        local function endDrag()
+            if not isDragging then return end
+            isDragging = false
+            if dragConn then
+                pcall(function() dragConn:Disconnect() end)
+                dragConn = nil
+            end
+        end
+
+        btn.MouseButton1Up:Connect(function()
+            endDrag()
+            if not hasMoved then onClick() end
+        end)
+
+        btn.MouseLeave:Connect(endDrag)
+    end
+
+    local function createPopupButtons()
+        if popupHomeBtn then
+            pcall(function() popupHomeBtn:Destroy() end)
+            popupHomeBtn = nil
+        end
+        if popupEndBtn then
+            pcall(function() popupEndBtn:Destroy() end)
+            popupEndBtn = nil
+        end
+
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "PopupTeleportGui"
+        screenGui.ResetOnSpawn = false
+        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        pcall(function() screenGui.Parent = CoreGui end)
+        if not screenGui.Parent then
+            screenGui.Parent = player:WaitForChild("PlayerGui")
+        end
+
+        local homeBtn = Instance.new("TextButton")
+        homeBtn.Name = "PopupHomeBtn"
+        homeBtn.Size = UDim2.new(0, 200, 0, 80)
+        homeBtn.Position = UDim2.new(1, -220, 0, 20)
+        homeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        homeBtn.BorderSizePixel = 0
+        homeBtn.Text = "回家"
+        homeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        homeBtn.TextSize = 24
+        homeBtn.Font = Enum.Font.GothamBold
+        homeBtn.Parent = screenGui
+        popupHomeBtn = homeBtn
+
+        makeDraggableButton(homeBtn, function()
+            if not States.AntiDeath then
+                States.AntiDeath = true
+                StartAntiDeath()
+            end
+            if not States.AntiPull then
+                States.AntiPull = true
+                StartAntiPull()
+            end
+            doTeleport(Vector3.new(519.1, 70.6, -365.4))
+        end)
+
+        local endBtn = Instance.new("TextButton")
+        endBtn.Name = "PopupEndBtn"
+        endBtn.Size = UDim2.new(0, 200, 0, 80)
+        endBtn.Position = UDim2.new(1, -220, 0, 110)
+        endBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        endBtn.BorderSizePixel = 0
+        endBtn.Text = "终点"
+        endBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        endBtn.TextSize = 24
+        endBtn.Font = Enum.Font.GothamBold
+        endBtn.Parent = screenGui
+        popupEndBtn = endBtn
+
+        makeDraggableButton(endBtn, function()
+            if not States.AntiDeath then
+                States.AntiDeath = true
+                StartAntiDeath()
+            end
+            if not States.AntiPull then
+                States.AntiPull = true
+                StartAntiPull()
+            end
+            doTeleport(Vector3.new(3405.4, 70.6, -353.4))
+        end)
+    end
+
+    local function destroyPopupButtons()
+        if popupHomeBtn then
+            local parent = popupHomeBtn.Parent
+            pcall(function() popupHomeBtn:Destroy() end)
+            popupHomeBtn = nil
+            if parent and parent.Name == "PopupTeleportGui" then
+                pcall(function() parent:Destroy() end)
+            end
+        end
+        popupEndBtn = nil
+    end
+
+    H:Toggle({
+        Title = "开启弹窗回家",
+        Desc = "开启后在屏幕右上角显示红色回家按钮",
+        Value = false,
+        Callback = function(state)
+            if state then
+                if not popupHomeBtn then createPopupButtons() end
+                pcall(function() popupHomeBtn.Visible = true end)
+            else
+                pcall(function() popupHomeBtn.Visible = false end)
+            end
+        end
+    })
+
+    H:Toggle({
+        Title = "开启弹窗终点",
+        Desc = "开启后在屏幕右上角显示蓝色终点按钮",
+        Value = false,
+        Callback = function(state)
+            if state then
+                if not popupEndBtn then createPopupButtons() end
+                pcall(function() popupEndBtn.Visible = true end)
+            else
+                pcall(function() popupEndBtn.Visible = false end)
+            end
+        end
+    })
+
+    -- ============================================================
+    -- 绕过飞行 Tab
+    -- ============================================================
+    local function initFly()
+        local st = {on = false, spd = 100, hrp = nil, hum = nil, mt = nil, ht = nil, dc = nil, tp = nil, lt = 0, an = false, hd = nil, rl = 3.5, rc = 12, vl = 3, lastPos = nil, lastTime = nil, expectedPos = nil}
+        local ctrl = nil
+        task.spawn(function()
+            pcall(function()
+                local pm = player.PlayerScripts:FindFirstChild("PlayerModule")
+                if pm then ctrl = require(pm):GetControls() end
+            end)
+        end)
+        local function refresh()
+            local ch = player.Character
+            if not ch then st.hrp = nil st.hum = nil st.hd = nil return end
+            st.hrp = ch:FindFirstChild("HumanoidRootPart")
+            st.hum = ch:FindFirstChildOfClass("Humanoid")
+            st.hd = ch:FindFirstChild("Head")
+        end
+        local function wall()
+            if not st.hrp then return false end
+            local pos = st.hrp.Position
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Blacklist
+            rp.FilterDescendantsInstances = { player.Character }
+            for i = 1, st.rc do
+                local a = (i / st.rc) * 2 * math.pi
+                local dx = math.cos(a)
+                local dz = math.sin(a)
+                for j = -(st.vl - 1) // 2, (st.vl - 1) // 2 do
+                    local dir = Vector3.new(dx, j * 0.5, dz).Unit
+                    local r = workspace:Raycast(pos, dir * st.rl, rp)
+                    if r and r.Instance and r.Instance.CanCollide and r.Instance.Transparency < 0.9 then
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+        local function enterA()
+            if st.an then return end
+            if not st.hd or not st.hrp or not st.hum then return end
+            st.hd.Anchored = true
+            st.hum.PlatformStand = true
+            st.an = true
+        end
+        local function exitA()
+            if not st.an then return end
+            if st.hd and st.hum then
+                st.hd.Anchored = false
+                st.hum.PlatformStand = false
+            end
+            st.an = false
+        end
+        local function microLoop()
+            st.tp = st.hrp.Position
+            st.lt = tick()
+            while st.on do
+                local now = tick()
+                local dt = now - st.lt
+                st.lt = now
+                if not st.hrp or not st.hrp.Parent then break end
+                local inW = wall()
+                if inW and not st.an then
+                    enterA()
+                elseif not inW and st.an then
+                    exitA()
+                end
+                local mv
+                if ctrl then
+                    local v = ctrl:GetMoveVector()
+                    local cf = workspace.CurrentCamera.CFrame
+                    mv = (cf.LookVector * -v.Z) + (cf.RightVector * v.X)
+                else
+                    mv = (st.hum and st.hum.MoveDirection) or Vector3.zero
+                end
+                local vy = 0
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    vy = 1
+                elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    vy = -1
+                end
+                local d = (mv + Vector3.new(0, vy, 0)) * st.spd * dt
+                st.tp = st.tp + d
+                local cp = st.hrp.Position
+                local rem = st.tp - cp
+                local dist = rem.Magnitude
+                if dist > 0 then
+                    local steps = math.ceil(dist / 10)
+                    local sv = rem / steps
+                    for i = 1, steps do
+                        if not st.on then break end
+                        cp = cp + sv
+                        st.hrp.CFrame = CFrame.new(cp) * st.hrp.CFrame.Rotation
+                        st.hrp.Velocity = Vector3.zero
+                    end
+                else
+                    st.hrp.CFrame = CFrame.new(st.tp) * st.hrp.CFrame.Rotation
+                    st.hrp.Velocity = Vector3.zero
+                end
+                if st.lastPos and st.lastTime and dt > 0 then
+                    local moved = (st.hrp.Position - st.lastPos).Magnitude
+                    local maxNormal = st.spd * dt * 1.5
+                    if moved > maxNormal then
+                        st.hrp.CFrame = CFrame.new(st.expectedPos or st.lastPos) * st.hrp.CFrame.Rotation
+                        st.hrp.Velocity = Vector3.zero
+                        st.hrp.AssemblyLinearVelocity = Vector3.zero
+                    end
+                    if st.expectedPos and (st.hrp.Position - st.expectedPos).Magnitude > 5 then
+                        st.hrp.CFrame = CFrame.new(st.expectedPos) * st.hrp.CFrame.Rotation
+                        st.hrp.Velocity = Vector3.zero
+                        st.hrp.AssemblyLinearVelocity = Vector3.zero
+                    end
+                end
+                st.lastPos = st.hrp.Position
+                st.lastTime = tick()
+                st.expectedPos = st.hrp.Position + (mv + Vector3.new(0, vy, 0)) * st.spd * dt
+                if st.hum then
+                    st.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+                end
+                task.wait(0.001)
+            end
+        end
+        local function healthLoop()
+            while st.on do
+                if st.hum and st.hum.Health <= 0 then
+                    st.hum.Health = st.hum.MaxHealth
+                end
+                task.wait(0.1)
+            end
+        end
+        local function start()
+            if st.on then return end
+            refresh()
+            if not st.hrp or not st.hum then return end
+            st.on = true
+            st.hum:ChangeState(Enum.HumanoidStateType.Climbing)
+            st.mt = task.spawn(microLoop)
+            st.ht = task.spawn(healthLoop)
+            st.dc = st.hum.Died:Connect(function()
+                if st.hum and st.on then
+                    st.hum.Health = st.hum.MaxHealth
+                    st.hum:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end)
+        end
+        local function stop()
+            if not st.on then return end
+            st.on = false
+            exitA()
+            if st.mt then task.cancel(st.mt) st.mt = nil end
+            if st.ht then task.cancel(st.ht) st.ht = nil end
+            if st.dc then st.dc:Disconnect() st.dc = nil end
+            if st.hum then st.hum:ChangeState(Enum.HumanoidStateType.Running) end
+            refresh()
+            if st.hrp then
+                st.hrp.Velocity = Vector3.zero
+                st.hrp.AssemblyLinearVelocity = Vector3.zero
+            end
+        end
+        player.CharacterAdded:Connect(function()
+            if st.on then
+                stop()
+                task.wait(0.2)
+                start()
+            end
+        end)
+        return {
+            setE = function(v) if v then start() else stop() end end,
+            setS = function(v) st.spd = v end,
+        }
+    end
+
+    local flyMod = initFly()
+
+    I:Toggle({
+        Title = "飞行绕过",
+        Desc = "开启飞行功能并自动启用绕过",
+        Value = false,
+        Callback = function(value)
+            if value then
+                if not States.AntiDeath then
+                    States.AntiDeath = true
+                    StartAntiDeath()
+                end
+                if not States.AntiPull then
+                    States.AntiPull = true
+                    StartAntiPull()
+                end
+                flyMod.setE(true)
+            else
+                flyMod.setE(false)
+            end
+        end
+    })
+
+    I:Slider({
+        Title = "飞行速度",
+        Step = 1,
+        Value = { Min = 0, Max = 500, Default = 100 },
+        Callback = function(value)
+            flyMod.setS(value)
+        end
+    })
+
+    -- ============================================================
+    -- 设置 Tab
+    -- ============================================================
+    J:Button({
+        Title = "卸载脚本",
+        Callback = function()
+            isDestroyed = true
+            if upgradeConnection then
+                upgradeConnection:Disconnect()
+                upgradeConnection = nil
+            end
+            for _, conn in ipairs(giftConnections) do
+                if conn then conn:Disconnect() end
+            end
+            giftConnections = {}
+            if SpeedConnection then
+                SpeedConnection:Disconnect()
+                SpeedConnection = nil
+            end
+            if TeleportLoopConnection then
+                TeleportLoopConnection:Disconnect()
+                TeleportLoopConnection = nil
+            end
+            CurrentTeleportTarget = nil
+            clearEggListeners()
+            auraEnabled = false
+            if auraThread then
+                pcall(function() task.cancel(auraThread) end)
+                auraThread = nil
+            end
+            destroyPopupButtons()
+            StopAntiDeath()
+            StopAntiPull()
+            flyMod.setE(false)
+            Window:Destroy()
+            WindUI:Notify({ Title = "已卸载", Content = "脚本已安全卸载", Duration = 2 })
+        end
+    })
+
+    -- 启动通知
+    WindUI:Notify({
+        Title = "偷一个蛋",
+        Content = "脚本已加载成功，欢迎使用！",
+        Duration = 3,
+    })
 end
-
-createKeybindTile(KeybindPage, "菜单开关按键", toggleKey, function(setKey)
-	isBinding = true
-	local conn
-	conn = UserInputService.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Keyboard then
-			toggleKey = input.KeyCode
-			isBinding = false
-			setKey(toggleKey)
-			conn:Disconnect()
-		end
-	end)
-end)
-
-createKeybindTile(KeybindPage, "第三人称按键", tpToggleKey, function(setKey)
-	isBindingTP = true
-	local conn
-	conn = UserInputService.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Keyboard then
-			tpToggleKey = input.KeyCode
-			isBindingTP = false
-			setKey(tpToggleKey)
-			conn:Disconnect()
-		end
-	end)
-end)
-
-local function switchTab(selectedBtn, pageName)
-	playClickSound()
-	for name, page in pairs(Pages) do
-		page.Visible = (name == pageName)
-	end
-	
-	local btns = {MainTabBtn, ExtrasTabBtn, KeybindTabBtn, InfoTabBtn}
-	for _, b in ipairs(btns) do b.TextColor3 = TEXT_MUTED end
-	selectedBtn.TextColor3 = TEXT_WHITE
-end
-
-MainTabBtn.MouseButton1Click:Connect(function() switchTab(MainTabBtn, "Main") end)
-ExtrasTabBtn.MouseButton1Click:Connect(function() switchTab(ExtrasTabBtn, "Extras") end)
-KeybindTabBtn.MouseButton1Click:Connect(function() switchTab(KeybindTabBtn, "Keybind") end)
-InfoTabBtn.MouseButton1Click:Connect(function() switchTab(InfoTabBtn, "Info") end)
-
-for name, page in pairs(Pages) do page.Visible = (name == "Main") end
-MainTabBtn.TextColor3 = TEXT_WHITE
-
--- 浮动移动端按钮
-local OpenButton = Instance.new("ImageButton")
-OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 52, 0, 52)
-OpenButton.Position = UDim2.new(0, 15, 0.5, -26)
-OpenButton.BackgroundColor3 = DARK_BG
-OpenButton.BackgroundTransparency = 0.2
-OpenButton.Image = MOBILE_BTN_IMAGE_ID
-OpenButton.ScaleType = Enum.ScaleType.Fit
-OpenButton.Visible = false
-OpenButton.Parent = ScreenGui
-
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 12)
-OpenCorner.Parent = OpenButton
-
-local OpenStroke = Instance.new("UIStroke")
-OpenStroke.Color = ACCENT_GREY
-OpenStroke.Thickness = 1.2
-OpenStroke.Transparency = 0.3
-OpenStroke.Parent = OpenButton
-
-local function toggleUI(isOpen)
-	if isOpen then
-		OpenButton.Visible = false
-		MainFrame.Size = zeroSize
-		MainFrame.Visible = true
-		if blurEnabled then
-			TweenService:Create(MenuBlur, TweenInfo.new(0.3), { Size = 24 }):Play()
-		else
-			MenuBlur.Size = 0
-		end
-		TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = fullSize }):Play()
-	else
-		TweenService:Create(MenuBlur, TweenInfo.new(0.2), { Size = 0 }):Play()
-		local tw = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Size = zeroSize })
-		tw:Play()
-		tw.Completed:Connect(function()
-			MainFrame.Visible = false
-			OpenButton.Visible = true
-		end)
-	end
-end
-
-CloseButton.MouseButton1Click:Connect(function() 
-	playClickSound()
-	toggleUI(false) 
-end)
-
-OpenButton.MouseButton1Click:Connect(function() 
-	playClickSound()
-	toggleUI(true) 
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if isBinding or isBindingTP or gameProcessed then return end
-	if input.UserInputType == Enum.UserInputType.Keyboard then
-		if input.KeyCode == toggleKey then
-			toggleUI(not MainFrame.Visible)
-		elseif input.KeyCode == tpToggleKey then
-			toggleThirdPerson()
-		end
-	end
-end)
-
--- =======================================================
--- 开场动画
--- =======================================================
-local function playIntroAnimation()
-	local IntroContainer = Instance.new("Frame")
-	IntroContainer.Name = "ShizukaIntroContainer"
-	IntroContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-	IntroContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-	IntroContainer.Size = UDim2.new(0, 220, 0, 60)
-	IntroContainer.BackgroundTransparency = 1
-	IntroContainer.ZIndex = 100
-	IntroContainer.Parent = ScreenGui
-
-	local IntroText = Instance.new("TextLabel")
-	IntroText.Name = "ShizukaIntroText"
-	IntroText.Size = UDim2.new(1, 0, 0, 30)
-	IntroText.Position = UDim2.new(0, 0, 0, 0)
-	IntroText.BackgroundTransparency = 1
-	IntroText.Text = "静香"
-	IntroText.TextColor3 = Color3.fromRGB(255, 255, 255)
-	IntroText.Font = Enum.Font.GothamBold
-	IntroText.TextSize = 26
-	IntroText.TextTransparency = 1
-	IntroText.ZIndex = 101
-	IntroText.Parent = IntroContainer
-
-	local IntroStroke = Instance.new("UIStroke")
-	IntroStroke.Color = Color3.fromRGB(0, 0, 0)
-	IntroStroke.Thickness = 2
-	IntroStroke.Transparency = 1
-	IntroStroke.Parent = IntroText
-
-	local LoadingBackground = Instance.new("Frame")
-	LoadingBackground.Name = "LoadingBackground"
-	LoadingBackground.AnchorPoint = Vector2.new(0.5, 0)
-	LoadingBackground.Position = UDim2.new(0.5, 0, 0, 36)
-	LoadingBackground.Size = UDim2.new(0, 140, 0, 3)
-	LoadingBackground.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	LoadingBackground.BackgroundTransparency = 1
-	LoadingBackground.BorderSizePixel = 0
-	LoadingBackground.ZIndex = 101
-	LoadingBackground.Parent = IntroContainer
-
-	local LoadingBgCorner = Instance.new("UICorner")
-	LoadingBgCorner.CornerRadius = UDim.new(1, 0)
-	LoadingBgCorner.Parent = LoadingBackground
-
-	local LoadingBgStroke = Instance.new("UIStroke")
-	LoadingBgStroke.Color = Color3.fromRGB(255, 255, 255)
-	LoadingBgStroke.Thickness = 1
-	LoadingBgStroke.Transparency = 1
-	LoadingBgStroke.Parent = LoadingBackground
-
-	local LoadingFill = Instance.new("Frame")
-	LoadingFill.Name = "LoadingFill"
-	LoadingFill.Size = UDim2.new(0, 0, 1, 0)
-	LoadingFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	LoadingFill.BorderSizePixel = 0
-	LoadingFill.ZIndex = 102
-	LoadingFill.Parent = LoadingBackground
-
-	local LoadingFillCorner = Instance.new("UICorner")
-	LoadingFillCorner.CornerRadius = UDim.new(1, 0)
-	LoadingFillCorner.Parent = LoadingFill
-
-	local IntroScale = Instance.new("UIScale")
-	IntroScale.Scale = 0.85
-	IntroScale.Parent = IntroContainer
-
-	SoundService:PlayLocalSound(IntroSound)
-
-	local fadeIn = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-	TweenService:Create(IntroText, fadeIn, { TextTransparency = 0 }):Play()
-	TweenService:Create(IntroStroke, fadeIn, { Transparency = 0 }):Play()
-	TweenService:Create(LoadingBackground, fadeIn, { BackgroundTransparency = 0.4 }):Play()
-	TweenService:Create(LoadingBgStroke, fadeIn, { Transparency = 0.5 }):Play()
-	TweenService:Create(IntroScale, fadeIn, { Scale = 1 }):Play()
-
-	local loadingTween = TweenService:Create(LoadingFill, TweenInfo.new(3.0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
-	loadingTween:Play()
-	loadingTween.Completed:Wait()
-
-	task.wait(0.5)
-
-	local fadeOut = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-	TweenService:Create(IntroText, fadeOut, { TextTransparency = 1 }):Play()
-	TweenService:Create(IntroStroke, fadeOut, { Transparency = 1 }):Play()
-	TweenService:Create(LoadingBackground, fadeOut, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(LoadingBgStroke, fadeOut, { Transparency = 1 }):Play()
-	TweenService:Create(LoadingFill, fadeOut, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(IntroScale, fadeOut, { Scale = 1.05 }):Play()
-
-	task.wait(0.5)
-
-	IntroContainer:Destroy()
-
-	toggleUI(true)
-end
-
--- 执行时启动开场动画
-task.spawn(playIntroAnimation)
