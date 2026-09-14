@@ -249,6 +249,39 @@ function createUI()
     AuthorSection:Paragraph({ Title = "", Desc = "", Thumbnail = "rbxassetid://74369447499630", ThumbnailSize = 150, ThumbnailShape = "Square" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
 
+    AuthorSection:Toggle({
+        Title = "降低卡顿",
+        Value = false,
+        Callback = function(value)
+            -- 1. 隐藏/显示屏幕顶部的滚动横幅
+            local bannerGui = player.PlayerGui:FindFirstChild("BannerGui")
+            if bannerGui then
+                bannerGui.Enabled = not value
+            end
+
+            -- 2. 修改主悬浮窗背景
+            local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
+            if mainGui then
+                local mainFrame = mainGui:FindFirstChildOfClass("Frame")
+                if mainFrame then
+                    for _, child in ipairs(mainFrame:GetDescendants()) do
+                        if child:IsA("ImageLabel") then
+                            child.Visible = not value
+                        end
+                    end
+                    
+                    if value then
+                        mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                        mainFrame.BackgroundTransparency = 0
+                    else
+                        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+                        mainFrame.BackgroundTransparency = 0
+                    end
+                end
+            end
+        end
+    })
+
     local NoticeTab = Window:Tab({ Title = "公告", Icon = "info" })
     local NoticeSection = NoticeTab:Section({ Title = "作者消息", Opened = true })
     NoticeSection:Divider()
