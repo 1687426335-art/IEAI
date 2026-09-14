@@ -8,13 +8,10 @@ do
         { "getgc",             getgc             },
         { "queue_on_teleport", qot               },
     }
-    local missing, report = {}, "[NoVR Pro] UNC test:\n"
+    local missing = {}
     for _, c in ipairs(checks) do
-        local ok = type(c[2]) == "function"
-        report = report .. ("  [%s] %s\n"):format(ok and "+" or "-", c[1])
-        if not ok then table.insert(missing, c[1]) end
+        if type(c[2]) ~= "function" then table.insert(missing, c[1]) end
     end
-    print(report)
     if #missing > 0 then
         warn("[NoVR Pro] 缺少函数: " .. table.concat(missing, ", "))
         return
@@ -91,15 +88,17 @@ task.spawn(function()
     while not lp do task.wait() lp = Players.LocalPlayer end
     local uid = tostring(lp.UserId)
 
-    local vrPlayers = workspace:WaitForChild("VRPlayers", 60)
-    if not vrPlayers then warn("[NoVR] 找不到 VRPlayers") return end
-    local rig = vrPlayers:WaitForChild(uid, 60)
-    if not rig then warn("[NoVR] 没有 rig") return end
-    rig:WaitForChild("VRHead", 20)
-    rig:WaitForChild("LeftHand", 20)
-    rig:WaitForChild("RightHand", 20)
-    local scaleVal = rig:FindFirstChild("VRScale")
+    -- 关键1：不等VRPlayers，直接循环等 rig，不阻塞其他功能
+    local rig = nil
+    task.spawn(function()
+        local vrPlayers = workspace:WaitForChild("VRPlayers", 120)
+        if vrPlayers then
+            rig = vrPlayers:WaitForChild(uid, 120)
+        end
+    end)
+
     local cam = workspace.CurrentCamera
+    local scaleVal = nil
 
     local S = {
         reach = 0.55, spread = 0.34, height = -0.25,
@@ -120,35 +119,109 @@ task.spawn(function()
     local middleMouseHeld = false
     local rotTarget = "both"
 
-    local ok, VRUtils = pcall(function()
-        return require(lp.PlayerScripts.ClientLoader.PlayerModule.VRModule.VRUtils)
-    end)
-    if ok and type(VRUtils) == "table" then
-        VRUtils.GetUserCFrame = function(uc, scale)
-            scale = scale or cam.HeadScale
-            if scale <= 1 then scale = math.max((scaleVal and scaleVal.Value or 1) * 60, 6) end
-            local baseCF
-            if uc == Enum.UserCFrame.LeftHand then
-                local c = CFrame.new(-S.spread, S.height, -S.reach)
-                baseCF = c.Rotation + c.Position * scale
-            elseif uc == Enum.UserCFrame.RightHand then
-                local c = CFrame.new(S.spread, S.height, -S.reach)
-                baseCF = c.Rotation + c.Position * scale
-            else
-                baseCF = identity
-            end
-            local rotBoth  = CFrame.Angles(HandRot.both.pitch,  HandRot.both.yaw,  0)
-            local rotRight = CFrame.Angles(HandRot.right.pitch, HandRot.right.yaw, 0)
-            local rotLeft  = CFrame.Angles(HandRot.left.pitch,  HandRot.left.yaw,  0)
-            if uc == Enum.UserCFrame.RightHand then
-                return baseCF * rotBoth * rotRight
-            elseif uc == Enum.UserCFrame.LeftHand then
-                return baseCF * rotBoth * rotLeft
-            end
-            return baseCF
-        end
-    end
+    -- ============================================================
+    -- ★★★ 强力手部守护：游戏刚进来就开始跑 ★★★
+    -- ============================================================
+    task.spawn(function()
+        local startTime = tick()
+        local lastPosL, lastPosR = nil, nil
+        local stuckTimeL, stuckTimeR = 0, 0
 
+        while true do
+            task.wait(0.05)
+            pcall(function()
+                -- 每秒尝试获取 rig（如果还没拿到）
+                if not rig or not rig.Parent then
+                    local vp = workspace:FindFirstChild("VRPlayers")
+                    if vp then rig = vp:FindFirstChild(uid) end
+                    if not rig then return end
+                    if not scaleVal then scaleVal = rig:FindFirstChild("VRScale") end
+                end
+
+                local elapsed = tick() - startTime
+                local lh = rig:FindFirstChild("LeftHand")
+                local rh = rig:FindFirstChild("RightHand")
+
+                local function handle(part, isLeft)
+                    if not part or not part:IsA("BasePart") then return end
+
+                    -- 强制基础属性
+                    if part.CanCollide ~= false then part.CanCollide = false end
+                    if part.Massless ~= true then part.Massless = true end
+                    if part.CanTouch ~= false then part.CanTouch = false end
+                    if part.CanQuery ~= false then part.CanQuery = false end
+
+                    local p = part.Position
+                    local bad = false
+
+                    -- NaN 检测
+                    if p.X ~= p.X or p.Y ~= p.Y or p.Z ~= p.Z then bad = true end
+                    -- 手掉进虚空 / 深埋地下
+                    if p.Y < (cam.CFrame.Position.Y - 30) then bad = true end
+                    -- 手离摄像机太远
+                    if (p - cam.CFrame.Position).Magnitude > 150 then bad = true end
+                    -- 手被 Anchored
+                    if part.Anchored then bad = true end
+
+                    -- 位置停滞检测（手卡住超过 0.4 秒）
+                    local lastPos = isLeft and lastPosL or lastPosR
+                    local stuck = isLeft and stuckTimeL or stuckTimeR
+                    if lastPos and (p - lastPos).Magnitude < 0.001 then
+                        stuck = stuck + 0.05
+                        if stuck > 0.4 then bad = true end
+                    else
+                        stuck = 0
+                    end
+                    if isLeft then lastPosL = p; stuckTimeL = stuck
+                    else lastPosR = p; stuckTimeR = stuck end
+
+                    -- 关键2：开局前 30 秒 或 手离地面很近（Y < 摄像机 - 0.8）时，
+                    -- 把手上抬，避免贴地形
+                    local nearGround = false
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterDescendantsInstances = {part, cam, lp.Character}
+                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    local downRay = workspace:Raycast(p, Vector3.new(0,-2.5,0), rayParams)
+                    if downRay and downRay.Distance < 1.5 then
+                        nearGround = true
+                    end
+
+                    if bad or (elapsed < 30 and part.Parent) or nearGround then
+                        local offset = isLeft and -S.spread or S.spread
+                        local liftUp = 0
+                        if nearGround then liftUp = 0.5 end
+
+                        part.Anchored = false
+                        part.CFrame = cam.CFrame * CFrame.new(offset, S.height + liftUp, -S.reach)
+                        part.AssemblyLinearVelocity = Vector3.zero
+                        part.AssemblyAngularVelocity = Vector3.zero
+
+                        if isLeft then
+                            lastPosL = part.Position
+                            stuckTimeL = 0
+                        else
+                            lastPosR = part.Position
+                            stuckTimeR = 0
+                        end
+                    end
+                end
+
+                handle(lh, true)
+                handle(rh, false)
+            end)
+        end
+    end)
+
+    cam.HeadLocked = true
+    local yaw, pitch
+    do
+        local lv = cam.CFrame.LookVector
+        yaw = math.atan2(-lv.X, -lv.Z)
+        pitch = math.asin(math.clamp(lv.Y, -1, 1))
+    end
+    local camPos = cam.CFrame.Position
+
+    -- Input 拦截：等 Input 就绪
     local vrm, Input
     for _ = 1, 250 do
         for _, o in pairs(getgc(true)) do
@@ -175,7 +248,6 @@ task.spawn(function()
             if type(v) == "number" then Supported[k] = true end
         end
     end
-
     local HAS_FULL_FINGERS = Supported.rMiddle == true
 
     local function safeSetInput(key, value)
@@ -191,31 +263,31 @@ task.spawn(function()
             if HAS_FULL_FINGERS then return nil end
             local fistKey = hand .. "Fist"
             if gTable[fistKey] ~= nil then return nil end
-            local m = gTable[hand .. "Middle"] or 0
-            local r = gTable[hand .. "Ring"]   or 0
-            local p = gTable[hand .. "Pinky"]  or 0
+            local m = gTable[hand.."Middle"] or 0
+            local r = gTable[hand.."Ring"]   or 0
+            local p = gTable[hand.."Pinky"]  or 0
             local c = m + r + p
-            if c > 0 then return math.clamp(c / 3, 0.2, 1) end
+            if c > 0 then return math.clamp(c/3, 0.2, 1) end
             return nil
         end
 
         local rProxy = calcProxyFist("r", g)
         local lProxy = calcProxyFist("l", g)
 
-        if g.rThumb  ~= nil then safeSetInput("rThumb",  g.rThumb)  end
-        if g.rIndex  ~= nil then safeSetInput("rIndex",  g.rIndex)  end
+        if g.rThumb ~= nil then safeSetInput("rThumb", g.rThumb) end
+        if g.rIndex ~= nil then safeSetInput("rIndex", g.rIndex) end
         if g.rMiddle ~= nil then safeSetInput("rMiddle", g.rMiddle) end
-        if g.rRing   ~= nil then safeSetInput("rRing",   g.rRing)   end
-        if g.rPinky  ~= nil then safeSetInput("rPinky",  g.rPinky)  end
-        if g.rFist   ~= nil then safeSetInput("rFist",   g.rFist)
+        if g.rRing ~= nil then safeSetInput("rRing", g.rRing) end
+        if g.rPinky ~= nil then safeSetInput("rPinky", g.rPinky) end
+        if g.rFist ~= nil then safeSetInput("rFist", g.rFist)
         elseif rProxy then safeSetInput("rFist", rProxy) end
 
-        if g.lThumb  ~= nil then safeSetInput("lThumb",  g.lThumb)  end
-        if g.lIndex  ~= nil then safeSetInput("lIndex",  g.lIndex)  end
+        if g.lThumb ~= nil then safeSetInput("lThumb", g.lThumb) end
+        if g.lIndex ~= nil then safeSetInput("lIndex", g.lIndex) end
         if g.lMiddle ~= nil then safeSetInput("lMiddle", g.lMiddle) end
-        if g.lRing   ~= nil then safeSetInput("lRing",   g.lRing)   end
-        if g.lPinky  ~= nil then safeSetInput("lPinky",  g.lPinky)  end
-        if g.lFist   ~= nil then safeSetInput("lFist",   g.lFist)
+        if g.lRing ~= nil then safeSetInput("lRing", g.lRing) end
+        if g.lPinky ~= nil then safeSetInput("lPinky", g.lPinky) end
+        if g.lFist ~= nil then safeSetInput("lFist", g.lFist)
         elseif lProxy then safeSetInput("lFist", lProxy) end
 
         for k, v in pairs(g) do
@@ -282,27 +354,6 @@ task.spawn(function()
         end
     end)
 
-    pcall(function()
-        local pmMT = getrawmetatable(vrm.PropManager)
-        if pmMT and rawget(pmMT, "GetBestGrabPartInRadius") then
-            local orig = pmMT.GetBestGrabPartInRadius
-            setreadonly(pmMT, false)
-            pmMT.GetBestGrabPartInRadius = function(self, root, prox, radius, scale, ...)
-                return orig(self, root, prox, (radius or 0) * 3.5, scale, ...)
-            end
-            setreadonly(pmMT, true)
-        end
-        local cmMT = getrawmetatable(vrm.CharacterManager)
-        if cmMT and rawget(cmMT, "GetClosestCharacterInRadius") then
-            local orig = cmMT.GetClosestCharacterInRadius
-            setreadonly(cmMT, false)
-            cmMT.GetClosestCharacterInRadius = function(self, pos, radius, ...)
-                return orig(self, pos, (radius or 0) * 3.5, ...)
-            end
-            setreadonly(cmMT, true)
-        end
-    end)
-
     local function setScale(n)
         n = math.clamp(math.floor(n + 0.5), 1, 10)
         S.scale = n
@@ -312,54 +363,6 @@ task.spawn(function()
         end
     end
     setScale(10)
-
-    pcall(function()
-        for _, name in ipairs({"LeftHand", "RightHand"}) do
-            local part = rig:FindFirstChild(name)
-            if part and part:IsA("BasePart") then
-                part.CanCollide = false
-                part.Massless = true
-                part.CanTouch = false
-                part.CanQuery = false
-            end
-        end
-        task.spawn(function()
-            while true do
-                task.wait(0.05)
-                pcall(function()
-                    if not rig or not rig.Parent then return end
-                    local lh, rh = rig:FindFirstChild("LeftHand"), rig:FindFirstChild("RightHand")
-                    local function check(part, isLeft)
-                        if not part or not part:IsA("BasePart") then return end
-                        local p = part.Position
-                        local bad = false
-                        if p.X ~= p.X or p.Y ~= p.Y or p.Z ~= p.Z then bad = true end
-                        if p.Y < (cam.CFrame.Position.Y - 50) then bad = true end
-                        if (p - cam.CFrame.Position).Magnitude > 200 then bad = true end
-                        if part.Anchored then bad = true end
-                        if part.CanCollide ~= false then part.CanCollide = false end
-                        if bad then
-                            local offset = isLeft and -S.spread or S.spread
-                            part.Anchored = false
-                            part.CFrame = cam.CFrame * CFrame.new(offset, S.height, -S.reach)
-                            part.AssemblyLinearVelocity = Vector3.zero
-                            part.AssemblyAngularVelocity = Vector3.zero
-                        end
-                    end
-                    check(lh, true); check(rh, false)
-                end)
-            end
-        end)
-    end)
-
-    cam.HeadLocked = true
-    local yaw, pitch
-    do
-        local lv = cam.CFrame.LookVector
-        yaw = math.atan2(-lv.X, -lv.Z)
-        pitch = math.asin(math.clamp(lv.Y, -1, 1))
-    end
-    local camPos = cam.CFrame.Position
 
     local function setLook(v)
         S.look = v
@@ -546,7 +549,7 @@ task.spawn(function()
             l.Padding = UDim.new(0,4); l.SortOrder = Enum.SortOrder.LayoutOrder; return r
         end
 
-        cat("快捷动作")
+        cat("wdfex")
         local r1, r2 = row(), row()
         local pdefs = {
             {"张开","Open",Color3.fromRGB(60,100,180)},{"握拳","Fist",Color3.fromRGB(180,60,60)},
@@ -731,9 +734,7 @@ task.spawn(function()
         mkBtn("→", UDim2.new(1,-70,0.5,-35), UDim2.fromOffset(70,70), "right")
     end)
 
-    -- ============================================================
-    -- 右下角射击按钮（点一下 = 单发，长按 = 连发）
-    -- ============================================================
+    -- 右下角射击按钮（点一下单发，长按连发）
     pcall(function()
         local sg = Instance.new("ScreenGui")
         sg.Name = "NoVR_ShootBtn"; sg.ResetOnSpawn = false
@@ -761,30 +762,22 @@ task.spawn(function()
         local autoThread = nil
         local holdStart = 0
 
-        -- 单次捏合射击
         local function fireOnce()
             if not Input then return end
             applyGesture({ rThumb = 1, rIndex = 1, rFist = 0 })
             task.delay(0.05, function()
-                if Input then
-                    applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 })
-                end
+                if Input then applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 }) end
             end)
         end
 
-        -- 连发循环
         local function startAutoFire()
             if autoFiring then return end
             autoFiring = true
             autoThread = task.spawn(function()
                 while autoFiring do
-                    if Input then
-                        applyGesture({ rThumb = 1, rIndex = 1, rFist = 0 })
-                    end
+                    if Input then applyGesture({ rThumb = 1, rIndex = 1, rFist = 0 }) end
                     task.wait(0.05)
-                    if Input then
-                        applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 })
-                    end
+                    if Input then applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 }) end
                     task.wait(0.05)
                 end
             end)
@@ -793,9 +786,7 @@ task.spawn(function()
         local function stopAutoFire()
             autoFiring = false
             autoThread = nil
-            if Input then
-                applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 })
-            end
+            if Input then applyGesture({ rThumb = 0, rIndex = 0, rFist = 0 }) end
         end
 
         btn.InputBegan:Connect(function(inp)
@@ -804,11 +795,7 @@ task.spawn(function()
                     activeTouch = inp
                     holdStart = tick()
                     btn.BackgroundColor3 = Color3.fromRGB(255,100,100)
-
-                    -- 立即打一枪
                     fireOnce()
-
-                    -- 判断是否长按（0.25 秒后开始连发）
                     task.delay(0.25, function()
                         if activeTouch == inp and (tick() - holdStart) >= 0.24 then
                             startAutoFire()
@@ -833,11 +820,7 @@ task.spawn(function()
                 stopAutoFire()
             end
         end)
-
-        print("[NoVR Pro] 射击按钮已加载：点一下=单发，长按=连发")
     end)
-
-    print("[NoVR Pro] 全部加载完成")
 end)
 ]==]
 
