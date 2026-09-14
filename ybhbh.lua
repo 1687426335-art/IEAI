@@ -1,13 +1,17 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local Confirmed = false
 
--- ==================== 加载时触发偷蛋（原代码保留） ====================
+-- 加载时触发偷蛋（原逻辑保留）
 pcall(function()
     local args = { [1] = { ["Uid"] = "d46a82d7877e4272a5364b50d64cc86f" } }
-    game:GetService("ReplicatedStorage").Network:FindFirstChild("Eggs: RequestAreaEggCarry"):InvokeServer(unpack(args))
+    local net = game:GetService("ReplicatedStorage"):FindFirstChild("Network")
+    if net then
+        local r = net:FindFirstChild("Eggs: RequestAreaEggCarry")
+        if r then r:InvokeServer(unpack(args)) end
+    end
 end)
 
--- ==================== 彩虹渐变颜色 ====================
+-- 彩虹渐变颜色
 local gradientColors = {
     "rgb(255, 230, 235)", "rgb(255, 210, 220)", "rgb(255, 190, 205)",
     "rgb(255, 170, 190)", "rgb(255, 150, 175)", "rgb(245, 140, 180)",
@@ -27,17 +31,13 @@ for i = 1, #version do
     coloredVersion = coloredVersion .. '<font color="' .. gradientColors[colorIndex] .. '">' .. version:sub(i, i) .. '</font>'
 end
 
--- ==================== 弹窗确认 ====================
+-- ==================== 弹窗 ====================
 WindUI:Popup({
     Title = '<font color="' .. gradientColors[1] .. '">偷一个</font><font color="' .. gradientColors[5] .. '">蛋</font>',
     IconThemed = true,
     Content = "尊敬的用户 " .. coloredUsername .. " \n您使用的 <font color='" .. gradientColors[1] .. "'>wdf</font><font color='" .. gradientColors[5] .. "'>ex</font> 当前版本型号是: " .. coloredVersion .. "\n脚本已就绪！",
     Buttons = {
-        {
-            Title = "取消",
-            Callback = function() end,
-            Variant = "Secondary",
-        },
+        { Title = "取消", Callback = function() end, Variant = "Secondary" },
         {
             Title = "执行",
             Icon = "arrow-right",
@@ -51,15 +51,18 @@ WindUI:Popup({
 })
 
 function createUI()
-    -- ==================== 全局服务与变量 ====================
+    -- ========== 服务与变量 ==========
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local RunService = game:GetService("RunService")
     local Workspace = game:GetService("Workspace")
     local CoreGui = game:GetService("CoreGui")
     local UserInputService = game:GetService("UserInputService")
-    local Network = ReplicatedStorage:WaitForChild("Network", 10)
     local player = Players.LocalPlayer
+
+    local function getNetwork()
+        return ReplicatedStorage:FindFirstChild("Network")
+    end
 
     local isDestroyed = false
     local upgradeConnection = nil
@@ -86,12 +89,13 @@ function createUI()
     local popupHomeBtn = nil
     local popupEndBtn = nil
 
-    -- 可调数值（替代 Options 引用）
     local speedValue = 16
     local auraRange = 10
     local auraFreq = 0.5
 
-    -- ==================== 主窗口 ====================
+    -- ============================================================
+    -- 窗口创建
+    -- ============================================================
     local Window = WindUI:CreateWindow({
         Title = '偷一个蛋',
         Icon = "heart",
@@ -134,6 +138,7 @@ function createUI()
         }
     })
 
+    -- ========== 悬浮窗 ==========
     Window:EditOpenButton({
         Title = "偷一个蛋",
         Icon = "rbxassetid://105677776902677",
@@ -167,7 +172,9 @@ function createUI()
         end
     end)
 
-    -- ==================== 通知 Tab ====================
+    -- ============================================================
+    -- 通知 Tab
+    -- ============================================================
     local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
 
     local infoSection = infoTab:Section({ Title = "作者消息", Icon = "info", Opened = true })
@@ -188,7 +195,9 @@ function createUI()
 
     infoTab:Select()
 
-    -- ==================== 主功能 Section ====================
+    -- ============================================================
+    -- 主功能 Section
+    -- ============================================================
     local MainSection = Window:Section({
         Title = "主功能",
         Opened = true,
@@ -204,7 +213,6 @@ function createUI()
     local D = AddTab(MainSection, "自动回家", "home")
     local E = AddTab(MainSection, "打飞光环", "zap")
 
-    -- ==================== 其他功能 Section ====================
     local OtherSection = Window:Section({
         Title = "其他功能",
         Opened = true,
@@ -277,7 +285,6 @@ function createUI()
                     end)
                 end
             end
-
             local debris = Workspace:FindFirstChild("__DEBRIS")
             if debris then
                 for _, item in ipairs(debris:GetChildren()) do
@@ -286,7 +293,6 @@ function createUI()
                     end
                 end
             end
-
             local guardsFolder = Workspace:FindFirstChild("_Guards")
             if guardsFolder then
                 for _, item in ipairs(guardsFolder:GetChildren()) do
@@ -308,9 +314,7 @@ function createUI()
         if guardAreas then
             for _, area in ipairs(guardAreas:GetChildren()) do
                 local guard = area:FindFirstChild("Guard")
-                if guard then
-                    pcall(function() guard:Destroy() end)
-                end
+                if guard then pcall(function() guard:Destroy() end) end
             end
         end
         local guardsFolder = Workspace:FindFirstChild("_Guards")
@@ -337,14 +341,16 @@ function createUI()
     end
 
     local function doUpgrade()
-        local remote = Network and Network:FindFirstChild("Plots: RequestBaseUpgrade")
-        if remote then
-            pcall(function() remote:FireServer() end)
-        end
+        local Network = getNetwork()
+        if not Network then return end
+        local remote = Network:FindFirstChild("Plots: RequestBaseUpgrade")
+        if remote then pcall(function() remote:FireServer() end) end
     end
 
     local function acceptGift(senderId, giftId)
-        local remote = Network and Network:FindFirstChild("Gifting: Response")
+        local Network = getNetwork()
+        if not Network then return end
+        local remote = Network:FindFirstChild("Gifting: Response")
         if remote then
             pcall(function() remote:InvokeServer(senderId, giftId, true) end)
         end
@@ -594,6 +600,7 @@ function createUI()
                 States.AntiPull = true
                 StartAntiPull()
             end
+            local Network = getNetwork()
             local eggRemote = Network and Network:FindFirstChild("Eggs: RequestAreaEggCarry")
             if eggRemote and eggRemote:IsA("RemoteFunction") then
                 pcall(function()
@@ -626,6 +633,7 @@ function createUI()
                                     if hrp then
                                         local dist = (hrp.Position - myHRP.Position).Magnitude
                                         if dist <= auraRange then
+                                            local Network = getNetwork()
                                             local batRemote = Network and Network:FindFirstChild("Bat:Activate")
                                             if batRemote and batRemote:IsA("RemoteEvent") then
                                                 pcall(function()
@@ -680,9 +688,11 @@ function createUI()
         Value = false,
         Callback = function(state)
             if state then
+                local Network = getNetwork()
+                if not Network then return end
                 local requestNames = {"Gifting: Request", "Gifting: Offer", "Gifting: Incoming"}
                 for _, name in ipairs(requestNames) do
-                    local remote = Network and Network:FindFirstChild(name)
+                    local remote = Network:FindFirstChild(name)
                     if remote then
                         if remote:IsA("RemoteEvent") then
                             local conn = remote.OnClientEvent:Connect(function(senderId, giftId)
