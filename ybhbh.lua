@@ -86,7 +86,7 @@ end)
 
 -- 全局状态
 getgenv().joyOffset   = Vector2.new(0, 0)
-getgenv().dpadBusy    = false   -- 是否正在按方向键（用于禁用滑屏）
+getgenv().dpadBusy    = false
 getgenv().dpadState   = { up=false, down=false, left=false, right=false }
 
 task.spawn(function()
@@ -419,7 +419,6 @@ task.spawn(function()
     end)
 
     RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
-        -- 关键修复：如果正在使用方向键，那么这一帧不要处理视角旋转
         local dpadBusy = getgenv().dpadBusy
 
         if middleMouseHeld and not dpadBusy then
@@ -436,7 +435,6 @@ task.spawn(function()
                 UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
             end
         else
-            -- 方向键按下时，把鼠标增量“吃掉”，防止视角乱转
             UIS:GetMouseDelta()
         end
 
@@ -452,7 +450,6 @@ task.spawn(function()
         if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
         if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
 
-        -- 方向键输入
         local jo = getgenv().joyOffset
         if jo and jo.Magnitude > 0.08 then
             mv += Vector3.new(jo.X, 0, jo.Y)
@@ -542,7 +539,7 @@ task.spawn(function()
             local rl = Instance.new("UIListLayout", row); rl.FillDirection = Enum.FillDirection.Horizontal
             rl.Padding = UDim.new(0,4); rl.SortOrder = Enum.SortOrder.LayoutOrder; return row
         end
-        makeCategory("wdfex制作")
+        makeCategory("快捷动作")
         local row1, row2 = makeRow(), makeRow()
         local presetBtnDefs = {
             { "张开", "Open", Color3.fromRGB(60,100,180) }, { "握拳", "Fist", Color3.fromRGB(180,60,60) },
@@ -652,7 +649,7 @@ task.spawn(function()
     end)
 
     -- ============================================================
-    -- 左下角方向键（按下时禁止滑屏）
+    -- 左下角方向键（多点触控安全版 - 修复右手滑屏断移动）
     -- ============================================================
     pcall(function()
         local dpGui = Instance.new("ScreenGui")
@@ -683,7 +680,6 @@ task.spawn(function()
         container.Position = UDim2.new(0, 30, 1, -30)
         container.Size = UDim2.fromOffset(220, 220)
         container.BackgroundTransparency = 1
-        -- 让容器吞掉触摸事件，防止穿透到游戏屏幕滑屏
         container.Active = true
 
         local function makeDpadBtn(text, pos, size, key)
@@ -699,43 +695,51 @@ task.spawn(function()
             btn.Font = Enum.Font.GothamBold
             btn.Active = true
             local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 10)
-            local stroke = Instance.new("UIStroke", btn); stroke.Color = Color3.fromRGB(0, 255, 170); stroke.Thickness = 2; stroke.Transparency = 0.4
+            local stroke = Instance.new("UIStroke", btn)
+            stroke.Color = Color3.fromRGB(0, 255, 170)
+            stroke.Thickness = 2
+            stroke.Transparency = 0.4
 
-            local pressed = false
-            local function press()
-                if not pressed then
-                    pressed = true
-                    getgenv().dpadState[key] = true
-                    btn.BackgroundColor3 = Color3.fromRGB(0, 200, 140)
-                    updateDPad()
-                end
+            -- ★ 关键：记录最初按下的那根手指的 InputObject
+            -- ★ 只有这根手指抬起时才释放，其他手指（比如右手滑屏）抬起不释放
+            local activeTouch = nil
+
+            local function doPress()
+                getgenv().dpadState[key] = true
+                btn.BackgroundColor3 = Color3.fromRGB(0, 200, 140)
+                updateDPad()
             end
-            local function release()
-                if pressed then
-                    pressed = false
-                    getgenv().dpadState[key] = false
-                    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-                    updateDPad()
-                end
+
+            local function doRelease()
+                activeTouch = nil
+                getgenv().dpadState[key] = false
+                btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+                updateDPad()
             end
 
             btn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    press()
+                if (input.UserInputType == Enum.UserInputType.Touch
+                    or input.UserInputType == Enum.UserInputType.MouseButton1) then
+                    if activeTouch == nil then
+                        activeTouch = input
+                        doPress()
+                    end
                 end
             end)
+
             btn.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    release()
+                if input == activeTouch then
+                    doRelease()
                 end
             end)
-            -- 兜底，防止手指划出按钮时卡住
+
+            -- 全局兜底：只处理"自己最初按下的那根手指"抬起
+            -- 其他手指（右手滑屏的 Touch）即使抬起，也不影响本按钮
             UIS.InputEnded:Connect(function(input)
-                if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1) then
-                    if pressed then release() end
+                if input == activeTouch then
+                    doRelease()
                 end
             end)
-            return btn
         end
 
         makeDpadBtn("↑", UDim2.new(0.5, -35, 0, 0), UDim2.fromOffset(70, 70), "up")
@@ -743,7 +747,7 @@ task.spawn(function()
         makeDpadBtn("←", UDim2.new(0, 0, 0.5, -35), UDim2.fromOffset(70, 70), "left")
         makeDpadBtn("→", UDim2.new(1, -70, 0.5, -35), UDim2.fromOffset(70, 70), "right")
 
-        print("[NoVR Pro] 左下角方向键已加载（按下时禁用滑屏）")
+        print("[NoVR Pro] 左下角方向键已加载（多点触控安全版）")
     end)
 
     print("[NoVR Pro] 控制已激活。手机点击右上角【手势】按钮，左下角方向键移动。")
