@@ -1,778 +1,713 @@
--- ========== 出租车/公交车 二合一（悬浮按钮 + 模式切换） ==========
--- 警告：本脚本必须搭配防检测措施使用！
--- 功能：出租车（接单+传送） / 公交车（站台接客+送达），一键切换
-
-local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Player = Players.LocalPlayer
-
--- ================== 全新UI（悬浮按钮 + 可隐藏主面板） ==================
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = Player:WaitForChild("PlayerGui")
-
--- ---------- 悬浮按钮（右上角圆形） ----------
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 60, 0, 60)
-toggleButton.Position = UDim2.new(1, -80, 0, 20)
-toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-toggleButton.BackgroundTransparency = 0.2
-toggleButton.BorderSizePixel = 2
-toggleButton.BorderColor3 = Color3.fromRGB(150, 100, 255)
-toggleButton.Text = "🚖"
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextScaled = true
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.Active = true
-toggleButton.Draggable = true
-toggleButton.Parent = screenGui
-
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(1, 0)
-btnCorner.Parent = toggleButton
-
-local btnGlow = Instance.new("Frame")
-btnGlow.Size = UDim2.new(1, 12, 1, 12)
-btnGlow.Position = UDim2.new(0, -6, 0, -6)
-btnGlow.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-btnGlow.BackgroundTransparency = 0.5
-btnGlow.BorderSizePixel = 0
-btnGlow.ZIndex = 0
-btnGlow.Parent = toggleButton
-local btnGlowCorner = Instance.new("UICorner")
-btnGlowCorner.CornerRadius = UDim.new(1, 0)
-btnGlowCorner.Parent = btnGlow
-
--- ---------- 主面板（初始隐藏） ----------
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 350)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -175)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
-mainFrame.BackgroundTransparency = 0.15
-mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.fromRGB(120, 80, 255)
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 16)
-corner.Parent = mainFrame
-
--- 毛玻璃底层
-local blurOverlay = Instance.new("Frame")
-blurOverlay.Size = UDim2.new(1, 0, 1, 0)
-blurOverlay.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-blurOverlay.BackgroundTransparency = 0.3
-blurOverlay.BorderSizePixel = 0
-blurOverlay.Parent = mainFrame
-local blurCorner = Instance.new("UICorner")
-blurCorner.CornerRadius = UDim.new(0, 16)
-blurCorner.Parent = blurOverlay
-
--- 动态边框光晕
-local glowBorder = Instance.new("Frame")
-glowBorder.Size = UDim2.new(1, 8, 1, 8)
-glowBorder.Position = UDim2.new(0, -4, 0, -4)
-glowBorder.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-glowBorder.BackgroundTransparency = 0.6
-glowBorder.BorderSizePixel = 0
-glowBorder.ZIndex = 0
-glowBorder.Parent = mainFrame
-local glowCorner = Instance.new("UICorner")
-glowCorner.CornerRadius = UDim.new(0, 18)
-glowCorner.Parent = glowBorder
-
-local borderGradient = Instance.new("UIGradient")
-borderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 0, 255)),
-    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 150, 255)),
-    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 0, 200)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 255)),
-})
-borderGradient.Rotation = 0
-borderGradient.Parent = glowBorder
-
--- 标题（固定显示）
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0, 8)
-title.BackgroundTransparency = 1
-title.Text = "🚖🚌 出租车/公交车"
-title.TextColor3 = Color3.fromRGB(230, 230, 255)
-title.TextScaled = true
-title.Font = Enum.Font.GothamBold
-title.Parent = mainFrame
-
--- 分隔线
-local line = Instance.new("Frame")
-line.Size = UDim2.new(0.8, 0, 0, 2)
-line.Position = UDim2.new(0.1, 0, 0, 48)
-line.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-line.BorderSizePixel = 0
-line.Parent = mainFrame
-local lineGlow = Instance.new("Frame")
-lineGlow.Size = UDim2.new(1, 10, 1, 6)
-lineGlow.Position = UDim2.new(0, -5, 0, -2)
-lineGlow.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-lineGlow.BackgroundTransparency = 0.5
-lineGlow.BorderSizePixel = 0
-lineGlow.Parent = line
-
--- 状态指示点
-local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 12, 0, 12)
-dot.Position = UDim2.new(0, 12, 0, 55)
-dot.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-dot.BorderSizePixel = 0
-dot.Parent = mainFrame
-local dotCorner = Instance.new("UICorner")
-dotCorner.CornerRadius = UDim.new(1, 0)
-dotCorner.Parent = dot
-local dotGlow = Instance.new("Frame")
-dotGlow.Size = UDim2.new(1, 10, 1, 10)
-dotGlow.Position = UDim2.new(0, -5, 0, -5)
-dotGlow.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-dotGlow.BackgroundTransparency = 0.6
-dotGlow.BorderSizePixel = 0
-dotGlow.Parent = dot
-local dotGlowCorner = Instance.new("UICorner")
-dotGlowCorner.CornerRadius = UDim.new(1, 0)
-dotGlowCorner.Parent = dotGlow
-
--- 状态文字
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.7, 0, 0, 22)
-statusLabel.Position = UDim2.new(0, 30, 0, 53)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⏸️ 已停止"
-statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-statusLabel.TextScaled = true
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.Parent = mainFrame
-
--- 统计1（出租车：接单；公交车：乘客）
-local statLabel1 = Instance.new("TextLabel")
-statLabel1.Size = UDim2.new(0.4, 0, 0, 24)
-statLabel1.Position = UDim2.new(0, 12, 0, 80)
-statLabel1.BackgroundTransparency = 1
-statLabel1.Text = "📦 接单: 0"
-statLabel1.TextColor3 = Color3.fromRGB(255, 150, 150)
-statLabel1.TextScaled = true
-statLabel1.TextXAlignment = Enum.TextXAlignment.Left
-statLabel1.Font = Enum.Font.GothamBold
-statLabel1.Parent = mainFrame
-
--- 统计2（出租车：传送；公交车：站点）
-local statLabel2 = Instance.new("TextLabel")
-statLabel2.Size = UDim2.new(0.4, 0, 0, 24)
-statLabel2.Position = UDim2.new(0.5, 0, 0, 80)
-statLabel2.BackgroundTransparency = 1
-statLabel2.Text = "🚗 传送: 0"
-statLabel2.TextColor3 = Color3.fromRGB(150, 200, 255)
-statLabel2.TextScaled = true
-statLabel2.TextXAlignment = Enum.TextXAlignment.Left
-statLabel2.Font = Enum.Font.GothamBold
-statLabel2.Parent = mainFrame
-
--- 当前操作状态（详细）
-local orderStatusLabel = Instance.new("TextLabel")
-orderStatusLabel.Size = UDim2.new(1, -20, 0, 22)
-orderStatusLabel.Position = UDim2.new(0, 12, 0, 108)
-orderStatusLabel.BackgroundTransparency = 1
-orderStatusLabel.Text = "🔄 等待启动..."
-orderStatusLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-orderStatusLabel.TextScaled = true
-orderStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-orderStatusLabel.Font = Enum.Font.Gotham
-orderStatusLabel.Parent = mainFrame
-
--- 额外状态（公交车专用：当前站台信息）
-local stationInfoLabel = Instance.new("TextLabel")
-stationInfoLabel.Size = UDim2.new(1, -20, 0, 22)
-stationInfoLabel.Position = UDim2.new(0, 12, 0, 132)
-stationInfoLabel.BackgroundTransparency = 1
-stationInfoLabel.Text = "📍 站台: 无"
-stationInfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-stationInfoLabel.TextScaled = true
-stationInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-stationInfoLabel.Font = Enum.Font.Gotham
-stationInfoLabel.Parent = mainFrame
-
--- 警告标签
-local warningLabel = Instance.new("TextLabel")
-warningLabel.Size = UDim2.new(1, -20, 0, 20)
-warningLabel.Position = UDim2.new(0, 12, 0, 158)
-warningLabel.BackgroundTransparency = 1
-warningLabel.Text = "⚠️ 必须搭配防检测！"
-warningLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-warningLabel.TextScaled = true
-warningLabel.TextXAlignment = Enum.TextXAlignment.Left
-warningLabel.Font = Enum.Font.GothamBold
-warningLabel.Parent = mainFrame
-
--- ========== 模式切换按钮 ==========
-local modeBtn = Instance.new("TextButton")
-modeBtn.Size = UDim2.new(0, 120, 0, 30)
-modeBtn.Position = UDim2.new(0.5, -60, 0, 185)
-modeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-modeBtn.Text = "🚕 出租车"
-modeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-modeBtn.TextScaled = true
-modeBtn.Font = Enum.Font.GothamBold
-modeBtn.BorderSizePixel = 2
-modeBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
-modeBtn.Parent = mainFrame
-local modeCorner = Instance.new("UICorner")
-modeCorner.CornerRadius = UDim.new(0, 8)
-modeCorner.Parent = modeBtn
-
--- ========== 复制脚本按钮 ==========
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(0, 120, 0, 30)
-copyBtn.Position = UDim2.new(0.5, 60, 0, 185)
-copyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-copyBtn.Text = "📋 复制脚本"
-copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyBtn.TextScaled = true
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.BorderSizePixel = 2
-copyBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
-copyBtn.Parent = mainFrame
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 8)
-copyCorner.Parent = copyBtn
-
--- 复制功能
-copyBtn.MouseButton1Click:Connect(function()
-    local scriptToCopy = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/idkidevthings/improved-octo-chainsaw/refs/heads/main/sanx.lua"))()'
-    setclipboard(scriptToCopy)
-    copyBtn.Text = "✅ 已复制！"
-    task.wait(1.5)
-    copyBtn.Text = "📋 复制脚本"
-end)
-
--- ========== 启动/停止按钮 ==========
-local internalBtn = Instance.new("TextButton")
-internalBtn.Size = UDim2.new(0, 160, 0, 40)
-internalBtn.Position = UDim2.new(0.5, -80, 0, 225)
-internalBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 200)
-internalBtn.Text = "▶️ 启动"
-internalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-internalBtn.TextScaled = true
-internalBtn.Font = Enum.Font.GothamBold
-internalBtn.BorderSizePixel = 0
-internalBtn.Parent = mainFrame
-
-local btnCorner2 = Instance.new("UICorner")
-btnCorner2.CornerRadius = UDim.new(0, 10)
-btnCorner2.Parent = internalBtn
-
-local btnGlow2 = Instance.new("Frame")
-btnGlow2.Size = UDim2.new(1, 10, 1, 10)
-btnGlow2.Position = UDim2.new(0, -5, 0, -5)
-btnGlow2.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-btnGlow2.BackgroundTransparency = 0.5
-btnGlow2.BorderSizePixel = 0
-btnGlow2.ZIndex = 0
-btnGlow2.Parent = internalBtn
-local btnGlowCorner2 = Instance.new("UICorner")
-btnGlowCorner2.CornerRadius = UDim.new(0, 13)
-btnGlowCorner2.Parent = btnGlow2
-
--- ========== 重置按钮 ==========
-local resetBtn = Instance.new("TextButton")
-resetBtn.Size = UDim2.new(0, 80, 0, 30)
-resetBtn.Position = UDim2.new(0.5, -40, 0, 275)
-resetBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-resetBtn.Text = "🔄 重置"
-resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-resetBtn.TextScaled = true
-resetBtn.Font = Enum.Font.GothamBold
-resetBtn.BorderSizePixel = 0
-resetBtn.Parent = mainFrame
-local resetCorner = Instance.new("UICorner")
-resetCorner.CornerRadius = UDim.new(0, 6)
-resetCorner.Parent = resetBtn
-
--- ========== 动态光效 ==========
-local hue = 0
-local function UpdateGlow()
-    hue = (hue + 0.8) % 360
-    local angle = (hue / 360) * 360
-    borderGradient.Rotation = angle
-    
-    local r = math.floor((math.sin(hue * math.pi / 180) * 0.5 + 0.5) * 255)
-    local g = math.floor((math.sin((hue + 120) * math.pi / 180) * 0.5 + 0.5) * 255)
-    local b = math.floor((math.sin((hue + 240) * math.pi / 180) * 0.5 + 0.5) * 255)
-    
-    local borderColor = Color3.fromRGB(r, g, b)
-    mainFrame.BorderColor3 = borderColor
-    glowBorder.BackgroundColor3 = borderColor
-    line.BackgroundColor3 = borderColor
-    lineGlow.BackgroundColor3 = borderColor
-    btnGlow.BackgroundColor3 = borderColor
-    btnGlow2.BackgroundColor3 = borderColor
-    toggleButton.BorderColor3 = borderColor
-    copyBtn.BorderColor3 = borderColor
-    modeBtn.BorderColor3 = borderColor
-end
-RunService.Heartbeat:Connect(UpdateGlow)
-
--- ========== 悬浮按钮点击切换主面板显示 ==========
-local function ToggleMainFrame()
-    mainFrame.Visible = not mainFrame.Visible
-end
-toggleButton.MouseButton1Click:Connect(ToggleMainFrame)
-
--- ================== 核心功能（出租车 + 公交车） ==================
-
--- ---------- 模式与状态 ----------
-local currentMode = "taxi"  -- "taxi" 或 "bus"
-local isRunning = false
-local modeLoopThread = nil
-
--- 出租车统计
-local orderCount = 0
-local teleportCount = 0
-
--- 公交车统计
-local passengerCount = 0
-local stationCount = 0
-local currentPassengers = {}
-local busStops = {}
-local currentStopIndex = 1
-
--- 配置
-local TAXI_CONFIG = {
-    ORDER_INTERVAL = 10,
-    TELEPORT_INTERVAL = 3,
-}
-
-local BUS_CONFIG = {
-    MAX_PASSENGERS = 5,
-    PICKUP_INTERVAL = 3,
-    DELIVER_INTERVAL = 5,
-    CLICK_COUNT = 5,
-    DESTINATION_OFFSET = 100,
-    TIMEOUT_SECONDS = 10,
-}
-
--- ---------- 工具函数 ----------
-local function ClickAt(x, y)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
-    task.wait(0.05)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+do
+    local qot = queue_on_teleport or (syn and syn.queue_on_teleport)
+    local checks = {
+        { "getrawmetatable",   getrawmetatable   },
+        { "setreadonly",       setreadonly       },
+        { "newcclosure",       newcclosure       },
+        { "getnamecallmethod", getnamecallmethod },
+        { "getgc",             getgc             },
+        { "queue_on_teleport", qot               },
+    }
+    local missing, report = {}, "[VR Hands No-VR Pro] UNC test:\n"
+    for _, c in ipairs(checks) do
+        local ok = type(c[2]) == "function"
+        report = report .. ("  [%s] %s\n"):format(ok and "+" or "-", c[1])
+        if not ok then table.insert(missing, c[1]) end
+    end
+    print(report)
+    if #missing > 0 then
+        warn("[NoVR Pro] 缺少函数: " .. table.concat(missing, ", "))
+        warn("[NoVR Pro] 执行器不支持 - 中止。")
+        return
+    end
+    print("[NoVR Pro] UNC 测试通过，启动中...")
 end
 
--- ---------- 出租车功能 ----------
-local function AcceptOrder()
-    local screenSize = workspace.CurrentCamera.ViewportSize
-    local phoneX = screenSize.X * 0.85
-    local phoneY = screenSize.Y * 0.35
+local Players         = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
 
-    print("📱 执行接单点击...")
-    ClickAt(phoneX, phoneY)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 100)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 160)
-    task.wait(0.3)
-    ClickAt(phoneX, phoneY + 240)
-    task.wait(0.3)
-    
-    orderCount = orderCount + 1
-    statLabel1.Text = "📦 接单: " .. orderCount
-    print("✅ 接单操作完成 (#" .. orderCount .. ")")
-end
+local hrs = [==[
+local VRService   = game:GetService("VRService")
+local UIS         = game:GetService("UserInputService")
+local RunService  = game:GetService("RunService")
+local Players     = game:GetService("Players")
+local identity    = CFrame.identity
 
-local function GetTargetPosition()
-    local success, result = pcall(function()
-        local targetFolder = workspace.Gameplay.Entities.ClientContent
-        if not targetFolder then return nil end
-        for _, child in ipairs(targetFolder:GetDescendants()) do
-            if child:IsA("BasePart") then
-                return child.Position + Vector3.new(0, 3, 0)
-            end
-        end
-        return nil
+do
+    local mt = getrawmetatable(game)
+    local oldIndex    = mt.__index
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
+    mt.__index = newcclosure(function(self, k)
+        if k == "VREnabled" and (self == VRService or self == UIS) then return true end
+        return oldIndex(self, k)
     end)
-    if not success then
-        print("⚠️ 获取目标位置时出错，跳过本次传送")
-        return nil
-    end
-    return result
+    mt.__namecall = newcclosure(function(self, ...)
+        if self == VRService then
+            local m = getnamecallmethod()
+            if m == "GetUserCFrameEnabled" then return true end
+            if m == "GetUserCFrame" then return identity end
+        end
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
 end
 
-local function DoTeleportTaxi(pos)
-    local char = Player.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local humanoid = char:FindFirstChild("Humanoid")
-    if humanoid and humanoid.SeatPart then
-        humanoid.Sit = false
+task.spawn(function()
+    local function ensureFolder(p, n)
+        local f = p:FindFirstChild(n)
+        if not f then f = Instance.new("Folder"); f.Name = n; f.Parent = p end
+        return f
+    end
+    local function ensurePart(p, n)
+        local x = p:FindFirstChild(n)
+        if not x then
+            x = Instance.new("Part"); x.Name = n
+            x.Anchored = true; x.CanCollide = false; x.Transparency = 1
+            x.Size = Vector3.new(1,1,1); x.Parent = p
+        end
+        return x
+    end
+    local function populate(cam)
+        if not cam then return end
+        ensurePart(ensureFolder(cam, "VRCoreEffectParts"), "Cursor")
+        ensurePart(ensureFolder(cam, "VRCorePanelParts"), "BottomBar_Part")
+    end
+    populate(workspace.CurrentCamera)
+    workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+        populate(workspace.CurrentCamera)
+    end)
+    local t0 = os.clock()
+    while os.clock() - t0 < 30 do
+        populate(workspace.CurrentCamera)
         task.wait(0.1)
     end
-    hrp.CFrame = CFrame.new(pos)
-    hrp.Velocity = Vector3.new(0, 0, 0)
-    hrp.RotVelocity = Vector3.new(0, 0, 0)
-    return true
-end
+end)
 
-local function TaxiLoop()
-    while isRunning and currentMode == "taxi" do
-        -- 接单
-        orderStatusLabel.Text = "📱 正在接单..."
-        AcceptOrder()
-        orderStatusLabel.Text = "⏳ 等待 " .. TAXI_CONFIG.ORDER_INTERVAL .. "秒后接单..."
-        task.wait(TAXI_CONFIG.ORDER_INTERVAL)
-        if not isRunning then break end
+task.spawn(function()
+    local lp = Players.LocalPlayer
+    while not lp do task.wait() lp = Players.LocalPlayer end
+    local uid = tostring(lp.UserId)
 
-        -- 传送
-        orderStatusLabel.Text = "🚗 正在传送..."
-        local pos = GetTargetPosition()
-        if pos and DoTeleportTaxi(pos) then
-            teleportCount = teleportCount + 1
-            statLabel2.Text = "🚗 传送: " .. teleportCount
-            print("✅ 传送完成 (#" .. teleportCount .. ")")
-        else
-            print("⚠️ 传送失败")
-        end
-        orderStatusLabel.Text = "⏳ 等待 " .. TAXI_CONFIG.TELEPORT_INTERVAL .. "秒后传送..."
-        task.wait(TAXI_CONFIG.TELEPORT_INTERVAL)
-    end
-end
+    local vrPlayers = workspace:WaitForChild("VRPlayers", 60)
+    if not vrPlayers then warn("[NoVR] 找不到 VRPlayers 文件夹") return end
+    local rig = vrPlayers:WaitForChild(uid, 60)
+    if not rig then warn("[NoVR] 服务器没有分配 rig") return end
+    rig:WaitForChild("VRHead", 20)
+    rig:WaitForChild("LeftHand", 20)
+    rig:WaitForChild("RightHand", 20)
+    local scaleVal = rig:FindFirstChild("VRScale")
+    local cam = workspace.CurrentCamera
 
--- ---------- 公交车功能 ----------
-local function FindBusStops()
-    local stops = {}
-    local added = {}
+    local S = {
+        reach  = 0.55, spread = 0.34, height = -0.25,
+        sens   = 0.0025, moveK = 0.16, look = true,
+        scale  = 10,
+    }
 
-    for _, part in ipairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local name = part.Name:lower()
-            if name:find("busstop") or name:find("station") or part.BrickColor == BrickColor.new("Bright blue") then
-                local pos = part.Position
-                local key = tostring(pos)
-                if not added[key] then
-                    added[key] = true
-                    table.insert(stops, pos + Vector3.new(0, 3, 0))
-                end
-            end
-        end
-    end
+    local Gesture = {
+        rThumb = 0, rIndex = 0, rMiddle = 0, rRing = 0, rPinky = 0, rFist = 0,
+        lThumb = 0, lIndex = 0, lMiddle = 0, lRing = 0, lPinky = 0, lFist = 0,
+        presetName = "None",
+    }
 
-    if #stops == 0 then
-        local targetFolder = workspace:FindFirstChild("Gameplay") and workspace.Gameplay:FindFirstChild("Entities") and workspace.Gameplay.Entities:FindFirstChild("ClientContent")
-        if targetFolder then
-            for _, child in ipairs(targetFolder:GetDescendants()) do
-                if child:IsA("BasePart") then
-                    local pos = child.Position
-                    local key = tostring(pos)
-                    if not added[key] then
-                        added[key] = true
-                        table.insert(stops, pos + Vector3.new(0, 3, 0))
-                    end
-                end
-            end
-        end
-    end
+    -- 手旋转：双手一起、右手单独、左手单独
+    local HandRot = {
+        both  = { yaw = 0, pitch = 0 },
+        right = { yaw = 0, pitch = 0 },
+        left  = { yaw = 0, pitch = 0 },
+    }
+    local middleMouseHeld = false
+    local rotTarget = "both" -- "both" | "right" | "left"
 
-    return stops
-end
-
-local function RefreshStops()
-    busStops = FindBusStops()
-    if #busStops == 0 then
-        warn("⚠️ 未找到任何公交站台！请检查游戏内是否有'BusStop'、'Station'或蓝色方块。")
-    else
-        print("🚏 找到 " .. #busStops .. " 个站台")
-    end
-    currentStopIndex = 1
-end
-
-local function DoTeleportBus(pos)
-    local char = Player.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local humanoid = char:FindFirstChild("Humanoid")
-    if humanoid and humanoid.SeatPart then
-        humanoid.Sit = false
-        task.wait(0.1)
-    end
-    local offset = Vector3.new(math.random(-3, 3), 0, math.random(-3, 3))
-    local finalPos = pos + offset
-    hrp.CFrame = CFrame.new(finalPos) * CFrame.Angles(0, math.rad(math.random(0, 360)), 0)
-    hrp.Velocity = Vector3.zero
-    hrp.RotVelocity = Vector3.zero
-    return true
-end
-
-local function PickupPassenger()
-    local screenSize = workspace.CurrentCamera.ViewportSize
-    local phoneX = screenSize.X * 0.85
-    local phoneY = screenSize.Y * 0.35
-
-    for i = 1, BUS_CONFIG.CLICK_COUNT do
-        ClickAt(phoneX, phoneY + (i - 1) * 50)
-        task.wait(0.2 + math.random() * 0.2)
-    end
-    passengerCount = passengerCount + 1
-    table.insert(currentPassengers, { id = passengerCount, time = os.time() })
-    statLabel1.Text = "👥 乘客: " .. #currentPassengers .. "/" .. BUS_CONFIG.MAX_PASSENGERS
-    orderStatusLabel.Text = "👤 接载乘客 #" .. passengerCount
-    print("✅ 接载乘客成功 (#" .. passengerCount .. ") 当前载客: " .. #currentPassengers)
-end
-
-local function DeliverToStation()
-    if #currentPassengers == 0 then
-        orderStatusLabel.Text = "⚠️ 没有乘客可送"
-        return
-    end
-    local screenSize = workspace.CurrentCamera.ViewportSize
-    local phoneX = screenSize.X * 0.85
-    local phoneY = screenSize.Y * 0.35
-    local destY = phoneY + BUS_CONFIG.DESTINATION_OFFSET
-
-    for i = 1, 3 do
-        ClickAt(phoneX, destY + i * 60)
-        task.wait(0.3 + math.random() * 0.2)
-    end
-
-    local delivered = #currentPassengers
-    currentPassengers = {}
-    stationCount = stationCount + 1
-    statLabel1.Text = "👥 乘客: 0/" .. BUS_CONFIG.MAX_PASSENGERS
-    statLabel2.Text = "🚏 站点: " .. stationCount
-    orderStatusLabel.Text = "✅ 送达 " .. delivered .. " 名乘客到站点 #" .. stationCount
-    print("✅ 送达 " .. delivered .. " 名乘客到站点 #" .. stationCount)
-end
-
-local function CheckPassengerIncrease(prevCount, timeout)
-    local startTime = tick()
-    while tick() - startTime < timeout do
-        task.wait(0.5)
-        local current = #currentPassengers
-        if current > prevCount then
-            return true
-        end
-    end
-    return false
-end
-
-local function BusLoop()
-    RefreshStops()
-    if #busStops == 0 then
-        orderStatusLabel.Text = "❌ 无可用站台，停止"
-        print("❌ 无可用站台，停止循环")
-        isRunning = false
-        UpdateUI(false)
-        return
-    end
-
-    while isRunning and currentMode == "bus" do
-        local targetPos = busStops[currentStopIndex]
-        if not targetPos then
-            currentStopIndex = 1
-            targetPos = busStops[currentStopIndex]
-        end
-
-        stationInfoLabel.Text = "📍 站台 " .. currentStopIndex .. "/" .. #busStops
-        orderStatusLabel.Text = "🚌 传送到站台 " .. currentStopIndex
-
-        if not DoTeleportBus(targetPos) then
-            orderStatusLabel.Text = "⚠️ 传送失败，跳过此站台"
-            currentStopIndex = currentStopIndex + 1
-            task.wait(1)
-            if currentStopIndex > #busStops then currentStopIndex = 1 end
-            continue
-        end
-        task.wait(0.5)
-
-        local prevCount = #currentPassengers
-        orderStatusLabel.Text = "🔄 尝试接客 (站台 " .. currentStopIndex .. ")"
-        PickupPassenger()
-
-        local gotPassenger = CheckPassengerIncrease(prevCount, BUS_CONFIG.TIMEOUT_SECONDS)
-
-        if gotPassenger then
-            orderStatusLabel.Text = "✅ 成功接到乘客！"
-            print("✅ 站台 " .. currentStopIndex .. " 接客成功")
-            if #currentPassengers >= BUS_CONFIG.MAX_PASSENGERS then
-                orderStatusLabel.Text = "🚌 满员，准备送达..."
-                task.wait(1)
-                DeliverToStation()
-                task.wait(BUS_CONFIG.DELIVER_INTERVAL)
+    local ok, VRUtils = pcall(function()
+        return require(lp.PlayerScripts.ClientLoader.PlayerModule.VRModule.VRUtils)
+    end)
+    if ok and type(VRUtils) == "table" then
+        VRUtils.GetUserCFrame = function(uc, scale)
+            scale = scale or cam.HeadScale
+            if scale <= 1 then scale = math.max((scaleVal and scaleVal.Value or 1) * 60, 6) end
+            local baseCF
+            if uc == Enum.UserCFrame.LeftHand then
+                local c = CFrame.new(-S.spread, S.height, -S.reach)
+                baseCF = c.Rotation + c.Position * scale
+            elseif uc == Enum.UserCFrame.RightHand then
+                local c = CFrame.new(S.spread, S.height, -S.reach)
+                baseCF = c.Rotation + c.Position * scale
             else
-                task.wait(BUS_CONFIG.PICKUP_INTERVAL)
+                baseCF = identity
             end
-        else
-            orderStatusLabel.Text = "⏱️ " .. BUS_CONFIG.TIMEOUT_SECONDS .. "秒未接客，切换站台"
-            print("⏱️ 站台 " .. currentStopIndex .. " 超时，切换到下一个")
-            currentStopIndex = currentStopIndex + 1
-            if currentStopIndex > #busStops then currentStopIndex = 1 end
-            -- 回滚计数（如果PickupPassenger增加了但实际未接到）
-            if #currentPassengers > prevCount then
-                for i = #currentPassengers, prevCount + 1, -1 do
-                    table.remove(currentPassengers, i)
+
+            -- 应用旋转：双手基础 + 各自单独
+            local rotBoth  = CFrame.Angles(HandRot.both.pitch,  HandRot.both.yaw,  0)
+            local rotRight = CFrame.Angles(HandRot.right.pitch, HandRot.right.yaw, 0)
+            local rotLeft  = CFrame.Angles(HandRot.left.pitch,  HandRot.left.yaw,  0)
+
+            if uc == Enum.UserCFrame.RightHand then
+                return baseCF * rotBoth * rotRight
+            elseif uc == Enum.UserCFrame.LeftHand then
+                return baseCF * rotBoth * rotLeft
+            end
+            return baseCF
+        end
+        print("[NoVR] VRUtils 拦截成功，支持手旋转")
+    else
+        warn("[NoVR] 拦截 VRUtils 失败，手旋转不可用")
+    end
+
+    -- 寻找 Input 对象
+    local vrm, Input
+    for _ = 1, 250 do
+        for _, o in pairs(getgc(true)) do
+            if type(o) == "table"
+               and rawget(o,"HeadsetPart") ~= nil and rawget(o,"Input") ~= nil
+               and rawget(o,"CharacterScale") ~= nil and rawget(o,"DataManager") ~= nil then
+                vrm = o; Input = rawget(o,"Input"); break
+            end
+        end
+        if Input then break end
+        for _, o in pairs(getgc(true)) do
+            if type(o) == "table" and rawget(o,"directionLateral") ~= nil
+               and rawget(o,"rFist") ~= nil and rawget(o,"turnDirection") ~= nil then
+                Input = o; break
+            end
+        end
+        if Input then break end
+        task.wait(0.1)
+    end
+
+    if not Input then
+        warn("[NoVR] 未找到 Input 对象 - 手势功能不可用")
+    else
+        print("[NoVR] Input 对象已找到")
+    end
+
+    -- 探测 Input 对象实际支持的所有字段
+    local Supported = {}
+    local SupportedList = {}
+    if Input then
+        for k, v in pairs(Input) do
+            if type(v) == "number" then
+                Supported[k] = true
+                table.insert(SupportedList, k)
+            end
+        end
+        table.sort(SupportedList)
+        print("[NoVR] Input 支持的数字字段: " .. table.concat(SupportedList, ", "))
+    end
+
+    local HAS_FULL_FINGERS = Supported.rMiddle == true
+    if HAS_FULL_FINGERS then
+        print("[NoVR] 检测到完整手指支持")
+    else
+        print("[NoVR] 检测到简化手指支持，中指/无名指/小指用 Fist 代理")
+    end
+
+    local function safeSetInput(key, value)
+        if Input and Supported[key] then
+            local ok = pcall(function() Input[key] = value end)
+            return ok
+        end
+        return false
+    end
+
+    local function applyGesture(g)
+        if not Input then return end
+
+        local function calcProxyFist(hand, gTable)
+            if HAS_FULL_FINGERS then return nil end
+            local fistKey = hand .. "Fist"
+            if gTable[fistKey] ~= nil then return nil end
+            local middle = gTable[hand .. "Middle"] or 0
+            local ring   = gTable[hand .. "Ring"]   or 0
+            local pinky  = gTable[hand .. "Pinky"]  or 0
+            local bendCount = middle + ring + pinky
+            if bendCount > 0 then
+                return math.clamp(bendCount / 3, 0.2, 1)
+            end
+            return nil
+        end
+
+        local rProxy = calcProxyFist("r", g)
+        local lProxy = calcProxyFist("l", g)
+
+        if g.rThumb  ~= nil then safeSetInput("rThumb",  g.rThumb)  end
+        if g.rIndex  ~= nil then safeSetInput("rIndex",  g.rIndex)  end
+        if g.rMiddle ~= nil and Supported.rMiddle then safeSetInput("rMiddle", g.rMiddle) end
+        if g.rRing   ~= nil and Supported.rRing   then safeSetInput("rRing",   g.rRing)   end
+        if g.rPinky  ~= nil and Supported.rPinky  then safeSetInput("rPinky",  g.rPinky)  end
+        if g.rFist   ~= nil then safeSetInput("rFist",   g.rFist)
+        elseif rProxy then safeSetInput("rFist", rProxy) end
+
+        if g.lThumb  ~= nil then safeSetInput("lThumb",  g.lThumb)  end
+        if g.lIndex  ~= nil then safeSetInput("lIndex",  g.lIndex)  end
+        if g.lMiddle ~= nil and Supported.lMiddle then safeSetInput("lMiddle", g.lMiddle) end
+        if g.lRing   ~= nil and Supported.lRing   then safeSetInput("lRing",   g.lRing)   end
+        if g.lPinky  ~= nil and Supported.lPinky  then safeSetInput("lPinky",  g.lPinky)  end
+        if g.lFist   ~= nil then safeSetInput("lFist",   g.lFist)
+        elseif lProxy then safeSetInput("lFist", lProxy) end
+
+        for k, v in pairs(g) do
+            if Gesture[k] ~= nil and type(v) == "number" then
+                Gesture[k] = v
+            end
+        end
+        if g.presetName then Gesture.presetName = g.presetName end
+    end
+
+    local Presets = {
+        ["Open"]     = { rThumb=0, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="张开手掌" },
+        ["Fist"]     = { rThumb=1, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=1,
+                         lThumb=1, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=1, presetName="握拳" },
+        ["Point"]    = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=1, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="食指指" },
+        ["Peace"]    = { rThumb=0, rIndex=1, rMiddle=1, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=1, lMiddle=1, lRing=0, lPinky=0, lFist=0, presetName="剪刀手" },
+        ["ThumbsUp"] = { rThumb=1, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=1,
+                         lThumb=1, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=1, presetName="点赞" },
+        ["OK"]       = { rThumb=1, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=1, lIndex=1, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="OK" },
+        ["Rock"]     = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=1, rFist=0,
+                         lThumb=0, lIndex=1, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="摇滚" },
+        ["Middle"]   = { rThumb=0, rIndex=0, rMiddle=1, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=1, lRing=0, lPinky=0, lFist=0, presetName="中指" },
+        ["Phone"]    = { rThumb=1, rIndex=0, rMiddle=0, rRing=0, rPinky=1, rFist=0,
+                         lThumb=1, lIndex=0, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="电话" },
+        ["Gun"]      = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=1, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="手枪指" },
+        ["PinchR"]   = { rThumb=1, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="右手捏取" },
+        ["PinchL"]   = { rThumb=0, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=1, lIndex=1, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="左手捏取" },
+        ["GrabR"]    = { rThumb=1, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=1,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="右手抓取" },
+        ["GrabL"]    = { rThumb=0, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=1, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=1, presetName="左手抓取" },
+        ["Flap"]     = { rThumb=0, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="挥手" },
+        ["Horns"]    = { rThumb=1, rIndex=1, rMiddle=0, rRing=0, rPinky=1, rFist=0,
+                         lThumb=1, lIndex=1, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="牛角" },
+        ["Shaka"]    = { rThumb=1, rIndex=0, rMiddle=0, rRing=0, rPinky=1, rFist=0,
+                         lThumb=1, lIndex=0, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="Shaka" },
+        ["Salute"]   = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="敬礼" },
+        ["Pray"]     = { rThumb=1, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=1,
+                         lThumb=1, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=1, presetName="祈祷" },
+        ["Claw"]     = { rThumb=0, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=0.5,
+                         lThumb=0, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=0.5, presetName="爪子" },
+    }
+
+    local PresetKeys = {
+        [Enum.KeyCode.One]   = "Open",
+        [Enum.KeyCode.Two]   = "Fist",
+        [Enum.KeyCode.Three] = "Point",
+        [Enum.KeyCode.Four]  = "Peace",
+        [Enum.KeyCode.Five]  = "ThumbsUp",
+        [Enum.KeyCode.Six]   = "OK",
+        [Enum.KeyCode.Seven] = "Rock",
+        [Enum.KeyCode.Eight] = "Middle",
+        [Enum.KeyCode.Nine]  = "Phone",
+        [Enum.KeyCode.Zero]  = "Gun",
+    }
+
+    local PresetKeysCtrl = {
+        [Enum.KeyCode.One]   = "PinchR",
+        [Enum.KeyCode.Two]   = "GrabR",
+        [Enum.KeyCode.Three] = "PinchL",
+        [Enum.KeyCode.Four]  = "GrabL",
+        [Enum.KeyCode.Five]  = "Flap",
+        [Enum.KeyCode.Six]   = "Horns",
+        [Enum.KeyCode.Seven] = "Shaka",
+        [Enum.KeyCode.Eight] = "Salute",
+        [Enum.KeyCode.Nine]  = "Pray",
+        [Enum.KeyCode.Zero]  = "Claw",
+    }
+
+    local FingerKeys = {
+        [Enum.KeyCode.T] = { hand="r", finger="Thumb",  name="右拇指" },
+        [Enum.KeyCode.Y] = { hand="r", finger="Index",  name="右食指" },
+        [Enum.KeyCode.U] = { hand="r", finger="Middle", name="右中指" },
+        [Enum.KeyCode.I] = { hand="r", finger="Ring",   name="右无名指" },
+        [Enum.KeyCode.O] = { hand="r", finger="Pinky",  name="右小指" },
+        [Enum.KeyCode.P] = { hand="r", finger="Fist",   name="右拳" },
+        [Enum.KeyCode.Z] = { hand="l", finger="Thumb",  name="左拇指" },
+        [Enum.KeyCode.X] = { hand="l", finger="Index",  name="左食指" },
+        [Enum.KeyCode.C] = { hand="l", finger="Middle", name="左中指" },
+        [Enum.KeyCode.V] = { hand="l", finger="Ring",   name="左无名指" },
+        [Enum.KeyCode.B] = { hand="l", finger="Pinky",  name="左小指" },
+        [Enum.KeyCode.N] = { hand="l", finger="Fist",   name="左拳" },
+    }
+
+    local heldFingers = {}
+    local preFingerState = nil
+
+    local function saveState()
+        return {
+            rThumb=Gesture.rThumb, rIndex=Gesture.rIndex, rMiddle=Gesture.rMiddle,
+            rRing=Gesture.rRing, rPinky=Gesture.rPinky, rFist=Gesture.rFist,
+            lThumb=Gesture.lThumb, lIndex=Gesture.lIndex, lMiddle=Gesture.lMiddle,
+            lRing=Gesture.lRing, lPinky=Gesture.lPinky, lFist=Gesture.lFist,
+        }
+    end
+
+    local function loadState(st)
+        if not st then return end
+        applyGesture(st)
+    end
+
+    task.spawn(function()
+        for _ = 1, 100 do
+            pcall(function() RunService:UnbindFromRenderStep("Inputs") end)
+            task.wait(0.1)
+        end
+    end)
+
+    pcall(function()
+        local pmMT = getrawmetatable(vrm.PropManager)
+        if pmMT and rawget(pmMT, "GetBestGrabPartInRadius") then
+            local orig = pmMT.GetBestGrabPartInRadius
+            setreadonly(pmMT, false)
+            pmMT.GetBestGrabPartInRadius = function(self, root, prox, radius, scale, ...)
+                return orig(self, root, prox, (radius or 0) * 3.5, scale, ...)
+            end
+            setreadonly(pmMT, true)
+        end
+        local cmMT = getrawmetatable(vrm.CharacterManager)
+        if cmMT and rawget(cmMT, "GetClosestCharacterInRadius") then
+            local orig = cmMT.GetClosestCharacterInRadius
+            setreadonly(cmMT, false)
+            cmMT.GetClosestCharacterInRadius = function(self, pos, radius, ...)
+                return orig(self, pos, (radius or 0) * 3.5, ...)
+            end
+            setreadonly(cmMT, true)
+        end
+    end)
+
+    local function setScale(n)
+        n = math.clamp(math.floor(n + 0.5), 1, 10)
+        S.scale = n
+        if scaleVal then pcall(function() scaleVal.Value = n / 10 end) end
+        if vrm and vrm.DataManager and vrm.DataManager.SettingsManager then
+            pcall(function() vrm.DataManager.SettingsManager:SetValue("vrscale", n) end)
+        end
+    end
+    setScale(10)
+
+    cam.HeadLocked = true
+    local yaw, pitch
+    do
+        local lv = cam.CFrame.LookVector
+        yaw   = math.atan2(-lv.X, -lv.Z)
+        pitch = math.asin(math.clamp(lv.Y, -1, 1))
+    end
+    local camPos = cam.CFrame.Position
+    local keys = {}
+
+    local function setLook(v)
+        S.look = v
+        UIS.MouseBehavior    = v and Enum.MouseBehavior.LockCenter or Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = not v
+    end
+    setLook(true)
+
+    -- ============================================================
+    -- 输入处理
+    -- ============================================================
+    UIS.InputBegan:Connect(function(io)
+        if io.UserInputType == Enum.UserInputType.Keyboard then
+            keys[io.KeyCode] = true
+
+            -- F / G 切换旋转目标
+            if io.KeyCode == Enum.KeyCode.F then
+                rotTarget = "right"
+                print("[NoVR] 旋转目标: 右手")
+            end
+            if io.KeyCode == Enum.KeyCode.G then
+                rotTarget = "left"
+                print("[NoVR] 旋转目标: 左手")
+            end
+
+            if io.KeyCode == Enum.KeyCode.LeftAlt then setLook(not S.look) end
+            if io.KeyCode == Enum.KeyCode.Equals  then setScale(S.scale + 1) end
+            if io.KeyCode == Enum.KeyCode.Minus   then setScale(S.scale - 1) end
+
+            if Input and io.KeyCode == Enum.KeyCode.E then
+                applyGesture({rIndex=1, rFist=0, rThumb=0})
+            end
+            if Input and io.KeyCode == Enum.KeyCode.Q then
+                applyGesture({lIndex=1, lFist=0, lThumb=0})
+            end
+
+            local preset = PresetKeys[io.KeyCode]
+            if preset and Presets[preset] then
+                applyGesture(Presets[preset])
+                print("[NoVR] 动作: " .. Presets[preset].presetName)
+            end
+
+            if keys[Enum.KeyCode.LeftControl] or keys[Enum.KeyCode.RightControl] then
+                local presetCtrl = PresetKeysCtrl[io.KeyCode]
+                if presetCtrl and Presets[presetCtrl] then
+                    applyGesture(Presets[presetCtrl])
+                    print("[NoVR] 动作: " .. Presets[presetCtrl].presetName)
                 end
-                statLabel1.Text = "👥 乘客: " .. #currentPassengers .. "/" .. BUS_CONFIG.MAX_PASSENGERS
             end
-            task.wait(1)
-        end
-    end
-end
 
--- ---------- UI更新与模式切换 ----------
-local function UpdateUI(isActive)
-    if isActive then
-        statusLabel.Text = "▶️ 运行中"
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
-        internalBtn.Text = "⏹️ 停止"
-        internalBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        dot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-        dotGlow.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-    else
-        statusLabel.Text = "⏸️ 已停止"
-        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        internalBtn.Text = "▶️ 启动"
-        internalBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 200)
-        dot.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        dotGlow.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        if currentMode == "taxi" then
-            orderStatusLabel.Text = "🔄 等待启动（出租车）..."
+            local fk = FingerKeys[io.KeyCode]
+            if fk then
+                if not next(heldFingers) then
+                    preFingerState = saveState()
+                end
+                heldFingers[io.KeyCode] = true
+                local g = {}
+                g[fk.hand .. fk.finger] = 1
+                applyGesture(g)
+            end
+
+        elseif io.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input then applyGesture({rFist=1, rIndex=1}) end
+        elseif io.UserInputType == Enum.UserInputType.MouseButton2 then
+            if Input then applyGesture({lFist=1, lIndex=1}) end
+        elseif io.UserInputType == Enum.UserInputType.MouseButton3 then
+            middleMouseHeld = true
+            print("[NoVR] 手旋转模式开启，目标: " .. rotTarget)
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(io)
+        if io.UserInputType == Enum.UserInputType.Keyboard then
+            keys[io.KeyCode] = false
+
+            if io.KeyCode == Enum.KeyCode.F or io.KeyCode == Enum.KeyCode.G then
+                if not middleMouseHeld then
+                    rotTarget = "both"
+                    print("[NoVR] 旋转目标恢复: 双手")
+                end
+            end
+
+            if Input and io.KeyCode == Enum.KeyCode.E then
+                applyGesture({rIndex=0})
+            end
+            if Input and io.KeyCode == Enum.KeyCode.Q then
+                applyGesture({lIndex=0})
+            end
+
+            local fk = FingerKeys[io.KeyCode]
+            if fk then
+                heldFingers[io.KeyCode] = nil
+                if not next(heldFingers) then
+                    loadState(preFingerState)
+                    preFingerState = nil
+                else
+                    local g = {}
+                    g[fk.hand .. fk.finger] = 0
+                    applyGesture(g)
+                end
+            end
+
+        elseif io.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input then applyGesture({rFist=0, rIndex=0}) end
+        elseif io.UserInputType == Enum.UserInputType.MouseButton2 then
+            if Input then applyGesture({lFist=0, lIndex=0}) end
+        elseif io.UserInputType == Enum.UserInputType.MouseButton3 then
+            middleMouseHeld = false
+            rotTarget = "both"
+            print("[NoVR] 手旋转模式关闭，目标恢复: 双手")
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(io)
+        if io.UserInputType == Enum.UserInputType.MouseWheel then
+            S.reach = math.clamp(S.reach - io.Position.Z * 0.07, 0.15, 2.5)
+        end
+    end)
+
+    RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
+        -- 手旋转模式：鼠标只控制手，不控制视角
+        if middleMouseHeld then
+            local d = UIS:GetMouseDelta()
+            local target = HandRot[rotTarget]
+            target.yaw   = target.yaw   - d.X * 0.008
+            target.pitch = math.clamp(target.pitch - d.Y * 0.008, -1.5, 1.5)
+            -- 锁定鼠标中心，但不转视角
+            UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
         else
-            orderStatusLabel.Text = "🔄 等待启动（公交车）..."
+            -- 正常视角控制
+            if S.look then
+                local d = UIS:GetMouseDelta()
+                yaw   = yaw - d.X * S.sens
+                pitch = math.clamp(pitch - d.Y * S.sens, -1.45, 1.45)
+                UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+            end
         end
-    end
-end
 
-local function SwitchMode(newMode)
-    if newMode == currentMode then return end
-    -- 如果正在运行则先停止
-    if isRunning then
-        isRunning = false
-        task.wait(0.2)
-    end
-    currentMode = newMode
-    -- 更新统计标签和模式按钮（标题保持不变）
-    if currentMode == "taxi" then
-        statLabel1.Text = "📦 接单: " .. orderCount
-        statLabel2.Text = "🚗 传送: " .. teleportCount
-        stationInfoLabel.Text = ""   -- 隐藏站台信息
-        modeBtn.Text = "🚕 出租车"
-        modeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-    else
-        statLabel1.Text = "👥 乘客: " .. #currentPassengers .. "/" .. BUS_CONFIG.MAX_PASSENGERS
-        statLabel2.Text = "🚏 站点: " .. stationCount
-        stationInfoLabel.Text = "📍 站台: 无"
-        modeBtn.Text = "🚌 公交车"
-        modeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-    end
-    UpdateUI(false)
-    print("🔄 切换到 " .. (currentMode == "taxi" and "出租车" or "公交车") .. " 模式")
-end
+        local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
--- 重置统计
-local function ResetStats()
-    if isRunning then
-        print("⚠️ 请先停止运行再重置")
-        return
-    end
-    orderCount = 0
-    teleportCount = 0
-    passengerCount = 0
-    stationCount = 0
-    currentPassengers = {}
-    if currentMode == "taxi" then
-        statLabel1.Text = "📦 接单: 0"
-        statLabel2.Text = "🚗 传送: 0"
-        orderStatusLabel.Text = "🔄 统计已重置（出租车）"
-    else
-        statLabel1.Text = "👥 乘客: 0/" .. BUS_CONFIG.MAX_PASSENGERS
-        statLabel2.Text = "🚏 站点: 0"
-        orderStatusLabel.Text = "🔄 统计已重置（公交车）"
-    end
-    print("🔄 统计已重置")
-end
+        -- 移动控制
+        local hs  = cam.HeadScale; if hs <= 1 then hs = S.scale * 6 end
+        local spd = (10 + S.scale * 4) * hs * S.moveK
+        local mv  = Vector3.zero
+        if keys[Enum.KeyCode.W] then mv += Vector3.new(0,0,-1) end
+        if keys[Enum.KeyCode.S] then mv += Vector3.new(0,0, 1) end
+        if keys[Enum.KeyCode.A] then mv += Vector3.new(-1,0,0) end
+        if keys[Enum.KeyCode.D] then mv += Vector3.new( 1,0,0) end
+        if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
+        if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
+        if mv.Magnitude > 0 then camPos = camPos + (rot * mv.Unit) * spd * dt end
 
--- ---------- 启动/停止逻辑 ----------
-local function StartLoop()
-    if isRunning then return end
-    isRunning = true
-    UpdateUI(true)
+        cam.CameraType = Enum.CameraType.Scriptable
+        cam.CFrame = CFrame.new(camPos) * rot
 
-    if currentMode == "taxi" then
-        print("🚖 出租车模式启动")
-        orderStatusLabel.Text = "🚖 出租车运行中..."
-        modeLoopThread = task.spawn(TaxiLoop)
-    else
-        print("🚌 公交车模式启动")
-        orderStatusLabel.Text = "🚌 公交车运行中..."
-        RefreshStops()
-        modeLoopThread = task.spawn(BusLoop)
-    end
-end
+        if Input then
+            Input.directionLateral  = Vector2.zero
+            Input.directionVertical = 0
+            Input.turnDirection     = 0
+        end
+    end)
 
-local function StopLoop()
-    if not isRunning then return end
-    isRunning = false
-    modeLoopThread = nil
-    UpdateUI(false)
-    print("⏹️ 已停止")
-    if currentMode == "taxi" then
-        print("📊 统计 - 接单: " .. orderCount .. " | 传送: " .. teleportCount)
-    else
-        print("📊 统计 - 乘客: " .. passengerCount .. " | 站点: " .. stationCount)
-    end
-end
+    -- ============================================================
+    -- 左下角 HUD
+    -- ============================================================
+    pcall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NoVR_HUD"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
+        gui.Parent = lp:WaitForChild("PlayerGui")
 
--- ========== 按钮事件绑定 ==========
--- 模式切换
-modeBtn.MouseButton1Click:Connect(function()
-    if currentMode == "taxi" then
-        SwitchMode("bus")
-    else
-        SwitchMode("taxi")
-    end
+        local mainFrame = Instance.new("Frame", gui)
+        mainFrame.AnchorPoint = Vector2.new(0,1)
+        mainFrame.Position = UDim2.new(0,10,1,-10)
+        mainFrame.Size = UDim2.new(0,400,0,195)
+        mainFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+        mainFrame.BackgroundTransparency = 0.3
+        mainFrame.BorderSizePixel = 0
+
+        local corner = Instance.new("UICorner", mainFrame)
+        corner.CornerRadius = UDim.new(0,8)
+
+        local lbl = Instance.new("TextLabel", mainFrame)
+        lbl.Size = UDim2.new(1,-10,1,-10)
+        lbl.Position = UDim2.new(0,5,0,5)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = Color3.fromRGB(255,255,255)
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.TextYAlignment = Enum.TextYAlignment.Top
+        lbl.Font = Enum.Font.Code
+        lbl.TextSize = 13
+
+        local modeText = HAS_FULL_FINGERS and "[全手指]" or "[简化-Fist代理]"
+
+        local function buildHudText()
+            local lines = {}
+            table.insert(lines, "[VR Hands :: No-VR Pro] " .. modeText)
+            table.insert(lines, "鼠标-视角 | WASD-飞行 | 空格/Shift-上/下")
+            table.insert(lines, "左键/右键-抓取(右/左) | E/Q-捏玩家(右/左)")
+            table.insert(lines, "滚轮-手距离 | +/-体型:" .. math.floor(S.scale) .. "/10 | Alt-鼠标")
+            local rotStatus = middleMouseHeld and ("[旋转中 " .. rotTarget .. "]") or ""
+            table.insert(lines, "中键-旋转手 | F-只转右手 | G-只转左手 " .. rotStatus)
+            table.insert(lines, "当前动作: " .. Gesture.presetName)
+            local rHand = string.format("R[%d%d%d%d%d|%d]",
+                Gesture.rThumb, Gesture.rIndex, Gesture.rMiddle, Gesture.rRing, Gesture.rPinky, Gesture.rFist)
+            local lHand = string.format("L[%d%d%d%d%d|%d]",
+                Gesture.lThumb, Gesture.lIndex, Gesture.lMiddle, Gesture.lRing, Gesture.lPinky, Gesture.lFist)
+            table.insert(lines, rHand .. "  " .. lHand)
+            return table.concat(lines, "\n")
+        end
+
+        RunService.Heartbeat:Connect(function()
+            lbl.Text = buildHudText()
+        end)
+    end)
+
+    -- ============================================================
+    -- 右上角教程面板
+    -- ============================================================
+    pcall(function()
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NoVR_Tutorial"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
+        gui.Parent = lp:WaitForChild("PlayerGui")
+
+        local frame = Instance.new("Frame", gui)
+        frame.AnchorPoint = Vector2.new(1,0)
+        frame.Position = UDim2.new(1,-10,0,10)
+        frame.Size = UDim2.new(0,310,0,410)
+        frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+        frame.BackgroundTransparency = 0.25
+        frame.BorderSizePixel = 0
+
+        local corner = Instance.new("UICorner", frame)
+        corner.CornerRadius = UDim.new(0,8)
+
+        local title = Instance.new("TextLabel", frame)
+        title.Size = UDim2.new(1,0,0,28)
+        title.Position = UDim2.new(0,0,0,0)
+        title.BackgroundTransparency = 1
+        title.Text = "动作按键教程"
+        title.TextColor3 = Color3.fromRGB(0,255,170)
+        title.Font = Enum.Font.GothamBold
+        title.TextSize = 16
+
+        local lbl = Instance.new("TextLabel", frame)
+        lbl.Size = UDim2.new(1,-16,1,-36)
+        lbl.Position = UDim2.new(0,8,0,32)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = Color3.fromRGB(255,255,255)
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.TextYAlignment = Enum.TextYAlignment.Top
+        lbl.Font = Enum.Font.Code
+        lbl.TextSize = 12
+        lbl.TextWrapped = true
+
+        local tutorialLines = {
+            "--- 数字键 快捷动作 ---",
+            "1 = 张开手掌     6 = OK",
+            "2 = 握拳         7 = 摇滚",
+            "3 = 食指指       8 = 中指",
+            "4 = 剪刀手       9 = 电话",
+            "5 = 点赞         0 = 手枪指",
+            "",
+            "--- Ctrl + 数字键 ---",
+            "Ctrl+1 = 右手捏取   Ctrl+6 = 牛角",
+            "Ctrl+2 = 右手抓取   Ctrl+7 = Shaka",
+            "Ctrl+3 = 左手捏取   Ctrl+8 = 敬礼",
+            "Ctrl+4 = 左手抓取   Ctrl+9 = 祈祷",
+            "Ctrl+5 = 挥手       Ctrl+0 = 爪子",
+            "",
+            "--- 单根手指 (按住) ---",
+            "T = 右拇指    Z = 左拇指",
+            "Y = 右食指    X = 左食指",
+            "U = 右中指    C = 左中指",
+            "I = 右无名指  V = 左无名指",
+            "O = 右小指    B = 左小指",
+            "P = 右拳      N = 左拳",
+            "",
+            "--- 手旋转 ---",
+            "按住鼠标中键 + 移动 = 旋转双手",
+            "按住 F + 中键 = 只旋转右手",
+            "按住 G + 中键 = 只旋转左手",
+            "旋转时视角锁定不动",
+            "",
+            "提示: 按住手指键摆出姿势，",
+            "松开后自动恢复上一个动作。",
+        }
+
+        if not HAS_FULL_FINGERS then
+            table.insert(tutorialLines, "")
+            table.insert(tutorialLines, "[注意] 此服务器只支持")
+            table.insert(tutorialLines, "拇指/食指/握拳，")
+            table.insert(tutorialLines, "其它手指自动用握拳度模拟。")
+        end
+
+        lbl.Text = table.concat(tutorialLines, "\n")
+    end)
+
+    print("[NoVR Pro] 控制已激活。F=右手旋转 G=左手旋转 中键=旋转。按F9查看日志。")
 end)
+]==]
 
--- 启动/停止
-internalBtn.MouseButton1Click:Connect(function()
-    if isRunning then
-        StopLoop()
-    else
-        StartLoop()
-    end
-end)
+if queue_on_teleport then
+    queue_on_teleport(hrs)
+elseif syn and syn.queue_on_teleport then
+    syn.queue_on_teleport(hrs)
+end
 
--- 重置
-resetBtn.MouseButton1Click:Connect(function()
-    ResetStats()
-end)
-
--- 快捷键 F1 启动/停止，F2 重置
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F1 then
-        if isRunning then StopLoop() else StartLoop() end
-    elseif input.KeyCode == Enum.KeyCode.F2 then
-        ResetStats()
-    end
-end)
-
--- ========== 初始化 ==========
-SwitchMode("taxi")  -- 默认出租车
-UpdateUI(false)
-print("✅ 二合一脚本加载完成")
-print("💡 点击右上角 🚖 按钮显示/隐藏主面板")
-print("📌 F1: 启动/停止 | F2: 重置统计")
-print("🔄 点击 '🚕 出租车'/'🚌 公交车' 按钮切换模式")
-print("⚠️ 请务必搭配防检测系统使用本脚本！")
+TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
