@@ -102,7 +102,7 @@ task.spawn(function()
     local S = {
         reach  = 0.55, spread = 0.34, height = -0.25,
         sens   = 0.0025, moveK = 0.16, look = true,
-        scale  = 10,
+        scale  = 10, moveMult = 1.0,
     }
 
     local Gesture = {
@@ -117,7 +117,6 @@ task.spawn(function()
         left  = { yaw = 0, pitch = 0 },
     }
 
-    -- 移动端旋转模式: "none" | "both" | "right" | "left"
     local rotMode = "none"
 
     local ok, VRUtils = pcall(function()
@@ -137,11 +136,9 @@ task.spawn(function()
             else
                 baseCF = identity
             end
-
             local rotBoth  = CFrame.Angles(HandRot.both.pitch,  HandRot.both.yaw,  0)
             local rotRight = CFrame.Angles(HandRot.right.pitch, HandRot.right.yaw, 0)
             local rotLeft  = CFrame.Angles(HandRot.left.pitch,  HandRot.left.yaw,  0)
-
             if uc == Enum.UserCFrame.RightHand then
                 return baseCF * rotBoth * rotRight
             elseif uc == Enum.UserCFrame.LeftHand then
@@ -149,9 +146,9 @@ task.spawn(function()
             end
             return baseCF
         end
-        print("[NoVR] VRUtils 拦截成功，支持手旋转")
+        print("[NoVR] VRUtils 拦截成功")
     else
-        warn("[NoVR] 拦截 VRUtils 失败，手旋转不可用")
+        warn("[NoVR] 拦截 VRUtils 失败")
     end
 
     local vrm, Input
@@ -175,37 +172,25 @@ task.spawn(function()
     end
 
     if not Input then
-        warn("[NoVR] 未找到 Input 对象 - 手势功能不可用")
-    else
-        print("[NoVR] Input 对象已找到")
+        warn("[NoVR] 未找到 Input 对象")
     end
 
     local Supported = {}
-    local SupportedList = {}
     if Input then
         for k, v in pairs(Input) do
-            if type(v) == "number" then
-                Supported[k] = true
-                table.insert(SupportedList, k)
-            end
+            if type(v) == "number" then Supported[k] = true end
         end
-        table.sort(SupportedList)
-        print("[NoVR] Input 支持的数字字段: " .. table.concat(SupportedList, ", "))
     end
-
     local HAS_FULL_FINGERS = Supported.rMiddle == true
 
     local function safeSetInput(key, value)
         if Input and Supported[key] then
-            local ok2 = pcall(function() Input[key] = value end)
-            return ok2
+            pcall(function() Input[key] = value end)
         end
-        return false
     end
 
     local function applyGesture(g)
         if not Input then return end
-
         local function calcProxyFist(hand, gTable)
             if HAS_FULL_FINGERS then return nil end
             local fistKey = hand .. "Fist"
@@ -214,15 +199,11 @@ task.spawn(function()
             local ring   = gTable[hand .. "Ring"]   or 0
             local pinky  = gTable[hand .. "Pinky"]  or 0
             local bendCount = middle + ring + pinky
-            if bendCount > 0 then
-                return math.clamp(bendCount / 3, 0.2, 1)
-            end
+            if bendCount > 0 then return math.clamp(bendCount / 3, 0.2, 1) end
             return nil
         end
-
         local rProxy = calcProxyFist("r", g)
         local lProxy = calcProxyFist("l", g)
-
         if g.rThumb  ~= nil then safeSetInput("rThumb",  g.rThumb)  end
         if g.rIndex  ~= nil then safeSetInput("rIndex",  g.rIndex)  end
         if g.rMiddle ~= nil and Supported.rMiddle then safeSetInput("rMiddle", g.rMiddle) end
@@ -230,7 +211,6 @@ task.spawn(function()
         if g.rPinky  ~= nil and Supported.rPinky  then safeSetInput("rPinky",  g.rPinky)  end
         if g.rFist   ~= nil then safeSetInput("rFist",   g.rFist)
         elseif rProxy then safeSetInput("rFist", rProxy) end
-
         if g.lThumb  ~= nil then safeSetInput("lThumb",  g.lThumb)  end
         if g.lIndex  ~= nil then safeSetInput("lIndex",  g.lIndex)  end
         if g.lMiddle ~= nil and Supported.lMiddle then safeSetInput("lMiddle", g.lMiddle) end
@@ -238,11 +218,8 @@ task.spawn(function()
         if g.lPinky  ~= nil and Supported.lPinky  then safeSetInput("lPinky",  g.lPinky)  end
         if g.lFist   ~= nil then safeSetInput("lFist",   g.lFist)
         elseif lProxy then safeSetInput("lFist", lProxy) end
-
         for k, v in pairs(g) do
-            if Gesture[k] ~= nil and type(v) == "number" then
-                Gesture[k] = v
-            end
+            if Gesture[k] ~= nil and type(v) == "number" then Gesture[k] = v end
         end
         if g.presetName then Gesture.presetName = g.presetName end
     end
@@ -301,7 +278,6 @@ task.spawn(function()
             lRing=Gesture.lRing, lPinky=Gesture.lPinky, lFist=Gesture.lFist,
         }
     end
-
     local function loadState(st)
         if not st then return end
         applyGesture(st)
@@ -355,6 +331,51 @@ task.spawn(function()
     local camPos = cam.CFrame.Position
     local keys = {}
 
+    -- ============================================================
+    -- 射击功能
+    -- ============================================================
+    local function findEquippedTool()
+        local char = lp.Character
+        if not char then return nil end
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("Tool") then
+                return child
+            end
+        end
+        return nil
+    end
+
+    local function fireOnce()
+        local tool = findEquippedTool()
+        if not tool then return end
+        pcall(function() tool:Activate() end)
+        -- 备用：直接触发激活事件
+        pcall(function()
+            if tool:FindFirstChild("Activated") then
+                tool.Activated:Fire()
+            end
+        end)
+    end
+
+    local shootHolding = false
+    local shootLoopThread = nil
+
+    local function startShootHold()
+        if shootLoopThread then return end
+        shootHolding = true
+        shootLoopThread = task.spawn(function()
+            while shootHolding do
+                fireOnce()
+                task.wait(0.08)
+            end
+            shootLoopThread = nil
+        end)
+    end
+
+    local function stopShootHold()
+        shootHolding = false
+    end
+
     local function setLook(v)
         S.look = v
         UIS.MouseBehavior    = v and Enum.MouseBehavior.LockCenter or Enum.MouseBehavior.Default
@@ -374,50 +395,93 @@ task.spawn(function()
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     gui.Parent = playerGui
 
-    -- 视角触摸区（底层）
     local viewFrame = Instance.new("Frame")
     viewFrame.Name = "ViewArea"
     viewFrame.Size = UDim2.new(1, 0, 1, 0)
     viewFrame.BackgroundTransparency = 1
-    viewFrame.Active = true
+    viewFrame.Active = false
     viewFrame.ZIndex = 0
     viewFrame.Parent = gui
 
-    local activeTouch = nil
+    -- ============================================================
+    -- 全局触摸处理
+    -- ============================================================
+    local activeTouchId = nil
     local lastTouchPos = nil
 
-    viewFrame.InputBegan:Connect(function(io)
-        if io.UserInputType == Enum.UserInputType.Touch and not activeTouch then
-            activeTouch = io
+    UIS.TouchStarted:Connect(function(io, gpe)
+        if gpe then return end
+        if not activeTouchId then
+            activeTouchId = io
             lastTouchPos = io.Position
         end
     end)
 
-    viewFrame.InputChanged:Connect(function(io)
-        if io == activeTouch and io.UserInputType == Enum.UserInputType.Touch then
-            local delta = io.Position - lastTouchPos
-            lastTouchPos = io.Position
-            if rotMode == "none" then
-                if S.look then
-                    yaw = yaw - delta.X * S.sens * 2.5
-                    pitch = math.clamp(pitch - delta.Y * S.sens * 2.5, -1.45, 1.45)
-                end
-            else
-                local target = HandRot[rotMode]
+    UIS.TouchMoved:Connect(function(io, gpe)
+        if io ~= activeTouchId then return end
+        if not lastTouchPos then return end
+        local delta = io.Position - lastTouchPos
+        lastTouchPos = io.Position
+        if rotMode == "none" then
+            if S.look then
+                yaw   = yaw   - delta.X * S.sens * 2.5
+                pitch = math.clamp(pitch - delta.Y * S.sens * 2.5, -1.45, 1.45)
+            end
+        else
+            local target = HandRot[rotMode]
+            if target then
                 target.yaw   = target.yaw   - delta.X * 0.008
                 target.pitch = math.clamp(target.pitch - delta.Y * 0.008, -1.5, 1.5)
             end
         end
     end)
 
-    viewFrame.InputEnded:Connect(function(io)
-        if io == activeTouch then
-            activeTouch = nil
+    UIS.TouchEnded:Connect(function(io, gpe)
+        if io == activeTouchId then
+            activeTouchId = nil
             lastTouchPos = nil
         end
     end)
 
-    -- 通用按钮创建
+    local mouseActive = false
+    local lastMousePos = nil
+    UIS.InputBegan:Connect(function(io, gpe)
+        if gpe then return end
+        if io.UserInputType == Enum.UserInputType.MouseButton2 then
+            mouseActive = true
+            lastMousePos = UIS:GetMouseLocation()
+        end
+    end)
+    UIS.InputChanged:Connect(function(io, gpe)
+        if not mouseActive then return end
+        if io.UserInputType == Enum.UserInputType.MouseMovement then
+            local now = UIS:GetMouseLocation()
+            if lastMousePos then
+                local delta = now - lastMousePos
+                if rotMode == "none" then
+                    yaw   = yaw   - delta.X * S.sens
+                    pitch = math.clamp(pitch - delta.Y * S.sens, -1.45, 1.45)
+                else
+                    local target = HandRot[rotMode]
+                    if target then
+                        target.yaw   = target.yaw   - delta.X * 0.008
+                        target.pitch = math.clamp(target.pitch - delta.Y * 0.008, -1.5, 1.5)
+                    end
+                end
+            end
+            lastMousePos = now
+        end
+    end)
+    UIS.InputEnded:Connect(function(io)
+        if io.UserInputType == Enum.UserInputType.MouseButton2 then
+            mouseActive = false
+            lastMousePos = nil
+        end
+    end)
+
+    -- ============================================================
+    -- 通用按钮
+    -- ============================================================
     local function makeButton(parent, name, text, pos, size, onPress, onRelease, color)
         local btn = Instance.new("TextButton")
         btn.Name = name
@@ -437,9 +501,7 @@ task.spawn(function()
         corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = btn
 
-        btn.MouseButton1Down:Connect(function()
-            if onPress then onPress() end
-        end)
+        if onPress then btn.MouseButton1Down:Connect(onPress) end
         if onRelease then
             btn.MouseButton1Up:Connect(onRelease)
             btn.MouseLeave:Connect(onRelease)
@@ -468,17 +530,13 @@ task.spawn(function()
 
     local wP, wR = pKey(Enum.KeyCode.W)
     makeButton(dpad, "W", "▲", UDim2.new(0, padSize + gap, 0, 0), UDim2.new(0, padSize, 0, padSize), wP, wR)
-
     local sP, sR = pKey(Enum.KeyCode.S)
     makeButton(dpad, "S", "▼", UDim2.new(0, padSize + gap, 0, (padSize + gap) * 2), UDim2.new(0, padSize, 0, padSize), sP, sR)
-
     local aP, aR = pKey(Enum.KeyCode.A)
     makeButton(dpad, "A", "◀", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), aP, aR)
-
     local dP, dR = pKey(Enum.KeyCode.D)
     makeButton(dpad, "D", "▶", UDim2.new(0, (padSize + gap) * 2, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), dP, dR)
 
-    -- 中心圆显示当前动作
     local centerLabel = Instance.new("TextLabel")
     centerLabel.Size = UDim2.new(0, padSize, 0, padSize)
     centerLabel.Position = UDim2.new(0, padSize + gap, 0, padSize + gap)
@@ -486,7 +544,7 @@ task.spawn(function()
     centerLabel.BackgroundTransparency = 0.3
     centerLabel.Text = "●"
     centerLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-    centerLabel.TextSize = 18
+    centerLabel.TextSize = 16
     centerLabel.Font = Enum.Font.GothamBold
     centerLabel.ZIndex = 10
     centerLabel.Parent = dpad
@@ -495,7 +553,6 @@ task.spawn(function()
     centerCorner.CornerRadius = UDim.new(1, 0)
     centerCorner.Parent = centerLabel
 
-    -- 升降按钮（右侧）
     local vertX = padX + padSize * 3 + gap * 2 + 12
     local vert = Instance.new("Frame")
     vert.Name = "Vertical"
@@ -508,16 +565,17 @@ task.spawn(function()
 
     local spP, spR = pKey(Enum.KeyCode.Space)
     makeButton(vert, "Up", "↑", UDim2.new(0, 0, 0, 0), UDim2.new(0, padSize, 0, padSize), spP, spR, Color3.fromRGB(30, 60, 40))
-
     local shP, shR = pKey(Enum.KeyCode.LeftShift)
     makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
 
-    -- ========== 动作面板 ==========
+    -- ============================================================
+    -- 动作面板
+    -- ============================================================
     local actionPanel = Instance.new("Frame")
     actionPanel.Name = "ActionPanel"
     actionPanel.AnchorPoint = Vector2.new(0.5, 1)
     actionPanel.Position = UDim2.new(0.5, 0, 1, -80)
-    actionPanel.Size = UDim2.new(0, 360, 0, 300)
+    actionPanel.Size = UDim2.new(0, 380, 0, 360)
     actionPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
     actionPanel.BackgroundTransparency = 0.1
     actionPanel.Visible = false
@@ -533,7 +591,6 @@ task.spawn(function()
     apStroke.Thickness = 1.5
     apStroke.Parent = actionPanel
 
-    -- Tab 行
     local tabRow = Instance.new("Frame")
     tabRow.Size = UDim2.new(1, -12, 0, 34)
     tabRow.Position = UDim2.new(0, 6, 0, 6)
@@ -550,15 +607,15 @@ task.spawn(function()
 
     local pages = {}
 
-    local function makeTabBtn(text, idx)
+    local function makeTabBtn(text, idx, total)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1/3, -4, 1, 0)
-        btn.Position = UDim2.new((idx-1)/3, (idx-1)*4 + 2, 0, 0)
+        btn.Size = UDim2.new(1/total, -4, 1, 0)
+        btn.Position = UDim2.new((idx-1)/total, (idx-1)*4 + 2, 0, 0)
         btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
         btn.BackgroundTransparency = 0.2
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(220, 220, 255)
-        btn.TextSize = 14
+        btn.TextSize = 13
         btn.Font = Enum.Font.GothamBold
         btn.ZIndex = 22
         btn.Parent = tabRow
@@ -570,11 +627,10 @@ task.spawn(function()
         return btn
     end
 
-    -- 按钮网格创建
     local function createGrid(pageFrame, items)
         local cols = 4
-        local btnW = 78
-        local btnH = 44
+        local btnW = 84
+        local btnH = 46
         local gapX = 6
         local gapY = 6
 
@@ -613,7 +669,6 @@ task.spawn(function()
             else
                 onPress = function()
                     applyGesture(Presets[item.preset])
-                    print("[NoVR] 动作: " .. (Presets[item.preset] and Presets[item.preset].presetName or item.preset))
                 end
             end
 
@@ -621,18 +676,112 @@ task.spawn(function()
                 UDim2.new(0, x, 0, y),
                 UDim2.new(0, btnW, 0, btnH),
                 onPress, onRelease,
-                item.color or Color3.fromRGB(35, 35, 55)
-            )
+                item.color or Color3.fromRGB(35, 35, 55))
         end
     end
 
-    -- 页面1：预设动作
+    -- 简易滑块
+    local function makeSlider(parent, label, yPos, minV, maxV, defV, fmt, onChange)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, -16, 0, 52)
+        container.Position = UDim2.new(0, 8, 0, yPos)
+        container.BackgroundTransparency = 1
+        container.ZIndex = 22
+        container.Parent = parent
+
+        local text = Instance.new("TextLabel")
+        text.Size = UDim2.new(1, 0, 0, 18)
+        text.BackgroundTransparency = 1
+        text.TextColor3 = Color3.fromRGB(230, 230, 255)
+        text.TextSize = 14
+        text.Font = Enum.Font.GothamBold
+        text.TextXAlignment = Enum.TextXAlignment.Left
+        text.Text = label .. ": " .. string.format(fmt, defV)
+        text.ZIndex = 22
+        text.Parent = container
+
+        local track = Instance.new("Frame")
+        track.Size = UDim2.new(1, 0, 0, 14)
+        track.Position = UDim2.new(0, 0, 0, 26)
+        track.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+        track.BorderSizePixel = 0
+        track.ZIndex = 22
+        track.Parent = container
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = track
+
+        local relX0 = (defV - minV) / (maxV - minV)
+
+        local fill = Instance.new("Frame")
+        fill.Size = UDim2.new(relX0, 0, 1, 0)
+        fill.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+        fill.BorderSizePixel = 0
+        fill.ZIndex = 22
+        fill.Parent = track
+
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.CornerRadius = UDim.new(1, 0)
+        fillCorner.Parent = fill
+
+        local handle = Instance.new("Frame")
+        handle.Size = UDim2.new(0, 20, 0, 20)
+        handle.Position = UDim2.new(relX0, -10, 0.5, -10)
+        handle.BackgroundColor3 = Color3.fromRGB(220, 235, 255)
+        handle.BorderSizePixel = 0
+        handle.ZIndex = 23
+        handle.Parent = track
+
+        local handleCorner = Instance.new("UICorner")
+        handleCorner.CornerRadius = UDim.new(1, 0)
+        handleCorner.Parent = handle
+
+        local value = defV
+        local dragging = false
+
+        local function updateFromX(px)
+            local rel = (px - track.AbsolutePosition.X) / track.AbsoluteSize.X
+            rel = math.clamp(rel, 0, 1)
+            value = minV + (maxV - minV) * rel
+            fill.Size = UDim2.new(rel, 0, 1, 0)
+            handle.Position = UDim2.new(rel, -10, 0.5, -10)
+            text.Text = label .. ": " .. string.format(fmt, value)
+            if onChange then onChange(value) end
+        end
+
+        track.InputBegan:Connect(function(io)
+            if io.UserInputType == Enum.UserInputType.Touch or io.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                updateFromX(io.Position.X)
+            end
+        end)
+        handle.InputBegan:Connect(function(io)
+            if io.UserInputType == Enum.UserInputType.Touch or io.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+            end
+        end)
+
+        UIS.InputChanged:Connect(function(io)
+            if dragging and io.UserInputType == Enum.UserInputType.Touch then
+                updateFromX(io.Position.X)
+            end
+        end)
+        UIS.InputEnded:Connect(function(io)
+            if io.UserInputType == Enum.UserInputType.Touch or io.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
+        return container
+    end
+
+    -- 页面1：预设
     local page1 = Instance.new("Frame")
     page1.Size = UDim2.new(1, 0, 1, 0)
     page1.BackgroundTransparency = 1
     page1.ZIndex = 21
     page1.Parent = contentArea
-
     createGrid(page1, {
         { name="P1",  text="张开",  preset="Open" },
         { name="P2",  text="握拳",  preset="Fist" },
@@ -646,14 +795,13 @@ task.spawn(function()
         { name="P10", text="手枪",  preset="Gun" },
     })
 
-    -- 页面2：组合动作
+    -- 页面2：组合
     local page2 = Instance.new("Frame")
     page2.Size = UDim2.new(1, 0, 1, 0)
     page2.BackgroundTransparency = 1
     page2.ZIndex = 21
     page2.Visible = false
     page2.Parent = contentArea
-
     createGrid(page2, {
         { name="Q1",  text="右捏",   preset="PinchR" },
         { name="Q2",  text="右抓",   preset="GrabR" },
@@ -667,14 +815,13 @@ task.spawn(function()
         { name="Q10", text="爪子",   preset="Claw" },
     })
 
-    -- 页面3：单指动作
+    -- 页面3：单指
     local page3 = Instance.new("Frame")
     page3.Size = UDim2.new(1, 0, 1, 0)
     page3.BackgroundTransparency = 1
     page3.ZIndex = 21
     page3.Visible = false
     page3.Parent = contentArea
-
     createGrid(page3, {
         { name="F1",  text="右拇",   hand="r", finger="Thumb",  key="rThumb",  hold=true },
         { name="F2",  text="右食",   hand="r", finger="Index",  key="rIndex",  hold=true },
@@ -690,17 +837,39 @@ task.spawn(function()
         { name="F12", text="左拳",   hand="l", finger="Fist",   key="lFist",   hold=true },
     })
 
-    pages = { page1, page2, page3 }
+    -- 页面4：调节
+    local page4 = Instance.new("Frame")
+    page4.Size = UDim2.new(1, 0, 1, 0)
+    page4.BackgroundTransparency = 1
+    page4.ZIndex = 21
+    page4.Visible = false
+    page4.Parent = contentArea
 
-    local tab1 = makeTabBtn("预设", 1)
-    local tab2 = makeTabBtn("组合", 2)
-    local tab3 = makeTabBtn("单指", 3)
+    makeSlider(page4, "滑屏灵敏度", 5, 0.0005, 0.008, 0.0025, "%.4f", function(v)
+        S.sens = v
+    end)
+    makeSlider(page4, "手部距离", 60, 0.15, 2.5, 0.55, "%.2f", function(v)
+        S.reach = v
+    end)
+    makeSlider(page4, "体型大小", 115, 1, 10, 10, "%.0f", function(v)
+        setScale(v)
+    end)
+    makeSlider(page4, "移动速度倍率", 170, 0.5, 3.0, 1.0, "%.2f", function(v)
+        S.moveMult = v
+    end)
+
+    pages = { page1, page2, page3, page4 }
+
+    local tab1 = makeTabBtn("预设", 1, 4)
+    local tab2 = makeTabBtn("组合", 2, 4)
+    local tab3 = makeTabBtn("单指", 3, 4)
+    local tab4 = makeTabBtn("调节", 4, 4)
 
     local function switchTab(idx)
         for i, p in ipairs(pages) do
             p.Visible = (i == idx)
         end
-        for i, b in ipairs({tab1, tab2, tab3}) do
+        for i, b in ipairs({tab1, tab2, tab3, tab4}) do
             if i == idx then
                 b.BackgroundColor3 = Color3.fromRGB(70, 90, 180)
                 b.BackgroundTransparency = 0
@@ -714,35 +883,90 @@ task.spawn(function()
     tab1.MouseButton1Click:Connect(function() switchTab(1) end)
     tab2.MouseButton1Click:Connect(function() switchTab(2) end)
     tab3.MouseButton1Click:Connect(function() switchTab(3) end)
+    tab4.MouseButton1Click:Connect(function() switchTab(4) end)
     switchTab(1)
 
-    -- 打开/关闭面板按钮（右下）
-    local togglePanelBtn = makeButton(gui, "TogglePanel", "动作",
-        UDim2.new(1, -95, 1, -85),
-        UDim2.new(0, 85, 0, 55),
-        function()
-            actionPanel.Visible = not actionPanel.Visible
-        end,
-        nil,
-        Color3.fromRGB(50, 50, 100)
-    )
-    togglePanelBtn.ZIndex = 15
-    togglePanelBtn.TextSize = 22
+    -- ============================================================
+    -- 射击按钮（右下角底部，最大最显眼）
+    -- ============================================================
+    local shootBtn = Instance.new("TextButton")
+    shootBtn.Name = "ShootBtn"
+    shootBtn.AnchorPoint = Vector2.new(1, 1)
+    shootBtn.Position = UDim2.new(1, -15, 1, -15)
+    shootBtn.Size = UDim2.new(0, 100, 0, 100)
+    shootBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+    shootBtn.BackgroundTransparency = 0.1
+    shootBtn.Text = "射击"
+    shootBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    shootBtn.TextSize = 28
+    shootBtn.Font = Enum.Font.GothamBold
+    shootBtn.ZIndex = 30
+    shootBtn.Parent = gui
 
-    -- ========== 手旋转模式按钮（右侧） ==========
+    local shootCorner = Instance.new("UICorner")
+    shootCorner.CornerRadius = UDim.new(1, 0)
+    shootCorner.Parent = shootBtn
+
+    local shootStroke = Instance.new("UIStroke")
+    shootStroke.Color = Color3.fromRGB(255, 120, 120)
+    shootStroke.Thickness = 3
+    shootStroke.Parent = shootBtn
+
+    shootBtn.MouseButton1Down:Connect(function()
+        shootBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        fireOnce()
+        startShootHold()
+    end)
+    shootBtn.MouseButton1Up:Connect(function()
+        shootBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+        stopShootHold()
+    end)
+    shootBtn.MouseLeave:Connect(function()
+        shootBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+        stopShootHold()
+    end)
+
+    -- ============================================================
+    -- 动作面板开关按钮（射击按钮上方）
+    -- ============================================================
+    local togglePanelBtn = Instance.new("TextButton")
+    togglePanelBtn.Name = "TogglePanel"
+    togglePanelBtn.AnchorPoint = Vector2.new(1, 1)
+    togglePanelBtn.Position = UDim2.new(1, -15, 1, -125)
+    togglePanelBtn.Size = UDim2.new(0, 100, 0, 50)
+    togglePanelBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+    togglePanelBtn.BackgroundTransparency = 0.2
+    togglePanelBtn.Text = "动作"
+    togglePanelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    togglePanelBtn.TextSize = 22
+    togglePanelBtn.Font = Enum.Font.GothamBold
+    togglePanelBtn.ZIndex = 15
+    togglePanelBtn.Parent = gui
+
+    local tpCorner = Instance.new("UICorner")
+    tpCorner.CornerRadius = UDim.new(0, 8)
+    tpCorner.Parent = togglePanelBtn
+
+    togglePanelBtn.MouseButton1Click:Connect(function()
+        actionPanel.Visible = not actionPanel.Visible
+    end)
+
+    -- ============================================================
+    -- 手旋转目标按钮组（动作按钮上方）
+    -- ============================================================
     local rotBtnRow = Instance.new("Frame")
     rotBtnRow.AnchorPoint = Vector2.new(1, 1)
-    rotBtnRow.Position = UDim2.new(1, -95, 1, -150)
-    rotBtnRow.Size = UDim2.new(0, 85, 0, 120)
+    rotBtnRow.Position = UDim2.new(1, -15, 1, -185)
+    rotBtnRow.Size = UDim2.new(0, 100, 0, 124)
     rotBtnRow.BackgroundTransparency = 1
     rotBtnRow.ZIndex = 15
     rotBtnRow.Parent = gui
 
-    local function makeRotBtn(text, mode, yOffset)
+    local function makeRotBtn(text, mode, yOffset, colorIdle)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 34)
+        btn.Size = UDim2.new(1, 0, 0, 36)
         btn.Position = UDim2.new(0, 0, 0, yOffset)
-        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+        btn.BackgroundColor3 = colorIdle or Color3.fromRGB(35, 35, 55)
         btn.BackgroundTransparency = 0.2
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(220, 220, 255)
@@ -758,13 +982,13 @@ task.spawn(function()
         btn.MouseButton1Click:Connect(function()
             if rotMode == mode then
                 rotMode = "none"
-                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+                btn.BackgroundColor3 = colorIdle or Color3.fromRGB(35, 35, 55)
                 btn.BackgroundTransparency = 0.2
             else
                 rotMode = mode
                 for _, b in ipairs(rotBtnRow:GetChildren()) do
                     if b:IsA("TextButton") then
-                        b.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+                        b.BackgroundColor3 = b:GetAttribute("IdleColor") or Color3.fromRGB(35, 35, 55)
                         b.BackgroundTransparency = 0.2
                     end
                 end
@@ -773,6 +997,7 @@ task.spawn(function()
             end
         end)
 
+        btn:SetAttribute("IdleColor", colorIdle or Color3.fromRGB(35, 35, 55))
         return btn
     end
 
@@ -787,7 +1012,7 @@ task.spawn(function()
         local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
         local hs  = cam.HeadScale; if hs <= 1 then hs = S.scale * 6 end
-        local spd = (10 + S.scale * 4) * hs * S.moveK
+        local spd = (10 + S.scale * 4) * hs * S.moveK * S.moveMult
         local mv  = Vector3.zero
         if keys[Enum.KeyCode.W] then mv += Vector3.new(0,0,-1) end
         if keys[Enum.KeyCode.S] then mv += Vector3.new(0,0, 1) end
@@ -806,14 +1031,13 @@ task.spawn(function()
             Input.turnDirection     = 0
         end
 
-        -- 更新中心圆显示当前动作
         if centerLabel then
             centerLabel.Text = Gesture.presetName ~= "None" and Gesture.presetName:sub(1,2) or "●"
         end
     end)
 
     -- ============================================================
-    -- 简易提示 HUD（顶部一行）
+    -- 顶部提示
     -- ============================================================
     pcall(function()
         local hud = Instance.new("ScreenGui")
@@ -825,13 +1049,13 @@ task.spawn(function()
         local tip = Instance.new("TextLabel")
         tip.AnchorPoint = Vector2.new(0.5, 0)
         tip.Position = UDim2.new(0.5, 0, 0, 5)
-        tip.Size = UDim2.new(0, 500, 0, 24)
+        tip.Size = UDim2.new(0, 460, 0, 22)
         tip.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
         tip.BackgroundTransparency = 0.4
         tip.TextColor3 = Color3.fromRGB(0, 255, 170)
         tip.Font = Enum.Font.Code
         tip.TextSize = 12
-        tip.Text = "[VR Hands No-VR Pro] 手机端 | 拖动屏幕=视角 | 左下方向键=移动"
+        tip.Text = "[NoVR Pro 手机端] 拖屏=视角 | 方向键=移动 | 右下射击/动作/旋转"
         tip.Parent = hud
 
         local c = Instance.new("UICorner")
