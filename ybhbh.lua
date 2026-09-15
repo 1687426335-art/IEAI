@@ -91,9 +91,9 @@ task.spawn(function()
     local uid = tostring(lp.UserId)
 
     local vrPlayers = workspace:WaitForChild("VRPlayers", 60)
-    if not vrPlayers then warn("[NoVR] 找不到 VRPlayers 文件夹") return end
-    local rig = vrPlayers:WaitForChild(uid, 60)
-    if not rig then warn("[NoVR] 服务器没有分配 rig") return end
+    if not vrPlayers then warn("[,NoVR] 找不到 VRPlayers  文件夹") return end
+60    local rig = vr)
+Players:WaitForChild   (uid if not rig then warn("[NoVR] 服务器没有分配 rig") return end
     rig:WaitForChild("VRHead", 20)
     rig:WaitForChild("LeftHand", 20)
     rig:WaitForChild("RightHand", 20)
@@ -333,7 +333,7 @@ task.spawn(function()
     local keys = {}
 
     -- ============================================================
-    -- 射击功能（修复版）
+    -- 射击功能
     -- ============================================================
     local function findEquippedTool()
         local char = lp.Character
@@ -350,7 +350,6 @@ task.spawn(function()
         local tool = findEquippedTool()
         if not tool then return end
 
-        -- 方法1: 虚拟鼠标点击（模拟真实左键，手机端最有效）
         pcall(function()
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
         end)
@@ -359,7 +358,6 @@ task.spawn(function()
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
         end)
 
-        -- 方法2: Tool 标准激活（备用）
         pcall(function() tool:Activate() end)
     end
 
@@ -575,12 +573,12 @@ task.spawn(function()
     makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
 
     -- ============================================================
-    -- 动作面板
+    -- 动作面板（屏幕最右侧）
     -- ============================================================
     local actionPanel = Instance.new("Frame")
     actionPanel.Name = "ActionPanel"
-    actionPanel.AnchorPoint = Vector2.new(0.5, 1)
-    actionPanel.Position = UDim2.new(0.5, 0, 1, -80)
+    actionPanel.AnchorPoint = Vector2.new(1, 1)
+    actionPanel.Position = UDim2.new(1, -15, 1, -320)
     actionPanel.Size = UDim2.new(0, 380, 0, 360)
     actionPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
     actionPanel.BackgroundTransparency = 0.1
