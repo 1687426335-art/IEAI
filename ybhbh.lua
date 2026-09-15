@@ -106,41 +106,32 @@ task.spawn(function()
     }
 
     -- ============================================================
-    -- 动态手部状态（真实 VR 效果）
+    -- 动态手部状态
     -- ============================================================
-    -- 目标手指（立即设置的值）
     local TargetFingers = {
         rThumb = 0, rIndex = 0, rMiddle = 0, rRing = 0, rPinky = 0, rFist = 0,
         lThumb = 0, lIndex = 0, lMiddle = 0, lRing = 0, lPinky = 0, lFist = 0,
     }
-    -- 当前平滑手指（实际发送给 Input 的值）
     local CurrentFingers = {
         rThumb = 0, rIndex = 0, rMiddle = 0, rRing = 0, rPinky = 0, rFist = 0,
         lThumb = 0, lIndex = 0, lMiddle = 0, lRing = 0, lPinky = 0, lFist = 0,
     }
 
-    -- 目标旋转
     local HandRot = {
         both  = { yaw = 0, pitch = 0 },
         right = { yaw = 0, pitch = 0 },
         left  = { yaw = 0, pitch = 0 },
     }
-    -- 平滑旋转（实际使用）
     local SmoothRot = {
         both  = { yaw = 0, pitch = 0 },
         right = { yaw = 0, pitch = 0 },
         left  = { yaw = 0, pitch = 0 },
     }
 
-    -- 摆动状态
     local Bob = {
-        walkT = 0,       -- 行走摆动时间
-        idleT = 0,       -- 待机浮动时间
-        isMoving = false,
-        lastMoveMag = 0,
+        idleT = 0,
     }
 
-    -- 手部位置附加偏移
     local HandOffset = { x = 0, y = 0, z = 0 }
 
     local Gesture = {
@@ -169,7 +160,6 @@ task.spawn(function()
                 baseCF = identity
             end
 
-            -- 使用平滑后的旋转
             local rotBoth  = CFrame.Angles(SmoothRot.both.pitch,  SmoothRot.both.yaw,  0)
             local rotRight = CFrame.Angles(SmoothRot.right.pitch, SmoothRot.right.yaw, 0)
             local rotLeft  = CFrame.Angles(SmoothRot.left.pitch,  SmoothRot.left.yaw,  0)
@@ -218,10 +208,9 @@ task.spawn(function()
     end
     local HAS_FULL_FINGERS = Supported.rMiddle == true
 
-    -- 平滑写入 Input
     local function writeFingerSmooth(dt)
         if not Input then return end
-        local lerpSpeed = 14  -- 越大越快
+        local lerpSpeed = 14
         for k, target in pairs(TargetFingers) do
             local cur = CurrentFingers[k] or 0
             local diff = target - cur
@@ -236,7 +225,6 @@ task.spawn(function()
         end
     end
 
-    -- 平滑旋转
     local function updateSmoothRot(dt)
         local lerpSpeed = 12
         for _, mode in ipairs({"both", "right", "left"}) do
@@ -247,11 +235,9 @@ task.spawn(function()
         end
     end
 
-    -- 手势应用（只更新目标，由平滑循环写入）
     local function applyGesture(g)
         if not Input then return end
 
-        -- 计算代理拳头
         local function calcProxyFist(hand, gTable)
             if HAS_FULL_FINGERS then return nil end
             local fistKey = hand .. "Fist"
@@ -268,13 +254,11 @@ task.spawn(function()
         if rProxy and g.rFist == nil then g.rFist = rProxy end
         if lProxy and g.lFist == nil then g.lFist = lProxy end
 
-        -- 更新目标
         for k, v in pairs(g) do
             if TargetFingers[k] ~= nil and type(v) == "number" then
                 TargetFingers[k] = v
             end
         end
-        -- 记录状态
         for k, v in pairs(g) do
             if Gesture[k] ~= nil and type(v) == "number" then Gesture[k] = v end
         end
@@ -404,9 +388,7 @@ task.spawn(function()
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     gui.Parent = playerGui
 
-    -- ============================================================
     -- 全局触摸处理
-    -- ============================================================
     local activeTouchId = nil
     local lastTouchPos = nil
 
@@ -511,7 +493,7 @@ task.spawn(function()
         return btn
     end
 
-    -- ========== 左下角十字方向键 ==========
+    -- 左下角十字方向键
     local padSize = 58
     local gap = 5
     local padX, padY = 15, 15
@@ -569,9 +551,7 @@ task.spawn(function()
     local shP, shR = pKey(Enum.KeyCode.LeftShift)
     makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
 
-    -- ============================================================
     -- 动作面板（右侧）
-    -- ============================================================
     local actionPanel = Instance.new("Frame")
     actionPanel.Name = "ActionPanel"
     actionPanel.AnchorPoint = Vector2.new(1, 1)
@@ -963,13 +943,17 @@ task.spawn(function()
     makeRotBtn("转左手", "left",  80)
 
     -- ============================================================
-    -- 主循环（含动态手部效果）
+    -- 主循环
     -- ============================================================
     RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
-        -- 平滑手指
         writeFingerSmooth(dt)
-        -- 平滑旋转
         updateSmoothRot(dt)
+
+        -- 手部呼吸浮动（只有待机轻微浮动，无走路摆手）
+        Bob.idleT = Bob.idleT + dt
+        HandOffset.x = math.sin(Bob.idleT * 1.5) * 0.004
+        HandOffset.y = math.cos(Bob.idleT * 2.0) * 0.006
+        HandOffset.z = math.sin(Bob.idleT * 1.2) * 0.003
 
         local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
@@ -983,32 +967,7 @@ task.spawn(function()
         if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
         if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
 
-        -- 行走摆动
-        local moveMag = mv.Magnitude
-        Bob.isMoving = moveMag > 0
-        Bob.lastMoveMag = moveMag
-
-        if Bob.isMoving then
-            Bob.walkT = Bob.walkT + dt * 9
-        else
-            Bob.walkT = Bob.walkT + dt * 9
-        end
-        Bob.idleT = Bob.idleT + dt
-
-        -- 计算手部偏移
-        if Bob.isMoving then
-            -- 行走时：明显摆动
-            HandOffset.x = math.sin(Bob.walkT) * 0.018
-            HandOffset.y = math.cos(Bob.walkT * 2) * 0.028
-            HandOffset.z = math.sin(Bob.walkT * 0.7) * 0.012
-        else
-            -- 待机时：轻微浮动
-            HandOffset.x = math.sin(Bob.idleT * 1.5) * 0.004
-            HandOffset.y = math.cos(Bob.idleT * 2.0) * 0.006
-            HandOffset.z = math.sin(Bob.idleT * 1.2) * 0.003
-        end
-
-        if moveMag > 0 then camPos = camPos + (rot * mv.Unit) * spd * dt end
+        if mv.Magnitude > 0 then camPos = camPos + (rot * mv.Unit) * spd * dt end
 
         cam.CameraType = Enum.CameraType.Scriptable
         cam.CFrame = CFrame.new(camPos) * rot
