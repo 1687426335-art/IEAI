@@ -237,19 +237,17 @@ function createUI()
         Callback = function(value)
             local bannerGui = player.PlayerGui:FindFirstChild("BannerGui")
             if bannerGui then bannerGui.Enabled = not value end
-            local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
-            if mainGui then
-                local mainFrame = mainGui:FindFirstChildOfClass("Frame")
-                if mainFrame then
-                    for _, child in ipairs(mainFrame:GetDescendants()) do
+            local mainGui2 = player.PlayerGui:FindFirstChild("CloudHub")
+            if mainGui2 then
+                local mf = mainGui2:FindFirstChildOfClass("Frame")
+                if mf then
+                    for _, child in ipairs(mf:GetDescendants()) do
                         if child:IsA("ImageLabel") then child.Visible = not value end
                     end
                     if value then
-                        mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                        mainFrame.BackgroundTransparency = 0
+                        mf.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
                     else
-                        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-                        mainFrame.BackgroundTransparency = 0
+                        mf.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
                     end
                 end
             end
@@ -288,7 +286,6 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
-    -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
     local toolItems = {
         { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
@@ -330,8 +327,6 @@ function createUI()
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedToolItem, Duration = 3 })
             end
-        else
-            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
         end
     end })
     RemoteBuyTab:Divider({ Text = "武器" })
@@ -360,11 +355,8 @@ function createUI()
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedWeaponItem, Duration = 3 })
             end
-        else
-            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
         end
     end })
-
     RemoteBuyTab:Divider({ Text = "超市物品" })
     local supermarketItems = {
         { name = "望远镜", itemName = "Binoculars" },
@@ -400,11 +392,8 @@ function createUI()
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedSupermarketItem, Duration = 3 })
             end
-        else
-            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
         end
     end })
-
     RemoteBuyTab:Divider({ Text = "食物" })
     local foodItems = {
         { name = "培根和鸡蛋", itemName = "Bacon And Eggs" },
@@ -442,8 +431,6 @@ function createUI()
             else
                 WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedFoodItem, Duration = 3 })
             end
-        else
-            WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
         end
     end })
 
@@ -494,7 +481,8 @@ function createUI()
             end
         end
     end)
--- ==================== 自动躲警察 ====================
+
+    -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
     local function isVisible(fromPos, toPos, ignoreInstances)
         local direction = (toPos - fromPos).Unit
@@ -720,7 +708,7 @@ function createUI()
                 button.Position = UDim2.new(startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X, startPos.X.Offset + delta.X, startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y, startPos.Y.Offset + delta.Y)
             end
         end)
-        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.M thenouseButton1 then dragging = false end end)
+        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
         updateFlyStatus()
         local statusConn = RunService.Heartbeat:Connect(function() if flyQuickToggle and flyQuickStatusLabel then updateFlyStatus() end end)
         table.insert(connections, statusConn)
@@ -728,8 +716,7 @@ function createUI()
     FlyTab:Toggle({ Title = "飞天快捷开关", Value = false, Callback = function(value) flyQuickToggle = value; if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end end })
     FlyTab:Divider({ Text = "移速" })
     local speedBypassOn, speedBypassValue = false, 20
-   
- FlyTab:Toggle({                Title = "修改移速（绕过 local）", Value = char false, Callback = = function(value) speedBypassOn = value end })
+    FlyTab:Toggle({ Title = "修改移速（绕过）", Value = false, Callback = function(value) speedBypassOn = value end })
     FlyTab:Slider({ Title = "移速", Step = 1, Value = { Min = 5, Max = 150, Default = 20 }, Callback = function(value) speedBypassValue = value end })
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
@@ -746,7 +733,8 @@ function createUI()
         local newAffected = {}
         for i = 1, #players do
             local p = players[i]
-            if p ~= player and p.Character and not (Settings.WhitelistEnabled and Whitelist[p.UserId]) p.Character
+            if p ~= player and p.Character and not (Settings.WhitelistEnabled and Whitelist[p.UserId]) then
+                local char = p.Character
                 local head = char:FindFirstChild("Head")
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 if hum and hum.Health > 0 and head then
@@ -908,7 +896,6 @@ function createUI()
     B:Toggle({ Title = "启用头部碰撞箱（推荐20-25）", Value = false, Callback = function(value) Settings.HitboxEnabled = value; if value then ApplyHitbox() else ResetHitbox() end end })
     B:Slider({ Title = "头部大小", Step = 1, Value = { Min = 5, Max = 400, Default = 10 }, Callback = function(value) Settings.HitboxSize = value; if Settings.HitboxEnabled then ApplyHitbox() end end })
     B:Toggle({ Title = "好友检测 (白名单)", Value = false, Callback = function(value) Settings.WhitelistEnabled = value; if value then UpdateWhitelist() end end })
-
     B:Divider({ Text = "子追" })
     local zzEnabled, zzDistance, zzAffected = false, 40, nil
     local function zzRestore() if zzAffected and zzAffected.Parent then pcall(function() zzAffected.Size = Vector3.new(2, 1, 1); zzAffected.Transparency = 0 end) end; zzAffected = nil end
@@ -942,7 +929,6 @@ function createUI()
     end)
     B:Toggle({ Title = "启用子追", Value = false, Callback = function(value) zzEnabled = value; if not value then zzRestore() end end })
     B:Slider({ Title = "判定距离", Step = 1, Value = { Min = 0, Max = 1000, Default = 40 }, Callback = function(value) zzDistance = value end })
-
     B:Divider({ Text = "自瞄" })
     local aimOn, aimFOV, aimNoTeam, aimWall, aimGui, aimCircle = false, 150, true, true, nil, nil
     local function aimEnsureCircle()
@@ -1183,49 +1169,42 @@ function createUI()
         for _, data in ipairs(FIXED_TELEPORTS) do if data.n == selectedTeleport then doTeleport(data.p, data.n); return end end
         WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
     end })
-
     local VENDING_TELEPORTS = { {n = "游戏厅售货机", p = Vector3.new(2905.10, -337.11, 1733.39)}, {n = "警察局售货机", p = Vector3.new(3372.79, -337.46, -476.88)}, {n = "医院售货机", p = Vector3.new(3943.85, -337.12, -201.67)}, {n = "当铺售货机", p = Vector3.new(-208.57, -337.05, -97.18)} }
     local vendingNames = {}; for _, data in ipairs(VENDING_TELEPORTS) do table.insert(vendingNames, data.n) end
     local selectedVending = vendingNames[1] or ""
     D:Divider({ Text = "售货机传送" })
     D:Dropdown({ Title = "售货机传送", Values = vendingNames, Value = vendingNames[1], Callback = function(value) selectedVending = value end })
     D:Button({ Title = "传送到选定售货机", Callback = function() for _, data in ipairs(VENDING_TELEPORTS) do if data.n == selectedVending then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local BANK_TELEPORTS = { {n = "小银行", p = Vector3.new(-678.77, -337.12, -104.65)}, {n = "大银行", p = Vector3.new(3134.90, -321.84, -270.04)} }
     local bankNames = {}; for _, data in ipairs(BANK_TELEPORTS) do table.insert(bankNames, data.n) end
     local selectedBank = bankNames[1] or ""
     D:Divider({ Text = "银行传送" })
     D:Dropdown({ Title = "银行传送", Values = bankNames, Value = bankNames[1], Callback = function(value) selectedBank = value end })
     D:Button({ Title = "传送到选定银行", Callback = function() for _, data in ipairs(BANK_TELEPORTS) do if data.n == selectedBank then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local TEAM_TELEPORTS = { {n = "警察局", p = Vector3.new(3315.72, 3.02, -481.83)}, {n = "医院", p = Vector3.new(3895.47, 3.02, -179.65)}, {n = "火焰", p = Vector3.new(3579.31, 8.41, 579.73)}, {n = "转运", p = Vector3.new(4150.27, 2.63, 942.63)}, {n = "送货", p = Vector3.new(4401.01, 3.04, 1607.59)}, {n = "道路服务", p = Vector3.new(4274.56, 2.63, 1200.60)}, {n = "圣奥里平民重生点", p = Vector3.new(3744.05, 2.63, -403.97)}, {n = "约克镇平民重生点", p = Vector3.new(-250.24, 2.63, -82.67)} }
     local teamNames = {}; for _, data in ipairs(TEAM_TELEPORTS) do table.insert(teamNames, data.n) end
     local selectedTeam = teamNames[1] or ""
     D:Divider({ Text = "队伍传送" })
     D:Dropdown({ Title = "队伍传送", Values = teamNames, Value = teamNames[1], Callback = function(value) selectedTeam = value end })
     D:Button({ Title = "传送到选定队伍点", Callback = function() for _, data in ipairs(TEAM_TELEPORTS) do if data.n == selectedTeam then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local GAS_TELEPORTS = { {n = "加油站1", p = Vector3.new(4517.21, -24.83, 111.44)}, {n = "加油站2", p = Vector3.new(-918.75, 2.63, 1110.16)}, {n = "加油站3", p = Vector3.new(2252.20, 2.63, 92.21)}, {n = "加油站4", p = Vector3.new(1150.41, 2.63, -841.89)}, {n = "加油站5", p = Vector3.new(-1620.28, 2.63, 1795.99)} }
     local gasNames = {}; for _, data in ipairs(GAS_TELEPORTS) do table.insert(gasNames, data.n) end
     local selectedGas = gasNames[1] or ""
     D:Divider({ Text = "加油站传送" })
     D:Dropdown({ Title = "加油站传送", Values = gasNames, Value = gasNames[1], Callback = function(value) selectedGas = value end })
     D:Button({ Title = "传送到选定加油站", Callback = function() for _, data in ipairs(GAS_TELEPORTS) do if data.n == selectedGas then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local REPAIR_TELEPORTS = { {n = "船艇维修店", p = Vector3.new(4091.92, -17.28, 2861.75)}, {n = "圣奥里车辆维修", p = Vector3.new(2783.67, 2.63, -413.05)}, {n = "约克镇车辆维修", p = Vector3.new(-399.23, 2.63, -8.15)} }
     local repairNames = {}; for _, data in ipairs(REPAIR_TELEPORTS) do table.insert(repairNames, data.n) end
     local selectedRepair = repairNames[1] or ""
     D:Divider({ Text = "载具维修类传送" })
     D:Dropdown({ Title = "载具维修类传送", Values = repairNames, Value = repairNames[1], Callback = function(value) selectedRepair = value end })
     D:Button({ Title = "传送到选定维修点", Callback = function() for _, data in ipairs(REPAIR_TELEPORTS) do if data.n == selectedRepair then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local CAR_TELEPORTS = { {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)} }
     local carTeleNames = {}; for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
     local selectedCarTeleport = carTeleNames[1] or ""
     D:Divider({ Text = "偷车能用到的传送地点" })
     D:Dropdown({ Title = "偷车能用到的传送地点", Values = carTeleNames, Value = carTeleNames[1], Callback = function(value) selectedCarTeleport = value end })
     D:Button({ Title = "传送到选定地点", Callback = function() for _, data in ipairs(CAR_TELEPORTS) do if data.n == selectedCarTeleport then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local DELIVERY_TELEPORTS = {
         {n = "圣奥里取餐点", p = Vector3.new(3072.51, 3.02, 450.72)},
         {n = "大景取餐点", p = Vector3.new(4537.18, 2.57, 912.38)},
