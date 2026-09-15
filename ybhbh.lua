@@ -8,7 +8,7 @@ do
         { "getgc",             getgc             },
         { "queue_on_teleport", qot               },
     }
-    local missing, report = {}, "[VR Hands No-VR Mobile] UNC test:\n"
+    local missing, report = {}, "[VR Hands No-VR Pro] UNC test:\n"
     for _, c in ipairs(checks) do
         local ok = type(c[2]) == "function"
         report = report .. ("  [%s] %s\n"):format(ok and "+" or "-", c[1])
@@ -16,11 +16,11 @@ do
     end
     print(report)
     if #missing > 0 then
-        warn("[NoVR Mobile] 缺少函数: " .. table.concat(missing, ", "))
-        warn("[NoVR Mobile] 执行器不支持 - 中止。")
+        warn("[NoVR Pro] 缺少函数: " .. table.concat(missing, ", "))
+        warn("[NoVR Pro] 执行器不支持 - 中止。")
         return
     end
-    print("[NoVR Mobile] UNC 测试通过，启动中...")
+    print("[NoVR Pro] UNC 测试通过，启动中...")
 end
 
 local Players         = game:GetService("Players")
@@ -116,8 +116,9 @@ task.spawn(function()
         right = { yaw = 0, pitch = 0 },
         left  = { yaw = 0, pitch = 0 },
     }
-    local rotTarget = "both"
-    local handRotMode = false -- 手机专用：手旋转模式开关
+
+    -- 移动端旋转模式: "none" | "both" | "right" | "left"
+    local rotMode = "none"
 
     local ok, VRUtils = pcall(function()
         return require(lp.PlayerScripts.ClientLoader.PlayerModule.VRModule.VRUtils)
@@ -193,16 +194,11 @@ task.spawn(function()
     end
 
     local HAS_FULL_FINGERS = Supported.rMiddle == true
-    if HAS_FULL_FINGERS then
-        print("[NoVR] 检测到完整手指支持")
-    else
-        print("[NoVR] 检测到简化手指支持，中指/无名指/小指用 Fist 代理")
-    end
 
     local function safeSetInput(key, value)
         if Input and Supported[key] then
-            local ok = pcall(function() Input[key] = value end)
-            return ok
+            local ok2 = pcall(function() Input[key] = value end)
+            return ok2
         end
         return false
     end
@@ -294,31 +290,6 @@ task.spawn(function()
                          lThumb=0, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=0.5, presetName="爪子" },
     }
 
-    local PresetKeys = {
-        ["Open"]="1", ["Fist"]="2", ["Point"]="3", ["Peace"]="4", ["ThumbsUp"]="5",
-        ["OK"]="6", ["Rock"]="7", ["Middle"]="8", ["Phone"]="9", ["Gun"]="0",
-    }
-
-    local PresetKeysCtrl = {
-        ["PinchR"]="1", ["GrabR"]="2", ["PinchL"]="3", ["GrabL"]="4", ["Flap"]="5",
-        ["Horns"]="6", ["Shaka"]="7", ["Salute"]="8", ["Pray"]="9", ["Claw"]="0",
-    }
-
-    local FingerKeys = {
-        [Enum.KeyCode.T] = { hand="r", finger="Thumb",  name="右拇指" },
-        [Enum.KeyCode.Y] = { hand="r", finger="Index",  name="右食指" },
-        [Enum.KeyCode.U] = { hand="r", finger="Middle", name="右中指" },
-        [Enum.KeyCode.I] = { hand="r", finger="Ring",   name="右无名指" },
-        [Enum.KeyCode.O] = { hand="r", finger="Pinky",  name="右小指" },
-        [Enum.KeyCode.P] = { hand="r", finger="Fist",   name="右拳" },
-        [Enum.KeyCode.Z] = { hand="l", finger="Thumb",  name="左拇指" },
-        [Enum.KeyCode.X] = { hand="l", finger="Index",  name="左食指" },
-        [Enum.KeyCode.C] = { hand="l", finger="Middle", name="左中指" },
-        [Enum.KeyCode.V] = { hand="l", finger="Ring",   name="左无名指" },
-        [Enum.KeyCode.B] = { hand="l", finger="Pinky",  name="左小指" },
-        [Enum.KeyCode.N] = { hand="l", finger="Fist",   name="左拳" },
-    }
-
     local heldFingers = {}
     local preFingerState = nil
 
@@ -386,325 +357,433 @@ task.spawn(function()
 
     local function setLook(v)
         S.look = v
+        UIS.MouseBehavior    = v and Enum.MouseBehavior.LockCenter or Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = not v
     end
     setLook(true)
 
     -- ============================================================
-    -- 手机端 UI 构建
+    -- 移动端 UI
     -- ============================================================
     local playerGui = lp:WaitForChild("PlayerGui")
-    
-    -- 1. 左下角移动摇杆
-    local moveGui = Instance.new("ScreenGui")
-    moveGui.Name = "NoVR_Mobile_Move"
-    moveGui.ResetOnSpawn = false
-    moveGui.IgnoreGuiInset = true
-    moveGui.Parent = playerGui
 
-    local moveFrame = Instance.new("Frame", moveGui)
-    moveFrame.AnchorPoint = Vector2.new(0, 1)
-    moveFrame.Position = UDim2.new(0, 20, 1, -20)
-    moveFrame.Size = UDim2.new(0, 180, 0, 180)
-    moveFrame.BackgroundTransparency = 0.5
-    moveFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    moveFrame.BorderSizePixel = 0
-    local moveCorner = Instance.new("UICorner", moveFrame)
-    moveCorner.CornerRadius = UDim.new(0, 12)
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "NoVR_MobileUI"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Parent = playerGui
 
-    local function createMobileBtn(parent, name, text, size, pos)
-        local btn = Instance.new("TextButton", parent)
+    -- 视角触摸区（底层）
+    local viewFrame = Instance.new("Frame")
+    viewFrame.Name = "ViewArea"
+    viewFrame.Size = UDim2.new(1, 0, 1, 0)
+    viewFrame.BackgroundTransparency = 1
+    viewFrame.Active = true
+    viewFrame.ZIndex = 0
+    viewFrame.Parent = gui
+
+    local activeTouch = nil
+    local lastTouchPos = nil
+
+    viewFrame.InputBegan:Connect(function(io)
+        if io.UserInputType == Enum.UserInputType.Touch and not activeTouch then
+            activeTouch = io
+            lastTouchPos = io.Position
+        end
+    end)
+
+    viewFrame.InputChanged:Connect(function(io)
+        if io == activeTouch and io.UserInputType == Enum.UserInputType.Touch then
+            local delta = io.Position - lastTouchPos
+            lastTouchPos = io.Position
+            if rotMode == "none" then
+                if S.look then
+                    yaw = yaw - delta.X * S.sens * 2.5
+                    pitch = math.clamp(pitch - delta.Y * S.sens * 2.5, -1.45, 1.45)
+                end
+            else
+                local target = HandRot[rotMode]
+                target.yaw   = target.yaw   - delta.X * 0.008
+                target.pitch = math.clamp(target.pitch - delta.Y * 0.008, -1.5, 1.5)
+            end
+        end
+    end)
+
+    viewFrame.InputEnded:Connect(function(io)
+        if io == activeTouch then
+            activeTouch = nil
+            lastTouchPos = nil
+        end
+    end)
+
+    -- 通用按钮创建
+    local function makeButton(parent, name, text, pos, size, onPress, onRelease, color)
+        local btn = Instance.new("TextButton")
         btn.Name = name
-        btn.Text = text
         btn.Size = size
         btn.Position = pos
-        btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-        btn.BackgroundTransparency = 0.4
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.BackgroundColor3 = color or Color3.fromRGB(30, 30, 45)
+        btn.BackgroundTransparency = 0.25
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
         btn.TextSize = 20
         btn.Font = Enum.Font.GothamBold
-        btn.BorderSizePixel = 0
-        local c = Instance.new("UICorner", btn)
-        c.CornerRadius = UDim.new(0, 8)
+        btn.AutoButtonColor = true
+        btn.ZIndex = 10
+        btn.Parent = parent
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = btn
+
+        btn.MouseButton1Down:Connect(function()
+            if onPress then onPress() end
+        end)
+        if onRelease then
+            btn.MouseButton1Up:Connect(onRelease)
+            btn.MouseLeave:Connect(onRelease)
+        end
+
         return btn
     end
 
-    -- 移动按键布局
-    createMobileBtn(moveFrame, "W", "↑", UDim2.new(0,50,0,50), UDim2.new(0,65,0,0)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.W]=true end)
-    createMobileBtn(moveFrame, "W", "↑", UDim2.new(0,50,0,50), UDim2.new(0,65,0,0)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.W]=false end)
-    createMobileBtn(moveFrame, "S", "↓", UDim2.new(0,50,0,50), UDim2.new(0,65,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.S]=true end)
-    createMobileBtn(moveFrame, "S", "↓", UDim2.new(0,50,0,50), UDim2.new(0,65,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.S]=false end)
-    createMobileBtn(moveFrame, "A", "←", UDim2.new(0,50,0,50), UDim2.new(0,0,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.A]=true end)
-    createMobileBtn(moveFrame, "A", "←", UDim2.new(0,50,0,50), UDim2.new(0,0,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.A]=false end)
-    createMobileBtn(moveFrame, "D", "→", UDim2.new(0,50,0,50), UDim2.new(0,130,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.D]=true end)
-    createMobileBtn(moveFrame, "D", "→", UDim2.new(0,50,0,50), UDim2.new(0,130,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.D]=false end)
-    createMobileBtn(moveFrame, "Space", "⬆", UDim2.new(0,50,0,50), UDim2.new(0,65,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.Space]=true end)
-    createMobileBtn(moveFrame, "Space", "⬆", UDim2.new(0,50,0,50), UDim2.new(0,65,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.Space]=false end)
-    createMobileBtn(moveFrame, "Shift", "⬇", UDim2.new(0,50,0,50), UDim2.new(0,0,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.LeftShift]=true end)
-    createMobileBtn(moveFrame, "Shift", "⬇", UDim2.new(0,50,0,50), UDim2.new(0,0,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.LeftShift]=false end)
-    createMobileBtn(moveFrame, "Jump", "跳", UDim2.new(0,50,0,50), UDim2.new(0,130,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.Space]=true end)
-    createMobileBtn(moveFrame, "Jump", "跳", UDim2.new(0,50,0,50), UDim2.new(0,130,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.Space]=false end)
+    -- ========== 左下角十字方向键 ==========
+    local padSize = 58
+    local gap = 5
+    local padX, padY = 15, 15
 
-    -- 2. 右侧动作面板（可滚动）
-    local actionGui = Instance.new("ScreenGui")
-    actionGui.Name = "NoVR_Mobile_Actions"
-    actionGui.ResetOnSpawn = false
-    actionGui.IgnoreGuiInset = true
-    actionGui.Parent = playerGui
+    local dpad = Instance.new("Frame")
+    dpad.Name = "Dpad"
+    dpad.AnchorPoint = Vector2.new(0, 1)
+    dpad.Position = UDim2.new(0, padX, 1, -padY)
+    dpad.Size = UDim2.new(0, padSize * 3 + gap * 2, 0, padSize * 3 + gap * 2)
+    dpad.BackgroundTransparency = 1
+    dpad.ZIndex = 10
+    dpad.Parent = gui
 
-    local toggleBtn = Instance.new("TextButton", actionGui)
-    toggleBtn.AnchorPoint = Vector2.new(1, 0.5)
-    toggleBtn.Position = UDim2.new(1, -10, 0.5, 0)
-    toggleBtn.Size = UDim2.new(0, 40, 0, 40)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-    toggleBtn.Text = "▶"
-    toggleBtn.TextColor3 = Color3.new(1,1,1)
-    toggleBtn.TextSize = 20
-    toggleBtn.Font = Enum.Font.GothamBold
-    local tc = Instance.new("UICorner", toggleBtn)
-    tc.CornerRadius = UDim.new(1, 0)
+    local function pKey(key)
+        return function() keys[key] = true end, function() keys[key] = false end
+    end
 
-    local scrollFrame = Instance.new("ScrollingFrame", actionGui)
-    scrollFrame.AnchorPoint = Vector2.new(1, 0.5)
-    scrollFrame.Position = UDim2.new(1, -60, 0.5, 0)
-    scrollFrame.Size = UDim2.new(0, 260, 0, 500)
-    scrollFrame.BackgroundTransparency = 0.5
-    scrollFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.ScrollBarThickness = 4
-    scrollFrame.Visible = false
-    local sc = Instance.new("UICorner", scrollFrame)
-    sc.CornerRadius = UDim.new(0, 8)
+    local wP, wR = pKey(Enum.KeyCode.W)
+    makeButton(dpad, "W", "▲", UDim2.new(0, padSize + gap, 0, 0), UDim2.new(0, padSize, 0, padSize), wP, wR)
 
-    local scrollLayout = Instance.new("UIListLayout", scrollFrame)
-    scrollLayout.Padding = UDim.new(0, 4)
-    scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    local sP, sR = pKey(Enum.KeyCode.S)
+    makeButton(dpad, "S", "▼", UDim2.new(0, padSize + gap, 0, (padSize + gap) * 2), UDim2.new(0, padSize, 0, padSize), sP, sR)
 
-    toggleBtn.MouseButton1Click:Connect(function()
-        scrollFrame.Visible = not scrollFrame.Visible
-        toggleBtn.Text = scrollFrame.Visible and "◀" or "▶"
-    end)
+    local aP, aR = pKey(Enum.KeyCode.A)
+    makeButton(dpad, "A", "◀", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), aP, aR)
 
-    -- 添加动作按钮到滚动框架
-    local function addActionButton(text, callback)
-        local btn = Instance.new("TextButton", scrollFrame)
-        btn.Size = UDim2.new(1, -10, 0, 32)
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    local dP, dR = pKey(Enum.KeyCode.D)
+    makeButton(dpad, "D", "▶", UDim2.new(0, (padSize + gap) * 2, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), dP, dR)
+
+    -- 中心圆显示当前动作
+    local centerLabel = Instance.new("TextLabel")
+    centerLabel.Size = UDim2.new(0, padSize, 0, padSize)
+    centerLabel.Position = UDim2.new(0, padSize + gap, 0, padSize + gap)
+    centerLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    centerLabel.BackgroundTransparency = 0.3
+    centerLabel.Text = "●"
+    centerLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+    centerLabel.TextSize = 18
+    centerLabel.Font = Enum.Font.GothamBold
+    centerLabel.ZIndex = 10
+    centerLabel.Parent = dpad
+
+    local centerCorner = Instance.new("UICorner")
+    centerCorner.CornerRadius = UDim.new(1, 0)
+    centerCorner.Parent = centerLabel
+
+    -- 升降按钮（右侧）
+    local vertX = padX + padSize * 3 + gap * 2 + 12
+    local vert = Instance.new("Frame")
+    vert.Name = "Vertical"
+    vert.AnchorPoint = Vector2.new(0, 1)
+    vert.Position = UDim2.new(0, vertX, 1, -padY)
+    vert.Size = UDim2.new(0, padSize, 0, padSize * 2 + gap)
+    vert.BackgroundTransparency = 1
+    vert.ZIndex = 10
+    vert.Parent = gui
+
+    local spP, spR = pKey(Enum.KeyCode.Space)
+    makeButton(vert, "Up", "↑", UDim2.new(0, 0, 0, 0), UDim2.new(0, padSize, 0, padSize), spP, spR, Color3.fromRGB(30, 60, 40))
+
+    local shP, shR = pKey(Enum.KeyCode.LeftShift)
+    makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
+
+    -- ========== 动作面板 ==========
+    local actionPanel = Instance.new("Frame")
+    actionPanel.Name = "ActionPanel"
+    actionPanel.AnchorPoint = Vector2.new(0.5, 1)
+    actionPanel.Position = UDim2.new(0.5, 0, 1, -80)
+    actionPanel.Size = UDim2.new(0, 360, 0, 300)
+    actionPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+    actionPanel.BackgroundTransparency = 0.1
+    actionPanel.Visible = false
+    actionPanel.ZIndex = 20
+    actionPanel.Parent = gui
+
+    local apCorner = Instance.new("UICorner")
+    apCorner.CornerRadius = UDim.new(0, 10)
+    apCorner.Parent = actionPanel
+
+    local apStroke = Instance.new("UIStroke")
+    apStroke.Color = Color3.fromRGB(80, 80, 120)
+    apStroke.Thickness = 1.5
+    apStroke.Parent = actionPanel
+
+    -- Tab 行
+    local tabRow = Instance.new("Frame")
+    tabRow.Size = UDim2.new(1, -12, 0, 34)
+    tabRow.Position = UDim2.new(0, 6, 0, 6)
+    tabRow.BackgroundTransparency = 1
+    tabRow.ZIndex = 21
+    tabRow.Parent = actionPanel
+
+    local contentArea = Instance.new("Frame")
+    contentArea.Size = UDim2.new(1, -12, 1, -48)
+    contentArea.Position = UDim2.new(0, 6, 0, 44)
+    contentArea.BackgroundTransparency = 1
+    contentArea.ZIndex = 21
+    contentArea.Parent = actionPanel
+
+    local pages = {}
+
+    local function makeTabBtn(text, idx)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1/3, -4, 1, 0)
+        btn.Position = UDim2.new((idx-1)/3, (idx-1)*4 + 2, 0, 0)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+        btn.BackgroundTransparency = 0.2
         btn.Text = text
-        btn.TextColor3 = Color3.new(1,1,1)
+        btn.TextColor3 = Color3.fromRGB(220, 220, 255)
         btn.TextSize = 14
-        btn.Font = Enum.Font.Gotham
-        btn.BorderSizePixel = 0
-        local c = Instance.new("UICorner", btn)
+        btn.Font = Enum.Font.GothamBold
+        btn.ZIndex = 22
+        btn.Parent = tabRow
+
+        local c = Instance.new("UICorner")
         c.CornerRadius = UDim.new(0, 6)
-        btn.MouseButton1Click:Connect(callback)
+        c.Parent = btn
+
+        return btn
     end
 
-    addActionButton("--- 预设动作 (1-0) ---", function() end)
-    for name, key in pairs(PresetKeys) do
-        if Presets[name] then
-            addActionButton(key .. ": " .. Presets[name].presetName, function()
-                applyGesture(Presets[name])
-            end)
-        end
-    end
+    -- 按钮网格创建
+    local function createGrid(pageFrame, items)
+        local cols = 4
+        local btnW = 78
+        local btnH = 44
+        local gapX = 6
+        local gapY = 6
 
-    addActionButton("--- Ctrl 组合动作 ---", function() end)
-    for name, key in pairs(PresetKeysCtrl) do
-        if Presets[name] then
-            addActionButton("Ctrl+" .. key .. ": " .. Presets[name].presetName, function()
-                applyGesture(Presets[name])
-            end)
-        end
-    end
+        for i, item in ipairs(items) do
+            local row = math.floor((i - 1) / cols)
+            local col = (i - 1) % cols
 
-    addActionButton("--- 单根手指 ---", function() end)
-    for key, data in pairs(FingerKeys) do
-        addActionButton(data.name, function()
-            local g = {}
-            g[data.hand .. data.finger] = 1
-            applyGesture(g)
-            task.delay(0.2, function()
-                local g2 = {}
-                g2[data.hand .. data.finger] = 0
-                applyGesture(g2)
-            end)
-        end)
-    end
+            local x = col * (btnW + gapX)
+            local y = row * (btnH + gapY)
 
-    addActionButton("--- 手部旋转 ---", function() end)
-    local rotModeBtn = Instance.new("TextButton", scrollFrame)
-    rotModeBtn.Size = UDim2.new(1, -10, 0, 32)
-    rotModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-    rotModeBtn.Text = "旋转模式: 关"
-    rotModeBtn.TextColor3 = Color3.new(1,1,1)
-    rotModeBtn.TextSize = 14
-    rotModeBtn.BorderSizePixel = 0
-    local rc = Instance.new("UICorner", rotModeBtn)
-    rc.Cor rotnerRadius = UDim.newTarget(0, 6Btn)
-    rotModeBtn.MouseButton1Click:Connect(function()
-        handRotMode = not handRotMode
-        rotModeBtn.Text = handRotMode and "旋转模式: 开 (拖动屏幕旋转手)" or "旋转模式: 关"
-        rotModeBtn.BackgroundColor3 = handRotMode and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(0, 120, 255)
-    end)
+            local onPress, onRelease
 
-    local rotTargetBtn = Instance.new("TextButton", scrollFrame)
-    rotTargetBtn.Size = UDim2.new(1, -10, 0, 32)
-    rotTargetBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    rotTargetBtn.Text = "旋转目标: 双手"
-    rotTargetBtn.TextColor3 = Color3.new(1,1,1)
-   .TextSize = 14
-    rotTargetBtn.BorderSizePixel = 0
-    local rtc = Instance.new("UICorner", rotTargetBtn)
-    rtc.CornerRadius = UDim.new(0, 6)
-    rotTargetBtn.MouseButton1Click:Connect(function()
-        if rotTarget == "both" then rotTarget = "right"
-        elseif rotTarget == "right" then rotTarget = "left"
-        else rotTarget = "both" end
-        rotTargetBtn.Text = "旋转目标: " .. (rotTarget == "both" and "双手" or rotTarget == "right" and "右手" or "左手")
-    end)
-
-    -- 旋转方向按钮
-    local rotBtnFrame = Instance.new("Frame", scrollFrame)
-    rotBtnFrame.Size = UDim2.new(1, -10, 0, 70)
-    rotBtnFrame.BackgroundTransparency = 1
-    local rotLayout = Instance.new("UIListLayout", rotBtnFrame)
-    rotLayout.FillDirection = Enum.FillDirection.Horizontal
-    rotLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    rotLayout.Padding = UDim.new(0, 4)
-
-    local function createRotBtn(text, yawDelta, pitchDelta)
-        local btn = Instance.new("TextButton", rotBtnFrame)
-        btn.Size = UDim2.new(0, 60, 0, 30)
-        btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        btn.Text = text
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.TextSize = 12
-        btn.BorderSizePixel = 0
-        local c = Instance.new("UICorner", btn)
-        c.CornerRadius = UDim.new(0, 4)
-        btn.MouseButton1Click:Connect(function()
-            local target = HandRot[rotTarget]
-            target.yaw = target.yaw + yawDelta
-            target.pitch = math.clamp(target.pitch + pitchDelta, -1.5, 1.5)
-        end)
-    end
-
-    createRotBtn("左转", -0.1, 0)
-    createRotBtn("右转", 0.1, 0)
-    createRotBtn("上仰", 0, 0.1)
-    createRotBtn("下俯", 0, -0.1)
-
-    addActionButton("--- 体型与距离 ---", function() end)
-    local scaleFrame = Instance.new("Frame", scrollFrame)
-    scaleFrame.Size = UDim2.new(1, -10, 0, 40)
-    scaleFrame.BackgroundTransparency = 1
-    local scaleLayout = Instance.new("UIListLayout", scaleFrame)
-    scaleLayout.FillDirection = Enum.FillDirection.Horizontal
-    scaleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    scaleLayout.Padding = UDim.new(0, 4)
-
-    local scaleLbl = Instance.new("TextLabel", scaleFrame)
-    scaleLbl.Size = UDim2.new(0, 100, 0, 30)
-    scaleLbl.BackgroundTransparency = 1
-    scaleLbl.Text = "体型: 10"
-    scaleLbl.TextColor3 = Color3.new(1,1,1)
-    scaleLbl.TextSize = 14
-    scaleLbl.Font = Enum.Font.GothamBold
-
-    local function updateScaleLbl()
-        scaleLbl.Text = "体型: " .. S.scale
-    end
-
-    createMobileBtn(scaleFrame, "ScaleUp", "+", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
-        setScale(S.scale + 1)
-        updateScaleLbl()
-    end)
-    createMobileBtn(scaleFrame, "ScaleDown", "-", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
-        setScale(S.scale - 1)
-        updateScaleLbl()
-    end)
-
-    local reachFrame = Instance.new("Frame", scrollFrame)
-    reachFrame.Size = UDim2.new(1, -10, 0, 40)
-    reachFrame.BackgroundTransparency = 1
-    local reachLayout = Instance.new("UIListLayout", reachFrame)
-    reachLayout.FillDirection = Enum.FillDirection.Horizontal
-    reachLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    reachLayout.Padding = UDim.new(0, 4)
-
-    local reachLbl = Instance.new("TextLabel", reachFrame)
-    reachLbl.Size = UDim2.new(0, 100, 0, 30)
-    reachLbl.BackgroundTransparency = 1
-    reachLbl.Text = "手距: 0.55"
-    reachLbl.TextColor3 = Color3.new(1,1,1)
-    reachLbl.TextSize = 14
-    reachLbl.Font = Enum.Font.GothamBold
-
-    local function updateReachLbl()
-        reachLbl.Text = "手距: " .. string.format("%.2f", S.reach)
-    end
-
-    createMobileBtn(reachFrame, "ReachUp", "+", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
-        S.reach = math.clamp(S.reach + 0.1, 0.15, 2.5)
-        updateReachLbl()
-    end)
-    createMobileBtn(reachFrame, "ReachDown", "-", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
-        S.reach = math.clamp(S.reach - 0.1, 0.15, 2.5)
-        updateReachLbl()
-    end)
-
-    -- 3. 触摸视角控制 (替代原版鼠标移动)
-    local touchLookId = nil
-    local lastTouchPos = nil
-    local touchPanId = nil
-    local lastPanPos = nil
-
-    UIS.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.UserInputType == Enum.UserInputType.Touch then
-            if handRotMode then
-                touchPanId = input
-                lastPanPos = input.Position
+            if item.hold then
+                onPress = function()
+                    if not next(heldFingers) then
+                        preFingerState = saveState()
+                    end
+                    heldFingers[item.key] = true
+                    local g = {}
+                    g[item.hand .. item.finger] = 1
+                    applyGesture(g)
+                end
+                onRelease = function()
+                    if heldFingers[item.key] then
+                        heldFingers[item.key] = nil
+                        if not next(heldFingers) then
+                            loadState(preFingerState)
+                            preFingerState = nil
+                        else
+                            local g = {}
+                            g[item.hand .. item.finger] = 0
+                            applyGesture(g)
+                        end
+                    end
+                end
             else
-                touchLookId = input
-                lastTouchPos = input.Position
-            end
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(input, gpe)
-        if gpe then return end
-        if input.UserInputType == Enum.UserInputType.Touch then
-            if handRotMode and touchPanId and input == touchPanId then
-                local delta = input.Position - lastPanPos
-                lastPanPos = input.Position
-                local target = HandRot[rotTarget]
-                target.yaw = target.yaw - delta.X * 0.008
-                target.pitch = math.clamp(target.pitch - delta.Y * 0.008, -1.5, 1.5)
-            elseif not handRotMode and touchLookId and input == touchLookId then
-                local delta = input.Position - lastTouchPos
-                lastTouchPos = input.Position
-                if S.look then
-                    yaw   = yaw - delta.X * S.sens
-                    pitch = math.clamp(pitch - delta.Y * S.sens, -1.45, 1.45)
+                onPress = function()
+                    applyGesture(Presets[item.preset])
+                    print("[NoVR] 动作: " .. (Presets[item.preset] and Presets[item.preset].presetName or item.preset))
                 end
             end
-        end
-    end)
 
-    UIS.InputEnded:Connect(function(input, gpe)
-        if gpe then return end
-        if input.UserInputType == Enum.UserInputType.Touch then
-            if input == touchPanId then touchPanId = nil end
-            if input == touchLookId then touchLookId = nil end
+            makeButton(pageFrame, item.name, item.text,
+                UDim2.new(0, x, 0, y),
+                UDim2.new(0, btnW, 0, btnH),
+                onPress, onRelease,
+                item.color or Color3.fromRGB(35, 35, 55)
+            )
         end
-    end)
+    end
+
+    -- 页面1：预设动作
+    local page1 = Instance.new("Frame")
+    page1.Size = UDim2.new(1, 0, 1, 0)
+    page1.BackgroundTransparency = 1
+    page1.ZIndex = 21
+    page1.Parent = contentArea
+
+    createGrid(page1, {
+        { name="P1",  text="张开",  preset="Open" },
+        { name="P2",  text="握拳",  preset="Fist" },
+        { name="P3",  text="食指",  preset="Point" },
+        { name="P4",  text="剪刀",  preset="Peace" },
+        { name="P5",  text="点赞",  preset="ThumbsUp" },
+        { name="P6",  text="OK",    preset="OK" },
+        { name="P7",  text="摇滚",  preset="Rock" },
+        { name="P8",  text="中指",  preset="Middle" },
+        { name="P9",  text="电话",  preset="Phone" },
+        { name="P10", text="手枪",  preset="Gun" },
+    })
+
+    -- 页面2：组合动作
+    local page2 = Instance.new("Frame")
+    page2.Size = UDim2.new(1, 0, 1, 0)
+    page2.BackgroundTransparency = 1
+    page2.ZIndex = 21
+    page2.Visible = false
+    page2.Parent = contentArea
+
+    createGrid(page2, {
+        { name="Q1",  text="右捏",   preset="PinchR" },
+        { name="Q2",  text="右抓",   preset="GrabR" },
+        { name="Q3",  text="左捏",   preset="PinchL" },
+        { name="Q4",  text="左抓",   preset="GrabL" },
+        { name="Q5",  text="挥手",   preset="Flap" },
+        { name="Q6",  text="牛角",   preset="Horns" },
+        { name="Q7",  text="Shaka",  preset="Shaka" },
+        { name="Q8",  text="敬礼",   preset="Salute" },
+        { name="Q9",  text="祈祷",   preset="Pray" },
+        { name="Q10", text="爪子",   preset="Claw" },
+    })
+
+    -- 页面3：单指动作
+    local page3 = Instance.new("Frame")
+    page3.Size = UDim2.new(1, 0, 1, 0)
+    page3.BackgroundTransparency = 1
+    page3.ZIndex = 21
+    page3.Visible = false
+    page3.Parent = contentArea
+
+    createGrid(page3, {
+        { name="F1",  text="右拇",   hand="r", finger="Thumb",  key="rThumb",  hold=true },
+        { name="F2",  text="右食",   hand="r", finger="Index",  key="rIndex",  hold=true },
+        { name="F3",  text="右中",   hand="r", finger="Middle", key="rMiddle", hold=true },
+        { name="F4",  text="右无名", hand="r", finger="Ring",   key="rRing",   hold=true },
+        { name="F5",  text="右小",   hand="r", finger="Pinky",  key="rPinky",  hold=true },
+        { name="F6",  text="右拳",   hand="r", finger="Fist",   key="rFist",   hold=true },
+        { name="F7",  text="左拇",   hand="l", finger="Thumb",  key="lThumb",  hold=true },
+        { name="F8",  text="左食",   hand="l", finger="Index",  key="lIndex",  hold=true },
+        { name="F9",  text="左中",   hand="l", finger="Middle", key="lMiddle", hold=true },
+        { name="F10", text="左无名", hand="l", finger="Ring",   key="lRing",   hold=true },
+        { name="F11", text="左小",   hand="l", finger="Pinky",  key="lPinky",  hold=true },
+        { name="F12", text="左拳",   hand="l", finger="Fist",   key="lFist",   hold=true },
+    })
+
+    pages = { page1, page2, page3 }
+
+    local tab1 = makeTabBtn("预设", 1)
+    local tab2 = makeTabBtn("组合", 2)
+    local tab3 = makeTabBtn("单指", 3)
+
+    local function switchTab(idx)
+        for i, p in ipairs(pages) do
+            p.Visible = (i == idx)
+        end
+        for i, b in ipairs({tab1, tab2, tab3}) do
+            if i == idx then
+                b.BackgroundColor3 = Color3.fromRGB(70, 90, 180)
+                b.BackgroundTransparency = 0
+            else
+                b.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+                b.BackgroundTransparency = 0.2
+            end
+        end
+    end
+
+    tab1.MouseButton1Click:Connect(function() switchTab(1) end)
+    tab2.MouseButton1Click:Connect(function() switchTab(2) end)
+    tab3.MouseButton1Click:Connect(function() switchTab(3) end)
+    switchTab(1)
+
+    -- 打开/关闭面板按钮（右下）
+    local togglePanelBtn = makeButton(gui, "TogglePanel", "动作",
+        UDim2.new(1, -95, 1, -85),
+        UDim2.new(0, 85, 0, 55),
+        function()
+            actionPanel.Visible = not actionPanel.Visible
+        end,
+        nil,
+        Color3.fromRGB(50, 50, 100)
+    )
+    togglePanelBtn.ZIndex = 15
+    togglePanelBtn.TextSize = 22
+
+    -- ========== 手旋转模式按钮（右侧） ==========
+    local rotBtnRow = Instance.new("Frame")
+    rotBtnRow.AnchorPoint = Vector2.new(1, 1)
+    rotBtnRow.Position = UDim2.new(1, -95, 1, -150)
+    rotBtnRow.Size = UDim2.new(0, 85, 0, 120)
+    rotBtnRow.BackgroundTransparency = 1
+    rotBtnRow.ZIndex = 15
+    rotBtnRow.Parent = gui
+
+    local function makeRotBtn(text, mode, yOffset)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 34)
+        btn.Position = UDim2.new(0, 0, 0, yOffset)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+        btn.BackgroundTransparency = 0.2
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(220, 220, 255)
+        btn.TextSize = 13
+        btn.Font = Enum.Font.GothamBold
+        btn.ZIndex = 15
+        btn.Parent = rotBtnRow
+
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = btn
+
+        btn.MouseButton1Click:Connect(function()
+            if rotMode == mode then
+                rotMode = "none"
+                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+                btn.BackgroundTransparency = 0.2
+            else
+                rotMode = mode
+                for _, b in ipairs(rotBtnRow:GetChildren()) do
+                    if b:IsA("TextButton") then
+                        b.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+                        b.BackgroundTransparency = 0.2
+                    end
+                end
+                btn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+                btn.BackgroundTransparency = 0
+            end
+        end)
+
+        return btn
+    end
+
+    makeRotBtn("转双手", "both",  0)
+    makeRotBtn("转右手", "right", 40)
+    makeRotBtn("转左手", "left",  80)
 
     -- ============================================================
-    -- 主渲染循环 (替代原版 BindToRenderStep)
+    -- 主循环
     -- ============================================================
-    RunService:BindToRenderStep("NoVR_Mobile_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
+    RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
         local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
         local hs  = cam.HeadScale; if hs <= 1 then hs = S.scale * 6 end
@@ -726,135 +805,41 @@ task.spawn(function()
             Input.directionVertical = 0
             Input.turnDirection     = 0
         end
+
+        -- 更新中心圆显示当前动作
+        if centerLabel then
+            centerLabel.Text = Gesture.presetName ~= "None" and Gesture.presetName:sub(1,2) or "●"
+        end
     end)
 
     -- ============================================================
-    -- 左下角 HUD (移动端适配)
+    -- 简易提示 HUD（顶部一行）
     -- ============================================================
     pcall(function()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "NoVR_HUD"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-        gui.Parent = playerGui
+        local hud = Instance.new("ScreenGui")
+        hud.Name = "NoVR_Tip"
+        hud.ResetOnSpawn = false
+        hud.IgnoreGuiInset = true
+        hud.Parent = playerGui
 
-        local mainFrame = Instance.new("Frame", gui)
-        mainFrame.AnchorPoint = Vector2.new(0,1)
-        mainFrame.Position = UDim2.new(0,10,1,-10)
-        mainFrame.Size = UDim2.new(0,380,0,165)
-        mainFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
-        mainFrame.BackgroundTransparency = 0.3
-        mainFrame.BorderSizePixel = 0
+        local tip = Instance.new("TextLabel")
+        tip.AnchorPoint = Vector2.new(0.5, 0)
+        tip.Position = UDim2.new(0.5, 0, 0, 5)
+        tip.Size = UDim2.new(0, 500, 0, 24)
+        tip.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+        tip.BackgroundTransparency = 0.4
+        tip.TextColor3 = Color3.fromRGB(0, 255, 170)
+        tip.Font = Enum.Font.Code
+        tip.TextSize = 12
+        tip.Text = "[VR Hands No-VR Pro] 手机端 | 拖动屏幕=视角 | 左下方向键=移动"
+        tip.Parent = hud
 
-        local corner = Instance.new("UICorner", mainFrame)
-        corner.CornerRadius = UDim.new(0,8)
-
-        local lbl = Instance.new("TextLabel", mainFrame)
-        lbl.Size = UDim2.new(1,-10,1,-10)
-        lbl.Position = UDim2.new(0,5,0,5)
-        lbl.BackgroundTransparency = 1
-        lbl.TextColor3 = Color3.fromRGB(255,255,255)
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.TextYAlignment = Enum.TextYAlignment.Top
-        lbl.Font = Enum.Font.Code
-        lbl.TextSize = 12
-
-        local modeText = HAS_FULL_FINGERS and "[全手指]" or "[简化-Fist代理]"
-
-        local function buildHudText()
-            local lines = {}
-            table.insert(lines, "[VR Hands :: No-VR 手机版] " .. modeText)
-            table.insert(lines, "屏幕滑动-视角 | 左下按键-移动")
-            table.insert(lines, "右侧面板-所有动作 | 点击即可触发")
-            table.insert(lines, "旋转模式-开启后滑动屏幕旋转手")
-            table.insert(lines, "当前动作: " .. Gesture.presetName)
-            local rHand = string.format("R[%d%d%d%d%d|%d]",
-                Gesture.rThumb, Gesture.rIndex, Gesture.rMiddle, Gesture.rRing, Gesture.rPinky, Gesture.rFist)
-            local lHand = string.format("L[%d%d%d%d%d|%d]",
-                Gesture.lThumb, Gesture.lIndex, Gesture.lMiddle, Gesture.lRing, Gesture.lPinky, Gesture.lFist)
-            table.insert(lines, rHand .. "  " .. lHand)
-            return table.concat(lines, "\n")
-        end
-
-        RunService.Heartbeat:Connect(function()
-            lbl.Text = buildHudText()
-        end)
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = tip
     end)
 
-    -- ============================================================
-    -- 右上角教程面板 (移动端适配)
-    -- ============================================================
-    pcall(function()
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "NoVR_Tutorial"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-        gui.Parent = playerGui
-
-        local frame = Instance.new("Frame", gui)
-        frame.AnchorPoint = Vector2.new(1,0)
-        frame.Position = UDim2.new(1,-10,0,10)
-        frame.Size = UDim2.new(0,300,0,380)
-        frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
-        frame.BackgroundTransparency = 0.25
-        frame.BorderSizePixel = 0
-
-        local corner = Instance.new("UICorner", frame)
-        corner.CornerRadius = UDim.new(0,8)
-
-        local title = Instance.new("TextLabel", frame)
-        title.Size = UDim2.new(1,0,0,28)
-        title.Position = UDim2.new(0,0,0,0)
-        title.BackgroundTransparency = 1
-        title.Text = "手机操作教程"
-        title.TextColor3 = Color3.fromRGB(0,255,170)
-        title.Font = Enum.Font.GothamBold
-        title.TextSize = 16
-
-        local lbl = Instance.new("TextLabel", frame)
-        lbl.Size = UDim2.new(1,-16,1,-36)
-        lbl.Position = UDim2.new(0,8,0,32)
-        lbl.BackgroundTransparency = 1
-        lbl.TextColor3 = Color3.fromRGB(255,255,255)
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.TextYAlignment = Enum.TextYAlignment.Top
-        lbl.Font = Enum.Font.Code
-        lbl.TextSize = 12
-        lbl.TextWrapped = true
-
-        local tutorialLines = {
-            "--- 移动与视角 ---",
-            "左下角：方向键移动",
-            "左下角：跳=跳跃, 跳=上升",
-            "屏幕空白处滑动：转动视角",
-            "",
-            "--- 动作面板 (右侧) ---",
-            "点击▶打开/关闭面板",
-            "预设动作：1-0 直接点击",
-            "Ctrl动作：组合点击",
-            "手指动作：单独点击",
-            "",
-            "--- 手部旋转 ---",
-            "打开面板→旋转模式: 开",
-            "然后滑动屏幕即可旋转手",
-            "旋转目标可切换：双手/右手/左手",
-            "也可用方向按钮微调旋转",
-            "",
-            "--- 体型与距离 ---",
-            "面板内 + / - 调整体型",
-            "面板内 + / - 调整手距",
-            "",
-            "提示: 所有按钮点一下即可，",
-            "无需键盘鼠标。",
-        }
-
-        if not HAS_FULL_FINGERS then
-            table.insert(tutorialLines, "")
-            table.insert(tutorialLines, "[注意] 此服务器只支持")
-            table.insert(tutorialLines, "拇指/食指/握拳，")
-            table.insert(tutorialLines, "其它手指自动用握拳度模拟。")
-        end
-
-        lbl.Text = table.concat(tutorialLines, "\n")
-    end)
-
-    print("[NoVR Mobile] 手机控制已激活。左下角移动，右侧面板动作，滑动屏幕视角。")
+    print("[NoVR Pro] 手机端控制已激活。")
 end)
 ]==]
 
