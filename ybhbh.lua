@@ -31,6 +31,7 @@ local VRService   = game:GetService("VRService")
 local UIS         = game:GetService("UserInputService")
 local RunService  = game:GetService("RunService")
 local Players     = game:GetService("Players")
+local VIM         = game:GetService("VirtualInputManager")
 local identity    = CFrame.identity
 
 do
@@ -245,6 +246,8 @@ task.spawn(function()
                          lThumb=1, lIndex=0, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="电话" },
         ["Gun"]      = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
                          lThumb=0, lIndex=1, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="手枪指" },
+        ["Salute"]   = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
+                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="敬礼" },
         ["PinchR"]   = { rThumb=1, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
                          lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="右手捏取" },
         ["PinchL"]   = { rThumb=0, rIndex=0, rMiddle=0, rRing=0, rPinky=0, rFist=0,
@@ -259,8 +262,6 @@ task.spawn(function()
                          lThumb=1, lIndex=1, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="牛角" },
         ["Shaka"]    = { rThumb=1, rIndex=0, rMiddle=0, rRing=0, rPinky=1, rFist=0,
                          lThumb=1, lIndex=0, lMiddle=0, lRing=0, lPinky=1, lFist=0, presetName="Shaka" },
-        ["Salute"]   = { rThumb=0, rIndex=1, rMiddle=0, rRing=0, rPinky=0, rFist=0,
-                         lThumb=0, lIndex=0, lMiddle=0, lRing=0, lPinky=0, lFist=0, presetName="敬礼" },
         ["Pray"]     = { rThumb=1, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=1,
                          lThumb=1, lIndex=1, lMiddle=1, lRing=1, lPinky=1, lFist=1, presetName="祈祷" },
         ["Claw"]     = { rThumb=0, rIndex=1, rMiddle=1, rRing=1, rPinky=1, rFist=0.5,
@@ -332,7 +333,7 @@ task.spawn(function()
     local keys = {}
 
     -- ============================================================
-    -- 射击功能
+    -- 射击功能（修复版）
     -- ============================================================
     local function findEquippedTool()
         local char = lp.Character
@@ -348,13 +349,18 @@ task.spawn(function()
     local function fireOnce()
         local tool = findEquippedTool()
         if not tool then return end
-        pcall(function() tool:Activate() end)
-        -- 备用：直接触发激活事件
+
+        -- 方法1: 虚拟鼠标点击（模拟真实左键，手机端最有效）
         pcall(function()
-            if tool:FindFirstChild("Activated") then
-                tool.Activated:Fire()
-            end
+            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
         end)
+        task.wait(0.02)
+        pcall(function()
+            VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        end)
+
+        -- 方法2: Tool 标准激活（备用）
+        pcall(function() tool:Activate() end)
     end
 
     local shootHolding = false
@@ -793,6 +799,7 @@ task.spawn(function()
         { name="P8",  text="中指",  preset="Middle" },
         { name="P9",  text="电话",  preset="Phone" },
         { name="P10", text="手枪",  preset="Gun" },
+        { name="P11", text="敬礼",  preset="Salute" },
     })
 
     -- 页面2：组合
@@ -803,16 +810,15 @@ task.spawn(function()
     page2.Visible = false
     page2.Parent = contentArea
     createGrid(page2, {
-        { name="Q1",  text="右捏",   preset="PinchR" },
-        { name="Q2",  text="右抓",   preset="GrabR" },
-        { name="Q3",  text="左捏",   preset="PinchL" },
-        { name="Q4",  text="左抓",   preset="GrabL" },
-        { name="Q5",  text="挥手",   preset="Flap" },
-        { name="Q6",  text="牛角",   preset="Horns" },
-        { name="Q7",  text="Shaka",  preset="Shaka" },
-        { name="Q8",  text="敬礼",   preset="Salute" },
-        { name="Q9",  text="祈祷",   preset="Pray" },
-        { name="Q10", text="爪子",   preset="Claw" },
+        { name="Q1", text="右捏",  preset="PinchR" },
+        { name="Q2", text="右抓",  preset="GrabR" },
+        { name="Q3", text="左捏",  preset="PinchL" },
+        { name="Q4", text="左抓",  preset="GrabL" },
+        { name="Q5", text="挥手",  preset="Flap" },
+        { name="Q6", text="牛角",  preset="Horns" },
+        { name="Q7", text="Shaka", preset="Shaka" },
+        { name="Q8", text="祈祷",  preset="Pray" },
+        { name="Q9", text="爪子",  preset="Claw" },
     })
 
     -- 页面3：单指
@@ -887,7 +893,7 @@ task.spawn(function()
     switchTab(1)
 
     -- ============================================================
-    -- 射击按钮（右下角底部，最大最显眼）
+    -- 射击按钮
     -- ============================================================
     local shootBtn = Instance.new("TextButton")
     shootBtn.Name = "ShootBtn"
@@ -926,9 +932,7 @@ task.spawn(function()
         stopShootHold()
     end)
 
-    -- ============================================================
-    -- 动作面板开关按钮（射击按钮上方）
-    -- ============================================================
+    -- 动作按钮
     local togglePanelBtn = Instance.new("TextButton")
     togglePanelBtn.Name = "TogglePanel"
     togglePanelBtn.AnchorPoint = Vector2.new(1, 1)
@@ -951,9 +955,7 @@ task.spawn(function()
         actionPanel.Visible = not actionPanel.Visible
     end)
 
-    -- ============================================================
-    -- 手旋转目标按钮组（动作按钮上方）
-    -- ============================================================
+    -- 旋转按钮组
     local rotBtnRow = Instance.new("Frame")
     rotBtnRow.AnchorPoint = Vector2.new(1, 1)
     rotBtnRow.Position = UDim2.new(1, -15, 1, -185)
@@ -1036,9 +1038,7 @@ task.spawn(function()
         end
     end)
 
-    -- ============================================================
     -- 顶部提示
-    -- ============================================================
     pcall(function()
         local hud = Instance.new("ScreenGui")
         hud.Name = "NoVR_Tip"
