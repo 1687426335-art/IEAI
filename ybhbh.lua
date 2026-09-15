@@ -91,9 +91,9 @@ task.spawn(function()
     local uid = tostring(lp.UserId)
 
     local vrPlayers = workspace:WaitForChild("VRPlayers", 60)
-    if not vrPlayers then warn("[,NoVR] 找不到 VRPlayers  文件夹") return end
-60    local rig = vr)
-Players:WaitForChild   (uid if not rig then warn("[NoVR] 服务器没有分配 rig") return end
+    if not vrPlayers then warn("[NoVR] 找不到 VRPlayers 文件夹") return end
+    local rig = vrPlayers:WaitForChild(uid, 60)
+    if not rig then warn("[NoVR] 服务器没有分配 rig") return end
     rig:WaitForChild("VRHead", 20)
     rig:WaitForChild("LeftHand", 20)
     rig:WaitForChild("RightHand", 20)
@@ -573,7 +573,7 @@ Players:WaitForChild   (uid if not rig then warn("[NoVR] 服务器没有分配 r
     makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
 
     -- ============================================================
-    -- 动作面板（屏幕最右侧）
+    -- 动作面板（屏幕右侧，不挡视野）
     -- ============================================================
     local actionPanel = Instance.new("Frame")
     actionPanel.Name = "ActionPanel"
