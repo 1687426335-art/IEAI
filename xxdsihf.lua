@@ -92,27 +92,13 @@ function createUI()
         Resizable = true,
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
-        User = {
-            Enabled = true,
-            Callback = function() end,
-            Anonymous = false
-        },
+        User = { Enabled = true, Callback = function() end, Anonymous = false },
         SideBarWidth = 250,
-        Search = {
-            Enabled = true,
-            Placeholder = "搜索...",
-            Callback = function(searchText) end
-        },
-        SidePanel = {
-            Enabled = true,
-            Content = {
-                { Type = "Button", Text = "wdfex-Hub", Style = "Subtle", Size = UDim2.new(1, -20, 0, 30), Callback = function() end }
-            }
-        }
+        Search = { Enabled = true, Placeholder = "搜索...", Callback = function(searchText) end },
+        SidePanel = { Enabled = true, Content = { { Type = "Button", Text = "wdfex-Hub", Style = "Subtle", Size = UDim2.new(1, -20, 0, 30), Callback = function() end } } }
     })
 
-    Window:Tag({ Title = "wdfex-HUBNB", Color = Color3.fromHex("#00ffff") })
-
+    Window:Tag({ Title = "wdfex脚本NB", Color = Color3.fromHex("#00ffff") })
     Window:EditOpenButton({ Title = "wdfex-Hub", Icon = "rbxassetid://105677776902677", CornerRadius = UDim.new(0,16), StrokeThickness = 4, Color = ColorSequence.new(Color3.fromHex("FF6B6B")), Draggable = true })
     Window:EditOpenButton({ Title = "wdfex-Hub", Icon = "heart", CornerRadius = UDim.new(0,16), StrokeThickness = 4, Color = ColorSequence.new(Color3.fromHex("FF6B6B")), Draggable = true })
 
@@ -133,8 +119,7 @@ function createUI()
             stroke2.Transparency = 0.3
             stroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             stroke2.Parent = mainFrame
-            local hue1 = 0
-            local hue2 = 0.5
+            local hue1, hue2 = 0, 0.5
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue1 = (hue1 + 0.01) % 1
                 hue2 = (hue2 - 0.01) % 1
@@ -148,8 +133,7 @@ function createUI()
     spawn(function()
         while true do
             for hue = 0, 1, 0.01 do
-                local color = Color3.fromHSV(hue, 0.8, 1)
-                Window:EditOpenButton({ Color = ColorSequence.new(color) })
+                Window:EditOpenButton({ Color = ColorSequence.new(Color3.fromHSV(hue, 0.8, 1)) })
                 wait(0.04)
             end
         end
@@ -179,11 +163,10 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "已更新最新的绕过反作弊没被挂DC封了我没78"
+            banner.Text = "哪个CS刚刚给我抓了😡"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
-            banner.TextScaled = false
-            banner.TextStrokeTransparency = 0.0
+            banner.TextStrokeTransparency = 0
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
             local textWidth = 160
@@ -210,7 +193,6 @@ function createUI()
     local Settings = { HoldTime = 0, Distance = 25, HitboxEnabled = false, HitboxSize = 10, WhitelistEnabled = false, TeleportEnabled = false, NoclipEnabled = false }
     local Whitelist = {}
     local affectedHeads = {}
-    local frameCount = 0
 
     _G.CatAntiFling_Enabled = false
     _G.CatAntiFling_Running = false
@@ -253,23 +235,15 @@ function createUI()
         Title = "降低卡顿",
         Value = false,
         Callback = function(value)
-            -- 1. 隐藏/显示屏幕顶部的滚动横幅
             local bannerGui = player.PlayerGui:FindFirstChild("BannerGui")
-            if bannerGui then
-                bannerGui.Enabled = not value
-            end
-
-            -- 2. 修改主悬浮窗背景
+            if bannerGui then bannerGui.Enabled = not value end
             local mainGui = player.PlayerGui:FindFirstChild("CloudHub")
             if mainGui then
                 local mainFrame = mainGui:FindFirstChildOfClass("Frame")
                 if mainFrame then
                     for _, child in ipairs(mainFrame:GetDescendants()) do
-                        if child:IsA("ImageLabel") then
-                            child.Visible = not value
-                        end
+                        if child:IsA("ImageLabel") then child.Visible = not value end
                     end
-                    
                     if value then
                         mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
                         mainFrame.BackgroundTransparency = 0
@@ -301,21 +275,20 @@ function createUI()
     local function AddTab(section, title, icon) return section:Tab({ Title = title, Icon = icon }) end
 
     local A = AddTab(MainSection, "玩家修改", "user")
-    A:Paragraph({
-        Title = "注意事项",
-        Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开"
-    })
+    A:Paragraph({ Title = "⚠️ 注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
     A:Divider({ Text = "伤害免疫" })
+
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
     local RemoteBuyTab = AddTab(MainSection, "远程购买", "shopping-cart")
     local InteractTab = AddTab(MainSection, "互动", "hand")
+    local PoliceTab = AddTab(MainSection, "警察功能", "shield")
     local B = AddTab(MainSection, "枪械功能", "target")
     local C = AddTab(MainSection, "杀戮光环", "skull")
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
-    -- 远程购买
+    -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
     local toolItems = {
         { name = "解密电路", id = "1", itemName = "Decryption Circuit" },
@@ -341,8 +314,7 @@ function createUI()
         local stuff = ReplicatedStorage:FindFirstChild("Stuff")
         if event and stuff then
             local blackMarket = stuff:FindFirstChild("Black Market")
-            local targetItem = nil
-            local displayName = ""
+            local targetItem, displayName = nil, ""
             if blackMarket then
                 for _, itemInfo in ipairs(toolItems) do
                     if itemInfo.name == selectedToolItem then
@@ -356,7 +328,7 @@ function createUI()
                 local success = pcall(function() event:InvokeServer("purchase", { isRestaurant = false, item = targetItem }) end)
                 if success then showBuySuccess(displayName) end
             else
-                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedToolItem .. "，可能商店刷新了", Duration = 3 })
+                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedToolItem, Duration = 3 })
             end
         else
             WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
@@ -372,8 +344,7 @@ function createUI()
         local stuff = ReplicatedStorage:FindFirstChild("Stuff")
         if event and stuff then
             local weaponsFolder = stuff:FindFirstChild("Weapons")
-            local targetItem = nil
-            local displayName = ""
+            local targetItem, displayName = nil, ""
             if weaponsFolder then
                 for _, itemInfo in ipairs(weaponItems) do
                     if itemInfo.name == selectedWeaponItem then
@@ -387,14 +358,13 @@ function createUI()
                 local success = pcall(function() event:InvokeServer("purchase", { isRestaurant = false, item = targetItem }) end)
                 if success then showBuySuccess(displayName) end
             else
-                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedWeaponItem .. "，可能商店刷新了", Duration = 3 })
+                WindUI:Notify({ Title = "购买失败", Content = "没找到" .. selectedWeaponItem, Duration = 3 })
             end
         else
             WindUI:Notify({ Title = "购买失败", Content = "没找到购买事件或物品路径", Duration = 3 })
         end
     end })
 
-    -- 超市物品
     RemoteBuyTab:Divider({ Text = "超市物品" })
     local supermarketItems = {
         { name = "望远镜", itemName = "Binoculars" },
@@ -414,8 +384,7 @@ function createUI()
         local stuff = ReplicatedStorage:FindFirstChild("Stuff")
         if event and stuff then
             local itemsFolder = stuff:FindFirstChild("Items")
-            local targetItem = nil
-            local displayName = ""
+            local targetItem, displayName = nil, ""
             if itemsFolder then
                 for _, itemInfo in ipairs(supermarketItems) do
                     if itemInfo.name == selectedSupermarketItem then
@@ -436,7 +405,6 @@ function createUI()
         end
     end })
 
-    -- 食物
     RemoteBuyTab:Divider({ Text = "食物" })
     local foodItems = {
         { name = "培根和鸡蛋", itemName = "Bacon And Eggs" },
@@ -458,8 +426,7 @@ function createUI()
         local stuff = ReplicatedStorage:FindFirstChild("Stuff")
         if event and stuff then
             local foodFolder = stuff:FindFirstChild("Food")
-            local targetItem = nil
-            local displayName = ""
+            local targetItem, displayName = nil, ""
             if foodFolder then
                 for _, itemInfo in ipairs(foodItems) do
                     if itemInfo.name == selectedFoodItem then
@@ -480,7 +447,52 @@ function createUI()
         end
     end })
 
-    -- 自动躲警察
+    -- ==================== 互动 & 警察功能 ====================
+    local fastInteractEnabled, autoInteractEnabled, autoCuffEnabled = false, false, false
+
+    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+        if fastInteractEnabled then prompt.HoldDuration = 0 end
+    end)
+
+    InteractTab:Divider({ Text = "互动功能" })
+    InteractTab:Toggle({ Title = "快速互动（瞬间完成）", Value = false, Callback = function(value) fastInteractEnabled = value end })
+    InteractTab:Toggle({ Title = "自动互动（附近全触发）", Value = false, Callback = function(value) autoInteractEnabled = value end })
+
+    PoliceTab:Divider({ Text = "警察功能" })
+    PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
+
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.05)
+            if autoInteractEnabled then
+                for _, descendant in pairs(workspace:GetDescendants()) do
+                    if descendant:IsA("ProximityPrompt") then
+                        pcall(function() fireproximityprompt(descendant) end)
+                    end
+                end
+            end
+            if autoCuffEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local head = p.Character:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
+                                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                                if event then
+                                    pcall(function() event:InvokeServer("handcuff", p, false) end)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
     local function isVisible(fromPos, toPos, ignoreInstances)
         local direction = (toPos - fromPos).Unit
@@ -500,8 +512,7 @@ function createUI()
             if not char then return end
             local root = char:FindFirstChild("HumanoidRootPart")
             if not root then return end
-            local myHead = char:FindFirstChild("Head")
-            if not myHead then myHead = root end
+            local myHead = char:FindFirstChild("Head") or root
             local myPos = myHead.Position
             local forceVec = Vector3.zero
             local foundAny = false
@@ -513,29 +524,20 @@ function createUI()
                     if teamName:find("Police") or teamName:find("警察") or teamName:find("Cop") then
                         local pChar = p.Character
                         if pChar then
-                            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
-                            local pHead = pChar:FindFirstChild("Head")
-                            local targetPart = pHead or pRoot
+                            local targetPart = pChar:FindFirstChild("Head") or pChar:FindFirstChild("HumanoidRootPart")
                             if targetPart then
                                 local dist = (targetPart.Position - myPos).Magnitude
                                 if dist < policeDodgeDistance then
-                                    if policeDodgeWallCheck then
-                                        local ignoreList = {char, pChar}
-                                        local visible = isVisible(myPos, targetPart.Position, ignoreList)
-                                        if not visible then continue end
-                                    end
+                                    if policeDodgeWallCheck and not isVisible(myPos, targetPart.Position, {char, pChar}) then continue end
                                     foundAny = true
-                                    local dir = (myPos - targetPart.Position).Unit
-                                    forceVec = forceVec + dir * (1 / (dist + 0.1))
+                                    forceVec = forceVec + (myPos - targetPart.Position).Unit * (1 / (dist + 0.1))
                                 end
                             end
                         end
                     end
                 end
             end
-            if foundAny and forceVec.Magnitude > 0 then
-                root.Velocity = forceVec.Unit * (policeDodgeForce * 5)
-            end
+            if foundAny and forceVec.Magnitude > 0 then root.Velocity = forceVec.Unit * (policeDodgeForce * 5) end
         end)
     end
     local function stopPoliceDodge()
@@ -547,22 +549,7 @@ function createUI()
     PoliceDodgeTab:Slider({ Title = "弹开力度", Step = 1, Value = { Min = 1, Max = 100, Default = 50 }, Callback = function(value) policeDodgeForce = value end })
     PoliceDodgeTab:Toggle({ Title = "墙体检测", Value = true, Callback = function(value) policeDodgeWallCheck = value end })
 
-    -- 互动
-    local interactEnabled = false
-    local function ScanPrompts()
-        if isDestroyed or not interactEnabled then return end
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("ProximityPrompt") then
-                obj.HoldDuration = Settings.HoldTime
-                obj.MaxActivationDistance = Settings.Distance
-            end
-        end
-    end
-    InteractTab:Divider({ Text = "快速互动" })
-    InteractTab:Toggle({ Title = "启用快速互动", Value = false, Callback = function(value) interactEnabled = value; if value then ScanPrompts() end end })
-    workspace.DescendantAdded:Connect(function(obj) task.wait(0.1); if obj:IsA("ProximityPrompt") and interactEnabled then obj.HoldDuration = Settings.HoldTime; obj.MaxActivationDistance = Settings.Distance end end)
-
-    -- 飞天
+    -- ==================== 飞天 ====================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
     local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
@@ -586,8 +573,7 @@ function createUI()
         params.FilterDescendantsInstances = { player.Character }
         for i = 1, flyAnchor.rayCount do
             local angle = (i / flyAnchor.rayCount) * 2 * math.pi
-            local dx = math.cos(angle)
-            local dz = math.sin(angle)
+            local dx, dz = math.cos(angle), math.sin(angle)
             for j = -(flyAnchor.verticalLayers - 1) // 2, (flyAnchor.verticalLayers - 1) // 2 do
                 local dir = Vector3.new(dx, j * 0.5, dz).Unit
                 local result = workspace:Raycast(pos, dir * flyAnchor.rayLength, params)
@@ -630,8 +616,7 @@ function createUI()
             local vertical = 0
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vertical = 1
             elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then vertical = -1 end
-            local delta = (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
-            flyState.targetPos = flyState.targetPos + delta
+            flyState.targetPos = flyState.targetPos + (moveDir + Vector3.new(0, vertical, 0)) * FlySpeed * dt
             local currentPos = flyState.hrp.Position
             local remaining = flyState.targetPos - currentPos
             local distance = remaining.Magnitude
@@ -751,26 +736,24 @@ function createUI()
         if hum and root and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt end
     end)
 
+    -- ==================== 玩家修改 ====================
     local function ApplyHitbox()
         if isDestroyed or not Settings.HitboxEnabled then return end
         local players = Players:GetPlayers()
         local newAffected = {}
         for i = 1, #players do
             local p = players[i]
-            if p ~= player and p.Character then
-                if Settings.WhitelistEnabled and Whitelist[p.UserId] then
-                else
-                    local char = p.Character
-                    local head = char:FindFirstChild("Head")
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 and head then
-                        head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
-                        head.Transparency = 1
-                        head.Color = Color3.fromRGB(255, 215, 0)
-                        head.Material = Enum.Material.Neon
-                        head.CanCollide = false
-                        newAffected[head] = true
-                    end
+            if p ~= player and p.Character and not (Settings.WhitelistEnabled and Whitelist[p.UserId]) then
+                local char = p.Character
+                local head = char:FindFirstChild("Head")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 and head then
+                    head.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                    head.Transparency = 1
+                    head.Color = Color3.fromRGB(255, 215, 0)
+                    head.Material = Enum.Material.Neon
+                    head.CanCollide = false
+                    newAffected[head] = true
                 end
             end
         end
@@ -800,26 +783,22 @@ function createUI()
     local function UpdateWhitelist()
         if isDestroyed then return end
         Whitelist = {}
-        local players = Players:GetPlayers()
-        for i = 1, #players do
-            local p = players[i]
+        for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player then pcall(function() if p:IsFriendsWith(player.UserId) then Whitelist[p.UserId] = true end end) end
         end
     end
 
-    A:Divider({ Text = "伤害免疫" })
     local godOn = false
     A:Toggle({ Title = "免疫部分伤害", Value = false, Callback = function(value) godOn = value end })
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
     A:Divider({ Text = "穿墙" })
     A:Toggle({ Title = "启用人物穿墙", Value = false, Callback = function(value)
         Settings.NoclipEnabled = value
-        if value then
-            local char = player.Character
-            if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end
-        else
-            local char = player.Character
-            if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end end
+        local char = player.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = not value end
+            end
         end
     end })
     A:Divider({ Text = "体力" })
@@ -842,18 +821,12 @@ function createUI()
             if staminaOn then
                 pcall(function()
                     for _, obj in ipairs(player:GetDescendants()) do
-                        if obj:IsA("NumberValue") or obj:IsA("IntValue") then
-                            local n = obj.Name:lower()
-                            if n:find("stamina") or n:find("energy") then obj.Value = 9999999 end
-                        end
+                        if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end
                     end
                     local char = player.Character
                     if char then
                         for _, obj in ipairs(char:GetDescendants()) do
-                            if obj:IsA("NumberValue") or obj:IsA("IntValue") then
-                                local n = obj.Name:lower()
-                                if n:find("stamina") or n:find("energy") then obj.Value = 9999999 end
-                            end
+                            if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end
                         end
                     end
                     local remote = ReplicatedStorage:FindFirstChild("Remote")
@@ -880,23 +853,22 @@ function createUI()
                 local char = player.Character
                 if not char then return end
                 local root = char:FindFirstChild("HumanoidRootPart")
-                if not root then return end
                 local hum = char:FindFirstChildOfClass("Humanoid")
-                if not hum then return end
-                local vel = root.Velocity
-                if vel.Y < -20 and hum.PlatformStand == false then root.Velocity = Vector3.new(vel.X, math.clamp(vel.Y, -40, -10), vel.Z) end
+                if root and hum and root.Velocity.Y < -20 and not hum.PlatformStand then
+                    root.Velocity = Vector3.new(root.Velocity.X, math.clamp(root.Velocity.Y, -40, -10), root.Velocity.Z)
+                end
             end)
         else
             if antiFallConnection then antiFallConnection:Disconnect(); antiFallConnection = nil end
         end
     end })
 
+    -- ==================== 枪械功能 ====================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({ Title = "超快射速", Value = false, Callback = function(value)
         if not value then return end
         local function ModifyWeaponStats()
-            local garbage = getgc(true)
-            for _, tbl in pairs(garbage) do
+            for _, tbl in pairs(getgc(true)) do
                 if type(tbl) == "table" then
                     if rawget(tbl, "SHOOT_MODE") then rawset(tbl, "SHOOT_MODE", 2) end
                     if rawget(tbl, "RPM") then rawset(tbl, "RPM", math.huge) end
@@ -907,7 +879,7 @@ function createUI()
         ModifyWeaponStats()
         local char = player.Character
         if char then local humanoid = char:FindFirstChildOfClass("Humanoid"); if humanoid then humanoid.Died:Connect(ModifyWeaponStats) end end
-        WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效，死亡后自动重新生效", Duration = 3 })
+        WindUI:Notify({ Title = "武器强化", Content = "无限射速已生效", Duration = 3 })
     end })
     local infAmmoEnabled = false
     B:Toggle({ Title = "无限子弹", Value = false, Callback = function(value) infAmmoEnabled = value end })
@@ -934,6 +906,7 @@ function createUI()
     B:Toggle({ Title = "启用头部碰撞箱（推荐20-25）", Value = false, Callback = function(value) Settings.HitboxEnabled = value; if value then ApplyHitbox() else ResetHitbox() end end })
     B:Slider({ Title = "头部大小", Step = 1, Value = { Min = 5, Max = 400, Default = 10 }, Callback = function(value) Settings.HitboxSize = value; if Settings.HitboxEnabled then ApplyHitbox() end end })
     B:Toggle({ Title = "好友检测 (白名单)", Value = false, Callback = function(value) Settings.WhitelistEnabled = value; if value then UpdateWhitelist() end end })
+
     B:Divider({ Text = "子追" })
     local zzEnabled, zzDistance, zzAffected = false, 40, nil
     local function zzRestore() if zzAffected and zzAffected.Parent then pcall(function() zzAffected.Size = Vector3.new(2, 1, 1); zzAffected.Transparency = 0 end) end; zzAffected = nil end
@@ -1005,23 +978,20 @@ function createUI()
             if p ~= player and p.Character then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
                 local head = p.Character:FindFirstChild("Head")
-                if hum and hum.Health > 0 and head then
-                    local skip = aimNoTeam and p.Team ~= nil and player.Team ~= nil and p.Team == player.Team
-                    if not skip then
-                        local sp, onScreen = camera:WorldToViewportPoint(head.Position)
-                        if onScreen then
-                            local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
-                            if d < bestDist then
-                                local visible = true
-                                if aimWall then
-                                    local rp = RaycastParams.new()
-                                    rp.FilterType = Enum.RaycastFilterType.Exclude
-                                    rp.FilterDescendantsInstances = { player.Character }
-                                    local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
-                                    visible = (not res) or res.Instance:IsDescendantOf(p.Character)
-                                end
-                                if visible then bestDist = d; best = head end
+                if hum and hum.Health > 0 and head and not (aimNoTeam and p.Team and player.Team and p.Team == player.Team) then
+                    local sp, onScreen = camera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        local d = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                        if d < bestDist then
+                            local visible = true
+                            if aimWall then
+                                local rp = RaycastParams.new()
+                                rp.FilterType = Enum.RaycastFilterType.Exclude
+                                rp.FilterDescendantsInstances = { player.Character }
+                                local res = Workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 500, rp)
+                                visible = (not res) or res.Instance:IsDescendantOf(p.Character)
                             end
+                            if visible then bestDist = d; best = head end
                         end
                     end
                 end
@@ -1034,7 +1004,7 @@ function createUI()
     B:Toggle({ Title = "不瞄准队友", Value = true, Callback = function(value) aimNoTeam = value end })
     B:Toggle({ Title = "墙壁检测", Value = true, Callback = function(value) aimWall = value end })
 
-    -- 杀戮光环
+    -- ==================== 杀戮光环 ====================
     local KA_MAX_DISTANCE, kaEnabled, KANearestOnly, KA_NEAREST_DISTANCE, KATargetPoliceOnly, KATargetCivilianOnly, KAIgnoreDead, showTarget, currentTarget, targetDisplayGui, targetDisplayLabel = 300, false, false, 25, false, false, true, true, nil, nil, nil
     local function CreateTargetDisplay()
         if targetDisplayGui then return end
@@ -1120,8 +1090,7 @@ function createUI()
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
                 if myHead then
-                    local origin = myHead.Position
-                    local hitPos = targetHead.Position
+                    local origin, hitPos = myHead.Position, targetHead.Position
                     local direction = (hitPos - origin).Unit
                     local damage = 999999999
                     pcall(function() ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", { bodyParts = { { "Head", damage } }, shotCode = { origin, direction }, target = target, pos = hitPos }) end)
@@ -1162,7 +1131,7 @@ function createUI()
     C:Toggle({ Title = "优先攻击最近目标", Value = false, Callback = function(value) KANearestOnly = value end })
     C:Slider({ Title = "优先攻击距离", Step = 1, Value = { Min = 5, Max = 100, Default = 25 }, Callback = function(value) KA_NEAREST_DISTANCE = value end })
 
-    -- 传送
+    -- ==================== 传送点 ====================
     D:Toggle({ Title = "启用传送", Value = false, Callback = function(value) Settings.TeleportEnabled = value end })
     local function doTeleport(pos, name)
         if not Settings.TeleportEnabled then WindUI:Notify({ Title = "传送", Content = "请先开启传送开关", Duration = 3 }); return end
@@ -1266,7 +1235,7 @@ function createUI()
     D:Dropdown({ Title = "送货能用到的传送", Values = deliveryNames, Value = deliveryNames[1], Callback = function(value) selectedDelivery = value end })
     D:Button({ Title = "传送到选定地点", Callback = function() for _, data in ipairs(DELIVERY_TELEPORTS) do if data.n == selectedDelivery then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
 
-    -- 透视
+    -- ==================== 透视 ====================
     local ESP_ENABLED, ESP_SHOW_NAME, ESP_SHOW_TEAM, ESP_SHOW_HEALTH, ESP_SHOW_DIST, ESP_SHOW_SELF, ESP_SHOW_PEERS, ESP_LIST, ESP_REFRESH_COUNT = false, true, true, true, true, false, true, {}, 0
     local function GetTeam(p)
         if p.Team then
@@ -1395,7 +1364,7 @@ function createUI()
     Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(0.3); if ESP_ENABLED then RefreshESP() end end) end)
     Players.PlayerRemoving:Connect(function(p) RemoveESP(p.UserId) end)
 
-    -- 音乐
+    -- ==================== 音乐 ====================
     local MusicTab = Window:Tab({ Title = "音乐", Icon = "music" })
     local MusicGroup = MusicTab:Section({ Title = "音乐播放器", Opened = true })
     local SONG_LIST = {
@@ -1452,7 +1421,7 @@ function createUI()
     MusicGroup:Paragraph({ Title = "播放模式", Desc = "选择音乐的播放方式" })
     MusicGroup:Dropdown({ Title = "播放模式", Values = { "顺序播放", "循环播放", "随机播放" }, Value = "顺序播放", Callback = function(value) playMode = value; WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 }); if isMusicPlaying then PlaySongByIndex(currentPlayIndex) end end })
 
-    -- 设置
+    -- ==================== 设置 ====================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
     local adminVerified = false
     local KeySection = SettingsTab:Section({ Title = "开发者验证", Opened = true })
