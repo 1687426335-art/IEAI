@@ -455,8 +455,8 @@ function createUI()
     end)
 
     InteractTab:Divider({ Text = "互动功能" })
-    InteractTab:Toggle({ Title = "快速互动（瞬间完成）", Value = false, Callback = function(value) fastInteractEnabled = value end })
-    InteractTab:Toggle({ Title = "自动互动（附近全触发）", Value = false, Callback = function(value) autoInteractEnabled = value end })
+    InteractTab:Toggle({ Title = "快速互动", Value = false, Callback = function(value) fastInteractEnabled = value end })
+    InteractTab:Toggle({ Title = "自动互动", Value = false, Callback = function(value) autoInteractEnabled = value end })
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
