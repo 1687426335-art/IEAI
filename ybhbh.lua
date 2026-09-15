@@ -100,8 +100,11 @@ task.spawn(function()
     local scaleVal = rig:FindFirstChild("VRScale")
     local cam = workspace.CurrentCamera
 
+    -- ============================================================
+    -- 姿态参数（更贴近真实 VR 手部姿态）
+    -- ============================================================
     local S = {
-        reach  = 0.55, spread = 0.34, height = -0.25,
+        reach  = 0.42, spread = 0.28, height = -0.30,  -- 更自然的手部位置
         sens   = 0.0025, moveK = 0.16, look = true,
         scale  = 10, moveMult = 1.0,
     }
@@ -112,13 +115,24 @@ task.spawn(function()
         presetName = "None",
     }
 
+    -- 手部旋转（双手/右手/左手）
     local HandRot = {
         both  = { yaw = 0, pitch = 0 },
         right = { yaw = 0, pitch = 0 },
         left  = { yaw = 0, pitch = 0 },
     }
 
+    -- 手腕自然旋转（更像真实 VR 手部）
+    local WristPose = {
+        left  = CFrame.Angles(math.rad(-18), math.rad( 12), math.rad(-6)),
+        right = CFrame.Angles(math.rad(-18), math.rad(-12), math.rad( 6)),
+    }
+
     local rotMode = "none"
+
+    -- 呼吸/晃动相位
+    local phaseL = 0
+    local phaseR = math.pi * 0.7
 
     local ok, VRUtils = pcall(function()
         return require(lp.PlayerScripts.ClientLoader.PlayerModule.VRModule.VRUtils)
@@ -127,27 +141,41 @@ task.spawn(function()
         VRUtils.GetUserCFrame = function(uc, scale)
             scale = scale or cam.HeadScale
             if scale <= 1 then scale = math.max((scaleVal and scaleVal.Value or 1) * 60, 6) end
-            local baseCF
+
+            local t = tick()
+            -- 呼吸微动（每秒1.2次轻微起伏）
+            local breathe = math.sin(t * 1.2) * 0.006
+            -- 手部自然晃动（轻微横向/纵向）
+            local swayX = math.sin(t * 0.85) * 0.004
+            local swayY = math.cos(t * 0.95) * 0.004
+
+            local basePos
+            local wrist
             if uc == Enum.UserCFrame.LeftHand then
-                local c = CFrame.new(-S.spread, S.height, -S.reach)
-                baseCF = c.Rotation + c.Position * scale
+                basePos = Vector3.new(-S.spread + swayX, S.height + breathe + swayY, -S.reach)
+                wrist = WristPose.left
             elseif uc == Enum.UserCFrame.RightHand then
-                local c = CFrame.new(S.spread, S.height, -S.reach)
-                baseCF = c.Rotation + c.Position * scale
+                basePos = Vector3.new(S.spread + swayX, S.height + breathe + swayY, -S.reach)
+                wrist = WristPose.right
             else
-                baseCF = identity
+                return identity
             end
+
+            local handCF = CFrame.new(basePos * scale) * wrist
+
+            -- 应用手动旋转
             local rotBoth  = CFrame.Angles(HandRot.both.pitch,  HandRot.both.yaw,  0)
             local rotRight = CFrame.Angles(HandRot.right.pitch, HandRot.right.yaw, 0)
             local rotLeft  = CFrame.Angles(HandRot.left.pitch,  HandRot.left.yaw,  0)
+
             if uc == Enum.UserCFrame.RightHand then
-                return baseCF * rotBoth * rotRight
+                return handCF * rotBoth * rotRight
             elseif uc == Enum.UserCFrame.LeftHand then
-                return baseCF * rotBoth * rotLeft
+                return handCF * rotBoth * rotLeft
             end
-            return baseCF
+            return handCF
         end
-        print("[NoVR] VRUtils 拦截成功")
+        print("[NoVR] VRUtils 拦截成功（真实姿态）")
     else
         warn("[NoVR] 拦截 VRUtils 失败")
     end
@@ -190,6 +218,15 @@ task.spawn(function()
         end
     end
 
+    -- 非线性曲线：让手指弯曲更自然
+    local function curve(v)
+        if type(v) ~= "number" then return v end
+        if v <= 0 then return 0 end
+        if v >= 1 then return 1 end
+        -- 三次贝塞尔近似：慢→快
+        return 1 - (1 - v) ^ 1.6
+    end
+
     local function applyGesture(g)
         if not Input then return end
         local function calcProxyFist(hand, gTable)
@@ -200,25 +237,33 @@ task.spawn(function()
             local ring   = gTable[hand .. "Ring"]   or 0
             local pinky  = gTable[hand .. "Pinky"]  or 0
             local bendCount = middle + ring + pinky
-            if bendCount > 0 then return math.clamp(bendCount / 3, 0.2, 1) end
+            if bendCount > 0 then return math.clamp(curve(bendCount / 3), 0.15, 1) end
             return nil
         end
         local rProxy = calcProxyFist("r", g)
         local lProxy = calcProxyFist("l", g)
-        if g.rThumb  ~= nil then safeSetInput("rThumb",  g.rThumb)  end
-        if g.rIndex  ~= nil then safeSetInput("rIndex",  g.rIndex)  end
-        if g.rMiddle ~= nil and Supported.rMiddle then safeSetInput("rMiddle", g.rMiddle) end
-        if g.rRing   ~= nil and Supported.rRing   then safeSetInput("rRing",   g.rRing)   end
-        if g.rPinky  ~= nil and Supported.rPinky  then safeSetInput("rPinky",  g.rPinky)  end
-        if g.rFist   ~= nil then safeSetInput("rFist",   g.rFist)
+
+        -- 应用非线性弯曲
+        local function apply(hand, finger, val)
+            safeSetInput(hand .. finger, curve(val))
+        end
+
+        if g.rThumb  ~= nil then apply("r", "Thumb",  g.rThumb)  end
+        if g.rIndex  ~= nil then apply("r", "Index",  g.rIndex)  end
+        if g.rMiddle ~= nil and Supported.rMiddle then apply("r", "Middle", g.rMiddle) end
+        if g.rRing   ~= nil and Supported.rRing   then apply("r", "Ring",   g.rRing)   end
+        if g.rPinky  ~= nil and Supported.rPinky  then apply("r", "Pinky",  g.rPinky)  end
+        if g.rFist   ~= nil then safeSetInput("rFist", curve(g.rFist))
         elseif rProxy then safeSetInput("rFist", rProxy) end
-        if g.lThumb  ~= nil then safeSetInput("lThumb",  g.lThumb)  end
-        if g.lIndex  ~= nil then safeSetInput("lIndex",  g.lIndex)  end
-        if g.lMiddle ~= nil and Supported.lMiddle then safeSetInput("lMiddle", g.lMiddle) end
-        if g.lRing   ~= nil and Supported.lRing   then safeSetInput("lRing",   g.lRing)   end
-        if g.lPinky  ~= nil and Supported.lPinky  then safeSetInput("lPinky",  g.lPinky)  end
-        if g.lFist   ~= nil then safeSetInput("lFist",   g.lFist)
+
+        if g.lThumb  ~= nil then apply("l", "Thumb",  g.lThumb)  end
+        if g.lIndex  ~= nil then apply("l", "Index",  g.lIndex)  end
+        if g.lMiddle ~= nil and Supported.lMiddle then apply("l", "Middle", g.lMiddle) end
+        if g.lRing   ~= nil and Supported.lRing   then apply("l", "Ring",   g.lRing)   end
+        if g.lPinky  ~= nil and Supported.lPinky  then apply("l", "Pinky",  g.lPinky)  end
+        if g.lFist   ~= nil then safeSetInput("lFist", curve(g.lFist))
         elseif lProxy then safeSetInput("lFist", lProxy) end
+
         for k, v in pairs(g) do
             if Gesture[k] ~= nil and type(v) == "number" then Gesture[k] = v end
         end
@@ -333,32 +378,86 @@ task.spawn(function()
     local keys = {}
 
     -- ============================================================
-    -- 射击功能
+    -- 射击功能（不依赖 Tool 装备状态）
     -- ============================================================
-    local function findEquippedTool()
-        local char = lp.Character
-        if not char then return nil end
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Tool") then
-                return child
-            end
-        end
-        return nil
+    local function safeActivate(obj)
+        pcall(function() obj:Activate() end)
     end
 
-    local function fireOnce()
-        local tool = findEquippedTool()
-        if not tool then return end
+    -- 收集所有可能的武器
+    local function collectWeapons()
+        local list = {}
+        local char = lp.Character
+        if not char then return list end
 
+        -- 1. character 下所有 Tool（不管是否装备）
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("Tool") then table.insert(list, child) end
+        end
+
+        -- 2. 手部及其后代的所有 Tool（拿起来的武器通常挂在这里）
+        for _, handName in ipairs({"RightHand", "LeftHand"}) do
+            local hand = char:FindFirstChild(handName)
+            if hand then
+                for _, desc in ipairs(hand:GetDescendants()) do
+                    if desc:IsA("Tool") then table.insert(list, desc) end
+                end
+            end
+        end
+
+        -- 3. workspace 下挂在手部附件上的 Tool
+        for _, obj in ipairs(workspace:GetChildren()) do
+            if obj:IsA("Tool") then
+                local handle = obj:FindFirstChild("Handle")
+                if handle and handle.Parent then
+                    local attachedTo = handle:FindFirstChildWhichIsA("Attachment")
+                    if attachedTo then table.insert(list, obj) end
+                end
+            end
+        end
+
+        return list
+    end
+
+    -- 射击（多重兜底）
+    local function fireOnce()
+        local char = lp.Character
+
+        -- 1. VIM 模拟真实鼠标左键（覆盖大部分 Tool 装备状态）
         pcall(function()
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
         end)
-        task.wait(0.02)
+        task.wait(0.015)
         pcall(function()
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
         end)
 
-        pcall(function() tool:Activate() end)
+        -- 2. 激活所有找到的武器
+        if char then
+            for _, w in ipairs(collectWeapons()) do
+                safeActivate(w)
+            end
+        end
+
+        -- 3. 模拟手部 trigger（扣扳机）
+        if Input then
+            -- 保存当前状态
+            local prevIdx = Supported.rIndex and Input.rIndex or nil
+            local prevFist = Supported.rFist and Input.rFist or nil
+
+            -- 快速扣扳机：食指瞬时按下
+            if Supported.rIndex then
+                pcall(function() Input.rIndex = 1 end)
+                task.wait(0.03)
+                pcall(function() Input.rIndex = prevIdx or 0 end)
+            end
+            -- 如果 rIndex 没支持，试 rFist 脉冲
+            if Supported.rFist and not Supported.rIndex then
+                pcall(function() Input.rFist = math.max(Input.rFist or 0, 0.9) end)
+                task.wait(0.03)
+                pcall(function() Input.rFist = prevFist or 0 end)
+            end
+        end
     end
 
     local shootHolding = false
@@ -370,7 +469,7 @@ task.spawn(function()
         shootLoopThread = task.spawn(function()
             while shootHolding do
                 fireOnce()
-                task.wait(0.08)
+                task.wait(0.06)
             end
             shootLoopThread = nil
         end)
@@ -407,9 +506,6 @@ task.spawn(function()
     viewFrame.ZIndex = 0
     viewFrame.Parent = gui
 
-    -- ============================================================
-    -- 全局触摸处理
-    -- ============================================================
     local activeTouchId = nil
     local lastTouchPos = nil
 
@@ -483,9 +579,6 @@ task.spawn(function()
         end
     end)
 
-    -- ============================================================
-    -- 通用按钮
-    -- ============================================================
     local function makeButton(parent, name, text, pos, size, onPress, onRelease, color)
         local btn = Instance.new("TextButton")
         btn.Name = name
@@ -514,7 +607,6 @@ task.spawn(function()
         return btn
     end
 
-    -- ========== 左下角十字方向键 ==========
     local padSize = 58
     local gap = 5
     local padX, padY = 15, 15
@@ -572,9 +664,6 @@ task.spawn(function()
     local shP, shR = pKey(Enum.KeyCode.LeftShift)
     makeButton(vert, "Down", "↓", UDim2.new(0, 0, 0, padSize + gap), UDim2.new(0, padSize, 0, padSize), shP, shR, Color3.fromRGB(60, 30, 30))
 
-    -- ============================================================
-    -- 动作面板（屏幕右侧，不挡视野）
-    -- ============================================================
     local actionPanel = Instance.new("Frame")
     actionPanel.Name = "ActionPanel"
     actionPanel.AnchorPoint = Vector2.new(1, 1)
@@ -684,7 +773,6 @@ task.spawn(function()
         end
     end
 
-    -- 简易滑块
     local function makeSlider(parent, label, yPos, minV, maxV, defV, fmt, onChange)
         local container = Instance.new("Frame")
         container.Size = UDim2.new(1, -16, 0, 52)
@@ -780,7 +868,6 @@ task.spawn(function()
         return container
     end
 
-    -- 页面1：预设
     local page1 = Instance.new("Frame")
     page1.Size = UDim2.new(1, 0, 1, 0)
     page1.BackgroundTransparency = 1
@@ -800,7 +887,6 @@ task.spawn(function()
         { name="P11", text="敬礼",  preset="Salute" },
     })
 
-    -- 页面2：组合
     local page2 = Instance.new("Frame")
     page2.Size = UDim2.new(1, 0, 1, 0)
     page2.BackgroundTransparency = 1
@@ -819,7 +905,6 @@ task.spawn(function()
         { name="Q9", text="爪子",  preset="Claw" },
     })
 
-    -- 页面3：单指
     local page3 = Instance.new("Frame")
     page3.Size = UDim2.new(1, 0, 1, 0)
     page3.BackgroundTransparency = 1
@@ -841,7 +926,6 @@ task.spawn(function()
         { name="F12", text="左拳",   hand="l", finger="Fist",   key="lFist",   hold=true },
     })
 
-    -- 页面4：调节
     local page4 = Instance.new("Frame")
     page4.Size = UDim2.new(1, 0, 1, 0)
     page4.BackgroundTransparency = 1
@@ -852,7 +936,7 @@ task.spawn(function()
     makeSlider(page4, "滑屏灵敏度", 5, 0.0005, 0.008, 0.0025, "%.4f", function(v)
         S.sens = v
     end)
-    makeSlider(page4, "手部距离", 60, 0.15, 2.5, 0.55, "%.2f", function(v)
+    makeSlider(page4, "手部距离", 60, 0.15, 2.5, 0.42, "%.2f", function(v)
         S.reach = v
     end)
     makeSlider(page4, "体型大小", 115, 1, 10, 10, "%.0f", function(v)
@@ -890,9 +974,6 @@ task.spawn(function()
     tab4.MouseButton1Click:Connect(function() switchTab(4) end)
     switchTab(1)
 
-    -- ============================================================
-    -- 射击按钮
-    -- ============================================================
     local shootBtn = Instance.new("TextButton")
     shootBtn.Name = "ShootBtn"
     shootBtn.AnchorPoint = Vector2.new(1, 1)
@@ -930,7 +1011,6 @@ task.spawn(function()
         stopShootHold()
     end)
 
-    -- 动作按钮
     local togglePanelBtn = Instance.new("TextButton")
     togglePanelBtn.Name = "TogglePanel"
     togglePanelBtn.AnchorPoint = Vector2.new(1, 1)
@@ -953,7 +1033,6 @@ task.spawn(function()
         actionPanel.Visible = not actionPanel.Visible
     end)
 
-    -- 旋转按钮组
     local rotBtnRow = Instance.new("Frame")
     rotBtnRow.AnchorPoint = Vector2.new(1, 1)
     rotBtnRow.Position = UDim2.new(1, -15, 1, -185)
@@ -1005,9 +1084,6 @@ task.spawn(function()
     makeRotBtn("转右手", "right", 40)
     makeRotBtn("转左手", "left",  80)
 
-    -- ============================================================
-    -- 主循环
-    -- ============================================================
     RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
         local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
@@ -1036,7 +1112,6 @@ task.spawn(function()
         end
     end)
 
-    -- 顶部提示
     pcall(function()
         local hud = Instance.new("ScreenGui")
         hud.Name = "NoVR_Tip"
