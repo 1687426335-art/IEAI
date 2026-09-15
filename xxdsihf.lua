@@ -163,7 +163,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "哪个CS刚刚给我抓了😡"
+            banner.Text = "已更新最新的绕过反作弊"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
@@ -447,7 +447,7 @@ function createUI()
         end
     end })
 
-    -- ==================== 互动 & 警察功能 ====================
+    -- ==================== 互动 & 警察功能（已修复） ====================
     local fastInteractEnabled, autoInteractEnabled, autoCuffEnabled = false, false, false
 
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
@@ -463,7 +463,7 @@ function createUI()
 
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.05)
+            task.wait(0.1)
             if autoInteractEnabled then
                 for _, descendant in pairs(workspace:GetDescendants()) do
                     if descendant:IsA("ProximityPrompt") then
@@ -482,7 +482,10 @@ function createUI()
                             if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
                                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                                 if event then
-                                    pcall(function() event:InvokeServer("handcuff", p, false) end)
+                                    task.spawn(function()
+                                        pcall(function() event:InvokeServer("handcuff", p, false) end)
+                                    end)
+                                    task.wait(0.1)
                                 end
                             end
                         end
@@ -491,8 +494,7 @@ function createUI()
             end
         end
     end)
-
-    -- ==================== 自动躲警察 ====================
+-- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
     local function isVisible(fromPos, toPos, ignoreInstances)
         local direction = (toPos - fromPos).Unit
@@ -718,7 +720,7 @@ function createUI()
                 button.Position = UDim2.new(startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X, startPos.X.Offset + delta.X, startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y, startPos.Y.Offset + delta.Y)
             end
         end)
-        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.M thenouseButton1 then dragging = false end end)
         updateFlyStatus()
         local statusConn = RunService.Heartbeat:Connect(function() if flyQuickToggle and flyQuickStatusLabel then updateFlyStatus() end end)
         table.insert(connections, statusConn)
@@ -726,7 +728,8 @@ function createUI()
     FlyTab:Toggle({ Title = "飞天快捷开关", Value = false, Callback = function(value) flyQuickToggle = value; if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end end })
     FlyTab:Divider({ Text = "移速" })
     local speedBypassOn, speedBypassValue = false, 20
-    FlyTab:Toggle({ Title = "修改移速（绕过）", Value = false, Callback = function(value) speedBypassOn = value end })
+   
+ FlyTab:Toggle({                Title = "修改移速（绕过 local）", Value = char false, Callback = = function(value) speedBypassOn = value end })
     FlyTab:Slider({ Title = "移速", Step = 1, Value = { Min = 5, Max = 150, Default = 20 }, Callback = function(value) speedBypassValue = value end })
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
@@ -743,8 +746,7 @@ function createUI()
         local newAffected = {}
         for i = 1, #players do
             local p = players[i]
-            if p ~= player and p.Character and not (Settings.WhitelistEnabled and Whitelist[p.UserId]) then
-                local char = p.Character
+            if p ~= player and p.Character and not (Settings.WhitelistEnabled and Whitelist[p.UserId]) p.Character
                 local head = char:FindFirstChild("Head")
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 if hum and hum.Health > 0 and head then
