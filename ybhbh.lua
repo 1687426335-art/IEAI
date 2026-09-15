@@ -1,25 +1,27 @@
-local qot = queue_on_teleport or (syn and syn.queue_on_teleport)
-local checks = {
-    { "getrawmetatable",   getrawmetatable   },
-    { "setreadonly",       setreadonly       },
-    { "newcclosure",       newcclosure       },
-    { "getnamecallmethod", getnamecallmethod },
-    { "getgc",             getgc             },
-    { "queue_on_teleport", qot               },
-}
-local missing, report = {}, "[VR Hands No-VR Pro] UNC test:\n"
-for _, c in ipairs(checks) do
-    local ok = type(c[2]) == "function"
-    report = report .. ("  [%s] %s\n"):format(ok and "+" or "-", c[1])
-    if not ok then table.insert(missing, c[1]) end
+do
+    local qot = queue_on_teleport or (syn and syn.queue_on_teleport)
+    local checks = {
+        { "getrawmetatable",   getrawmetatable   },
+        { "setreadonly",       setreadonly       },
+        { "newcclosure",       newcclosure       },
+        { "getnamecallmethod", getnamecallmethod },
+        { "getgc",             getgc             },
+        { "queue_on_teleport", qot               },
+    }
+    local missing, report = {}, "[VR Hands No-VR Mobile] UNC test:\n"
+    for _, c in ipairs(checks) do
+        local ok = type(c[2]) == "function"
+        report = report .. ("  [%s] %s\n"):format(ok and "+" or "-", c[1])
+        if not ok then table.insert(missing, c[1]) end
+    end
+    print(report)
+    if #missing > 0 then
+        warn("[NoVR Mobile] 缺少函数: " .. table.concat(missing, ", "))
+        warn("[NoVR Mobile] 执行器不支持 - 中止。")
+        return
+    end
+    print("[NoVR Mobile] UNC 测试通过，启动中...")
 end
-print(report)
-if #missing > 0 then
-    warn("[NoVR Pro] 缺少函数: " .. table.concat(missing, ", "))
-    warn("[NoVR Pro] 执行器不支持 - 中止。")
-    return
-end
-print("[NoVR Pro] UNC 测试通过，启动中...")
 
 local Players         = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -30,10 +32,6 @@ local UIS         = game:GetService("UserInputService")
 local RunService  = game:GetService("RunService")
 local Players     = game:GetService("Players")
 local identity    = CFrame.identity
-
--- 检测是否为手机端（有触摸屏且无鼠标）
-local isMobile = UIS.TouchEnabled and not UIS.MouseEnabled
-local isPC = UIS.MouseEnabled
 
 do
     local mt = getrawmetatable(game)
@@ -118,8 +116,8 @@ task.spawn(function()
         right = { yaw = 0, pitch = 0 },
         left  = { yaw = 0, pitch = 0 },
     }
-    local middleMouseHeld = false
     local rotTarget = "both"
+    local handRotMode = false -- 手机专用：手旋转模式开关
 
     local ok, VRUtils = pcall(function()
         return require(lp.PlayerScripts.ClientLoader.PlayerModule.VRModule.VRUtils)
@@ -195,6 +193,11 @@ task.spawn(function()
     end
 
     local HAS_FULL_FINGERS = Supported.rMiddle == true
+    if HAS_FULL_FINGERS then
+        print("[NoVR] 检测到完整手指支持")
+    else
+        print("[NoVR] 检测到简化手指支持，中指/无名指/小指用 Fist 代理")
+    end
 
     local function safeSetInput(key, value)
         if Input and Supported[key] then
@@ -292,29 +295,13 @@ task.spawn(function()
     }
 
     local PresetKeys = {
-        [Enum.KeyCode.One]   = "Open",
-        [Enum.KeyCode.Two]   = "Fist",
-        [Enum.KeyCode.Three] = "Point",
-        [Enum.KeyCode.Four]  = "Peace",
-        [Enum.KeyCode.Five]  = "ThumbsUp",
-        [Enum.KeyCode.Six]   = "OK",
-        [Enum.KeyCode.Seven] = "Rock",
-        [Enum.KeyCode.Eight] = "Middle",
-        [Enum.KeyCode.Nine]  = "Phone",
-        [Enum.KeyCode.Zero]  = "Gun",
+        ["Open"]="1", ["Fist"]="2", ["Point"]="3", ["Peace"]="4", ["ThumbsUp"]="5",
+        ["OK"]="6", ["Rock"]="7", ["Middle"]="8", ["Phone"]="9", ["Gun"]="0",
     }
 
     local PresetKeysCtrl = {
-        [Enum.KeyCode.One]   = "PinchR",
-        [Enum.KeyCode.Two]   = "GrabR",
-        [Enum.KeyCode.Three] = "PinchL",
-        [Enum.KeyCode.Four]  = "GrabL",
-        [Enum.KeyCode.Five]  = "Flap",
-        [Enum.KeyCode.Six]   = "Horns",
-        [Enum.KeyCode.Seven] = "Shaka",
-        [Enum.KeyCode.Eight] = "Salute",
-        [Enum.KeyCode.Nine]  = "Pray",
-        [Enum.KeyCode.Zero]  = "Claw",
+        ["PinchR"]="1", ["GrabR"]="2", ["PinchL"]="3", ["GrabL"]="4", ["Flap"]="5",
+        ["Horns"]="6", ["Shaka"]="7", ["Salute"]="8", ["Pray"]="9", ["Claw"]="0",
     }
 
     local FingerKeys = {
@@ -399,352 +386,336 @@ task.spawn(function()
 
     local function setLook(v)
         S.look = v
-        if isPC then
-            UIS.MouseBehavior    = v and Enum.MouseBehavior.LockCenter or Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = not v
-        end
     end
     setLook(true)
 
     -- ============================================================
-    -- 手机端虚拟摇杆 (左下角)
+    -- 手机端 UI 构建
     -- ============================================================
-    local joyX, joyY = 0, 0
-    local isJoystickActive = false
+    local playerGui = lp:WaitForChild("PlayerGui")
+    
+    -- 1. 左下角移动摇杆
+    local moveGui = Instance.new("ScreenGui")
+    moveGui.Name = "NoVR_Mobile_Move"
+    moveGui.ResetOnSpawn = false
+    moveGui.IgnoreGuiInset = true
+    moveGui.Parent = playerGui
 
-    if isMobile then
-        local mobileGui = Instance.new("ScreenGui")
-        mobileGui.Name = "NoVR_MobileControls"
-        mobileGui.ResetOnSpawn = false
-        mobileGui.IgnoreGuiInset = true
-        mobileGui.Parent = lp:WaitForChild("PlayerGui")
+    local moveFrame = Instance.new("Frame", moveGui)
+    moveFrame.AnchorPoint = Vector2.new(0, 1)
+    moveFrame.Position = UDim2.new(0, 20, 1, -20)
+    moveFrame.Size = UDim2.new(0, 180, 0, 180)
+    moveFrame.BackgroundTransparency = 0.5
+    moveFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    moveFrame.BorderSizePixel = 0
+    local moveCorner = Instance.new("UICorner", moveFrame)
+    moveCorner.CornerRadius = UDim.new(0, 12)
 
-        local joyFrame = Instance.new("Frame", mobileGui)
-        joyFrame.Name = "Joystick"
-        joyFrame.AnchorPoint = Vector2.new(0, 1)
-        joyFrame.Position = UDim2.new(0, 40, 1, -40)
-        joyFrame.Size = UDim2.new(0, 160, 0, 160)
-        joyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        joyFrame.BackgroundTransparency = 0.5
-        joyFrame.BorderSizePixel = 0
-        local joyCorner = Instance.new("UICorner", joyFrame)
-        joyCorner.CornerRadius = UDim.new(1, 0)
+    local function createMobileBtn(parent, name, text, size, pos)
+        local btn = Instance.new("TextButton", parent)
+        btn.Name = name
+        btn.Text = text
+        btn.Size = size
+        btn.Position = pos
+        btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        btn.BackgroundTransparency = 0.4
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.TextSize = 20
+        btn.Font = Enum.Font.GothamBold
+        btn.BorderSizePixel = 0
+        local c = Instance.new("UICorner", btn)
+        c.CornerRadius = UDim.new(0, 8)
+        return btn
+    end
 
-        local joyStick = Instance.new("Frame", joyFrame)
-        joyStick.Name = "Stick"
-        joyStick.AnchorPoint = Vector2.new(0.5, 0.5)
-        joyStick.Position = UDim2.new(0.5, 0, 0.5, 0)
-        joyStick.Size = UDim2.new(0, 70, 0, 70)
-        joyStick.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-        joyStick.BackgroundTransparency = 0.3
-        joyStick.BorderSizePixel = 0
-        local stickCorner = Instance.new("UICorner", joyStick)
-        stickCorner.CornerRadius = UDim.new(1, 0)
+    -- 移动按键布局
+    createMobileBtn(moveFrame, "W", "↑", UDim2.new(0,50,0,50), UDim2.new(0,65,0,0)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.W]=true end)
+    createMobileBtn(moveFrame, "W", "↑", UDim2.new(0,50,0,50), UDim2.new(0,65,0,0)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.W]=false end)
+    createMobileBtn(moveFrame, "S", "↓", UDim2.new(0,50,0,50), UDim2.new(0,65,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.S]=true end)
+    createMobileBtn(moveFrame, "S", "↓", UDim2.new(0,50,0,50), UDim2.new(0,65,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.S]=false end)
+    createMobileBtn(moveFrame, "A", "←", UDim2.new(0,50,0,50), UDim2.new(0,0,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.A]=true end)
+    createMobileBtn(moveFrame, "A", "←", UDim2.new(0,50,0,50), UDim2.new(0,0,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.A]=false end)
+    createMobileBtn(moveFrame, "D", "→", UDim2.new(0,50,0,50), UDim2.new(0,130,0,65)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.D]=true end)
+    createMobileBtn(moveFrame, "D", "→", UDim2.new(0,50,0,50), UDim2.new(0,130,0,65)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.D]=false end)
+    createMobileBtn(moveFrame, "Space", "⬆", UDim2.new(0,50,0,50), UDim2.new(0,65,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.Space]=true end)
+    createMobileBtn(moveFrame, "Space", "⬆", UDim2.new(0,50,0,50), UDim2.new(0,65,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.Space]=false end)
+    createMobileBtn(moveFrame, "Shift", "⬇", UDim2.new(0,50,0,50), UDim2.new(0,0,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.LeftShift]=true end)
+    createMobileBtn(moveFrame, "Shift", "⬇", UDim2.new(0,50,0,50), UDim2.new(0,0,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.LeftShift]=false end)
+    createMobileBtn(moveFrame, "Jump", "跳", UDim2.new(0,50,0,50), UDim2.new(0,130,0,130)).MouseButton1Down:Connect(function() keys[Enum.KeyCode.Space]=true end)
+    createMobileBtn(moveFrame, "Jump", "跳", UDim2.new(0,50,0,50), UDim2.new(0,130,0,130)).MouseButton1Up:Connect(function() keys[Enum.KeyCode.Space]=false end)
 
-        local function updateJoystick(input)
-            local center = joyFrame.AbsolutePosition + joyFrame.AbsoluteSize / 2
-            local delta = Vector2.new(input.Position.X, input.Position.Y) - center
-            local radius = joyFrame.AbsoluteSize.X / 2
-            if delta.Magnitude > radius then
-                delta = delta.Unit * radius
-            end
-            joyStick.Position = UDim2.new(0.5, delta.X, 0.5, delta.Y)
-            joyX = delta.X / radius
-            joyY = delta.Y / radius
-            isJoystickActive = true
-        end
+    -- 2. 右侧动作面板（可滚动）
+    local actionGui = Instance.new("ScreenGui")
+    actionGui.Name = "NoVR_Mobile_Actions"
+    actionGui.ResetOnSpawn = false
+    actionGui.IgnoreGuiInset = true
+    actionGui.Parent = playerGui
 
-        local function resetJoystick()
-            joyStick.Position = UDim2.new(0.5, 0, 0.5, 0)
-            joyX = 0
-            joyY = 0
-            isJoystickActive = false
-        end
+    local toggleBtn = Instance.new("TextButton", actionGui)
+    toggleBtn.AnchorPoint = Vector2.new(1, 0.5)
+    toggleBtn.Position = UDim2.new(1, -10, 0.5, 0)
+    toggleBtn.Size = UDim2.new(0, 40, 0, 40)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    toggleBtn.Text = "▶"
+    toggleBtn.TextColor3 = Color3.new(1,1,1)
+    toggleBtn.TextSize = 20
+    toggleBtn.Font = Enum.Font.GothamBold
+    local tc = Instance.new("UICorner", toggleBtn)
+    tc.CornerRadius = UDim.new(1, 0)
 
-        joyFrame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch then
-                updateJoystick(input)
-            end
-        end)
-        joyFrame.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch then
-                updateJoystick(input)
-            end
-        end)
-        joyFrame.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch then
-                resetJoystick()
-            end
-        end)
+    local scrollFrame = Instance.new("ScrollingFrame", actionGui)
+    scrollFrame.AnchorPoint = Vector2.new(1, 0.5)
+    scrollFrame.Position = UDim2.new(1, -60, 0.5, 0)
+    scrollFrame.Size = UDim2.new(0, 260, 0, 500)
+    scrollFrame.BackgroundTransparency = 0.5
+    scrollFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.ScrollBarThickness = 4
+    scrollFrame.Visible = false
+    local sc = Instance.new("UICorner", scrollFrame)
+    sc.CornerRadius = UDim.new(0, 8)
 
-        -- ============================================================
-        -- 手机端动作按钮面板 (右下角)
-        -- ============================================================
-        local actionPanel = Instance.new("Frame", mobileGui)
-        actionPanel.Name = "ActionPanel"
-        actionPanel.AnchorPoint = Vector2.new(1, 1)
-        actionPanel.Position = UDim2.new(1, -20, 1, -20)
-        actionPanel.Size = UDim2.new(0, 320, 0, 240)
-        actionPanel.BackgroundTransparency = 1
+    local scrollLayout = Instance.new("UIListLayout", scrollFrame)
+    scrollLayout.Padding = UDim.new(0, 4)
+    scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-        local scrollFrame = Instance.new("ScrollingFrame", actionPanel)
-        scrollFrame.Size = UDim2.new(1, 0, 1, 0)
-        scrollFrame.BackgroundTransparency = 1
-        scrollFrame.ScrollBarThickness = 4
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    toggleBtn.MouseButton1Click:Connect(function()
+        scrollFrame.Visible = not scrollFrame.Visible
+        toggleBtn.Text = scrollFrame.Visible and "◀" or "▶"
+    end)
 
-        local grid = Instance.new("UIGridLayout", scrollFrame)
-        grid.CellSize = UDim2.new(0, 75, 0, 35)
-        grid.CellPadding = UDim2.new(0, 5, 0, 5)
-        grid.SortOrder = Enum.SortOrder.LayoutOrder
+    -- 添加动作按钮到滚动框架
+    local function addActionButton(text, callback)
+        local btn = Instance.new("TextButton", scrollFrame)
+        btn.Size = UDim2.new(1, -10, 0, 32)
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        btn.Text = text
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.TextSize = 14
+        btn.Font = Enum.Font.Gotham
+        btn.BorderSizePixel = 0
+        local c = Instance.new("UICorner", btn)
+        c.CornerRadius = UDim.new(0, 6)
+        btn.MouseButton1Click:Connect(callback)
+    end
 
-        local function createActionButton(text, callback)
-            local btn = Instance.new("TextButton", scrollFrame)
-            btn.Size = UDim2.new(0, 75, 0, 35)
-            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            btn.Font = Enum.Font.GothamBold
-            btn.TextSize = 12
-            btn.Text = text
-            btn.BorderSizeZero = 0
-            local c = Instance.new("UICorner", btn)
-            c.CornerRadius = UDim.new(0, 6)
-            btn.MouseButton1Click:Connect(callback)
-            return btn
-        end
-
-        -- 预设动作按钮
-        createActionButton("张开", function() applyGesture(Presets["Open"]) end)
-        createActionButton("握拳", function() applyGesture(Presets["Fist"]) end)
-        createActionButton("食指", function() applyGesture(Presets["Point"]) end)
-        createActionButton("剪刀", function() applyGesture(Presets["Peace"]) end)
-        createActionButton("点赞", function() applyGesture(Presets["ThumbsUp"]) end)
-        createActionButton("OK", function() applyGesture(Presets["OK"]) end)
-        createActionButton("摇滚", function() applyGesture(Presets["Rock"]) end)
-        createActionButton("中指", function() applyGesture(Presets["Middle"]) end)
-        createActionButton("电话", function() applyGesture(Presets["Phone"]) end)
-        createActionButton("手枪", function() applyGesture(Presets["Gun"]) end)
-        createActionButton("右手捏", function() applyGesture(Presets["PinchR"]) end)
-        createActionButton("左手捏", function() applyGesture(Presets["PinchL"]) end)
-        createActionButton("右手抓", function() applyGesture(Presets["GrabR"]) end)
-        createActionButton("左手抓", function() applyGesture(Presets["GrabL"]) end)
-        createActionButton("挥手", function() applyGesture(Presets["Flap"]) end)
-        createActionButton("牛角", function() applyGesture(Presets["Horns"]) end)
-        createActionButton("Shaka", function() applyGesture(Presets["Shaka"]) end)
-        createActionButton("敬礼", function() applyGesture(Presets["Salute"]) end)
-        createActionButton("祈祷", function() applyGesture(Presets["Pray"]) end)
-        createActionButton("爪子", function() applyGesture(Presets["Claw"]) end)
-
-        -- 旋转模式切换
-        createActionButton("旋转双手", function()
-            middleMouseHeld = not middleMouseHeld
-            rotTarget = middleMouseHeld and "both" or "both"
-        end)
-        createActionButton("只转右手", function()
-            middleMouseHeld = true
-            rotTarget = "right"
-        end)
-        createActionButton("只转左手", function()
-            middleMouseHeld = true
-            rotTarget = "left"
-        end)
-        createActionButton("停止旋转", function()
-            middleMouseHeld = false
-            rotTarget = "both"
-        end)
-
-        -- 缩放按钮
-        createActionButton("放大", function() setScale(S.scale + 1) end)
-        createActionButton("缩小", function() setScale(S.scale - 1) end)
-
-        -- 单指操作按钮（按下生效，松开恢复）
-        local fingerButtons = {
-            { "右拇指", "r", "Thumb" }, { "右食指", "r", "Index" }, { "右中指", "r", "Middle" },
-            { "右无名", "r", "Ring" }, { "右小指", "r", "Pinky" }, { "右拳", "r", "Fist" },
-            { "左拇指", "l", "Thumb" }, { "左食指", "l", "Index" }, { "左中指", "l", "Middle" },
-            { "左无名", "l", "Ring" }, { "左小指", "l", "Pinky" }, { "左拳", "l", "Fist" },
-        }
-
-        for _, fb in ipairs(fingerButtons) do
-            local btn = createActionButton(fb[1], function() end)
-            local hand, finger = fb[2], fb[3]
-            btn.MouseButton1Down:Connect(function()
-                if not preFingerState then preFingerState = saveState() end
-                local g = {}; g[hand .. finger] = 1
-                applyGesture(g)
-            end)
-            btn.MouseButton1Up:Connect(function()
-                if preFingerState then
-                    loadState(preFingerState)
-                    preFingerState = nil
-                end
+    addActionButton("--- 预设动作 (1-0) ---", function() end)
+    for name, key in pairs(PresetKeys) do
+        if Presets[name] then
+            addActionButton(key .. ": " .. Presets[name].presetName, function()
+                applyGesture(Presets[name])
             end)
         end
+    end
 
-        -- 拖动屏幕右侧旋转视角（替代鼠标）
-        local touchLookActive = false
-        local lastTouchPos = nil
+    addActionButton("--- Ctrl 组合动作 ---", function() end)
+    for name, key in pairs(PresetKeysCtrl) do
+        if Presets[name] then
+            addActionButton("Ctrl+" .. key .. ": " .. Presets[name].presetName, function()
+                applyGesture(Presets[name])
+            end)
+        end
+    end
 
-        UIS.TouchStarted:Connect(function(input)
-            if input.Position.X > mobileGui.AbsoluteSize.X * 0.4 then
-                touchLookActive = true
-                lastTouchPos = Vector2.new(input.Position.X, input.Position.Y)
-            end
-        end)
-
-        UIS.TouchMoved:Connect(function(input)
-            if touchLookActive and lastTouchPos then
-                local delta = Vector2.new(input.Position.X, input.Position.Y) - lastTouchPos
-                yaw = yaw - delta.X * S.sens
-                pitch = math.clamp(pitch - delta.Y * S.sens, -1.45, 1.45)
-                lastTouchPos = Vector2.new(input.Position.X, input.Position.Y)
-            end
-        end)
-
-        UIS.TouchEnded:Connect(function(input)
-            touchLookActive = false
-            lastTouchPos = nil
+    addActionButton("--- 单根手指 ---", function() end)
+    for key, data in pairs(FingerKeys) do
+        addActionButton(data.name, function()
+            local g = {}
+            g[data.hand .. data.finger] = 1
+            applyGesture(g)
+            task.delay(0.2, function()
+                local g2 = {}
+                g2[data.hand .. data.finger] = 0
+                applyGesture(g2)
+            end)
         end)
     end
 
-    -- ============================================================
-    -- 输入处理 (PC端仍保留原有逻辑)
-    -- ============================================================
-    if isPC then
-        UIS.InputBegan:Connect(function(io)
-            if io.UserInputType == Enum.UserInputType.Keyboard then
-                keys[io.KeyCode] = true
+    addActionButton("--- 手部旋转 ---", function() end)
+    local rotModeBtn = Instance.new("TextButton", scrollFrame)
+    rotModeBtn.Size = UDim2.new(1, -10, 0, 32)
+    rotModeBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    rotModeBtn.Text = "旋转模式: 关"
+    rotModeBtn.TextColor3 = Color3.new(1,1,1)
+    rotModeBtn.TextSize = 14
+    rotModeBtn.BorderSizePixel = 0
+    local rc = Instance.new("UICorner", rotModeBtn)
+    rc.Cor rotnerRadius = UDim.newTarget(0, 6Btn)
+    rotModeBtn.MouseButton1Click:Connect(function()
+        handRotMode = not handRotMode
+        rotModeBtn.Text = handRotMode and "旋转模式: 开 (拖动屏幕旋转手)" or "旋转模式: 关"
+        rotModeBtn.BackgroundColor3 = handRotMode and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(0, 120, 255)
+    end)
 
-                if io.KeyCode == Enum.KeyCode.F then rotTarget = "right" end
-                if io.KeyCode == Enum.KeyCode.G then rotTarget = "left" end
+    local rotTargetBtn = Instance.new("TextButton", scrollFrame)
+    rotTargetBtn.Size = UDim2.new(1, -10, 0, 32)
+    rotTargetBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    rotTargetBtn.Text = "旋转目标: 双手"
+    rotTargetBtn.TextColor3 = Color3.new(1,1,1)
+   .TextSize = 14
+    rotTargetBtn.BorderSizePixel = 0
+    local rtc = Instance.new("UICorner", rotTargetBtn)
+    rtc.CornerRadius = UDim.new(0, 6)
+    rotTargetBtn.MouseButton1Click:Connect(function()
+        if rotTarget == "both" then rotTarget = "right"
+        elseif rotTarget == "right" then rotTarget = "left"
+        else rotTarget = "both" end
+        rotTargetBtn.Text = "旋转目标: " .. (rotTarget == "both" and "双手" or rotTarget == "right" and "右手" or "左手")
+    end)
 
-                if io.KeyCode == Enum.KeyCode.LeftAlt then setLook(not S.look) end
-                if io.KeyCode == Enum.KeyCode.Equals  then setScale(S.scale + 1) end
-                if io.KeyCode == Enum.KeyCode.Minus   then setScale(S.scale - 1) end
+    -- 旋转方向按钮
+    local rotBtnFrame = Instance.new("Frame", scrollFrame)
+    rotBtnFrame.Size = UDim2.new(1, -10, 0, 70)
+    rotBtnFrame.BackgroundTransparency = 1
+    local rotLayout = Instance.new("UIListLayout", rotBtnFrame)
+    rotLayout.FillDirection = Enum.FillDirection.Horizontal
+    rotLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    rotLayout.Padding = UDim.new(0, 4)
 
-                if Input and io.KeyCode == Enum.KeyCode.E then
-                    applyGesture({rIndex=1, rFist=0, rThumb=0})
-                end
-                if Input and io.KeyCode == Enum.KeyCode.Q then
-                    applyGesture({lIndex=1, lFist=0, lThumb=0})
-                end
-
-                local preset = PresetKeys[io.KeyCode]
-                if preset and Presets[preset] then
-                    applyGesture(Presets[preset])
-                end
-
-                if keys[Enum.KeyCode.LeftControl] or keys[Enum.KeyCode.RightControl] then
-                    local presetCtrl = PresetKeysCtrl[io.KeyCode]
-                    if presetCtrl and Presets[presetCtrl] then
-                        applyGesture(Presets[presetCtrl])
-                    end
-                end
-
-                local fk = FingerKeys[io.KeyCode]
-                if fk then
-                    if not next(heldFingers) then preFingerState = saveState() end
-                    heldFingers[io.KeyCode] = true
-                    local g = {}
-                    g[fk.hand .. fk.finger] = 1
-                    applyGesture(g)
-                end
-
-            elseif io.UserInputType == Enum.UserInputType.MouseButton1 then
-                if Input then applyGesture({rFist=1, rIndex=1}) end
-            elseif io.UserInputType == Enum.UserInputType.MouseButton2 then
-                if Input then applyGesture({lFist=1, lIndex=1}) end
-            elseif io.UserInputType == Enum.UserInputType.MouseButton3 then
-                middleMouseHeld = true
-            end
-        end)
-
-        UIS.InputEnded:Connect(function(io)
-            if io.UserInputType == Enum.UserInputType.Keyboard then
-                keys[io.KeyCode] = false
-
-                if io.KeyCode == Enum.KeyCode.F or io.KeyCode == Enum.KeyCode.G then
-                    if not middleMouseHeld then rotTarget = "both" end
-                end
-
-                if Input and io.KeyCode == Enum.KeyCode.E then applyGesture({rIndex=0}) end
-                if Input and io.KeyCode == Enum.KeyCode.Q then applyGesture({lIndex=0}) end
-
-                local fk = FingerKeys[io.KeyCode]
-                if fk then
-                    heldFingers[io.KeyCode] = nil
-                    if not next(heldFingers) then
-                        loadState(preFingerState)
-                        preFingerState = nil
-                    else
-                        local g = {}
-                        g[fk.hand .. fk.finger] = 0
-                        applyGesture(g)
-                    end
-                end
-
-            elseif io.UserInputType == Enum.UserInputType.MouseButton1 then
-                if Input then applyGesture({rFist=0, rIndex=0}) end
-            elseif io.UserInputType == Enum.UserInputType.MouseButton2 then
-                if Input then applyGesture({lFist=0, lIndex=0}) end
-            elseif io.UserInputType == Enum.UserInputType.MouseButton3 then
-                middleMouseHeld = false
-                rotTarget = "both"
-            end
-        end)
-
-        UIS.InputChanged:Connect(function(io)
-            if io.UserInputType == Enum.UserInputType.MouseWheel then
-                S.reach = math.clamp(S.reach - io.Position.Z * 0.07, 0.15, 2.5)
-            end
+    local function createRotBtn(text, yawDelta, pitchDelta)
+        local btn = Instance.new("TextButton", rotBtnFrame)
+        btn.Size = UDim2.new(0, 60, 0, 30)
+        btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        btn.Text = text
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.TextSize = 12
+        btn.BorderSizePixel = 0
+        local c = Instance.new("UICorner", btn)
+        c.CornerRadius = UDim.new(0, 4)
+        btn.MouseButton1Click:Connect(function()
+            local target = HandRot[rotTarget]
+            target.yaw = target.yaw + yawDelta
+            target.pitch = math.clamp(target.pitch + pitchDelta, -1.5, 1.5)
         end)
     end
 
-    -- ============================================================
-    -- 主渲染循环 (适配手机/PC)
-    -- ============================================================
-    RunService:BindToRenderStep("NoVR_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
-        if isPC then
-            if middleMouseHeld then
-                local d = UIS:GetMouseDelta()
-                local target = HandRot[rotTarget]
-                target.yaw   = target.yaw   - d.X * 0.008
-                target.pitch = math.clamp(target.pitch - d.Y * 0.008, -1.5, 1.5)
-                UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+    createRotBtn("左转", -0.1, 0)
+    createRotBtn("右转", 0.1, 0)
+    createRotBtn("上仰", 0, 0.1)
+    createRotBtn("下俯", 0, -0.1)
+
+    addActionButton("--- 体型与距离 ---", function() end)
+    local scaleFrame = Instance.new("Frame", scrollFrame)
+    scaleFrame.Size = UDim2.new(1, -10, 0, 40)
+    scaleFrame.BackgroundTransparency = 1
+    local scaleLayout = Instance.new("UIListLayout", scaleFrame)
+    scaleLayout.FillDirection = Enum.FillDirection.Horizontal
+    scaleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    scaleLayout.Padding = UDim.new(0, 4)
+
+    local scaleLbl = Instance.new("TextLabel", scaleFrame)
+    scaleLbl.Size = UDim2.new(0, 100, 0, 30)
+    scaleLbl.BackgroundTransparency = 1
+    scaleLbl.Text = "体型: 10"
+    scaleLbl.TextColor3 = Color3.new(1,1,1)
+    scaleLbl.TextSize = 14
+    scaleLbl.Font = Enum.Font.GothamBold
+
+    local function updateScaleLbl()
+        scaleLbl.Text = "体型: " .. S.scale
+    end
+
+    createMobileBtn(scaleFrame, "ScaleUp", "+", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
+        setScale(S.scale + 1)
+        updateScaleLbl()
+    end)
+    createMobileBtn(scaleFrame, "ScaleDown", "-", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
+        setScale(S.scale - 1)
+        updateScaleLbl()
+    end)
+
+    local reachFrame = Instance.new("Frame", scrollFrame)
+    reachFrame.Size = UDim2.new(1, -10, 0, 40)
+    reachFrame.BackgroundTransparency = 1
+    local reachLayout = Instance.new("UIListLayout", reachFrame)
+    reachLayout.FillDirection = Enum.FillDirection.Horizontal
+    reachLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    reachLayout.Padding = UDim.new(0, 4)
+
+    local reachLbl = Instance.new("TextLabel", reachFrame)
+    reachLbl.Size = UDim2.new(0, 100, 0, 30)
+    reachLbl.BackgroundTransparency = 1
+    reachLbl.Text = "手距: 0.55"
+    reachLbl.TextColor3 = Color3.new(1,1,1)
+    reachLbl.TextSize = 14
+    reachLbl.Font = Enum.Font.GothamBold
+
+    local function updateReachLbl()
+        reachLbl.Text = "手距: " .. string.format("%.2f", S.reach)
+    end
+
+    createMobileBtn(reachFrame, "ReachUp", "+", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
+        S.reach = math.clamp(S.reach + 0.1, 0.15, 2.5)
+        updateReachLbl()
+    end)
+    createMobileBtn(reachFrame, "ReachDown", "-", UDim2.new(0, 40, 0, 30), UDim2.new(0, 0, 0, 0)).MouseButton1Click:Connect(function()
+        S.reach = math.clamp(S.reach - 0.1, 0.15, 2.5)
+        updateReachLbl()
+    end)
+
+    -- 3. 触摸视角控制 (替代原版鼠标移动)
+    local touchLookId = nil
+    local lastTouchPos = nil
+    local touchPanId = nil
+    local lastPanPos = nil
+
+    UIS.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            if handRotMode then
+                touchPanId = input
+                lastPanPos = input.Position
             else
-                if S.look then
-                    local d = UIS:GetMouseDelta()
-                    yaw   = yaw - d.X * S.sens
-                    pitch = math.clamp(pitch - d.Y * S.sens, -1.45, 1.45)
-                    UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-                end
-            end
-        else
-            -- 手机端：如果触发了旋转模式，只旋转手，不转视角
-            if middleMouseHeld and lastTouchPos then
-                -- 手机端旋转模式中，触摸屏幕的移动已经在上面的 UIS.TouchMoved 中处理了
+                touchLookId = input
+                lastTouchPos = input.Position
             end
         end
+    end)
 
+    UIS.InputChanged:Connect(function(input, gpe)
+        if gpe then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            if handRotMode and touchPanId and input == touchPanId then
+                local delta = input.Position - lastPanPos
+                lastPanPos = input.Position
+                local target = HandRot[rotTarget]
+                target.yaw = target.yaw - delta.X * 0.008
+                target.pitch = math.clamp(target.pitch - delta.Y * 0.008, -1.5, 1.5)
+            elseif not handRotMode and touchLookId and input == touchLookId then
+                local delta = input.Position - lastTouchPos
+                lastTouchPos = input.Position
+                if S.look then
+                    yaw   = yaw - delta.X * S.sens
+                    pitch = math.clamp(pitch - delta.Y * S.sens, -1.45, 1.45)
+                end
+            end
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input, gpe)
+        if gpe then return end
+        if input.UserInputType == Enum.UserInputType.Touch then
+            if input == touchPanId then touchPanId = nil end
+            if input == touchLookId then touchLookId = nil end
+        end
+    end)
+
+    -- ============================================================
+    -- 主渲染循环 (替代原版 BindToRenderStep)
+    -- ============================================================
+    RunService:BindToRenderStep("NoVR_Mobile_Control", Enum.RenderPriority.Camera.Value + 1, function(dt)
         local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 
-        -- 移动控制 (PC用WASD，手机用摇杆)
         local hs  = cam.HeadScale; if hs <= 1 then hs = S.scale * 6 end
         local spd = (10 + S.scale * 4) * hs * S.moveK
         local mv  = Vector3.zero
-        if isPC then
-            if keys[Enum.KeyCode.W] then mv += Vector3.new(0,0,-1) end
-            if keys[Enum.KeyCode.S] then mv += Vector3.new(0,0, 1) end
-            if keys[Enum.KeyCode.A] then mv += Vector3.new(-1,0,0) end
-            if keys[Enum.KeyCode.D] then mv += Vector3.new( 1,0,0) end
-            if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
-            if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
-        else
-            -- 手机端摇杆
-            mv = Vector3.new(joyX, 0, joyY)
-            if keys[Enum.KeyCode.Space] then mv += Vector3.new(0, 1, 0) end -- 手机跳跃按钮可以后面加
-        end
-
+        if keys[Enum.KeyCode.W] then mv += Vector3.new(0,0,-1) end
+        if keys[Enum.KeyCode.S] then mv += Vector3.new(0,0, 1) end
+        if keys[Enum.KeyCode.A] then mv += Vector3.new(-1,0,0) end
+        if keys[Enum.KeyCode.D] then mv += Vector3.new( 1,0,0) end
+        if keys[Enum.KeyCode.Space]     then mv += Vector3.new(0, 1,0) end
+        if keys[Enum.KeyCode.LeftShift] then mv += Vector3.new(0,-1,0) end
         if mv.Magnitude > 0 then camPos = camPos + (rot * mv.Unit) * spd * dt end
 
         cam.CameraType = Enum.CameraType.Scriptable
@@ -758,17 +729,17 @@ task.spawn(function()
     end)
 
     -- ============================================================
-    -- HUD (适配手机和PC)
+    -- 左下角 HUD (移动端适配)
     -- ============================================================
     pcall(function()
         local gui = Instance.new("ScreenGui")
         gui.Name = "NoVR_HUD"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-        gui.Parent = lp:WaitForChild("PlayerGui")
+        gui.Parent = playerGui
 
         local mainFrame = Instance.new("Frame", gui)
         mainFrame.AnchorPoint = Vector2.new(0,1)
         mainFrame.Position = UDim2.new(0,10,1,-10)
-        mainFrame.Size = UDim2.new(0,400,0,195)
+        mainFrame.Size = UDim2.new(0,380,0,165)
         mainFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
         mainFrame.BackgroundTransparency = 0.3
         mainFrame.BorderSizePixel = 0
@@ -784,22 +755,16 @@ task.spawn(function()
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.TextYAlignment = Enum.TextYAlignment.Top
         lbl.Font = Enum.Font.Code
-        lbl.TextSize = 13
+        lbl.TextSize = 12
 
         local modeText = HAS_FULL_FINGERS and "[全手指]" or "[简化-Fist代理]"
 
         local function buildHudText()
             local lines = {}
-            table.insert(lines, "[VR Hands :: No-VR Pro] " .. modeText)
-            if isMobile then
-                table.insert(lines, "左摇杆-移动 | 右下角按钮-动作")
-                table.insert(lines, "右侧屏幕滑动-视角 | 按钮点击-手势")
-            else
-                table.insert(lines, "鼠标-视角 | WASD-飞行 | 空格/Shift-上/下")
-                table.insert(lines, "左键/右键-抓取(右/左) | E/Q-捏玩家(右/左)")
-                table.insert(lines, "滚轮-手距离 | +/-体型:" .. math.floor(S.scale) .. "/10 | Alt-鼠标")
-                table.insert(lines, "中键-旋转手 | F-只转右手 | G-只转左手")
-            end
+            table.insert(lines, "[VR Hands :: No-VR 手机版] " .. modeText)
+            table.insert(lines, "屏幕滑动-视角 | 左下按键-移动")
+            table.insert(lines, "右侧面板-所有动作 | 点击即可触发")
+            table.insert(lines, "旋转模式-开启后滑动屏幕旋转手")
             table.insert(lines, "当前动作: " .. Gesture.presetName)
             local rHand = string.format("R[%d%d%d%d%d|%d]",
                 Gesture.rThumb, Gesture.rIndex, Gesture.rMiddle, Gesture.rRing, Gesture.rPinky, Gesture.rFist)
@@ -815,17 +780,17 @@ task.spawn(function()
     end)
 
     -- ============================================================
-    -- 教程面板 (适配手机屏幕大小)
+    -- 右上角教程面板 (移动端适配)
     -- ============================================================
     pcall(function()
         local gui = Instance.new("ScreenGui")
         gui.Name = "NoVR_Tutorial"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true
-        gui.Parent = lp:WaitForChild("PlayerGui")
+        gui.Parent = playerGui
 
         local frame = Instance.new("Frame", gui)
         frame.AnchorPoint = Vector2.new(1,0)
         frame.Position = UDim2.new(1,-10,0,10)
-        frame.Size = UDim2.new(0,310,0,410)
+        frame.Size = UDim2.new(0,300,0,380)
         frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
         frame.BackgroundTransparency = 0.25
         frame.BorderSizePixel = 0
@@ -837,7 +802,7 @@ task.spawn(function()
         title.Size = UDim2.new(1,0,0,28)
         title.Position = UDim2.new(0,0,0,0)
         title.BackgroundTransparency = 1
-        title.Text = "动作按键教程"
+        title.Text = "手机操作教程"
         title.TextColor3 = Color3.fromRGB(0,255,170)
         title.Font = Enum.Font.GothamBold
         title.TextSize = 16
@@ -853,43 +818,31 @@ task.spawn(function()
         lbl.TextSize = 12
         lbl.TextWrapped = true
 
-        local tutorialLines = {}
-        if isMobile then
-            table.insert(tutorialLines, "--- 手机操作 ---")
-            table.insert(tutorialLines, "左下角摇杆: 移动")
-            table.insert(tutorialLines, "右下角按钮: 直接点击动作")
-            table.insert(tutorialLines, "右侧屏幕滑动: 旋转视角")
-            table.insert(tutorialLines, "按钮: 旋转双手/只转右手/只转左手")
-            table.insert(tutorialLines, "按钮: 放大/缩小 调整体型")
-        else
-            table.insert(tutorialLines, "--- 数字键 快捷动作 ---")
-            table.insert(tutorialLines, "1 = 张开手掌     6 = OK")
-            table.insert(tutorialLines, "2 = 握拳         7 = 摇滚")
-            table.insert(tutorialLines, "3 = 食指指       8 = 中指")
-            table.insert(tutorialLines, "4 = 剪刀手       9 = 电话")
-            table.insert(tutorialLines, "5 = 点赞         0 = 手枪指")
-            table.insert(tutorialLines, "")
-            table.insert(tutorialLines, "--- Ctrl + 数字键 ---")
-            table.insert(tutorialLines, "Ctrl+1 = 右手捏取   Ctrl+6 = 牛角")
-            table.insert(tutorialLines, "Ctrl+2 = 右手抓取   Ctrl+7 = Shaka")
-            table.insert(tutorialLines, "Ctrl+3 = 左手捏取   Ctrl+8 = 敬礼")
-            table.insert(tutorialLines, "Ctrl+4 = 左手抓取   Ctrl+9 = 祈祷")
-            table.insert(tutorialLines, "Ctrl+5 = 挥手       Ctrl+0 = 爪子")
-            table.insert(tutorialLines, "")
-            table.insert(tutorialLines, "--- 单根手指 (按住) ---")
-            table.insert(tutorialLines, "T = 右拇指    Z = 左拇指")
-            table.insert(tutorialLines, "Y = 右食指    X = 左食指")
-            table.insert(tutorialLines, "U = 右中指    C = 左中指")
-            table.insert(tutorialLines, "I = 右无名指  V = 左无名指")
-            table.insert(tutorialLines, "O = 右小指    B = 左小指")
-            table.insert(tutorialLines, "P = 右拳      N = 左拳")
-            table.insert(tutorialLines, "")
-            table.insert(tutorialLines, "--- 手旋转 ---")
-            table.insert(tutorialLines, "按住鼠标中键 + 移动 = 旋转双手")
-            table.insert(tutorialLines, "按住 F + 中键 = 只旋转右手")
-            table.insert(tutorialLines, "按住 G + 中键 = 只旋转左手")
-            table.insert(tutorialLines, "旋转时视角锁定不动")
-        end
+        local tutorialLines = {
+            "--- 移动与视角 ---",
+            "左下角：方向键移动",
+            "左下角：跳=跳跃, 跳=上升",
+            "屏幕空白处滑动：转动视角",
+            "",
+            "--- 动作面板 (右侧) ---",
+            "点击▶打开/关闭面板",
+            "预设动作：1-0 直接点击",
+            "Ctrl动作：组合点击",
+            "手指动作：单独点击",
+            "",
+            "--- 手部旋转 ---",
+            "打开面板→旋转模式: 开",
+            "然后滑动屏幕即可旋转手",
+            "旋转目标可切换：双手/右手/左手",
+            "也可用方向按钮微调旋转",
+            "",
+            "--- 体型与距离 ---",
+            "面板内 + / - 调整体型",
+            "面板内 + / - 调整手距",
+            "",
+            "提示: 所有按钮点一下即可，",
+            "无需键盘鼠标。",
+        }
 
         if not HAS_FULL_FINGERS then
             table.insert(tutorialLines, "")
@@ -901,15 +854,14 @@ task.spawn(function()
         lbl.Text = table.concat(tutorialLines, "\n")
     end)
 
-    print("[NoVR Pro] 控制已激活。")
-    if isMobile then
-        print("[NoVR Pro] 手机端模式，左下角摇杆+右下角按钮已加载。")
-    end
+    print("[NoVR Mobile] 手机控制已激活。左下角移动，右侧面板动作，滑动屏幕视角。")
 end)
 ]==]
 
-if qot then
-    pcall(function() qot(hrs) end)
+if queue_on_teleport then
+    queue_on_teleport(hrs)
+elseif syn and syn.queue_on_teleport then
+    syn.queue_on_teleport(hrs)
 end
 
 TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
