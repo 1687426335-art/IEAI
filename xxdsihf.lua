@@ -1180,7 +1180,7 @@ end)
     A:Divider({ Text = "碰飞" })
 
     A:Button({
-        Title = "碰飞",
+        Title = "碰飞（由于这个是外部脚本所以概率封号谨慎使用）",
         Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
         end
