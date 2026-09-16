@@ -219,7 +219,7 @@ function createUI()
                         end
                     end)
                 end
-                task.wait()
+                task.wait(0.1)
             end
             _G.CatAntiFling_Running = false
         end)
@@ -507,7 +507,7 @@ function createUI()
 
     task.spawn(function()
         while not isDestroyed do
-            task.wait(3)
+            task.wait(10)
             pcall(function()
                 shuaxinlb()
                 if playerDropdown then playerDropdown:Refresh(PlayerConfig.dropdown) end
@@ -538,6 +538,11 @@ function createUI()
             end
             if found then
                 PlayerConfig.playernamedied = found
+                if playerDropdown then
+                    pcall(function()
+                        playerDropdown:SetValue(found)
+                    end)
+                end
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已选中: " .. found, Duration = 3 })
             else
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 3 })
@@ -574,7 +579,7 @@ function createUI()
                         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
                             myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                         end
-                        task.wait()
+                        task.wait(0.1)
                     end
                 end)
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送", Duration = 2 })
@@ -613,7 +618,7 @@ function createUI()
                         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
                             target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0)
                         end
-                        task.wait()
+                        task.wait(0.1)
                     end
                 end)
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送玩家过来", Duration = 2 })
@@ -641,7 +646,7 @@ function createUI()
                                 end
                             end
                         end
-                        task.wait()
+                        task.wait(0.1)
                     end
                 end)
             end
@@ -695,7 +700,7 @@ function createUI()
             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 1.5, 0) * CFrame.Angles(math.rad(i * 18), 0, math.rad(i * 18))
             targetRoot.Velocity = Vector3.new(9e8, 9e8, 9e8)
             targetRoot.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-            task.wait()
+            task.wait(0.1)
         end
 
         bv:Destroy()
@@ -754,7 +759,7 @@ function createUI()
                         if targetRoot and camera then
                             camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + (targetRoot.Position - camera.CFrame.Position).Unit)
                         end
-                        task.wait()
+                        task.wait(0.1)
                     end
                 end)
             end
