@@ -452,6 +452,8 @@ function createUI()
 
     -- ==================== 互动 & 警察功能 ====================
     local fastInteractEnabled, autoInteractEnabled, autoCuffEnabled = false, false, false
+    local autoPickupCashEnabled = false
+    local pickedCash = setmetatable({}, {__mode = "k"})
 
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
         if fastInteractEnabled then prompt.HoldDuration = 0 end
@@ -460,6 +462,7 @@ function createUI()
     InteractTab:Divider({ Text = "互动功能" })
     InteractTab:Toggle({ Title = "快速互动", Value = false, Callback = function(value) fastInteractEnabled = value end })
     InteractTab:Toggle({ Title = "自动互动", Value = false, Callback = function(value) autoInteractEnabled = value end })
+    InteractTab:Toggle({ Title = "自动捡钱", Value = false, Callback = function(value) autoPickupCashEnabled = value end })
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Divider({ Text = "自动手铐" })
@@ -931,6 +934,30 @@ task.spawn(function()
         end
     end
 end)
+
+    -- ==================== 自动捡钱独立循环 ====================
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.3)
+            if autoPickupCashEnabled then
+                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                if event then
+                    pcall(function()
+                        for _, obj in ipairs(getnilinstances()) do
+                            if obj.Name == "CashDrop" and not pickedCash[obj] then
+                                pickedCash[obj] = true
+                                task.spawn(function()
+                                    pcall(function()
+                                        event:InvokeServer("cashDrop", obj)
+                                    end)
+                                end)
+                            end
+                        end
+                    end)
+                end
+            end
+        end
+    end)
 
     -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
