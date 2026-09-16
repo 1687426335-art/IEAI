@@ -447,7 +447,6 @@ function createUI()
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Divider({ Text = "自动手铐" })
-    PoliceTab:Paragraph({ Title = "说明", Desc = "自动铐住附近15米内血量大于0的玩家" })
     PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
 
     PoliceTab:Divider({ Text = "玩家传送" })
