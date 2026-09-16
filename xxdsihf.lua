@@ -460,7 +460,9 @@ function createUI()
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Divider({ Text = "自动手铐" })
+    PoliceTab:Divider({ Text = "自动点护送" })
     local autoCuffEnabled = false
+    local autoEscortEnabled = false
     PoliceTab:Toggle({
         Title = "自动手铐",
         Value = false,
@@ -793,6 +795,34 @@ function createUI()
             end
         end
     end)
+
+    -- ==================== 自动点护送独立循环 ====================
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if autoEscortEnabled then
+            local char = player.Character
+            local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local head = p.Character:FindFirstChild("Head")
+                        if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
+                            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                            if event then
+                                task.spawn(function()
+                                    pcall(function() event:InvokeServer("escortPlayer", "Arrested", p) end)
+                                end)
+                                task.wait(0.1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
 
     -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
