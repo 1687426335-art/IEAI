@@ -292,44 +292,75 @@ function createUI()
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
     -- ==================== 医生功能 ====================
-    local autoHealEnabled = false
-
-    -- 1. 快速互动（结合进医生功能）
+    -- 快速互动：始终把 HoldDuration 设为 0
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        if autoHealEnabled then
-            prompt.HoldDuration = 0
-        end
+        prompt.HoldDuration = 0
     end)
 
     DoctorTab:Divider({ Text = "自动治疗" })
+    DoctorTab:Paragraph({ Title = "状态", Desc = "自动治疗已始终开启，每0.05秒触发一次附近及世界的医疗互动。" })
 
-    DoctorTab:Toggle({
-        Title = "自动治疗",
-        Value = false,
-        Callback = function(value)
-            autoHealEnabled = value
-            WindUI:Notify({
-                Title = "医生功能",
-                Content = value and "自动治疗已开启（含自动互动）" or "自动治疗已关闭",
-                Duration = 2
-            })
-        end
-    })
-
-    -- 2. 自动互动 + 3. 自动治疗 完全融合（原封不动采用你的自动互动逻辑）
+    -- 自动互动 + 自动治疗：每 0.05 秒触发一次
     task.spawn(function()
         while not isDestroyed do
-            if autoHealEnabled then
-                -- 这就是你提供的自动互动逻辑，不加任何过滤，全部触发！
-                for _, descendant in pairs(workspace:GetDescendants()) do
-                    if descendant:IsA("ProximityPrompt") then
-                        pcall(function() fireproximityprompt(descendant) end)
-                    end
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant:IsA("ProximityPrompt") then
+                    pcall(function()
+                        fireproximityprompt(descendant)
+                    end)
                 end
             end
-            task.wait(0.25) -- 保持你给的0.25秒间隔
+            task.wait(0.05)  -- 每 0.05 秒触发一次
         end
     end)
+
+    -- 循环传送血量为100以下的玩家（照抄警察功能的循环传送逻辑）
+    local loopTeleportSickEnabled = false
+    DoctorTab:Divider({ Text = "循环传送残血玩家" })
+    DoctorTab:Toggle({
+        Title = "循环传送附近血量低于100的玩家",
+        Value = false,
+        Callback = function(enabled)
+            loopTeleportSickEnabled = enabled
+            if enabled then
+                task.spawn(function()
+                    while loopTeleportSickEnabled and not isDestroyed do
+                        local myChar = player.Character
+                        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                        
+                        if myRoot then
+                            local closestTarget = nil
+                            local shortestDist = math.huge
+                            
+                            -- 寻找附近血量低于 100 的玩家
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
+                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                    if hum and hum.Health < 100 and targetRoot then
+                                        local dist = (targetRoot.Position - myRoot.Position).Magnitude
+                                        if dist < shortestDist then
+                                            shortestDist = dist
+                                            closestTarget = targetRoot
+                                        end
+                                    end
+                                end
+                            end
+
+                            -- 传送到最近残血玩家的身边
+                            if closestTarget then
+                                myRoot.CFrame = closestTarget.CFrame + Vector3.new(0, 3, 0)
+                            end
+                        end
+                        task.wait(0.1) -- 循环间隔
+                    end
+                end)
+                WindUI:Notify({ Title = "医生功能", Content = "已开启循环传送残血玩家", Duration = 2 })
+            else
+                WindUI:Notify({ Title = "医生功能", Content = "已关闭循环传送残血玩家", Duration = 2 })
+            end
+        end
+    })
 
     -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
