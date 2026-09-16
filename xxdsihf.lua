@@ -269,7 +269,7 @@ function createUI()
     infoSection:Paragraph({ Title = "关于", Desc = "此脚本永久免费请勿相信任何人/n如果你是买来的恭喜你你被骗了", ThumbnailSize = 190 })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
-    infoSection2:Paragraph({ Title = "v4.3提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点\n目前已经修复了所有卡顿问题如果还有bug请联系我修复\nQQ：1687426335\n快手号：EGD917813\n快手名字：wdfex", ThumbnailSize = 190 })
+    infoSection2:Paragraph({ Title = "v4.4提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点\n更新医生功能更新自动治疗\n目前已经修复了所有卡顿问题如果还有bug请联系我修复\nQQ：1687426335\n快手号：EGD917813\n快手名字：wdfex", ThumbnailSize = 190 })
     infoTab:Select()
     AuthorTab:Select()
 
@@ -290,6 +290,94 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
+
+    -- ==================== 医生功能 ====================
+    local autoHealEnabled = false
+    local autoHealRadius = 20
+    local autoHealOnlyInjured = true
+
+    -- 快速互动：自动治疗开启时，把按住时长设为 0
+    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+        if autoHealEnabled then
+            prompt.HoldDuration = 0
+        end
+    end)
+
+    DoctorTab:Divider({ Text = "自动治疗" })
+
+    DoctorTab:Toggle({
+        Title = "自动治疗",
+        Value = false,
+        Callback = function(value)
+            autoHealEnabled = value
+            WindUI:Notify({
+                Title = "医生功能",
+                Content = value and "自动治疗已开启" or "自动治疗已关闭",
+                Duration = 2
+            })
+        end
+    })
+
+    DoctorTab:Slider({
+        Title = "治疗范围",
+        Step = 1,
+        Value = { Min = 5, Max = 100, Default = 20 },
+        Callback = function(value) autoHealRadius = value end
+    })
+
+    DoctorTab:Toggle({
+        Title = "只治疗残血玩家",
+        Value = true,
+        Callback = function(value) autoHealOnlyInjured = value end
+    })
+
+    DoctorTab:Divider({ Text = "说明" })
+    DoctorTab:Paragraph({
+        Title = "使用说明",
+        Desc = "开启后自动检测范围内玩家附近及世界中的医疗ProximityPrompt并触发，需手持或附近有医疗包。"
+    })
+
+    -- 自动治疗主循环
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.1)
+            if autoHealEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                            if hum and pRoot then
+                                local dist = (pRoot.Position - myRoot.Position).Magnitude
+                                if dist < autoHealRadius then
+                                    if (not autoHealOnlyInjured) or hum.Health < hum.MaxHealth then
+                                        for _, descendant in ipairs(p.Character:GetDescendants()) do
+                                            if descendant:IsA("ProximityPrompt") then
+                                                pcall(function() fireproximityprompt(descendant) end)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    for _, descendant in ipairs(workspace:GetDescendants()) do
+                        if descendant:IsA("ProximityPrompt") then
+                            local parent = descendant.Parent
+                            if parent and parent:IsA("BasePart") then
+                                if (parent.Position - myRoot.Position).Magnitude < autoHealRadius then
+                                    pcall(function() fireproximityprompt(descendant) end)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 
     -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
