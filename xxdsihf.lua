@@ -1177,6 +1177,14 @@ end)
     A:Toggle({ Title = "无限体力", Value = false, Callback = function(value) staminaOn = value end })
     A:Divider({ Text = "防甩飞" })
     A:Toggle({ Title = "防甩飞", Value = false, Callback = function(value) _G.CatAntiFling_Enabled = value end })
+    A:Divider({ Text = "碰飞" })
+
+    A:Button({
+        Title = "碰飞",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
+        end
+    })
     A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
     A:Toggle({
