@@ -765,7 +765,7 @@ function createUI()
     DoctorTab:Divider({ Text = "自动治疗" })
 
     DoctorTab:Toggle({
-        Title = "自动治疗附近残血玩家",
+        Title = "自动治疗",
         Value = false,
         Callback = function(value) autoHealEnabled = value end
     })
@@ -784,9 +784,38 @@ function createUI()
         Callback = function(value) healInterval = value end
     })
 
-    DoctorTab:Paragraph({
-        Title = "说明",
-        Desc = "需手持医疗包（MT First Aid Kit）才能生效，会自动触发附近的医疗交互"
+    DoctorTab:Divider({ Text = "循环传送低血量玩家" })
+
+    local loopTeleportLowHpEnabled = false
+    DoctorTab:Toggle({
+        Title = "循环传送血量为100以下的玩家",
+        Value = false,
+        Callback = function(enabled)
+            loopTeleportLowHpEnabled = enabled
+            if enabled then
+                task.spawn(function()
+                    while loopTeleportLowHpEnabled and not isDestroyed do
+                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                        if myRoot then
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
+                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                    if hum and hum.Health > 0 and hum.Health < 100 and targetRoot then
+                                        myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                        task.wait(0.1)
+                    end
+                end)
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送低血量玩家", Duration = 2 })
+            else
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送低血量玩家", Duration = 2 })
+            end
+        end
     })
 
     -- 快速互动：医疗相关 prompt 的按住时间归零
