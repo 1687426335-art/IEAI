@@ -1188,25 +1188,30 @@ end)
     A:Divider({ Text = "防甩飞" })
     A:Toggle({ Title = "防甩飞", Value = false, Callback = function(value) _G.CatAntiFling_Enabled = value end })
     A:Divider({ Text = "防摔" })
-    local antiFallEnabled, antiFallConnection = false, nil
-    A:Toggle({ Title = "防摔", Value = false, Callback = function(value)
-        antiFallEnabled = value
-        if value then
-            if antiFallConnection then antiFallConnection:Disconnect() end
-            antiFallConnection = RunService.Heartbeat:Connect(function()
-                if not antiFallEnabled then return end
-                local char = player.Character
-                if not char then return end
-                local root = char:FindFirstChild("HumanoidRootPart")
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if root and hum and root.Velocity.Y < -20 and not hum.PlatformStand then
-                    root.Velocity = Vector3.new(root.Velocity.X, math.clamp(root.Velocity.Y, -40, -10), root.Velocity.Z)
-                end
-            end)
-        else
-            if antiFallConnection then antiFallConnection:Disconnect(); antiFallConnection = nil end
+    local antiFallEnabled = false
+    A:Toggle({
+        Title = "防摔",
+        Value = false,
+        Callback = function(value)
+            antiFallEnabled = value
         end
-    end })
+    })
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.1)
+            if antiFallEnabled then
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if root and hum and not hum.PlatformStand then
+                    local vel = root.Velocity
+                    if vel.Y < -20 then
+                        root.Velocity = Vector3.new(vel.X, math.clamp(vel.Y, -40, -10), vel.Z)
+                    end
+                end
+            end
+        end
+    end)
 
     -- ==================== 枪械功能 ====================
     B:Divider({ Text = "枪械强化" })
