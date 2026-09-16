@@ -458,39 +458,340 @@ function createUI()
     InteractTab:Toggle({ Title = "快速互动（瞬间完成）", Value = false, Callback = function(value) fastInteractEnabled = value end })
     InteractTab:Toggle({ Title = "自动互动（附近全触发）", Value = false, Callback = function(value) autoInteractEnabled = value end })
 
-    PoliceTab:Divider({ Text = "警察功能" })
+    -- ==================== 警察功能 ====================
     PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
 
+    PoliceTab:Divider({ Text = "传送与甩飞玩家" })
+
+    local selectedPlayerName = nil
+    local playerDropdown
+
+    local function refreshPlayerList()
+        local list = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then table.insert(list, p.Name) end
+        end
+        table.sort(list)
+        if playerDropdown then pcall(function() playerDropdown:Refresh(list) end) end
+        return list
+    end
+
+    playerDropdown = PoliceTab:Dropdown({
+        Title = "选择玩家名称",
+        Values = refreshPlayerList(),
+        Value = "",
+        Callback = function(selectedPlayer) selectedPlayerName = selectedPlayer end
+    })
+
+    -- 每3秒自动刷新玩家列表
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.05)
-            if autoInteractEnabled then
-                for _, descendant in pairs(workspace:GetDescendants()) do
-                    if descendant:IsA("ProximityPrompt") then
-                        pcall(function() fireproximityprompt(descendant) end)
-                    end
+            task.wait(3)
+            refreshPlayerList()
+        end
+    end)
+
+    -- 搜索玩家名字
+    local searchInput = ""
+    PoliceTab:Input({
+        Title = "搜索玩家名字",
+        Placeholder = "输入名字后点下方按钮",
+        Callback = function(value) searchInput = value end
+    })
+
+    PoliceTab:Button({
+        Title = "搜索并选中",
+        Callback = function()
+            if searchInput == "" then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入要搜索的名字", Duration = 3 })
+                return
+            end
+            local found = nil
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and (p.Name:lower():find(searchInput:lower(), 1, true) or p.DisplayName:lower():find(searchInput:lower(), 1, true)) then
+                    found = p
+                    break
                 end
             end
-            if autoCuffEnabled then
-                local char = player.Character
-                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    for _, p in ipairs(Players:GetPlayers()) do
-                        if p ~= player and p.Character then
-                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                            local head = p.Character:FindFirstChild("Head")
-                            if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
-                                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-                                if event then
-                                    pcall(function() event:InvokeServer("handcuff", p, false) end)
+            if found then
+                selectedPlayerName = found.Name
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "已找到: " .. found.Name, Duration = 3 })
+                pcall(function() playerDropdown:Set(found.Name) end)
+            else
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到玩家: " .. searchInput, Duration = 3 })
+            end
+        end
+    })
+
+    local function getTargetPlayer()
+        if not selectedPlayerName or selectedPlayerName == "" then return nil end
+        return Players:FindFirstChild(selectedPlayerName)
+    end
+
+    PoliceTab:Button({
+        Title = "传送到玩家旁边",
+        Callback = function()
+            local target = getTargetPlayer()
+            local localChar = player.Character
+            local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localRoot then
+                localRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 3 })
+            else
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送，玩家已消失", Duration = 3 })
+            end
+        end
+    })
+
+    local loopTeleportSelf = false
+    PoliceTab:Toggle({
+        Title = "循环锁定传送",
+        Value = false,
+        Callback = function(enabled)
+            loopTeleportSelf = enabled
+            if enabled then
+                task.spawn(function()
+                    while loopTeleportSelf and not isDestroyed do
+                        local target = getTargetPlayer()
+                        local localChar = player.Character
+                        local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localRoot then
+                            localRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+
+    PoliceTab:Button({
+        Title = "把玩家传送过来",
+        Callback = function()
+            local target = getTargetPlayer()
+            local localChar = player.Character
+            local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localRoot then
+                target.Character.HumanoidRootPart.CFrame = localRoot.CFrame + Vector3.new(0, 3, 0)
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "已将 " .. target.Name .. " 传送过来", Duration = 3 })
+            else
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送，玩家已消失", Duration = 3 })
+            end
+        end
+    })
+
+    local loopTeleportTarget = false
+    PoliceTab:Toggle({
+        Title = "循环传送玩家过来",
+        Value = false,
+        Callback = function(enabled)
+            loopTeleportTarget = enabled
+            if enabled then
+                task.spawn(function()
+                    while loopTeleportTarget and not isDestroyed do
+                        local target = getTargetPlayer()
+                        local localChar = player.Character
+                        local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and localRoot then
+                            target.Character.HumanoidRootPart.CFrame = localRoot.CFrame + Vector3.new(0, 3, 0)
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+
+    local suckAllEnabled = false
+    PoliceTab:Toggle({
+        Title = "吸全部玩家",
+        Value = false,
+        Callback = function(enabled)
+            suckAllEnabled = enabled
+            if enabled then
+                task.spawn(function()
+                    while suckAllEnabled and not isDestroyed do
+                        local localChar = player.Character
+                        local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+                        if localRoot then
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
+                                    local pr = p.Character:FindFirstChild("HumanoidRootPart")
+                                    if pr then pr.CFrame = localRoot.CFrame + localRoot.CFrame.LookVector * 3 end
                                 end
                             end
                         end
+                        task.wait()
                     end
-                end
+                end)
             end
         end
-    end)
+    })
+
+    PoliceTab:Toggle({
+        Title = "查看玩家",
+        Value = false,
+        Callback = function(enabled)
+            local target = getTargetPlayer()
+            if enabled then
+                if target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
+                    workspace.CurrentCamera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
+                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启查看 " .. target.Name, Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "wdfex-Hub", Content = "找不到目标玩家", Duration = 3 })
+                end
+            else
+                local localHum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                if localHum then workspace.CurrentCamera.CameraSubject = localHum end
+            end
+        end
+    })
+
+    -- 甩飞一次
+    PoliceTab:Button({
+        Title = "甩飞一次",
+        Callback = function()
+            local target = getTargetPlayer()
+            if not target or not target.Character then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "找不到目标玩家", Duration = 3 })
+                return
+            end
+            local localChar = player.Character
+            local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+            local targetChar = target.Character
+            local targetRoot = targetChar:FindFirstChild("HumanoidRootPart") or targetChar:FindFirstChild("Head")
+            if not localRoot or not targetRoot then return end
+            local oldPos = localRoot.CFrame
+            workspace.FallenPartsDestroyHeight = 0 / 0
+            local bv = Instance.new("BodyVelocity")
+            bv.Velocity = Vector3.new(90000000, 900000000, 90000000)
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Parent = localRoot
+            for _ = 1, 30 do
+                localRoot.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 1.5, 0))
+                localRoot.Velocity = Vector3.new(90000000, 900000000, 90000000)
+                localRoot.RotVelocity = Vector3.new(900000000, 900000000, 900000000)
+                task.wait()
+            end
+            bv:Destroy()
+            localRoot.CFrame = oldPos
+            localRoot.Velocity = Vector3.new(0, 0, 0)
+            localRoot.RotVelocity = Vector3.new(0, 0, 0)
+            workspace.FallenPartsDestroyHeight = -500
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已甩飞 " .. target.Name, Duration = 3 })
+        end
+    })
+
+    -- 循环甩飞
+    local autoFlingEnabled = false
+    PoliceTab:Toggle({
+        Title = "循环甩飞",
+        Value = false,
+        Callback = function(enabled)
+            autoFlingEnabled = enabled
+            if enabled then
+                task.spawn(function()
+                    while autoFlingEnabled and not isDestroyed do
+                        local target = getTargetPlayer()
+                        if target and target.Character then
+                            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Head")
+                            local localChar = player.Character
+                            local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+                            if targetRoot and localRoot then
+                                pcall(function()
+                                    local bv = Instance.new("BodyVelocity")
+                                    bv.Velocity = Vector3.new(90000000, 900000000, 90000000)
+                                    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                    bv.Parent = localRoot
+                                    task.wait(0.05)
+                                    bv:Destroy()
+                                end)
+                            end
+                        end
+                        task.wait(0.3)
+                    end
+                end)
+            end
+        end
+    })
+
+    -- 指定自瞄
+    local aimTargetEnabled = false
+    PoliceTab:Toggle({
+        Title = "开启指定自瞄目标",
+        Value = false,
+        Callback = function(enabled)
+            aimTargetEnabled = enabled
+            if enabled then
+                task.spawn(function()
+                    while aimTargetEnabled and not isDestroyed do
+                        local camera = workspace.CurrentCamera
+                        local target = getTargetPlayer()
+                        local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                        if camera and targetRoot then
+                            camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + (targetRoot.Position - camera.CFrame.Position).Unit)
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+        end
+    })
+
+    PoliceTab:Divider({ Text = "自动传送通缉玩家" })
+
+    local autoWantedTp = false
+    local wantedTpDistance = 100
+
+    PoliceTab:Slider({
+        Title = "通缉传送距离",
+        Step = 1,
+        Value = { Min = 1, Max = 300, Default = 100 },
+        Callback = function(value) wantedTpDistance = value end
+    })
+
+    PoliceTab:Toggle({
+        Title = "自动传送通缉玩家",
+        Value = false,
+        Callback = function(enabled)
+            autoWantedTp = enabled
+            if enabled then
+                task.spawn(function()
+                    while autoWantedTp and not isDestroyed do
+                        local localChar = player.Character
+                        local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+                        if localRoot then
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
+                                    local pChar = p.Character
+                                    local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+                                    if pRoot then
+                                        local isWanted = false
+                                        local teamName = p.Team and p.Team.Name or ""
+                                        if teamName:find("Wanted") or teamName:find("通缉") or teamName:find("Criminal") then
+                                            isWanted = true
+                                        end
+                                        if not isWanted then
+                                            for _, tag in ipairs(p:GetChildren()) do
+                                                if tag.Name:lower():find("wanted") or tag.Name:find("通缉") then isWanted = true break end
+                                            end
+                                        end
+                                        if isWanted then
+                                            local dist = (pRoot.Position - localRoot.Position).Magnitude
+                                            if dist <= wantedTpDistance then
+                                                pRoot.CFrame = localRoot.CFrame + Vector3.new(0, 3, 0)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        task.wait(0.3)
+                    end
+                end)
+            end
+        end
+    })
 
     -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
