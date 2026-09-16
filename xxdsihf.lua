@@ -294,7 +294,7 @@ function createUI()
     -- ==================== 医生功能 ====================
     local autoHealEnabled = false
 
-    -- 1. 快速互动：自动治疗开启时，把按住时长设为 0
+    -- 1. 快速互动（结合进医生功能）
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
         if autoHealEnabled then
             prompt.HoldDuration = 0
@@ -310,51 +310,24 @@ function createUI()
             autoHealEnabled = value
             WindUI:Notify({
                 Title = "医生功能",
-                Content = value and "自动治疗已开启" or "自动治疗已关闭",
+                Content = value and "自动治疗已开启（含自动互动）" or "自动治疗已关闭",
                 Duration = 2
             })
         end
     })
 
-    -- 2. 自动互动 + 3. 自动治疗 主循环
+    -- 2. 自动互动 + 3. 自动治疗 完全融合（原封不动采用你的自动互动逻辑）
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.1)
             if autoHealEnabled then
-                local char = player.Character
-                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    -- 方式 A：遍历附近玩家身上的 ProximityPrompt（治疗队友）
-                    for _, p in ipairs(Players:GetPlayers()) do
-                        if p ~= player and p.Character then
-                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                            if hum and hum.Health < hum.MaxHealth and pRoot then
-                                if (pRoot.Position - myRoot.Position).Magnitude < 20 then
-                                    for _, descendant in ipairs(p.Character:GetDescendants()) do
-                                        if descendant:IsA("ProximityPrompt") then
-                                            pcall(function() fireproximityprompt(descendant) end)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-
-                    -- 方式 B：自动互动（遍历世界内的 ProximityPrompt，只触发医疗相关的）
-                    for _, descendant in ipairs(workspace:GetDescendants()) do
-                        if descendant:IsA("ProximityPrompt") then
-                            local parent = descendant.Parent
-                            if parent and parent:IsA("BasePart") and (parent.Position - myRoot.Position).Magnitude < 20 then
-                                local name = (descendant.Name .. parent.Name):lower()
-                                if name:find("med") or name:find("heal") or name:find("kit") or name:find("aid") or name:find("doctor") or name:find("first") or name:find("health") then
-                                    pcall(function() fireproximityprompt(descendant) end)
-                                end
-                            end
-                        end
+                -- 这就是你提供的自动互动逻辑，不加任何过滤，全部触发！
+                for _, descendant in pairs(workspace:GetDescendants()) do
+                    if descendant:IsA("ProximityPrompt") then
+                        pcall(function() fireproximityprompt(descendant) end)
                     end
                 end
             end
+            task.wait(0.25) -- 保持你给的0.25秒间隔
         end
     end)
 
