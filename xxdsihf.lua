@@ -461,11 +461,8 @@ function createUI()
                 table.insert(playerNameList, p.Name)
             end
         end
-        if #playerNameList == 0 then
-            playerNameList = { "无其他玩家" }
-        end
+        if #playerNameList == 0 then playerNameList = { "无其他玩家" } end
     end
-
     refreshPlayerList()
 
     local playerDropdown = PoliceTab:Dropdown({
@@ -506,39 +503,65 @@ function createUI()
         return nil
     end
 
+    -- 无条件传送函数：不管多远、看没看到，只要玩家在服务器就传过去
+    local function teleportToPlayerByName(name)
+        if not name or name == "" then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入玩家名字", Duration = 2 })
+            return
+        end
+        local target = findPlayerByName(name)
+        if not target then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 2 })
+            return
+        end
+        selectedTargetPlayer = target.Name
+        task.spawn(function()
+            local timeout = tick() + 5
+            repeat
+                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                if myRoot and tRoot then
+                    myRoot.CFrame = CFrame.new(tRoot.Position + Vector3.new(0, 3, 0))
+                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
+                    return
+                end
+                task.wait(0.05)
+            until tick() > timeout
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家角色未加载", Duration = 2 })
+        end)
+    end
+
     PoliceTab:Button({
         Title = "搜索并传送到玩家",
-        Callback = function()
-            if not searchPlayerName or searchPlayerName == "" then
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入玩家名字", Duration = 2 })
-                return
-            end
-            local target = findPlayerByName(searchPlayerName)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
-                end
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 2 })
-            end
-        end
+        Callback = function() teleportToPlayerByName(searchPlayerName) end
     })
 
     PoliceTab:Button({
         Title = "传送到玩家旁边",
         Callback = function()
-            local target = Players:FindFirstChild(selectedTargetPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
-                end
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送,玩家已消失", Duration = 2 })
+            if not selectedTargetPlayer or selectedTargetPlayer == "" then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 2 })
+                return
             end
+            local target = Players:FindFirstChild(selectedTargetPlayer)
+            if not target then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家不在服务器", Duration = 2 })
+                return
+            end
+            task.spawn(function()
+                local timeout = tick() + 5
+                repeat
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                    if myRoot and tRoot then
+                        myRoot.CFrame = CFrame.new(tRoot.Position + Vector3.new(0, 3, 0))
+                        WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
+                        return
+                    end
+                    task.wait(0.05)
+                until tick() > timeout
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家角色未加载", Duration = 2 })
+            end)
         end
     })
 
@@ -551,11 +574,12 @@ function createUI()
             if value then
                 task.spawn(function()
                     while not isDestroyed and loopTpEnabled do
-                        task.wait()
+                        task.wait(0.05)
                         local target = Players:FindFirstChild(selectedTargetPlayer)
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                            myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                        local tRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                        if myRoot and tRoot then
+                            myRoot.CFrame = CFrame.new(tRoot.Position + Vector3.new(0, 3, 0))
                         end
                     end
                 end)
@@ -566,14 +590,29 @@ function createUI()
     PoliceTab:Button({
         Title = "把玩家传送过来",
         Callback = function()
-            local target = Players:FindFirstChild(selectedTargetPlayer)
-            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0)
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已将玩家传送过来", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送,玩家已消失", Duration = 2 })
+            if not selectedTargetPlayer or selectedTargetPlayer == "" then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 2 })
+                return
             end
+            local target = Players:FindFirstChild(selectedTargetPlayer)
+            if not target then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家不在服务器", Duration = 2 })
+                return
+            end
+            task.spawn(function()
+                local timeout = tick() + 5
+                repeat
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                    if myRoot and tRoot then
+                        tRoot.CFrame = CFrame.new(myRoot.Position + Vector3.new(0, 3, 0))
+                        WindUI:Notify({ Title = "wdfex-Hub", Content = "已将玩家传送过来", Duration = 2 })
+                        return
+                    end
+                    task.wait(0.05)
+                until tick() > timeout
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家角色未加载", Duration = 2 })
+            end)
         end
     })
 
@@ -586,11 +625,12 @@ function createUI()
             if value then
                 task.spawn(function()
                     while not isDestroyed and loopPullEnabled do
-                        task.wait()
+                        task.wait(0.05)
                         local target = Players:FindFirstChild(selectedTargetPlayer)
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                            target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0)
+                        local tRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                        if myRoot and tRoot then
+                            tRoot.CFrame = CFrame.new(myRoot.Position + Vector3.new(0, 3, 0))
                         end
                     end
                 end)
@@ -598,16 +638,17 @@ function createUI()
         end
     })
 
+    -- 无条件甩飞：不管多远、看没看到，直接飞过去把目标甩出去
     local function doThrowPlayer(targetPlayer)
         if not targetPlayer then return end
         local myChar = player.Character
         local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
         local myRoot = myHum and myHum.RootPart
         local targetChar = targetPlayer.Character
-        if not (targetChar and myRoot) then return end
-        local targetHum = targetChar:FindFirstChildOfClass("Humanoid")
+        if not myRoot then return end
+        local targetHum = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
         local targetRoot = targetHum and targetHum.RootPart
-        local targetHead = targetChar:FindFirstChild("Head")
+        local targetHead = targetChar and targetChar:FindFirstChild("Head")
         local targetPart = targetHead or targetRoot
         if not targetPart then return end
         local oldPos = myRoot.CFrame
@@ -623,9 +664,13 @@ function createUI()
     PoliceTab:Button({
         Title = "甩飞一次",
         Callback = function()
+            if not selectedTargetPlayer or selectedTargetPlayer == "" then
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 2 })
+                return
+            end
             local target = Players:FindFirstChild(selectedTargetPlayer)
             if not target then
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 2 })
+                WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家不在服务器", Duration = 2 })
                 return
             end
             task.spawn(function()
@@ -646,9 +691,7 @@ function createUI()
                     while not isDestroyed and loopThrowEnabled do
                         task.wait(0.5)
                         local target = Players:FindFirstChild(selectedTargetPlayer)
-                        if target then
-                            doThrowPlayer(target)
-                        end
+                        if target then doThrowPlayer(target) end
                     end
                 end)
             end
