@@ -78,6 +78,56 @@ function createUI()
         tweenOut.Completed:Connect(function() sg:Destroy() end)
     end
 
+    -- 开罚单成功提示（右下角，显示金额）
+    local citeNotifyStack = {}
+    local function showCiteSuccess(targetName, amount)
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "CiteSuccessGui"
+        sg.ResetOnSpawn = false
+        sg.DisplayOrder = 999
+        sg.Parent = player:WaitForChild("PlayerGui")
+
+        local baseY = -80 - (#citeNotifyStack * 55)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 260, 0, 50)
+        frame.Position = UDim2.new(1, 0, 1, baseY)
+        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        frame.BorderSizePixel = 0
+        frame.Parent = sg
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = frame
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(0, 255, 100)
+        stroke.Thickness = 2
+        stroke.Parent = frame
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -20, 1, -10)
+        label.Position = UDim2.new(0, 10, 0, 5)
+        label.BackgroundTransparency = 1
+        local amountText = (amount and amount > 0) and (" 罚了 " .. amount .. " 元") or ""
+        label.Text = "成功 罚单: " .. targetName .. amountText
+        label.TextColor3 = Color3.fromRGB(0, 255, 100)
+        label.TextSize = 15
+        label.Font = Enum.Font.GothamBold
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = frame
+
+        table.insert(citeNotifyStack, frame)
+
+        local tweenIn = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(1, -270, 1, baseY) })
+        tweenIn:Play()
+        task.wait(2.5)
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(1, 0, 1, baseY) })
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            for i, f in ipairs(citeNotifyStack) do
+                if f == frame then table.remove(citeNotifyStack, i); break end
+            end
+            sg:Destroy()
+        end)
+    end
+
     local Window = WindUI:CreateWindow({
         Title = 'wdfex-Hub',
         Icon = "heart",
@@ -160,16 +210,16 @@ function createUI()
             bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             bannerGui.Parent = player:WaitForChild("PlayerGui")
             local banner = Instance.new("TextLabel")
-            banner.Size = UDim2.new(0, 160, 0, 28)
-            banner.Position = UDim2.new(0, -160, 0, 2)
+            banner.Size = UDim2.new(0, 220, 0, 28) -- 宽度改为220，防止字显示不全
+            banner.Position = UDim2.new(0, -220, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = “到卖我脚本死全家"
+            banner.Text = "倒卖死爸妈" -- 这里改成了你要的字
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
             banner.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
             banner.Parent = bannerGui
-            local textWidth = 160
+            local textWidth = 220
             local hue = 0
             local colorConn = RunService.Heartbeat:Connect(function()
                 hue = (hue + 0.005) % 1
@@ -476,6 +526,16 @@ function createUI()
         Title = "自动点护送",
         Value = false,
         Callback = function(value) autoEscortEnabled = value end
+    })
+
+    -- ==================== 自动开罚单 ====================
+    PoliceTab:Divider({ Text = "自动开罚单" })
+    local autoCiteEnabled = false
+
+    PoliceTab:Toggle({
+        Title = "自动开罚单",
+        Value = false,
+        Callback = function(value) autoCiteEnabled = value end
     })
 
     PoliceTab:Divider({ Text = "传送与甩飞" })
@@ -801,7 +861,6 @@ function createUI()
                                 if p ~= player and p.Character then
                                     local hum = p.Character:FindFirstChildOfClass("Humanoid")
                                     local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    -- 去掉了 hum.Health > 0，现在血量为0也会传送
                                     if hum and hum.Health < 100 and targetRoot then
                                         myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
                                         break
@@ -840,7 +899,6 @@ function createUI()
                         if p ~= player and p.Character then
                             local hum = p.Character:FindFirstChildOfClass("Humanoid")
                             local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                            -- 去掉了 hum.Health > 0，现在血量为0也会尝试治疗
                             if hum and hum.Health < hum.MaxHealth and targetRoot then
                                 local dist = (targetRoot.Position - myRoot.Position).Magnitude
                                 if dist <= healRadius then
@@ -933,6 +991,61 @@ task.spawn(function()
         end
     end
 end)
+
+    -- ==================== 自动开罚单独立循环 ====================
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.2) -- 循环速度，避免过快导致封号
+            if autoCiteEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                    if event then
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= player and p.Character then
+                                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                -- 范围默认15，只要血大于0（或者你想开死人也可以改），直接开
+                                if hum and targetRoot and (targetRoot.Position - myRoot.Position).Magnitude < 15 then
+                                    -- 自动触发目标身上的互动提示（快速互动）
+                                    for _, obj in ipairs(p.Character:GetDescendants()) do
+                                        if obj:IsA("ProximityPrompt") then
+                                            pcall(function()
+                                                obj.HoldDuration = 0
+                                                fireproximityprompt(obj)
+                                            end)
+                                        end
+                                    end
+                                    -- 直接调用 cite 事件
+                                    task.spawn(function()
+                                        local success, result = pcall(function()
+                                            return event:InvokeServer("cite", p)
+                                        end)
+                                        
+                                        local amount = nil
+                                        if success and result then
+                                            if type(result) == "number" then
+                                                amount = result
+                                            elseif type(result) == "table" then
+                                                amount = result.Amount or result.amount or result.Fine or result.fine or result.Money or result.money
+                                            elseif type(result) == "string" then
+                                                amount = tonumber(result) or result
+                                            end
+                                        end
+                                        
+                                        -- 屏幕右下角弹窗
+                                        showCiteSuccess(p.Name, amount)
+                                    end)
+                                    task.wait(0.3) -- 对同一个玩家开完后等0.3秒再开下一个，防止瞬移太快
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 
     -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
@@ -1589,7 +1702,7 @@ end)
     C:Toggle({ Title = "只攻击平民", Value = false, Callback = function(value) KATargetCivilianOnly = value; if value and KATargetPoliceOnly then KATargetPoliceOnly = false end end })
     C:Toggle({ Title = "不攻击血量为0的玩家", Value = true, Callback = function(value) KAIgnoreDead = value end })
     C:Divider({ Text = "优先攻击" })
-    C:Toggle({ Title = "优先攻击最近目标", Value = false, Callback = function(value) KANearestOnly = value end })
+    C:Toggle({ Title = "优先攻击最近目标", Value = false, Callback = function(value) KANearOnly = value end })
     C:Slider({ Title = "优先攻击距离", Step = 1, Value = { Min = 5, Max = 100, Default = 25 }, Callback = function(value) KA_NEAREST_DISTANCE = value end })
 
     -- ==================== 传送点 ====================
