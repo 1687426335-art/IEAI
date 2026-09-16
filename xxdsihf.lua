@@ -73,7 +73,7 @@ function createUI()
         local tweenIn = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(1, -230, 1, -80) })
         tweenIn:Play()
         task.wait(2)
-        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(1, 0, 1, -80) })
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = U       Dim2 Scroll.new(1, Bar0, 1, -80) })
         tweenOut:Play()
         tweenOut.Completed:Connect(function() sg:Destroy() end)
     end
@@ -88,7 +88,7 @@ function createUI()
         Transparent = true,
         Theme = "Dark",
         HideSearchBar = false,
-        ScrollBarEnabled = true,
+Enabled = true,
         Resizable = true,
         Background = "https://raw.githubusercontent.com/XxwanhexxX/UN/main/preview_png.png",
         BackgroundImageTransparency = 0.5,
@@ -1177,14 +1177,6 @@ end)
     A:Toggle({ Title = "无限体力", Value = false, Callback = function(value) staminaOn = value end })
     A:Divider({ Text = "防甩飞" })
     A:Toggle({ Title = "防甩飞", Value = false, Callback = function(value) _G.CatAntiFling_Enabled = value end })
-    A:Divider({ Text = "碰飞" })
-
-    A:Button({
-        Title = "碰飞（由于这个是外部脚本所以概率封号谨慎使用）",
-        Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
-        end
-    })
     A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
     A:Toggle({
@@ -1210,6 +1202,14 @@ end)
             end
         end
     end)
+    A:Divider({ Text = "碰飞" })
+
+    A:Button({
+        Title = "碰飞（由于这个是外部脚本所以概率封号谨慎使用）",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
+        end
+    })
 
     -- ==================== 枪械功能 ====================
     B:Divider({ Text = "枪械强化" })
