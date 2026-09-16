@@ -163,7 +163,7 @@ function createUI()
             banner.Size = UDim2.new(0, 160, 0, 28)
             banner.Position = UDim2.new(0, -160, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "到卖我脚本死爸妈"
+            banner.Text = “到卖我脚本死全家"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
@@ -801,7 +801,8 @@ function createUI()
                                 if p ~= player and p.Character then
                                     local hum = p.Character:FindFirstChildOfClass("Humanoid")
                                     local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health > 0 and hum.Health < 100 and targetRoot then
+                                    -- 去掉了 hum.Health > 0，现在血量为0也会传送
+                                    if hum and hum.Health < 100 and targetRoot then
                                         myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
                                         break
                                     end
@@ -839,7 +840,8 @@ function createUI()
                         if p ~= player and p.Character then
                             local hum = p.Character:FindFirstChildOfClass("Humanoid")
                             local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                            if hum and hum.Health > 0 and hum.Health < hum.MaxHealth and targetRoot then
+                            -- 去掉了 hum.Health > 0，现在血量为0也会尝试治疗
+                            if hum and hum.Health < hum.MaxHealth and targetRoot then
                                 local dist = (targetRoot.Position - myRoot.Position).Magnitude
                                 if dist <= healRadius then
                                     for _, obj in ipairs(p.Character:GetDescendants()) do
