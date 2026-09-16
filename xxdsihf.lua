@@ -14,7 +14,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v4.3"
+local version = "v4.4"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
