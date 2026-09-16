@@ -786,10 +786,30 @@ function createUI()
     })
 
     DoctorTab:Slider({
-        Title = "治疗间隔（秒）",
+        Title = "治疗间隔",
         Step = 0.1,
         Value = { Min = 0.1, Max = 3, Default = 0.3 },
         Callback = function(value) healInterval = value end
+    })
+
+    DoctorTab:Divider({ Text = "修复物品" })
+    DoctorTab:Button({
+        Title = "修复MT急救包",
+        Callback = function()
+            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+            if event then
+                local success, err = pcall(function()
+                    event:InvokeServer("repairReplenishItem", "MT First Aid Kit")
+                end)
+                if success then
+                    WindUI:Notify({ Title = "医生功能", Content = "修复请求已发送！", Duration = 3 })
+                else
+                    WindUI:Notify({ Title = "医生功能", Content = "修复失败，请检查物品栏", Duration = 3 })
+                end
+            else
+                WindUI:Notify({ Title = "医生功能", Content = "未找到远程事件", Duration = 3 })
+            end
+        end
     })
 
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
