@@ -505,16 +505,6 @@ function createUI()
         Callback = function(value) PlayerConfig.playernamedied = value end
     })
 
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(10)
-            pcall(function()
-                shuaxinlb()
-                if playerDropdown then playerDropdown:Refresh(PlayerConfig.dropdown) end
-            end)
-        end
-    end)
-
     local searchNameInput = ""
     PoliceTab:Input({
         Title = "搜索玩家名字",
