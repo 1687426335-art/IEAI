@@ -60,184 +60,11 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 统一设备UID检测（换服务器不变） ====================
-    local function getDeviceUID()
-        local userId = player.UserId
-        local success, machineId = pcall(function()
-            return game:GetService("HttpService"):GetMachineId()
-        end)
-        if not success then machineId = "unknown" end
-        local combined = userId .. "_" .. machineId
-        local uid = ""
-        for i = 1, #combined do
-            uid = uid .. string.char((string.byte(combined, i) % 26) + 65)
-        end
-        return uid:sub(1, 32)
-    end
-    local DEVICE_UID = getDeviceUID()
-
-    -- ==================== 黑名单与授权系统 ====================
-    local AUTHOR_UID = "XXCDBAEWEDBRNGDGHPG"
-
-    local BLACKLIST = {
-        ["XXCWZAYDAXZRNCDCHPCRCBYAX"] = true,
-    }
-
-    local WHITELIST = {
-        ["XXCWYXWFYZDRNGDGHPGRFYDXDACCAD"] = true,
-        ["XXCWZZCACWARNGDGHPG"] = true,
-        ["XXCXXFEXWXARNGDGHPG"] = true,
-        ["XWZFFFYAYCRNGDGHPG"] = true,
-    }
-
-    local function isBlacklisted(uid)
-        return BLACKLIST[uid] == true
-    end
-
-    local function isAuthorized(uid)
-        if uid == AUTHOR_UID then return true end
-        return WHITELIST[uid] == true
-    end
-
-    -- ==================== 权限验证 ====================
-    if isBlacklisted(DEVICE_UID) then
-        local blockGui = Instance.new("ScreenGui")
-        blockGui.Name = "BlockedScreen"
-        blockGui.ResetOnSpawn = false
-        blockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        blockGui.Parent = player:WaitForChild("PlayerGui")
-
-        local blockFrame = Instance.new("Frame")
-        blockFrame.Size = UDim2.new(0, 500, 0, 200)
-        blockFrame.Position = UDim2.new(0.5, -250, 0.5, -100)
-        blockFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-        blockFrame.BorderSizePixel = 3
-        blockFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-        blockFrame.Parent = blockGui
-
-        local blockCorner = Instance.new("UICorner")
-        blockCorner.CornerRadius = UDim.new(0, 12)
-        blockCorner.Parent = blockFrame
-
-        local blockTitle = Instance.new("TextLabel")
-        blockTitle.Size = UDim2.new(1, 0, 0, 40)
-        blockTitle.Position = UDim2.new(0, 0, 0, 10)
-        blockTitle.BackgroundTransparency = 1
-        blockTitle.Text = "已被拉黑"
-        blockTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
-        blockTitle.TextSize = 28
-        blockTitle.Font = Enum.Font.GothamBold
-        blockTitle.TextXAlignment = Enum.TextXAlignment.Center
-        blockTitle.Parent = blockFrame
-
-        local blockDesc = Instance.new("TextLabel")
-        blockDesc.Size = UDim2.new(1, -40, 0, 50)
-        blockDesc.Position = UDim2.new(0, 20, 0, 60)
-        blockDesc.BackgroundTransparency = 1
-        blockDesc.Text = "你已被作者或管理拉黑\n你无法使用此脚本"
-        blockDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
-        blockDesc.TextSize = 18
-        blockDesc.Font = Enum.Font.GothamBold
-        blockDesc.TextXAlignment = Enum.TextXAlignment.Center
-        blockDesc.Parent = blockFrame
-
-        local blockUid = Instance.new("TextLabel")
-        blockUid.Size = UDim2.new(1, -40, 0, 30)
-        blockUid.Position = UDim2.new(0, 20, 0, 125)
-        blockUid.BackgroundTransparency = 1
-        blockUid.Text = "设备UID: " .. DEVICE_UID
-        blockUid.TextColor3 = Color3.fromRGB(150, 150, 150)
-        blockUid.TextSize = 14
-        blockUid.Font = Enum.Font.Gotham
-        blockUid.TextXAlignment = Enum.TextXAlignment.Center
-        blockUid.Parent = blockFrame
-
-        return
-    end
-
-    if not isAuthorized(DEVICE_UID) then
-        local authGui = Instance.new("ScreenGui")
-        authGui.Name = "AuthScreen"
-        authGui.ResetOnSpawn = false
-        authGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        authGui.Parent = player:WaitForChild("PlayerGui")
-
-        local authFrame = Instance.new("Frame")
-        authFrame.Size = UDim2.new(0, 520, 0, 220)
-        authFrame.Position = UDim2.new(0.5, -260, 0.5, -110)
-        authFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
-        authFrame.BorderSizePixel = 3
-        authFrame.BorderColor3 = Color3.fromRGB(255, 200, 0)
-        authFrame.Parent = authGui
-
-        local authCorner = Instance.new("UICorner")
-        authCorner.CornerRadius = UDim.new(0, 12)
-        authCorner.Parent = authFrame
-
-        local authTitle = Instance.new("TextLabel")
-        authTitle.Size = UDim2.new(1, 0, 0, 40)
-        authTitle.Position = UDim2.new(0, 0, 0, 10)
-        authTitle.BackgroundTransparency = 1
-        authTitle.Text = "未授权"
-        authTitle.TextColor3 = Color3.fromRGB(255, 200, 0)
-        authTitle.TextSize = 28
-        authTitle.Font = Enum.Font.GothamBold
-        authTitle.TextXAlignment = Enum.TextXAlignment.Center
-        authTitle.Parent = authFrame
-
-        local authDesc = Instance.new("TextLabel")
-        authDesc.Size = UDim2.new(1, -40, 0, 50)
-        authDesc.Position = UDim2.new(0, 20, 0, 60)
-        authDesc.BackgroundTransparency = 1
-        authDesc.Text = "你没有被授权\n你无法使用此脚本"
-        authDesc.TextColor3 = Color3.fromRGB(255, 220, 150)
-        authDesc.TextSize = 18
-        authDesc.Font = Enum.Font.GothamBold
-        authDesc.TextXAlignment = Enum.TextXAlignment.Center
-        authDesc.Parent = authFrame
-
-        local authContact = Instance.new("TextLabel")
-        authContact.Size = UDim2.new(1, -40, 0, 25)
-        authContact.Position = UDim2.new(0, 20, 0, 118)
-        authContact.BackgroundTransparency = 1
-        authContact.Text = "请联系作者或管理员授权"
-        authContact.TextColor3 = Color3.fromRGB(200, 200, 200)
-        authContact.TextSize = 14
-        authContact.Font = Enum.Font.Gotham
-        authContact.TextXAlignment = Enum.TextXAlignment.Center
-        authContact.Parent = authFrame
-
-        local authUid = Instance.new("TextLabel")
-        authUid.Size = UDim2.new(1, -40, 0, 30)
-        authUid.Position = UDim2.new(0, 20, 0, 150)
-        authUid.BackgroundTransparency = 1
-        authUid.Text = "设备UID: " .. DEVICE_UID
-        authUid.TextColor3 = Color3.fromRGB(150, 200, 255)
-        authUid.TextSize = 14
-        authUid.Font = Enum.Font.Gotham
-        authUid.TextXAlignment = Enum.TextXAlignment.Center
-        authUid.Parent = authFrame
-
-        return
-    end
-
-    -- ==================== 添加脚本标记（用于同行显示） ====================
+    -- 直接添加脚本标记（用于同行显示）
     local scriptTag = Instance.new("BoolValue")
     scriptTag.Name = "wdfexScript"
     scriptTag.Value = true
     scriptTag.Parent = player
-
-    local uidTag = Instance.new("StringValue")
-    uidTag.Name = "wdfexDeviceUID"
-    uidTag.Value = DEVICE_UID
-    uidTag.Parent = player
-
-    if DEVICE_UID == AUTHOR_UID then
-        local authorTag = Instance.new("BoolValue")
-        authorTag.Name = "wdfexAuthor"
-        authorTag.Value = true
-        authorTag.Parent = player
-    end
 
     -- ==================== 动态灵动岛 ====================
     local function createDynamicIsland()
@@ -460,11 +287,6 @@ function createUI()
         StrokeThickness = 4,
         Color = ColorSequence.new(Color3.fromHex("FF6B6B")),
         Draggable = true,
-    })
-
-    Window:Tag({
-        Title = DEVICE_UID,
-        Color = Color3.fromHex("#00ffff") 
     })
 
     Window:EditOpenButton({
@@ -1687,7 +1509,7 @@ function createUI()
     end })
 
     -- ============================================================
-    -- 透视 Tab (E) —— 这里是你要求增加通缉检测的地方
+    -- 透视 Tab (E)
     -- ============================================================
     local ESP_ENABLED = false
     local ESP_SHOW_NAME = false
@@ -1696,7 +1518,7 @@ function createUI()
     local ESP_SHOW_DIST = false
     local ESP_SHOW_SELF = false
     local ESP_SHOW_PEERS = false
-    local ESP_SHOW_WANTED = false -- 新增：显示通缉状态
+    local ESP_SHOW_WANTED = false
     local ESP_LIST = {}
     local ESP_REFRESH_COUNT = 0
 
@@ -1738,7 +1560,6 @@ function createUI()
         return math.floor((mr.Position - tr.Position).Magnitude)
     end
 
-    -- 新增：通缉检测函数
     local function CheckWantedStatus(p)
         local function scan(obj)
             for _, child in ipairs(obj:GetChildren()) do
@@ -1826,22 +1647,18 @@ function createUI()
             local color = GetTeamColor(p)
             local hp = GetHealth(p)
             local dist = GetDist(p)
-            local isWanted = CheckWantedStatus(p) -- 执行通缉检测
+            local isWanted = CheckWantedStatus(p)
 
             local isWdfexUser = false
-            local isAuthor = false
             for _, child in ipairs(p:GetChildren()) do
                 if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then isWdfexUser = true end
-                if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then isAuthor = true end
             end
             if p.Character then
                 for _, child in ipairs(p.Character:GetDescendants()) do
                     if child:IsA("BoolValue") and child.Name == "wdfexScript" and child.Value == true then isWdfexUser = true end
-                    if child:IsA("BoolValue") and child.Name == "wdfexAuthor" and child.Value == true then isAuthor = true end
                 end
             end
 
-            -- 名字
             if ESP_SHOW_NAME then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 20)
@@ -1864,7 +1681,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 新增：通缉状态显示（放在名字下方）
             if ESP_SHOW_WANTED then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 18)
@@ -1872,10 +1688,10 @@ function createUI()
                 l.BackgroundTransparency = 1
                 if isWanted then
                     l.Text = "通缉"
-                    l.TextColor3 = Color3.fromRGB(255, 50, 50) -- 通缉用红色
+                    l.TextColor3 = Color3.fromRGB(255, 50, 50)
                 else
                     l.Text = "未通缉"
-                    l.TextColor3 = Color3.fromRGB(150, 255, 150) -- 未通缉用绿色
+                    l.TextColor3 = Color3.fromRGB(150, 255, 150)
                 end
                 l.TextSize = 14
                 l.Font = Enum.Font.GothamBold
@@ -1887,16 +1703,13 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 同行显示
             if ESP_SHOW_PEERS and isWdfexUser then
-                local displayText = isAuthor and "wdfex脚本作者" or "wdfex脚本"
-                local textColor = isAuthor and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 200, 255)
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 18)
                 l.Position = UDim2.new(0, 0, 0, y)
                 l.BackgroundTransparency = 1
-                l.Text = displayText
-                l.TextColor3 = textColor
+                l.Text = "wdfex脚本"
+                l.TextColor3 = Color3.fromRGB(100, 200, 255)
                 l.TextSize = 13
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
@@ -1907,7 +1720,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 队伍
             if ESP_SHOW_TEAM then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 18)
@@ -1925,7 +1737,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 血量
             if ESP_SHOW_HEALTH then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 18)
@@ -1944,7 +1755,6 @@ function createUI()
                 lines = lines + 1
             end
 
-            -- 距离
             if ESP_SHOW_DIST then
                 local l = Instance.new("TextLabel")
                 l.Size = UDim2.new(1, 0, 0, 18)
@@ -1966,7 +1776,6 @@ function createUI()
         end
     end
 
-    -- 透视 Tab 控件区（默认关闭）
     E:Toggle({ Title = "透视总开关", Value = false, Callback = function(value) ESP_ENABLED = value; if value then RefreshESP() end end })
     E:Divider()
     E:Toggle({ Title = "显示名字", Value = false, Callback = function(value) ESP_SHOW_NAME = value; if ESP_ENABLED then RefreshESP() end end })
@@ -1974,7 +1783,7 @@ function createUI()
     E:Toggle({ Title = "显示血量", Value = false, Callback = function(value) ESP_SHOW_HEALTH = value; if ESP_ENABLED then RefreshESP() end end })
     E:Toggle({ Title = "显示距离", Value = false, Callback = function(value) ESP_SHOW_DIST = value; if ESP_ENABLED then RefreshESP() end end })
     E:Divider()
-    E:Toggle({ Title = "显示通缉状态", Value = false, Callback = function(value) ESP_SHOW_WANTED = value; if ESP_ENABLED then RefreshESP() end end }) -- 新增控件
+    E:Toggle({ Title = "显示通缉状态", Value = false, Callback = function(value) ESP_SHOW_WANTED = value; if ESP_ENABLED then RefreshESP() end end })
     E:Divider()
     E:Toggle({ Title = "透视自己", Value = false, Callback = function(value) ESP_SHOW_SELF = value; if ESP_ENABLED then RefreshESP() end end })
     E:Toggle({ Title = "同行显示", Value = false, Callback = function(value) ESP_SHOW_PEERS = value; if ESP_ENABLED then RefreshESP() end end })
@@ -2109,186 +1918,8 @@ function createUI()
     -- 设置 Tab (G)
     -- ============================================================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
-
-    if DEVICE_UID == AUTHOR_UID then
-        local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
-        AdminGroup:Paragraph({ Title = "已授权", Desc = "当前身份: 作者" })
-        AdminGroup:Divider()
-        AdminGroup:Paragraph({ Title = "黑名单管理", Desc = "输入要拉黑的设备UID，点击拉黑即可" })
-
-        local blacklistInput = nil
-        AdminGroup:Input({ Title = "输入UID", Placeholder = "请输入要拉黑的设备UID...", Callback = function(value) blacklistInput = value end })
-        AdminGroup:Button({ Title = "拉黑设备", Callback = function()
-            if blacklistInput and blacklistInput ~= "" then
-                if blacklistInput == DEVICE_UID then WindUI:Notify({ Title = "错误", Content = "不能拉黑自己的设备", Duration = 3 }) return end
-                BLACKLIST[blacklistInput] = true
-                WindUI:Notify({ Title = "成功", Content = "已拉黑设备: " .. blacklistInput, Duration = 3 })
-            else WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 }) end
-        end })
-
-        AdminGroup:Button({ Title = "从黑名单移除", Callback = function()
-            if blacklistInput and blacklistInput ~= "" then
-                BLACKLIST[blacklistInput] = nil
-                WindUI:Notify({ Title = "成功", Content = "已移除黑名单: " .. blacklistInput, Duration = 3 })
-            else WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 }) end
-        end })
-
-        AdminGroup:Divider({ Text = "授权管理" })
-        AdminGroup:Paragraph({ Title = "说明", Desc = "输入要授权的设备UID，点击授权即可" })
-
-        local whitelistInput = nil
-        AdminGroup:Input({ Title = "输入UID", Placeholder = "请输入要授权的设备UID...", Callback = function(value) whitelistInput = value end })
-        AdminGroup:Button({ Title = "授权设备", Callback = function()
-            if whitelistInput and whitelistInput ~= "" then
-                if whitelistInput == DEVICE_UID then WindUI:Notify({ Title = "提示", Content = "你已拥有最高权限", Duration = 3 }) return end
-                WHITELIST[whitelistInput] = true
-                WindUI:Notify({ Title = "成功", Content = "已授权设备: " .. whitelistInput, Duration = 3 })
-            else WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 }) end
-        end })
-
-        AdminGroup:Button({ Title = "移除授权", Callback = function()
-            if whitelistInput and whitelistInput ~= "" then
-                WHITELIST[whitelistInput] = nil
-                WindUI:Notify({ Title = "成功", Content = "已移除授权: " .. whitelistInput, Duration = 3 })
-            else WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 }) end
-        end })
-
-        AdminGroup:Divider()
-        AdminGroup:Button({ Title = "查看当前黑名单", Callback = function()
-            local list = {}
-            for uid, _ in pairs(BLACKLIST) do table.insert(list, uid) end
-            if #list == 0 then WindUI:Notify({ Title = "黑名单", Content = "当前黑名单为空", Duration = 3 })
-            else WindUI:Notify({ Title = "黑名单列表", Content = table.concat(list, "\n"), Duration = 5 }) end
-        end })
-
-        AdminGroup:Button({ Title = "查看当前授权列表", Callback = function()
-            local list = {}
-            for uid, _ in pairs(WHITELIST) do table.insert(list, uid) end
-            if #list == 0 then WindUI:Notify({ Title = "授权列表", Content = "当前授权列表为空", Duration = 3 })
-            else WindUI:Notify({ Title = "授权列表", Content = table.concat(list, "\n"), Duration = 5 }) end
-        end })
-
-        AdminGroup:Divider({ Text = "用户查询" })
-        AdminGroup:Paragraph({ Title = "通过设备UID查看Roblox用户名", Desc = "输入已授权或任意在线玩家的设备UID，点击查询即可显示对应的游戏名字" })
-
-        local searchUidInput = nil
-        AdminGroup:Input({ Title = "输入设备UID", Placeholder = "请输入要查询的设备UID...", Callback = function(value) searchUidInput = value end })
-        AdminGroup:Button({ Title = "查询用户名", Callback = function()
-            if not searchUidInput or searchUidInput == "" then WindUI:Notify({ Title = "错误", Content = "请输入设备UID", Duration = 2 }) return end
-            local found = false
-            local resultName = "未找到"
-            for _, p in ipairs(Players:GetPlayers()) do
-                local uidTag = p:FindFirstChild("wdfexDeviceUID")
-                if uidTag and uidTag:IsA("StringValue") and uidTag.Value == searchUidInput then
-                    found = true
-                    resultName = p.Name
-                    break
-                end
-            end
-            if found then WindUI:Notify({ Title = "查询结果", Content = "设备UID: " .. searchUidInput .. "\n用户名: " .. resultName, Duration = 5 })
-            else WindUI:Notify({ Title = "查询结果", Content = "未找到该设备UID对应的在线玩家\n（玩家可能未运行此脚本或已离线）", Duration = 4 }) end
-        end })
-
-        AdminGroup:Divider({ Text = "坐标显示" })
-        local coordEnabled = false
-        local coordGui = nil
-        local coordFrame = nil
-        local coordTextBox = nil
-        local coordCopyBtn = nil
-        local coordDragging = false
-        local coordDragStart, coordStartPos
-        local coordRenderConn = nil
-
-        local function CreateCoordDisplay()
-            if coordGui then return end
-            local character = player.Character or player.CharacterAdded:Wait()
-            local root = character:WaitForChild("HumanoidRootPart")
-            
-            coordGui = Instance.new("ScreenGui")
-            coordGui.Name = "CoordinateCopyTool"
-            coordGui.Parent = player:WaitForChild("PlayerGui")
-            
-            coordFrame = Instance.new("Frame")
-            coordFrame.Size = UDim2.new(0, 250, 0, 100)
-            coordFrame.Position = UDim2.new(0.5, -125, 0.5, -50)
-            coordFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            coordFrame.Active = true
-            coordFrame.Parent = coordGui
-            
-            coordTextBox = Instance.new("TextBox")
-            coordTextBox.Size = UDim2.new(0.9, 0, 0, 30)
-            coordTextBox.Position = UDim2.new(0.05, 0, 0.15, 0)
-            coordTextBox.Text = "加载中..."
-            coordTextBox.ClearTextOnFocus = false
-            coordTextBox.TextEditable = false
-            coordTextBox.Parent = coordFrame
-            
-            coordCopyBtn = Instance.new("TextButton")
-            coordCopyBtn.Size = UDim2.new(0.9, 0, 0, 35)
-            coordCopyBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-            coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
-            coordCopyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-            coordCopyBtn.TextColor3 = Color3.new(1, 1, 1)
-            coordCopyBtn.Parent = coordFrame
-            
-            coordFrame.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    coordDragging = true
-                    coordDragStart = input.Position
-                    coordStartPos = coordFrame.Position
-                end
-            end)
-            
-            coordFrame.InputChanged:Connect(function(input)
-                if coordDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - coordDragStart
-                    coordFrame.Position = UDim2.new(coordStartPos.X.Scale, coordStartPos.X.Offset + delta.X, coordStartPos.Y.Scale, coordStartPos.Y.Offset + delta.Y)
-                end
-            end)
-            
-            coordFrame.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    coordDragging = false
-                end
-            end)
-            
-            coordRenderConn = RunService.RenderStepped:Connect(function()
-                if not coordEnabled then return end
-                local char = player.Character
-                if not char then return end
-                local rootPart = char:FindFirstChild("HumanoidRootPart")
-                if not rootPart then return end
-                local pos = rootPart.Position
-                local formattedPos = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
-                if coordTextBox and not coordTextBox:IsFocused() then coordTextBox.Text = formattedPos end
-            end)
-            table.insert(connections, coordRenderConn)
-            
-            coordCopyBtn.MouseButton1Click:Connect(function()
-                if not coordTextBox then return end
-                coordTextBox:CaptureFocus()
-                coordTextBox.SelectionStart = 1
-                coordTextBox.CursorPosition = #coordTextBox.Text + 1
-                coordCopyBtn.Text = "现在按下 Ctrl + C 复制！"
-                task.wait(2)
-                coordCopyBtn.Text = "点击准备复制 (Ctrl+C)"
-            end)
-        end
-
-        local function DestroyCoordDisplay()
-            if coordRenderConn then coordRenderConn:Disconnect() coordRenderConn = nil end
-            if coordGui then coordGui:Destroy() coordGui = nil coordFrame = nil coordTextBox = nil coordCopyBtn = nil end
-        end
-
-        AdminGroup:Toggle({ Title = "启用坐标显示", Value = false, Callback = function(value)
-            coordEnabled = value
-            if value then CreateCoordDisplay() else DestroyCoordDisplay() end
-        end })
-
-    else
-        local BlockGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
-        BlockGroup:Paragraph({ Title = "禁止访问", Desc = "你无法进入开发者后台" })
-    end
+    local SimpleGroup = SettingsTab:Section({ Title = "普通设置", Opened = true })
+    SimpleGroup:Paragraph({ Title = "提示", Desc = "本脚本已解除授权限制，直接使用即可。" })
 
     WindUI:Notify({ Title = "wdfex-Hub", Content = "脚本已加载成功，欢迎使用！", Duration = 3 })
 end
