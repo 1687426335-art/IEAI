@@ -449,6 +449,30 @@ function createUI()
     PoliceTab:Divider({ Text = "自动手铐" })
     PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
 
+    -- ==================== 通用传送函数 ====================
+    local function teleportToPlayer(target)
+        if not target or not target.Parent then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家不存在", Duration = 2 })
+            return false
+        end
+        if not target.Character then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家未加载", Duration = 2 })
+            return false
+        end
+        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+        if not targetRoot then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "无法定位玩家", Duration = 2 })
+            return false
+        end
+        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not myRoot then
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "你无法定位", Duration = 2 })
+            return false
+        end
+        myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+        return true
+    end
+
     -- ==================== 传送与甩飞玩家 ====================
     PoliceTab:Divider({ Text = "传送与甩飞玩家" })
 
@@ -458,13 +482,10 @@ function createUI()
     local function refreshPlayerList()
         playerNameList = {}
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then
-                table.insert(playerNameList, p.Name)
-            end
+            if p ~= player then table.insert(playerNameList, p.Name) end
         end
         if #playerNameList == 0 then playerNameList = { "无其他玩家" } end
     end
-
     refreshPlayerList()
 
     local playerDropdown = PoliceTab:Dropdown({
@@ -474,7 +495,6 @@ function createUI()
         Callback = function(value) selectedTargetPlayer = value end
     })
 
-    -- 每3秒自动刷新玩家列表
     task.spawn(function()
         while not isDestroyed do
             task.wait(3)
@@ -500,12 +520,8 @@ function createUI()
         Title = "传送到玩家旁边",
         Callback = function()
             local target = Players:FindFirstChild(selectedTargetPlayer)
-            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+            if teleportToPlayer(target) then
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送,玩家已消失", Duration = 2 })
             end
         end
     })
@@ -520,11 +536,7 @@ function createUI()
                 task.spawn(function()
                     while not isDestroyed and loopTeleportTo do
                         task.wait()
-                        local target = Players:FindFirstChild(selectedTargetPlayer)
-                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                            myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                        end
+                        teleportToPlayer(Players:FindFirstChild(selectedTargetPlayer))
                     end
                 end)
             end
@@ -585,6 +597,7 @@ function createUI()
         end
     })
 
+    -- 甩飞函数
     local function doThrowPlayer(targetPlayer)
         if not targetPlayer or not targetPlayer.Character then return end
         local myChar = player.Character
@@ -597,20 +610,20 @@ function createUI()
         local targetHead = targetChar:FindFirstChild("Head")
         local targetPart = targetHead or targetRoot
         if not targetPart then return end
-        
+
         local oldPos = myRoot.CFrame
         local oldFPDH = workspace.FallenPartsDestroyHeight
         workspace.FallenPartsDestroyHeight = 0 / 0
-        
+
         local bodyVel = Instance.new("BodyVelocity")
         bodyVel.Name = "wdfex_FlingVel"
         bodyVel.Parent = myRoot
         bodyVel.Velocity = Vector3.new(9e8, 9e8, 9e8)
         bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        
+
         if myHum then myHum:SetStateEnabled(Enum.HumanoidStateType.Seated, false) end
         workspace.CurrentCamera.CameraSubject = targetPart
-        
+
         task.spawn(function()
             for i = 1, 40 do
                 pcall(function()
@@ -621,7 +634,7 @@ function createUI()
                 task.wait(0.03)
             end
         end)
-        
+
         task.wait(1.2)
         bodyVel:Destroy()
         if myHum then myHum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) end
@@ -659,9 +672,7 @@ function createUI()
                 task.spawn(function()
                     while not isDestroyed and loopThrowEnabled do
                         local target = Players:FindFirstChild(selectedTargetPlayer)
-                        if target then
-                            pcall(function() doThrowPlayer(target) end)
-                        end
+                        if target then pcall(function() doThrowPlayer(target) end) end
                         task.wait(1.5)
                     end
                 end)
@@ -706,8 +717,64 @@ function createUI()
         end
     })
 
-    -- ==================== 搜索玩家 ====================
+    -- ==================== 自动传送通缉 ====================
+    PoliceTab:Divider({ Text = "自动传送通缉" })
+    PoliceTab:Paragraph({ Title = "说明", Desc = "自动寻找被通缉的玩家并传送到其身边" })
+
+    local autoTpWanted = false
+    PoliceTab:Toggle({
+        Title = "自动传送通缉",
+        Value = false,
+        Callback = function(value)
+            autoTpWanted = value
+            WindUI:Notify({ Title = "wdfex-Hub", Content = value and "自动传送通缉已开启" or "自动传送通缉已关闭", Duration = 2 })
+        end
+    })
+
+    local function isPlayerWanted(p)
+        if not p or not p.Parent then return false end
+        local attrNames = { "Wanted", "wanted", "WantedLevel", "wantedLevel", "IsWanted", "isWanted" }
+        for _, attr in ipairs(attrNames) do
+            local ok, val = pcall(function() return p:GetAttribute(attr) end)
+            if ok and val ~= nil and val ~= false and val ~= 0 then return true end
+        end
+        local char = p.Character
+        if char then
+            for _, attr in ipairs(attrNames) do
+                local ok, val = pcall(function() return char:GetAttribute(attr) end)
+                if ok and val ~= nil and val ~= false and val ~= 0 then return true end
+            end
+            if p.Team then
+                local tn = p.Team.Name:lower()
+                if tn:find("wanted") or tn:find("criminal") or tn:find("通缉") or tn:find("罪犯") or tn:find("匪徒") then
+                    return true
+                end
+            end
+            for _, obj in ipairs(char:GetDescendants()) do
+                local n = obj.Name:lower()
+                if n:find("wanted") or n:find("通缉") then return true end
+            end
+        end
+        return false
+    end
+
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(1)
+            if autoTpWanted then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character and isPlayerWanted(p) then
+                        teleportToPlayer(p)
+                        break
+                    end
+                end
+            end
+        end
+    end)
+
+    -- ==================== 搜索并传送玩家 ====================
     PoliceTab:Divider({ Text = "搜索玩家" })
+
     local searchPlayerName = ""
     PoliceTab:Input({
         Title = "搜索玩家名字",
@@ -722,20 +789,25 @@ function createUI()
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入玩家名字", Duration = 2 })
                 return
             end
-            local target = nil
+            local query = searchPlayerName:lower()
+            local found = nil
             for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player then
-                    if p.Name:lower():find(searchPlayerName:lower(), 1, true) or p.DisplayName:lower():find(searchPlayerName:lower(), 1, true) then
-                        target = p
+                if p ~= player and p.Name:lower() == query then
+                    found = p
+                    break
+                end
+            end
+            if not found then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and (p.Name:lower():find(query, 1, true) or p.DisplayName:lower():find(query, 1, true)) then
+                        found = p
                         break
                     end
                 end
             end
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. target.Name, Duration = 2 })
+            if found then
+                if teleportToPlayer(found) then
+                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到: " .. found.Name, Duration = 2 })
                 end
             else
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 2 })
@@ -779,12 +851,7 @@ function createUI()
         end
     end)
 
-    PoliceTab:Slider({
-        Title = "传送至玩家前方距离",
-        Step = 1,
-        Value = { Min = 3, Max = 25, Default = 3 },
-        Callback = function(value) frontDistance = value end
-    })
+    PoliceTab:Slider({ Title = "传送至玩家前方距离", Step = 1, Value = { Min = 3, Max = 25, Default = 3 }, Callback = function(value) frontDistance = value end })
 
     PoliceTab:Toggle({
         Title = "循环传送至玩家前方",
@@ -807,12 +874,7 @@ function createUI()
         end
     })
 
-    PoliceTab:Slider({
-        Title = "传送至玩家头部高度",
-        Step = 1,
-        Value = { Min = 4, Max = 25, Default = 4 },
-        Callback = function(value) headHeight = value end
-    })
+    PoliceTab:Slider({ Title = "传送至玩家头部高度", Step = 1, Value = { Min = 4, Max = 25, Default = 4 }, Callback = function(value) headHeight = value end })
 
     PoliceTab:Toggle({
         Title = "循环传送至玩家头部",
@@ -832,12 +894,7 @@ function createUI()
         end
     })
 
-    PoliceTab:Slider({
-        Title = "传送至玩家后面的距离",
-        Step = 1,
-        Value = { Min = 4, Max = 30, Default = 4 },
-        Callback = function(value) backDistance = value end
-    })
+    PoliceTab:Slider({ Title = "传送至玩家后面的距离", Step = 1, Value = { Min = 4, Max = 30, Default = 4 }, Callback = function(value) backDistance = value end })
 
     PoliceTab:Toggle({
         Title = "循环传送至玩家后面",
@@ -847,7 +904,7 @@ function createUI()
                 if loopBackConn then loopBackConn:Disconnect() end
                 loopBackConn = RunService.Heartbeat:Connect(function()
                     local target = Players:FindFirstChild(frontBackTarget)
-                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    if target and target.Character and target.Character:FindFirstChild("Human playeroidRootPart") and player..Character andCharacter:FindFirstChild("HumanoidRootPart") then
                         local myRoot = player.Character.HumanoidRootPart
                         local targetRoot = target.Character.HumanoidRootPart
                         local offset = targetRoot.CFrame * CFrame.new(0, 0, backDistance)
@@ -860,6 +917,7 @@ function createUI()
         end
     })
 
+    -- ==================== 吸人 ====================
     PoliceTab:Divider({ Text = "吸人" })
     local suckAllEnabled = false
     PoliceTab:Toggle({
