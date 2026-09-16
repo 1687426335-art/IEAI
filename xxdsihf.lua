@@ -291,77 +291,6 @@ function createUI()
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
 
-    -- ==================== 医生功能 ====================
-    -- 快速互动：始终把 HoldDuration 设为 0
-    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        prompt.HoldDuration = 0
-    end)
-
-    DoctorTab:Divider({ Text = "自动治疗" })
-    DoctorTab:Paragraph({ Title = "状态", Desc = "自动治疗已始终开启，每0.05秒触发一次附近及世界的医疗互动。" })
-
-    -- 自动互动 + 自动治疗：每 0.05 秒触发一次
-    task.spawn(function()
-        while not isDestroyed do
-            for _, descendant in pairs(workspace:GetDescendants()) do
-                if descendant:IsA("ProximityPrompt") then
-                    pcall(function()
-                        fireproximityprompt(descendant)
-                    end)
-                end
-            end
-            task.wait(0.05)  -- 每 0.05 秒触发一次
-        end
-    end)
-
-    -- 循环传送血量为100以下的玩家（照抄警察功能的循环传送逻辑）
-    local loopTeleportSickEnabled = false
-    DoctorTab:Divider({ Text = "循环传送残血玩家" })
-    DoctorTab:Toggle({
-        Title = "循环传送附近血量低于100的玩家",
-        Value = false,
-        Callback = function(enabled)
-            loopTeleportSickEnabled = enabled
-            if enabled then
-                task.spawn(function()
-                    while loopTeleportSickEnabled and not isDestroyed do
-                        local myChar = player.Character
-                        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                        
-                        if myRoot then
-                            local closestTarget = nil
-                            local shortestDist = math.huge
-                            
-                            -- 寻找附近血量低于 100 的玩家
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= player and p.Character then
-                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health < 100 and targetRoot then
-                                        local dist = (targetRoot.Position - myRoot.Position).Magnitude
-                                        if dist < shortestDist then
-                                            shortestDist = dist
-                                            closestTarget = targetRoot
-                                        end
-                                    end
-                                end
-                            end
-
-                            -- 传送到最近残血玩家的身边
-                            if closestTarget then
-                                myRoot.CFrame = closestTarget.CFrame + Vector3.new(0, 3, 0)
-                            end
-                        end
-                        task.wait(0.1) -- 循环间隔
-                    end
-                end)
-                WindUI:Notify({ Title = "医生功能", Content = "已开启循环传送残血玩家", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "医生功能", Content = "已关闭循环传送残血玩家", Duration = 2 })
-            end
-        end
-    })
-
     -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
     local toolItems = {
@@ -827,6 +756,87 @@ function createUI()
             end
         end
     })
+
+    -- ==================== 医生功能 ====================
+    local autoHealEnabled = false
+    local healRadius = 15
+    local healInterval = 0.3
+
+    DoctorTab:Divider({ Text = "自动治疗" })
+
+    DoctorTab:Toggle({
+        Title = "自动治疗附近残血玩家",
+        Value = false,
+        Callback = function(value) autoHealEnabled = value end
+    })
+
+    DoctorTab:Slider({
+        Title = "检测范围",
+        Step = 1,
+        Value = { Min = 5, Max = 50, Default = 15 },
+        Callback = function(value) healRadius = value end
+    })
+
+    DoctorTab:Slider({
+        Title = "治疗间隔（秒）",
+        Step = 0.1,
+        Value = { Min = 0.1, Max = 3, Default = 0.3 },
+        Callback = function(value) healInterval = value end
+    })
+
+    DoctorTab:Paragraph({
+        Title = "说明",
+        Desc = "需手持医疗包（MT First Aid Kit）才能生效，会自动触发附近的医疗交互"
+    })
+
+    -- 快速互动：医疗相关 prompt 的按住时间归零
+    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+        if autoHealEnabled then
+            pcall(function() prompt.HoldDuration = 0 end)
+        end
+    end)
+
+    -- 自动治疗主循环
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(healInterval)
+            if autoHealEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                local myKit = char and char:FindFirstChild("MT First Aid Kit")
+
+                if myRoot and myKit then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                            if hum and hum.Health > 0 and hum.Health < hum.MaxHealth and targetRoot then
+                                local dist = (targetRoot.Position - myRoot.Position).Magnitude
+                                if dist <= healRadius then
+                                    for _, obj in ipairs(p.Character:GetDescendants()) do
+                                        if obj:IsA("ProximityPrompt") then
+                                            pcall(function()
+                                                obj.HoldDuration = 0
+                                                fireproximityprompt(obj)
+                                            end)
+                                        end
+                                    end
+                                    for _, obj in ipairs(char:GetDescendants()) do
+                                        if obj:IsA("ProximityPrompt") then
+                                            pcall(function()
+                                                obj.HoldDuration = 0
+                                                fireproximityprompt(obj)
+                                            end)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 
     -- 自动手铐 + 自动互动统一循环（异步不会卡死）
     task.spawn(function()
