@@ -229,7 +229,9 @@ function createUI()
     local AuthorTab = Window:Tab({ Title = "作者信息", Icon = "user" })
     local AuthorSection = AuthorTab:Section({ Title = "", Opened = true })
     AuthorSection:Paragraph({ Title = "", Desc = "", Thumbnail = "rbxassetid://74369447499630", ThumbnailSize = 150, ThumbnailShape = "Square" })
+    AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
+    AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
 
     AuthorSection:Toggle({
         Title = "降低卡顿",
@@ -264,10 +266,10 @@ function createUI()
     local infoTab = Window:Tab({ Title = "通知", Icon = "layout-grid", Locked = false })
     local infoSection = infoTab:Section({ Title = "详情信息", Icon = "info", Opened = true })
     infoSection:Divider()
-    infoSection:Paragraph({ Title = "关于", Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新", ThumbnailSize = 190 })
+    infoSection:Paragraph({ Title = "关于", Desc = "此脚本永久免费请勿相信任何人/n如果你是买来的恭喜你你被骗了", ThumbnailSize = 190 })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
-    infoSection2:Paragraph({ Title = "v4.0提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点", ThumbnailSize = 190 })
+    infoSection2:Paragraph({ Title = "v4.0提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点\n目前已经修复了所有卡顿问题如果还有bug请联系我修复\nQQ：1687426335\n快手号：EGD917813\n快手名字：wdfex", ThumbnailSize = 190 })
     infoTab:Select()
     AuthorTab:Select()
 
@@ -275,7 +277,7 @@ function createUI()
     local function AddTab(section, title, icon) return section:Tab({ Title = title, Icon = icon }) end
 
     local A = AddTab(MainSection, "玩家修改", "user")
-    A:Paragraph({ Title = "⚠️ 注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
+    A:Paragraph({ Title = "注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
     A:Divider({ Text = "伤害免疫" })
 
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
