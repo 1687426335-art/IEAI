@@ -14,7 +14,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v3.7"
+local version = "v4.0"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -267,7 +267,7 @@ function createUI()
     infoSection:Paragraph({ Title = "关于", Desc = "目前修复了\n使用手机的用户开启飞天卡顿的问题\n目前不知道更新什么功能了\n也没有什么bug了\n有什么功能可以向我提出我会更新", ThumbnailSize = 190 })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
-    infoSection2:Paragraph({ Title = "v3.7提示", Desc = "已更新远程购买", ThumbnailSize = 190 })
+    infoSection2:Paragraph({ Title = "v4.0提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点", ThumbnailSize = 190 })
     infoTab:Select()
     AuthorTab:Select()
 
