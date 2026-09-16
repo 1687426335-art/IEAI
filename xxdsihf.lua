@@ -886,7 +886,7 @@ end)
     -- ==================== 飞天 ====================
     local FlySpeed = 35
     local flyState = { enabled = false, hrp = nil, hum = nil, microThread = nil, healthThread = nil, diedConn = nil, targetPos = nil, lastTime = 0 }
-    local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 12, verticalLayers = 3 }
+    local flyAnchor = { active = false, head = nil, hrp = nil, hum = nil, rayLength = 3.5, rayCount = 4, verticalLayers = 2 }
     local FlyControl
     task.spawn(function() pcall(function() local pm = player.PlayerScripts:FindFirstChild("PlayerModule"); if pm then FlyControl = require(pm):GetControls() end end) end)
     local function flyRefreshParts()
@@ -968,7 +968,7 @@ end)
                 flyState.hrp.Velocity = Vector3.zero
             end
             if flyState.hum then flyState.hum:ChangeState(Enum.HumanoidStateType.Climbing) end
-            task.wait(0.001)
+            RunService.Heartbeat:Wait()
         end
     end
     local function flyHealthLockLoop()
@@ -1054,8 +1054,14 @@ end)
         end)
         button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
         updateFlyStatus()
-        local statusConn = RunService.Heartbeat:Connect(function() if flyQuickToggle and flyQuickStatusLabel then updateFlyStatus() end end)
-        table.insert(connections, statusConn)
+        task.spawn(function()
+            while flyQuickScreenGui and flyQuickScreenGui.Parent do
+                task.wait(0.5)
+                if flyQuickToggle and flyQuickStatusLabel then
+                    updateFlyStatus()
+                end
+            end
+        end)
     end
     FlyTab:Toggle({ Title = "飞天快捷开关", Value = false, Callback = function(value) flyQuickToggle = value; if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end end })
     FlyTab:Divider({ Text = "移速" })
