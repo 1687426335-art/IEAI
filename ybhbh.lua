@@ -1,128 +1,204 @@
 -- =======================================================
--- 全平台通用版 透视脚本 (电脑/手机/任意执行器)
--- 纯原生UI，不依赖 Drawing 库，不限于特定游戏
+-- 全平台通用版 透视脚本 (全新拨动开关UI版)
+-- 电脑/手机 均可拖拽，不依赖 Drawing 库
 -- =======================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ==================== 配置区域 ====================
+-- ==================== 配置 ====================
 local Config = {
-    ESPEnabled = true,       -- 总开关
-    ShowBox = true,          -- 显示方框
-    ShowName = true,         -- 显示名字
-    ShowDistance = true,     -- 显示距离
-    ShowTeam = true,         -- 显示队伍
-    ShowWanted = true,       -- 显示通缉
-    MaxDistance = 500,       -- 最大透视距离
+    ESPEnabled = true,
+    ShowBox = true,
+    ShowName = true,
+    ShowDistance = true,
+    ShowTeam = true,
+    ShowWanted = true,
+    MaxDistance = 500,
 }
 
--- ==================== 通用悬浮窗 UI ====================
--- 清理旧UI避免重复执行
-local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("UniversalESP_UI")
+-- ==================== UI 构建 (现代拨动开关悬浮窗) ====================
+local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ModernESP_UI")
 if oldGui then oldGui:Destroy() end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "UniversalESP_UI"
+screenGui.Name = "ModernESP_UI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- 主容器
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 160, 0, 250)
+mainFrame.Size = UDim2.new(0, 220, 0, 280)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.fromRGB(0, 150, 255)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Parent = screenGui
 
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 8)
-uiCorner.Parent = mainFrame
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 35)
-title.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-title.Text = "通用透视"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.Parent = mainFrame
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Thickness = 2
+mainStroke.Color = Color3.fromRGB(100, 100, 120)
+mainStroke.Parent = mainFrame
+
+-- 顶部标题栏 (拖拽区域)
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
 
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = title
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
 
--- 通用的触摸/鼠标拖拽逻辑 (手机电脑通用)
-local dragging = false
-local dragStart, startPos
-title.InputBegan:Connect(function(input)
+-- 修补标题栏下方的圆角，使其看起来与主框融合
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 15)
+titleFix.Position = UDim2.new(0, 0, 1, -15)
+titleFix.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -20, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "Universal ESP"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 15
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+-- 状态指示灯
+local statusDot = Instance.new("Frame")
+statusDot.Size = UDim2.new(0, 8, 0, 8)
+statusDot.Position = UDim2.new(1, -20, 0.5, -4)
+statusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+statusDot.BorderSizePixel = 0
+statusDot.Parent = titleBar
+
+local dotCorner = Instance.new("UICorner")
+dotCorner.CornerRadius = UDim.new(1, 0)
+dotCorner.Parent = statusDot
+
+-- 拖拽逻辑
+local dragging, dragStart, startPos
+titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
     end
 end)
-title.InputChanged:Connect(function(input)
+titleBar.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-title.InputEnded:Connect(function(input)
+titleBar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
--- 开关按钮生成函数
-local yPos = 45
-local function createToggle(text, defaultValue, callback)
+-- ==================== 拨动开关生成函数 ====================
+local yPos = 50
+local function createSwitch(text, defaultValue, callback)
+    -- 背景容器
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -20, 0, 32)
+    container.Position = UDim2.new(0, 10, 0, yPos)
+    container.BackgroundTransparency = 1
+    container.Parent = mainFrame
+
+    -- 文字
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    -- 开关轨道
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(0, 40, 0, 20)
+    track.Position = UDim2.new(1, -45, 0.5, -10)
+    track.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(60, 60, 70)
+    track.BorderSizePixel = 0
+    track.Parent = container
+
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = track
+
+    -- 开关滑块
+    local thumb = Instance.new("Frame")
+    thumb.Size = UDim2.new(0, 16, 0, 16)
+    thumb.Position = defaultValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    thumb.BorderSizePixel = 0
+    thumb.Parent = track
+
+    local thumbCorner = Instance.new("UICorner")
+    thumbCorner.CornerRadius = UDim.new(1, 0)
+    thumbCorner.Parent = thumb
+
+    -- 点击事件
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 30)
-    btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    btn.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    btn.Text = text .. ": " .. (defaultValue and "开" or "关")
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.Parent = mainFrame
-    
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = btn
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = container
 
     btn.MouseButton1Click:Connect(function()
         defaultValue = not defaultValue
-        btn.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-        btn.Text = text .. ": " .. (defaultValue and "开" or "关")
+        
+        -- 动画效果
+        if defaultValue then
+            TweenService:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}):Play()
+            TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
+        else
+            TweenService:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}):Play()
+            TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+        end
+        
         callback(defaultValue)
     end)
-    yPos = yPos + 35
+    
+    yPos = yPos + 36
 end
 
-createToggle("总开关", Config.ESPEnabled, function(v) Config.ESPEnabled = v end)
-createToggle("显示方框", Config.ShowBox, function(v) Config.ShowBox = v end)
-createToggle("显示名字", Config.ShowName, function(v) Config.ShowName = v end)
-createToggle("显示距离", Config.ShowDistance, function(v) Config.ShowDistance = v end)
-createToggle("显示队伍", Config.ShowTeam, function(v) Config.ShowTeam = v end)
-createToggle("显示通缉", Config.ShowWanted, function(v) Config.ShowWanted = v end)
+-- 创建开关列表
+createSwitch("总开关", Config.ESPEnabled, function(v) 
+    Config.ESPEnabled = v 
+    statusDot.BackgroundColor3 = v and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
+end)
+createSwitch("显示方框", Config.ShowBox, function(v) Config.ShowBox = v end)
+createSwitch("显示名字", Config.ShowName, function(v) Config.ShowName = v end)
+createSwitch("显示距离", Config.ShowDistance, function(v) Config.ShowDistance = v end)
+createSwitch("显示队伍", Config.ShowTeam, function(v) Config.ShowTeam = v end)
+createSwitch("显示通缉", Config.ShowWanted, function(v) Config.ShowWanted = v end)
 
 
--- ==================== 通用数据检测逻辑 ====================
-
--- 1. 队伍检测 (不硬编码，直接读取游戏内实际队伍名)
+-- ==================== 通用逻辑 ====================
 local function GetTeamName(p)
-    if p.Team then
-        return p.Team.Name -- 直接返回游戏原生的队伍名，不管是英文还是中文
-    end
+    if p.Team then return p.Team.Name end
     return "无队伍"
 end
 
--- 2. 通用通缉检测 (遍历玩家和角色内部，寻找任意包含 wanted/bounty/criminal/通缉 的标记)
 local function CheckWanted(p)
     local function scan(obj)
         for _, child in ipairs(obj:GetChildren()) do
@@ -135,29 +211,25 @@ local function CheckWanted(p)
         end
         return false
     end
-    
     if scan(p) then return true end
     if p.Character and scan(p.Character) then return true end
-    
     return false
 end
 
--- ==================== BillboardGui 透视主体 ====================
+-- ==================== BillboardGui 透视 ====================
 local ESPCache = {}
 
 local function CreateESP(p)
     local char = p.Character
     if not char then return end
-    
-    -- 优先找头，没头找躯干
     local attachPart = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not attachPart then return end
 
     local bb = Instance.new("BillboardGui")
     bb.Name = "ESP_UI"
-    bb.Size = UDim2.new(0, 150, 0, 80) -- UI整体大小
-    bb.StudsOffset = Vector3.new(0, 3, 0) -- 头顶偏移
-    bb.AlwaysOnTop = true -- 实现透视的关键
+    bb.Size = UDim2.new(0, 150, 0, 80)
+    bb.StudsOffset = Vector3.new(0, 3, 0)
+    bb.AlwaysOnTop = true
     bb.MaxDistance = Config.MaxDistance
     bb.Parent = attachPart
 
@@ -166,7 +238,6 @@ local function CreateESP(p)
     container.BackgroundTransparency = 1
     container.Parent = bb
 
-    -- 边框 (方框效果)
     local box = Instance.new("Frame")
     box.Name = "Box"
     box.Size = UDim2.new(0, 60, 0, 80)
@@ -177,7 +248,6 @@ local function CreateESP(p)
     box.Visible = Config.ShowBox
     box.Parent = container
 
-    -- 通缉 (最上方)
     local wantedLabel = Instance.new("TextLabel")
     wantedLabel.Name = "Wanted"
     wantedLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -190,7 +260,6 @@ local function CreateESP(p)
     wantedLabel.Visible = false
     wantedLabel.Parent = container
 
-    -- 队伍
     local teamLabel = Instance.new("TextLabel")
     teamLabel.Name = "Team"
     teamLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -202,7 +271,6 @@ local function CreateESP(p)
     teamLabel.Visible = Config.ShowTeam
     teamLabel.Parent = container
 
-    -- 名字
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "Name"
     nameLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -214,7 +282,6 @@ local function CreateESP(p)
     nameLabel.Visible = Config.ShowName
     nameLabel.Parent = container
 
-    -- 距离 (最下方)
     local distLabel = Instance.new("TextLabel")
     distLabel.Name = "Distance"
     distLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -236,10 +303,9 @@ local function RemoveESP(p)
     end
 end
 
--- 玩家离开时清理UI
 Players.PlayerRemoving:Connect(RemoveESP)
 
--- ==================== 渲染主循环 ====================
+-- ==================== 渲染循环 ====================
 RunService.RenderStepped:Connect(function()
     if not Config.ESPEnabled then
         for p, data in pairs(ESPCache) do
@@ -249,7 +315,6 @@ RunService.RenderStepped:Connect(function()
     end
 
     for _, p in ipairs(Players:GetPlayers()) do
-        -- 跳过自己
         if p == LocalPlayer then
             if ESPCache[p] then RemoveESP(p) end
             continue
@@ -259,13 +324,11 @@ RunService.RenderStepped:Connect(function()
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-        -- 角色无效或死亡则清理
         if not char or not hrp or not hum or hum.Health <= 0 then
             if ESPCache[p] then RemoveESP(p) end
             continue
         end
 
-        -- 距离检测
         local myChar = LocalPlayer.Character
         local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
         if not myHrp then continue end
@@ -276,10 +339,9 @@ RunService.RenderStepped:Connect(function()
             continue
         end
 
-        -- 创建或更新
         if not ESPCache[p] then
             CreateESP(p)
-            task.wait() -- 给引擎一帧时间生成UI
+            task.wait()
         end
 
         local data = ESPCache[p]
@@ -292,28 +354,23 @@ RunService.RenderStepped:Connect(function()
         if data then
             data.Billboard.Enabled = true
             
-            -- 队伍更新
             local tName = GetTeamName(p)
             data.Team.Text = "[" .. tName .. "]"
             data.Team.Visible = Config.ShowTeam
             
-            -- 名字
             data.Name.Text = p.Name
             data.Name.Visible = Config.ShowName
             
-            -- 距离
             data.Dist.Text = "[" .. math.floor(dist) .. "m]"
             data.Dist.Visible = Config.ShowDistance
             
-            -- 方框颜色 (如果你有特定队伍比如警察，可以在这里写if判断变色)
             if tName:lower():find("police") or tName:find("警察") then
-                data.Box.BorderColor3 = Color3.fromRGB(0, 100, 255) -- 警察方框蓝色
+                data.Box.BorderColor3 = Color3.fromRGB(0, 100, 255)
             else
-                data.Box.BorderColor3 = Color3.fromRGB(255, 255, 255) -- 其他人白色
+                data.Box.BorderColor3 = Color3.fromRGB(255, 255, 255)
             end
             data.Box.Visible = Config.ShowBox
 
-            -- 通缉检测
             if Config.ShowWanted and CheckWanted(p) then
                 data.Wanted.Visible = true
             else
@@ -322,3 +379,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+-- 初始化状态
+statusDot.BackgroundColor3 = Config.ESPEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
