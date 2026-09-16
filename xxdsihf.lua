@@ -467,6 +467,12 @@ function createUI()
         Callback = function(value) autoCuffEnabled = value end
     })
 
+     PoliceTab:Toggle({
+        Title = "自动点护送",
+        Value = false,
+        Callback = function(value) autoEscortEnabled = value end
+    })
+
     PoliceTab:Divider({ Text = "传送与甩飞" })
 
     local PlayerConfig = {
