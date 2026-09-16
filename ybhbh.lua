@@ -1,6 +1,6 @@
 -- =======================================================
--- 全平台通用版 方框透视脚本 (支持电脑/手机，纯 Drawing 画框)
--- 保留现代拨动开关 UI，自动检测队伍与通缉
+-- 圣奥里 (San Aurie) 专用 独立悬浮窗 透视脚本
+-- 全新暗金质感UI，默认全关，自带通缉检测
 -- =======================================================
 
 local Players = game:GetService("Players")
@@ -10,96 +10,95 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- 检查是否支持 Drawing 库
+-- 检查 Drawing 库支持
 local hasDrawing = pcall(function()
     return Drawing and Drawing.new("Square")
 end)
 
-if not hasDrawing then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "注意",
-        Text = "你的执行器不支持 Drawing 库，将使用备用文字模式（无方框）",
-        Duration = 5
-    })
-end
-
--- ==================== 配置 ====================
+-- ==================== 配置 (默认全部关闭) ====================
 local Config = {
-    ESPEnabled = true,
-    ShowBox = true,
-    ShowName = true,
-    ShowDistance = true,
-    ShowTeam = true,
-    ShowWanted = true,
-    MaxDistance = 800,
+    ESPEnabled = false,      -- 总开关
+    ShowBox = false,         -- 显示方框
+    ShowName = false,        -- 显示名字
+    ShowDistance = false,    -- 显示距离
+    ShowTeam = false,        -- 显示队伍
+    ShowWanted = false,      -- 显示通缉
+    MaxDistance = 500,       -- 最大透视距离
 }
 
--- ==================== 现代拨动开关 UI ====================
-local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ModernESP_UI_V2")
+-- ==================== 全新暗金质感 UI ====================
+local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("GoldESP_UI")
 if oldGui then oldGui:Destroy() end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ModernESP_UI_V2"
+screenGui.Name = "GoldESP_UI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- 主面板 (深色半透明)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 280)
+mainFrame.Size = UDim2.new(0, 180, 0, 280)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.BackgroundTransparency = 0.1 -- 稍微透明一点，看起来高级
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.CornerRadius = UDim.new(0, 10)
 mainCorner.Parent = mainFrame
 
 local mainStroke = Instance.new("UIStroke")
-mainStroke.Thickness = 2
-mainStroke.Color = Color3.fromRGB(100, 100, 120)
+mainStroke.Thickness = 1.5
+mainStroke.Color = Color3.fromRGB(255, 215, 0) -- 金色描边
+mainStroke.Transparency = 0.3
 mainStroke.Parent = mainFrame
 
+-- 顶部标题栏 (带渐变)
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleBar.Size = UDim2.new(1, 0, 0, 38)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = titleBar
 
-local titleFix = Instance.new("Frame")
-titleFix.Size = UDim2.new(1, 0, 0, 15)
-titleFix.Position = UDim2.new(0, 0, 1, -15)
-titleFix.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-titleFix.BorderSizePixel = 0
-titleFix.Parent = titleBar
+-- 渐变效果
+local titleGradient = Instance.new("UIGradient")
+titleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 130, 0))
+})
+titleGradient.Rotation = 90
+titleGradient.Parent = titleBar
 
+-- 标题文字
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -20, 1, 0)
+titleText.Size = UDim2.new(1, -10, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "Universal ESP V2"
+titleText.Text = "San Aurie 透视"
 titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleText.Font = Enum.Font.GothamBold
-titleText.TextSize = 15
+titleText.TextSize = 14
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 
+-- 状态指示灯
 local statusDot = Instance.new("Frame")
 statusDot.Size = UDim2.new(0, 8, 0, 8)
-statusDot.Position = UDim2.new(1, -20, 0.5, -4)
-statusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+statusDot.Position = UDim2.new(1, -18, 0.5, -4)
+statusDot.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- 默认红色关闭状态
 statusDot.BorderSizePixel = 0
 statusDot.Parent = titleBar
-
 local dotCorner = Instance.new("UICorner")
 dotCorner.CornerRadius = UDim.new(1, 0)
 dotCorner.Parent = statusDot
 
--- 拖拽逻辑
+-- 拖拽逻辑 (手机电脑通用)
 local dragging, dragStart, startPos
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -120,101 +119,101 @@ titleBar.InputEnded:Connect(function(input)
     end
 end)
 
--- 开关创建
+-- 好看的卡片式按钮生成器
 local yPos = 50
-local function createSwitch(text, defaultValue, callback)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -20, 0, 32)
-    container.Position = UDim2.new(0, 10, 0, yPos)
-    container.BackgroundTransparency = 1
-    container.Parent = mainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = container
-
-    local track = Instance.new("Frame")
-    track.Size = UDim2.new(0, 40, 0, 20)
-    track.Position = UDim2.new(1, -45, 0.5, -10)
-    track.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(60, 60, 70)
-    track.BorderSizePixel = 0
-    track.Parent = container
-
-    local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(1, 0)
-    trackCorner.Parent = track
-
-    local thumb = Instance.new("Frame")
-    thumb.Size = UDim2.new(0, 16, 0, 16)
-    thumb.Position = defaultValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    thumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    thumb.BorderSizePixel = 0
-    thumb.Parent = track
-
-    local thumbCorner = Instance.new("UICorner")
-    thumbCorner.CornerRadius = UDim.new(1, 0)
-    thumbCorner.Parent = thumb
-
+local function createStyledButton(text, defaultValue, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = container
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Position = UDim2.new(0.05, 0, 0, yPos)
+    btn.BackgroundColor3 = defaultValue and Color3.fromRGB(40, 70, 40) or Color3.fromRGB(45, 45, 50)
+    btn.Text = text .. ": " .. (defaultValue and "开" or "关")
+    btn.TextColor3 = defaultValue and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(180, 180, 180)
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 13
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.Parent = mainFrame
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Thickness = 1
+    btnStroke.Color = defaultValue and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(80, 80, 80)
+    btnStroke.Transparency = 0.5
+    btnStroke.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
         defaultValue = not defaultValue
         if defaultValue then
-            TweenService:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}):Play()
-            TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
+            btn.BackgroundColor3 = Color3.fromRGB(40, 70, 40)
+            btn.TextColor3 = Color3.fromRGB(0, 255, 100)
+            btnStroke.Color = Color3.fromRGB(0, 255, 100)
+            btn.Text = text .. ": 开"
+            TweenService:Create(btn, TweenInfo.new(0.15), {Size = UDim2.new(0.95, 0, 0, 32)}):Play()
+            task.wait(0.15)
+            TweenService:Create(btn, TweenInfo.new(0.15), {Size = UDim2.new(0.9, 0, 0, 32)}):Play()
         else
-            TweenService:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}):Play()
-            TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+            btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+            btnStroke.Color = Color3.fromRGB(80, 80, 80)
+            btn.Text = text .. ": 关"
         end
         callback(defaultValue)
     end)
-    yPos = yPos + 36
+    yPos = yPos + 38
 end
 
-createSwitch("总开关", Config.ESPEnabled, function(v) 
+createStyledButton("总开关", Config.ESPEnabled, function(v) 
     Config.ESPEnabled = v 
     statusDot.BackgroundColor3 = v and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
 end)
-createSwitch("显示方框", Config.ShowBox, function(v) Config.ShowBox = v end)
-createSwitch("显示名字", Config.ShowName, function(v) Config.ShowName = v end)
-createSwitch("显示距离", Config.ShowDistance, function(v) Config.ShowDistance = v end)
-createSwitch("显示队伍", Config.ShowTeam, function(v) Config.ShowTeam = v end)
-createSwitch("显示通缉", Config.ShowWanted, function(v) Config.ShowWanted = v end)
+createStyledButton("显示方框", Config.ShowBox, function(v) Config.ShowBox = v end)
+createStyledButton("显示名字", Config.ShowName, function(v) Config.ShowName = v end)
+createStyledButton("显示距离", Config.ShowDistance, function(v) Config.ShowDistance = v end)
+createStyledButton("显示队伍", Config.ShowTeam, function(v) Config.ShowTeam = v end)
+createStyledButton("显示通缉", Config.ShowWanted, function(v) Config.ShowWanted = v end)
+
 
 -- ==================== 通用数据检测 ====================
+-- 1. 队伍检测
 local function GetTeamName(p)
-    if p.Team then return p.Team.Name end
-    return "平民" 
+    if p.Team then 
+        return p.Team.Name 
+    end
+    return "平民"
 end
 
+-- 2. 通缉检测 (你要求的自己写，自动扫描所有常见通缉标记)
 local function CheckWanted(p)
-    local function scan(obj)
+    -- 扫描 Player
+    local function scanObject(obj)
         for _, child in ipairs(obj:GetChildren()) do
             local name = child.Name:lower()
+            -- 检测名字包含 wanted, bounty, criminal, 通缉 的变量
             if name:find("wanted") or name:find("bounty") or name:find("criminal") or name:find("通缉") then
-                if child:IsA("BoolValue") and child.Value then return true end
+                if child:IsA("BoolValue") and child.Value == true then return true end
                 if child:IsA("IntValue") and child.Value > 0 then return true end
                 if child:IsA("StringValue") and child.Value ~= "" and child.Value ~= "0" then return true end
             end
         end
         return false
     end
-    if scan(p) then return true end
-    if p.Character and scan(p.Character) then return true end
+
+    if scanObject(p) then return true end
+    if p.Character and scanObject(p.Character) then return true end
+    
+    -- 有些游戏通缉放在 PlayerGui 里
+    local pg = p:FindFirstChild("PlayerGui")
+    if pg then
+        if pg:FindFirstChild("WantedGui") or pg:FindFirstChild("Wanted") then return true end
+    end
+
     return false
 end
 
--- ==================== 绘图对象管理 ====================
+-- ==================== Drawing 绘图逻辑 ====================
 local ESPCache = {}
 
 local function CreateDrawing(p)
@@ -270,13 +269,13 @@ Players.PlayerRemoving:Connect(RemoveDrawing)
 
 -- ==================== 主渲染循环 ====================
 RunService.RenderStepped:Connect(function()
+    -- 如果总开关关闭，隐藏所有UI并返回
     if not Config.ESPEnabled then
         if hasDrawing then
             for p, data in pairs(ESPCache) do
                 for _, obj in pairs(data.Drawing) do obj.Visible = false end
             end
         else
-            -- 备用文字模式的隐藏逻辑
             for _, p in ipairs(Players:GetPlayers()) do
                 local char = p.Character
                 if char and char:FindFirstChild("Head") then
@@ -296,6 +295,7 @@ RunService.RenderStepped:Connect(function()
         local head = char and char:FindFirstChild("Head")
         local hum = char and char:FindFirstChildOfClass("Humanoid")
 
+        -- 角色无效或死亡
         if not char or not hrp or not head or not hum or hum.Health <= 0 then
             if hasDrawing then RemoveDrawing(p) end
             continue
@@ -306,12 +306,13 @@ RunService.RenderStepped:Connect(function()
         if not myHrp then continue end
         local dist = (myHrp.Position - hrp.Position).Magnitude
 
+        -- 超出最大距离
         if dist > Config.MaxDistance then
             if hasDrawing then RemoveDrawing(p) end
             continue
         end
 
-        -- 2D坐标计算
+        -- 获取2D屏幕坐标
         local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
         if not onScreen then
             if hasDrawing and ESPCache[p] then
@@ -341,7 +342,7 @@ RunService.RenderStepped:Connect(function()
             d.Box.Size = Vector2.new(width, height)
             d.Box.Position = Vector2.new(posX, posY)
             
-            -- 如果是警察，方框变蓝；如果是通缉，方框变红
+            -- 颜色反馈：通缉变红，警察变蓝，其他人白色
             if isWanted then
                 d.Box.Color = Color3.fromRGB(255, 0, 0)
             elseif tName:lower():find("police") or tName:find("警察") then
@@ -350,25 +351,28 @@ RunService.RenderStepped:Connect(function()
                 d.Box.Color = Color3.fromRGB(255, 255, 255)
             end
 
-            -- 绘制文字
+            -- 绘制名字
             d.Name.Visible = Config.ShowName
             d.Name.Text = p.Name
             d.Name.Position = Vector2.new(headPos.X, posY - 20)
 
+            -- 绘制队伍
             d.Team.Visible = Config.ShowTeam
             d.Team.Text = "[" .. tName .. "]"
             d.Team.Position = Vector2.new(headPos.X, posY - 38)
 
+            -- 绘制通缉 (自定义)
             d.Wanted.Visible = Config.ShowWanted and isWanted
             d.Wanted.Text = "★通缉★"
             d.Wanted.Position = Vector2.new(headPos.X, posY - 56)
 
+            -- 绘制距离
             d.Distance.Visible = Config.ShowDistance
             d.Distance.Text = "[" .. math.floor(dist) .. "m]"
             d.Distance.Position = Vector2.new(headPos.X, posY + height + 5)
 
         else
-            -- 降级备用方案：只显示头顶文字（无方框）
+            -- 备用降级方案 (如果没有Drawing，只显示头顶文字)
             local bb = head:FindFirstChild("FallbackESP")
             if not bb then
                 bb = Instance.new("BillboardGui")
@@ -377,7 +381,6 @@ RunService.RenderStepped:Connect(function()
                 bb.StudsOffset = Vector3.new(0, 3, 0)
                 bb.AlwaysOnTop = true
                 bb.Parent = head
-
                 local txt = Instance.new("TextLabel")
                 txt.Size = UDim2.new(1, 0, 1, 0)
                 txt.BackgroundTransparency = 1
@@ -396,5 +399,3 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-statusDot.BackgroundColor3 = Config.ESPEnabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
