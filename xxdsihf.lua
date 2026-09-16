@@ -293,10 +293,8 @@ function createUI()
 
     -- ==================== 医生功能 ====================
     local autoHealEnabled = false
-    local autoHealRadius = 20
-    local autoHealOnlyInjured = true
 
-    -- 快速互动：自动治疗开启时，把按住时长设为 0
+    -- 1. 快速互动：自动治疗开启时，把按住时长设为 0
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
         if autoHealEnabled then
             prompt.HoldDuration = 0
@@ -318,7 +316,7 @@ function createUI()
         end
     })
 
-    -- 自动治疗主循环
+    -- 2. 自动互动 + 3. 自动治疗 主循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.1)
@@ -326,18 +324,16 @@ function createUI()
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
                 if myRoot then
+                    -- 方式 A：遍历附近玩家身上的 ProximityPrompt（治疗队友）
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character then
                             local hum = p.Character:FindFirstChildOfClass("Humanoid")
                             local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                            if hum and pRoot then
-                                local dist = (pRoot.Position - myRoot.Position).Magnitude
-                                if dist < autoHealRadius then
-                                    if (not autoHealOnlyInjured) or hum.Health < hum.MaxHealth then
-                                        for _, descendant in ipairs(p.Character:GetDescendants()) do
-                                            if descendant:IsA("ProximityPrompt") then
-                                                pcall(function() fireproximityprompt(descendant) end)
-                                            end
+                            if hum and hum.Health < hum.MaxHealth and pRoot then
+                                if (pRoot.Position - myRoot.Position).Magnitude < 20 then
+                                    for _, descendant in ipairs(p.Character:GetDescendants()) do
+                                        if descendant:IsA("ProximityPrompt") then
+                                            pcall(function() fireproximityprompt(descendant) end)
                                         end
                                     end
                                 end
@@ -345,11 +341,13 @@ function createUI()
                         end
                     end
 
+                    -- 方式 B：自动互动（遍历世界内的 ProximityPrompt，只触发医疗相关的）
                     for _, descendant in ipairs(workspace:GetDescendants()) do
                         if descendant:IsA("ProximityPrompt") then
                             local parent = descendant.Parent
-                            if parent and parent:IsA("BasePart") then
-                                if (parent.Position - myRoot.Position).Magnitude < autoHealRadius then
+                            if parent and parent:IsA("BasePart") and (parent.Position - myRoot.Position).Magnitude < 20 then
+                                local name = (descendant.Name .. parent.Name):lower()
+                                if name:find("med") or name:find("heal") or name:find("kit") or name:find("aid") or name:find("doctor") or name:find("first") or name:find("health") then
                                     pcall(function() fireproximityprompt(descendant) end)
                                 end
                             end
