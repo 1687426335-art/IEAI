@@ -14,7 +14,7 @@ for i = 1, #username do
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
 
-local version = "v4.1"
+local version = "v4.3"
 local coloredVersion = ""
 for i = 1, #version do
     local colorIndex = (i - 1) % #gradientColors + 1
@@ -269,7 +269,7 @@ function createUI()
     infoSection:Paragraph({ Title = "关于", Desc = "此脚本永久免费请勿相信任何人/n如果你是买来的恭喜你你被骗了", ThumbnailSize = 190 })
     local infoSection2 = infoTab:Section({ Title = "更新公告", Icon = "bell", Opened = true })
     infoSection2:Divider()
-    infoSection2:Paragraph({ Title = "v4.1提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点\n目前已经修复了所有卡顿问题如果还有bug请联系我修复\nQQ：1687426335\n快手号：EGD917813\n快手名字：wdfex", ThumbnailSize = 190 })
+    infoSection2:Paragraph({ Title = "v4.3提示", Desc = "更新警察功能\n更新自动手铐\n更新甩飞传送（在警察功能里面）\n更新自动点互送这样抓那些会飞的容易一点\n目前已经修复了所有卡顿问题如果还有bug请联系我修复\nQQ：1687426335\n快手号：EGD917813\n快手名字：wdfex", ThumbnailSize = 190 })
     infoTab:Select()
     AuthorTab:Select()
 
