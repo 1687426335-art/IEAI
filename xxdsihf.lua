@@ -452,17 +452,22 @@ function createUI()
 
     -- ==================== 互动 & 警察功能 ====================
     local fastInteractEnabled, autoInteractEnabled, autoCuffEnabled = false, false, false
-    local autoPickupCashEnabled = false
-    local pickedCash = setmetatable({}, {__mode = "k"})
 
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        if fastInteractEnabled or autoPickupCashEnabled then prompt.HoldDuration = 0 end
+        if fastInteractEnabled then prompt.HoldDuration = 0 end
     end)
 
     InteractTab:Divider({ Text = "互动功能" })
     InteractTab:Toggle({ Title = "快速互动", Value = false, Callback = function(value) fastInteractEnabled = value end })
     InteractTab:Toggle({ Title = "自动互动", Value = false, Callback = function(value) autoInteractEnabled = value end })
-    InteractTab:Toggle({ Title = "自动捡钱", Value = false, Callback = function(value) autoPickupCashEnabled = value end })
+
+    InteractTab:Divider({ Text = "自动捡钱" })
+    local autoCashEnabled = false
+    InteractTab:Toggle({
+        Title = "自动捡钱",
+        Value = false,
+        Callback = function(value) autoCashEnabled = value end
+    })
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Divider({ Text = "自动手铐" })
@@ -935,34 +940,42 @@ task.spawn(function()
     end
 end)
 
-    -- ==================== 自动捡钱独立循环（三合一：快速互动 + 自动互动 + cashDrop） ====================
+    -- ==================== 自动捡钱独立循环 ====================
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.15)
-            if autoPickupCashEnabled then
+            task.wait(0.1)
+            if autoCashEnabled then
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
-                    -- 1. 快速互动：把所有 ProximityPrompt 的按住时间归零
-                    for _, descendant in pairs(workspace:GetDescendants()) do
-                        if descendant:IsA("ProximityPrompt") then
-                            pcall(function() descendant.HoldDuration = 0 end)
-                            -- 2. 自动互动：直接触发交互
-                            pcall(function() fireproximityprompt(descendant) end)
+                    local found = false
+                    -- 优先从 getnilinstances 查找
+                    if getnilinstances then
+                        for _, obj in ipairs(getnilinstances()) do
+                            if obj.Name == "CashDrop" then
+                                pcall(function() event:InvokeServer("cashDrop", obj) end)
+                                found = true
+                            end
                         end
                     end
-                    -- 3. cashDrop 事件：从 getnilinstances 里找 CashDrop 对象秒捡
-                    pcall(function()
-                        for _, obj in ipairs(getnilinstances()) do
-                            if obj.Name == "CashDrop" and not pickedCash[obj] then
-                                pickedCash[obj] = true
-                                task.spawn(function()
-                                    pcall(function()
-                                        event:InvokeServer("cashDrop", obj)
-                                    end)
+                    -- 如果没找到，再从 workspace 里找
+                    if not found then
+                        for _, obj in ipairs(workspace:GetDescendants()) do
+                            if obj.Name == "CashDrop" then
+                                pcall(function() event:InvokeServer("cashDrop", obj) end)
+                            end
+                        end
+                    end
+                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
+                    if not found then
+                        for _, descendant in pairs(workspace:GetDescendants()) do
+                            if descendant:IsA("ProximityPrompt") then
+                                pcall(function()
+                                    descendant.HoldDuration = 0
+                                    fireproximityprompt(descendant)
                                 end)
                             end
                         end
-                    end)
+                    end
                 end
             end
         end
