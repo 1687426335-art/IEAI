@@ -456,7 +456,7 @@ function createUI()
     local pickedCash = setmetatable({}, {__mode = "k"})
 
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        if fastInteractEnabled then prompt.HoldDuration = 0 end
+        if fastInteractEnabled or autoPickupCashEnabled then prompt.HoldDuration = 0 end
     end)
 
     InteractTab:Divider({ Text = "互动功能" })
@@ -935,13 +935,22 @@ task.spawn(function()
     end
 end)
 
-    -- ==================== 自动捡钱独立循环 ====================
+    -- ==================== 自动捡钱独立循环（三合一：快速互动 + 自动互动 + cashDrop） ====================
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.3)
+            task.wait(0.15)
             if autoPickupCashEnabled then
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
+                    -- 1. 快速互动：把所有 ProximityPrompt 的按住时间归零
+                    for _, descendant in pairs(workspace:GetDescendants()) do
+                        if descendant:IsA("ProximityPrompt") then
+                            pcall(function() descendant.HoldDuration = 0 end)
+                            -- 2. 自动互动：直接触发交互
+                            pcall(function() fireproximityprompt(descendant) end)
+                        end
+                    end
+                    -- 3. cashDrop 事件：从 getnilinstances 里找 CashDrop 对象秒捡
                     pcall(function()
                         for _, obj in ipairs(getnilinstances()) do
                             if obj.Name == "CashDrop" and not pickedCash[obj] then
