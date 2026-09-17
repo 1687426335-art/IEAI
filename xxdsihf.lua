@@ -38,6 +38,7 @@ function createUI()
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
+    local VirtualInputManager = game:GetService("VirtualInputManager")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
@@ -290,6 +291,7 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
+    local MoneyTab = AddTab(MainSection, "刷钱", "dollar-sign")
 
     -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
@@ -452,7 +454,6 @@ function createUI()
 
     -- ==================== 互动 & 警察功能 ====================
     local fastInteractEnabled, autoInteractEnabled, autoCuffEnabled = false, false, false
-
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
         if fastInteractEnabled then prompt.HoldDuration = 0 end
     end)
@@ -460,220 +461,114 @@ function createUI()
     InteractTab:Divider({ Text = "互动功能" })
     InteractTab:Toggle({ Title = "快速互动", Value = false, Callback = function(value) fastInteractEnabled = value end })
     InteractTab:Toggle({ Title = "自动互动", Value = false, Callback = function(value) autoInteractEnabled = value end })
-
     InteractTab:Divider({ Text = "自动捡钱" })
     local autoCashEnabled = false
-    InteractTab:Toggle({
-        Title = "自动捡钱",
-        Value = false,
-        Callback = function(value) autoCashEnabled = value end
-    })
+    InteractTab:Toggle({ Title = "自动捡钱", Value = false, Callback = function(value) autoCashEnabled = value end })
 
     PoliceTab:Divider({ Text = "警察功能" })
-    PoliceTab:Divider({ Text = "自动手铐" })
-    PoliceTab:Divider({ Text = "自动点护送" })
     local autoCuffEnabled = false
     local autoEscortEnabled = false
-    PoliceTab:Toggle({
-        Title = "自动手铐",
-        Value = false,
-        Callback = function(value) autoCuffEnabled = value end
-    })
-
-     PoliceTab:Toggle({
-        Title = "自动点护送",
-        Value = false,
-        Callback = function(value) autoEscortEnabled = value end
-    })
-
+    PoliceTab:Toggle({ Title = "自动手铐", Value = false, Callback = function(value) autoCuffEnabled = value end })
+    PoliceTab:Toggle({ Title = "自动点护送", Value = false, Callback = function(value) autoEscortEnabled = value end })
     PoliceTab:Divider({ Text = "传送与甩飞" })
 
-    local PlayerConfig = {
-        playernamedied = nil,
-        dropdown = {},
-        LoopTeleport = false,
-        LoopTeleportBack = false,
-        LoopFling = false,
-    }
-
+    local PlayerConfig = { playernamedied = nil, dropdown = {}, LoopTeleport = false, LoopTeleportBack = false, LoopFling = false }
     local function shuaxinlb()
         local list = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then table.insert(list, p.Name) end
-        end
+        for _, p in ipairs(Players:GetPlayers()) do if p ~= player then table.insert(list, p.Name) end end
         table.sort(list)
         PlayerConfig.dropdown = list
     end
     shuaxinlb()
 
     local playerDropdown
-    playerDropdown = PoliceTab:Dropdown({
-        Title = "选择玩家名称",
-        Values = PlayerConfig.dropdown,
-        Value = PlayerConfig.dropdown[1] or "无",
-        Callback = function(value) PlayerConfig.playernamedied = value end
-    })
-
+    playerDropdown = PoliceTab:Dropdown({ Title = "选择玩家名称", Values = PlayerConfig.dropdown, Value = PlayerConfig.dropdown[1] or "无", Callback = function(value) PlayerConfig.playernamedied = value end })
     local searchNameInput = ""
-    PoliceTab:Input({
-        Title = "搜索玩家名字",
-        Placeholder = "输入玩家名字后点击搜索...",
-        Callback = function(value) searchNameInput = value end
-    })
-
-    PoliceTab:Button({
-        Title = "搜索并选中玩家",
-        Callback = function()
-            if not searchNameInput or searchNameInput == "" then
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入玩家名字", Duration = 3 })
-                return
-            end
-            local found = nil
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and (p.Name:lower():find(searchNameInput:lower(), 1, true) or p.DisplayName:lower():find(searchNameInput:lower(), 1, true)) then
-                    found = p.Name
-                    break
+    PoliceTab:Input({ Title = "搜索玩家名字", Placeholder = "输入玩家名字后点击搜索...", Callback = function(value) searchNameInput = value end })
+    PoliceTab:Button({ Title = "搜索并选中玩家", Callback = function()
+        if not searchNameInput or searchNameInput == "" then WindUI:Notify({ Title = "wdfex-Hub", Content = "请输入玩家名字", Duration = 3 }); return end
+        local found = nil
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and (p.Name:lower():find(searchNameInput:lower(), 1, true) or p.DisplayName:lower():find(searchNameInput:lower(), 1, true)) then found = p.Name; break end
+        end
+        if found then
+            PlayerConfig.playernamedied = found
+            if playerDropdown then pcall(function() playerDropdown:SetValue(found) end) end
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已选中: " .. found, Duration = 3 })
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 3 }) end
+    end })
+    PoliceTab:Button({ Title = "传送到玩家旁边", Callback = function()
+        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0); WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到玩家身边", Duration = 3 }) end
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送: 玩家已消失", Duration = 3 }) end
+    end })
+    PoliceTab:Toggle({ Title = "循环锁定传送", Value = false, Callback = function(enabled)
+        PlayerConfig.LoopTeleport = enabled
+        if enabled then
+            task.spawn(function()
+                while PlayerConfig.LoopTeleport and not isDestroyed do
+                    local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0) end
+                    task.wait(0.1)
                 end
-            end
-            if found then
-                PlayerConfig.playernamedied = found
-                if playerDropdown then
-                    pcall(function()
-                        playerDropdown:SetValue(found)
-                    end)
+            end)
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送", Duration = 2 })
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送", Duration = 2 }) end
+    end })
+    PoliceTab:Button({ Title = "把玩家传送过来", Callback = function()
+        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0); WindUI:Notify({ Title = "wdfex-Hub", Content = "已将玩家传送过来", Duration = 3 }) end
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送: 玩家已消失", Duration = 3 }) end
+    end })
+    PoliceTab:Toggle({ Title = "循环传送玩家过来", Value = false, Callback = function(enabled)
+        PlayerConfig.LoopTeleportBack = enabled
+        if enabled then
+            task.spawn(function()
+                while PlayerConfig.LoopTeleportBack and not isDestroyed do
+                    local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0) end
+                    task.wait(0.1)
                 end
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已选中: " .. found, Duration = 3 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "未找到该玩家", Duration = 3 })
-            end
-        end
-    })
-
-    PoliceTab:Button({
-        Title = "传送到玩家旁边",
-        Callback = function()
-            local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已传送到玩家身边", Duration = 3 })
-                end
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送: 玩家已消失", Duration = 3 })
-            end
-        end
-    })
-
-    PoliceTab:Toggle({
-        Title = "循环锁定传送",
-        Value = false,
-        Callback = function(enabled)
-            PlayerConfig.LoopTeleport = enabled
-            if enabled then
-                task.spawn(function()
-                    while PlayerConfig.LoopTeleport and not isDestroyed do
-                        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                            myRoot.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                        end
-                        task.wait(0.1)
-                    end
-                end)
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送", Duration = 2 })
-            end
-        end
-    })
-
-    PoliceTab:Button({
-        Title = "把玩家传送过来",
-        Callback = function()
-            local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if myRoot then
-                    target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已将玩家传送过来", Duration = 3 })
-                end
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "无法传送: 玩家已消失", Duration = 3 })
-            end
-        end
-    })
-
-    PoliceTab:Toggle({
-        Title = "循环传送玩家过来",
-        Value = false,
-        Callback = function(enabled)
-            PlayerConfig.LoopTeleportBack = enabled
-            if enabled then
-                task.spawn(function()
-                    while PlayerConfig.LoopTeleportBack and not isDestroyed do
-                        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
-                            target.Character.HumanoidRootPart.CFrame = myRoot.CFrame + Vector3.new(0, 3, 0)
-                        end
-                        task.wait(0.1)
-                    end
-                end)
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送玩家过来", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送玩家过来", Duration = 2 })
-            end
-        end
-    })
-
-    PoliceTab:Toggle({
-        Title = "吸全部玩家",
-        Value = false,
-        Callback = function(enabled)
-            if enabled then
-                task.spawn(function()
-                    while enabled and not isDestroyed do
-                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= player and p.Character then
-                                    local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if pRoot then
-                                        pRoot.CFrame = CFrame.new(myRoot.Position + myRoot.CFrame.lookVector * 3, myRoot.Position + myRoot.CFrame.lookVector * 4)
-                                    end
-                                end
+            end)
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送玩家过来", Duration = 2 })
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送玩家过来", Duration = 2 }) end
+    end })
+    PoliceTab:Toggle({ Title = "吸全部玩家", Value = false, Callback = function(enabled)
+        if enabled then
+            task.spawn(function()
+                while enabled and not isDestroyed do
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if myRoot then
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= player and p.Character then
+                                local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                if pRoot then pRoot.CFrame = CFrame.new(myRoot.Position + myRoot.CFrame.lookVector * 3, myRoot.Position + myRoot.CFrame.lookVector * 4) end
                             end
                         end
-                        task.wait(0.1)
                     end
-                end)
-            end
-        end
-    })
-
-    PoliceTab:Toggle({
-        Title = "查看玩家",
-        Value = false,
-        Callback = function(enabled)
-            if enabled then
-                local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-                if target and target.Character then
-                    local hum = target.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        workspace.CurrentCamera.CameraSubject = hum
-                        WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启查看玩家", Duration = 2 })
-                    end
+                    task.wait(0.1)
                 end
-            else
-                local myHum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-                if myHum then
-                    workspace.CurrentCamera.CameraSubject = myHum
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭查看玩家", Duration = 2 })
-                end
-            end
+            end)
         end
-    })
+    end })
+    PoliceTab:Toggle({ Title = "查看玩家", Value = false, Callback = function(enabled)
+        if enabled then
+            local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+            if target and target.Character then
+                local hum = target.Character:FindFirstChildOfClass("Humanoid")
+                if hum then workspace.CurrentCamera.CameraSubject = hum; WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启查看玩家", Duration = 2 }) end
+            end
+        else
+            local myHum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            if myHum then workspace.CurrentCamera.CameraSubject = myHum; WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭查看玩家", Duration = 2 }) end
+        end
+    end })
 
     local function ThrowPlayer(targetPlayer)
         local targetChar = targetPlayer.Character
@@ -684,16 +579,13 @@ function createUI()
         if not myChar then return end
         local myRoot = myChar:FindFirstChild("HumanoidRootPart")
         if not myRoot then return end
-
         local oldFPDH = workspace.FallenPartsDestroyHeight
         workspace.FallenPartsDestroyHeight = -math.huge
-
         local bv = Instance.new("BodyVelocity")
         bv.Name = "wdfexFling"
         bv.Parent = myRoot
         bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
         bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-
         for i = 1, 20 do
             if not targetRoot.Parent or not myRoot.Parent then break end
             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 1.5, 0) * CFrame.Angles(math.rad(i * 18), 0, math.rad(i * 18))
@@ -701,145 +593,83 @@ function createUI()
             targetRoot.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
             task.wait(0.1)
         end
-
         bv:Destroy()
         workspace.FallenPartsDestroyHeight = oldFPDH
     end
 
-    PoliceTab:Button({
-        Title = "甩飞一次",
-        Callback = function()
-            if PlayerConfig.playernamedied then
-                local target = Players:FindFirstChild(PlayerConfig.playernamedied)
-                if target then
-                    pcall(function() ThrowPlayer(target) end)
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "已甩飞 " .. target.Name, Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家已消失", Duration = 3 })
+    PoliceTab:Button({ Title = "甩飞一次", Callback = function()
+        if PlayerConfig.playernamedied then
+            local target = Players:FindFirstChild(PlayerConfig.playernamedied)
+            if target then pcall(function() ThrowPlayer(target) end); WindUI:Notify({ Title = "wdfex-Hub", Content = "已甩飞 " .. target.Name, Duration = 3 })
+            else WindUI:Notify({ Title = "wdfex-Hub", Content = "玩家已消失", Duration = 3 }) end
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 3 }) end
+    end })
+    PoliceTab:Toggle({ Title = "循环甩飞", Value = false, Callback = function(enabled)
+        PlayerConfig.LoopFling = enabled
+        if enabled then
+            task.spawn(function()
+                while PlayerConfig.LoopFling and not isDestroyed do
+                    local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+                    if target and target.Character then pcall(function() ThrowPlayer(target) end) end
+                    task.wait(0.2)
                 end
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "请先选择玩家", Duration = 3 })
-            end
+            end)
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环甩飞", Duration = 2 })
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环甩飞", Duration = 2 }) end
+    end })
+    PoliceTab:Toggle({ Title = "开启指定自瞄目标", Value = false, Callback = function(enabled)
+        if enabled then
+            task.spawn(function()
+                while enabled and not isDestroyed do
+                    local camera = workspace.CurrentCamera
+                    local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
+                    local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                    if targetRoot and camera then camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + (targetRoot.Position - camera.CFrame.Position).Unit) end
+                    task.wait(0.1)
+                end
+            end)
         end
-    })
-
-    PoliceTab:Toggle({
-        Title = "循环甩飞",
-        Value = false,
-        Callback = function(enabled)
-            PlayerConfig.LoopFling = enabled
-            if enabled then
-                task.spawn(function()
-                    while PlayerConfig.LoopFling and not isDestroyed do
-                        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-                        if target and target.Character then
-                            pcall(function() ThrowPlayer(target) end)
-                        end
-                        task.wait(0.2)
-                    end
-                end)
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环甩飞", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环甩飞", Duration = 2 })
-            end
-        end
-    })
-
-    PoliceTab:Toggle({
-        Title = "开启指定自瞄目标",
-        Value = false,
-        Callback = function(enabled)
-            if enabled then
-                task.spawn(function()
-                    while enabled and not isDestroyed do
-                        local camera = workspace.CurrentCamera
-                        local target = Players:FindFirstChild(PlayerConfig.playernamedied or "")
-                        local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                        if targetRoot and camera then
-                            camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + (targetRoot.Position - camera.CFrame.Position).Unit)
-                        end
-                        task.wait(0.1)
-                    end
-                end)
-            end
-        end
-    })
+    end })
 
     -- ==================== 医生功能 ====================
     local autoHealEnabled = false
     local healRadius = 30
     local healInterval = 0.1
-
     DoctorTab:Divider({ Text = "自动治疗" })
-
-    DoctorTab:Toggle({
-        Title = "自动治疗",
-        Value = false,
-        Callback = function(value) autoHealEnabled = value end
-    })
-
+    DoctorTab:Toggle({ Title = "自动治疗", Value = false, Callback = function(value) autoHealEnabled = value end })
     DoctorTab:Divider({ Text = "修复物品" })
-    DoctorTab:Button({
-        Title = "修复MT急救包",
-        Callback = function()
-            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-            if event then
-                local success, err = pcall(function()
-                    event:InvokeServer("repairReplenishItem", "MT First Aid Kit")
-                end)
-                if success then
-                    WindUI:Notify({ Title = "医生功能", Content = "修复请求已发送！", Duration = 3 })
-                else
-                    WindUI:Notify({ Title = "医生功能", Content = "修复失败，请检查物品栏", Duration = 3 })
-                end
-            else
-                WindUI:Notify({ Title = "医生功能", Content = "未找到远程事件", Duration = 3 })
-            end
-        end
-    })
-
+    DoctorTab:Button({ Title = "修复MT急救包", Callback = function()
+        local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+        if event then
+            local success, err = pcall(function() event:InvokeServer("repairReplenishItem", "MT First Aid Kit") end)
+            if success then WindUI:Notify({ Title = "医生功能", Content = "修复请求已发送！", Duration = 3 })
+            else WindUI:Notify({ Title = "医生功能", Content = "修复失败，请检查物品栏", Duration = 3 }) end
+        else WindUI:Notify({ Title = "医生功能", Content = "未找到远程事件", Duration = 3 }) end
+    end })
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
-
     local loopTeleportLowHpEnabled = false
-    DoctorTab:Toggle({
-        Title = "循环传送血量为100以下的玩家",
-        Value = false,
-        Callback = function(enabled)
-            loopTeleportLowHpEnabled = enabled
-            if enabled then
-                task.spawn(function()
-                    while loopTeleportLowHpEnabled and not isDestroyed do
-                        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                        if myRoot then
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= player and p.Character then
-                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health < 100 and targetRoot then
-                                        myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-                                        break
-                                    end
-                                end
+    DoctorTab:Toggle({ Title = "循环传送血量为100以下的玩家", Value = false, Callback = function(enabled)
+        loopTeleportLowHpEnabled = enabled
+        if enabled then
+            task.spawn(function()
+                while loopTeleportLowHpEnabled and not isDestroyed do
+                    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if myRoot then
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= player and p.Character then
+                                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                if hum and hum.Health < 100 and targetRoot then myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0); break end
                             end
                         end
-                        task.wait(0.1)
                     end
-                end)
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送低血量玩家", Duration = 2 })
-            else
-                WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送低血量玩家", Duration = 2 })
-            end
-        end
-    })
-
-    -- 快速互动：医疗相关 prompt 的按住时间归零
-    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        if autoHealEnabled then
-            pcall(function() prompt.HoldDuration = 0 end)
-        end
-    end)
-
-    -- 自动治疗主循环
+                    task.wait(0.1)
+                end
+            end)
+            WindUI:Notify({ Title = "wdfex-Hub", Content = "已开启循环传送低血量玩家", Duration = 2 })
+        else WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送低血量玩家", Duration = 2 }) end
+    end })
+    game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt) if autoHealEnabled then pcall(function() prompt.HoldDuration = 0 end) end end)
     task.spawn(function()
         while not isDestroyed do
             task.wait(healInterval)
@@ -847,7 +677,6 @@ function createUI()
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
                 local myKit = char and char:FindFirstChild("MT First Aid Kit")
-
                 if myRoot and myKit then
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character then
@@ -856,22 +685,8 @@ function createUI()
                             if hum and hum.Health < hum.MaxHealth and targetRoot then
                                 local dist = (targetRoot.Position - myRoot.Position).Magnitude
                                 if dist <= healRadius then
-                                    for _, obj in ipairs(p.Character:GetDescendants()) do
-                                        if obj:IsA("ProximityPrompt") then
-                                            pcall(function()
-                                                obj.HoldDuration = 0
-                                                fireproximityprompt(obj)
-                                            end)
-                                        end
-                                    end
-                                    for _, obj in ipairs(char:GetDescendants()) do
-                                        if obj:IsA("ProximityPrompt") then
-                                            pcall(function()
-                                                obj.HoldDuration = 0
-                                                fireproximityprompt(obj)
-                                            end)
-                                        end
-                                    end
+                                    for _, obj in ipairs(p.Character:GetDescendants()) do if obj:IsA("ProximityPrompt") then pcall(function() obj.HoldDuration = 0; fireproximityprompt(obj) end) end end
+                                    for _, obj in ipairs(char:GetDescendants()) do if obj:IsA("ProximityPrompt") then pcall(function() obj.HoldDuration = 0; fireproximityprompt(obj) end) end end
                                 end
                             end
                         end
@@ -881,19 +696,134 @@ function createUI()
         end
     end)
 
-    -- 自动手铐 + 自动互动统一循环（异步不会卡死）
+    -- ==================== 刷钱功能 ====================
+    local autoAcceptEnabled = false
+    local autoTaxiEnabled = false
+    local safeModeEnabled = false
+    local taxiRunning = false
+
+    local countdownGui = Instance.new("ScreenGui")
+    countdownGui.Name = "TaxiCountdownGui"
+    countdownGui.ResetOnSpawn = false
+    countdownGui.Parent = player:WaitForChild("PlayerGui")
+    local countdownLabel = Instance.new("TextLabel")
+    countdownLabel.Size = UDim2.new(0, 100, 0, 40)
+    countdownLabel.Position = UDim2.new(0.5, -50, 1, -80)
+    countdownLabel.BackgroundTransparency = 1
+    countdownLabel.Text = ""
+    countdownLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    countdownLabel.TextSize = 24
+    countdownLabel.Font = Enum.Font.GothamBold
+    countdownLabel.TextStrokeTransparency = 0.5
+    countdownLabel.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+    countdownLabel.Parent = countdownGui
+
+    local function ClickAt(x, y)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end
+    local function AcceptOrder()
+        local screenSize = workspace.CurrentCamera.ViewportSize
+        local phoneX = screenSize.X * 0.85
+        local phoneY = screenSize.Y * 0.35
+        ClickAt(phoneX, phoneY)
+        task.wait(0.3)
+        ClickAt(phoneX, phoneY + 100)
+        task.wait(0.3)
+        ClickAt(phoneX, phoneY + 160)
+        task.wait(0.3)
+        ClickAt(phoneX, phoneY + 240)
+        task.wait(0.3)
+    end
+    local function GetTargetPosition()
+        local targetFolder = workspace:FindFirstChild("Gameplay")
+        if targetFolder then targetFolder = targetFolder:FindFirstChild("Entities") end
+        if targetFolder then targetFolder = targetFolder:FindFirstChild("ClientContent") end
+        if not targetFolder then return nil end
+        for _, child in ipairs(targetFolder:GetDescendants()) do
+            if child:IsA("BasePart") then return child.Position + Vector3.new(0, 3, 0) end
+        end
+        return nil
+    end
+    local function TeleportCharacter(targetPos)
+        local char = player.Character
+        if not char then return false end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return false end
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid and humanoid.SeatPart then humanoid.Sit = false; task.wait(0.1) end
+        hrp.CFrame = CFrame.new(targetPos)
+        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.RotVelocity = Vector3.new(0, 0, 0)
+        return true
+    end
+
+    MoneyTab:Toggle({ Title = "自动接单", Value = false, Callback = function(value)
+        autoAcceptEnabled = value
+        if value then
+            task.spawn(function()
+                while autoAcceptEnabled and not isDestroyed do
+                    AcceptOrder()
+                    task.wait(1) -- 接单完等待1秒，检测停止逻辑
+                end
+            end)
+            WindUI:Notify({ Title = "刷钱", Content = "自动接单已开启", Duration = 2 })
+        else
+            WindUI:Notify({ Title = "刷钱", Content = "自动接单已关闭", Duration = 2 })
+        end
+    end })
+    MoneyTab:Toggle({ Title = "安全模式", Value = false, Callback = function(value)
+        safeModeEnabled = value
+        WindUI:Notify({ Title = "刷钱", Content = "安全模式 " .. (value and "已开启" or "已关闭"), Duration = 2 })
+    end })
+    MoneyTab:Toggle({ Title = "自动出租车", Value = false, Callback = function(value)
+        autoTaxiEnabled = value
+        if value then
+            if taxiRunning then return end
+            taxiRunning = true
+            task.spawn(function()
+                while autoTaxiEnabled and not isDestroyed do
+                    local targetPos = GetTargetPosition()
+                    if targetPos then
+                        TeleportCharacter(targetPos)
+                        task.wait(0.5)
+                        local targetPos2 = GetTargetPosition()
+                        if targetPos2 then TeleportCharacter(targetPos2) end
+                        if safeModeEnabled then
+                            for i = 10, 1, -1 do
+                                countdownLabel.Text = tostring(i)
+                                task.wait(1)
+                                if not autoTaxiEnabled then break end
+                            end
+                            countdownLabel.Text = ""
+                        else
+                            task.wait(0.5)
+                        end
+                    else
+                        task.wait(0.5)
+                    end
+                    task.wait(0.1)
+                end
+                taxiRunning = false
+                countdownLabel.Text = ""
+            end)
+            WindUI:Notify({ Title = "刷钱", Content = "自动出租车已开启", Duration = 2 })
+        else
+            WindUI:Notify({ Title = "刷钱", Content = "自动出租车已关闭", Duration = 2 })
+            countdownLabel.Text = ""
+        end
+    end })
+
+    -- 自动手铐 + 自动互动统一循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.05)
-
             if autoInteractEnabled then
                 for _, descendant in pairs(workspace:GetDescendants()) do
-                    if descendant:IsA("ProximityPrompt") then
-                        pcall(function() fireproximityprompt(descendant) end)
-                    end
+                    if descendant:IsA("ProximityPrompt") then pcall(function() fireproximityprompt(descendant) end) end
                 end
             end
-
             if autoCuffEnabled then
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
@@ -904,12 +834,7 @@ function createUI()
                             local head = p.Character:FindFirstChild("Head")
                             if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
                                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-                                if event then
-                                    task.spawn(function()
-                                        pcall(function() event:InvokeServer("handcuff", p, false) end)
-                                    end)
-                                    task.wait(0.1)
-                                end
+                                if event then task.spawn(function() pcall(function() event:InvokeServer("handcuff", p, false) end) end); task.wait(0.1) end
                             end
                         end
                     end
@@ -918,35 +843,30 @@ function createUI()
         end
     end)
 
-    -- ==================== 自动点护送独立循环 ====================
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if autoEscortEnabled then
-            local char = player.Character
-            local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if p ~= player and p.Character then
-                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                        local head = p.Character:FindFirstChild("Head")
-                        if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
-                            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-                            if event then
-                                task.spawn(function()
-                                    pcall(function() event:InvokeServer("escortPlayer", "Arrested", p) end)
-                                end)
-                                task.wait(0.1)
+    -- 自动点护送独立循环
+    task.spawn(function()
+        while true do
+            task.wait(0.1)
+            if autoEscortEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local head = p.Character:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
+                                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                                if event then task.spawn(function() pcall(function() event:InvokeServer("escortPlayer", "Arrested", p) end) end); task.wait(0.1) end
                             end
                         end
                     end
                 end
             end
         end
-    end
-end)
+    end)
 
-    -- ==================== 自动捡钱独立循环 ====================
+    -- 自动捡钱独立循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.1)
@@ -954,32 +874,19 @@ end)
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
                     local found = false
-                    -- 优先从 getnilinstances 查找
                     if getnilinstances then
                         for _, obj in ipairs(getnilinstances()) do
-                            if obj.Name == "CashDrop" then
-                                pcall(function() event:InvokeServer("cashDrop", obj) end)
-                                found = true
-                            end
+                            if obj.Name == "CashDrop" then pcall(function() event:InvokeServer("cashDrop", obj) end); found = true end
                         end
                     end
-                    -- 如果没找到，再从 workspace 里找
                     if not found then
                         for _, obj in ipairs(workspace:GetDescendants()) do
-                            if obj.Name == "CashDrop" then
-                                pcall(function() event:InvokeServer("cashDrop", obj) end)
-                            end
+                            if obj.Name == "CashDrop" then pcall(function() event:InvokeServer("cashDrop", obj) end) end
                         end
                     end
-                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
                     if not found then
                         for _, descendant in pairs(workspace:GetDescendants()) do
-                            if descendant:IsA("ProximityPrompt") then
-                                pcall(function()
-                                    descendant.HoldDuration = 0
-                                    fireproximityprompt(descendant)
-                                end)
-                            end
+                            if descendant:IsA("ProximityPrompt") then pcall(function() descendant.HoldDuration = 0; fireproximityprompt(descendant) end) end
                         end
                     end
                 end
@@ -1160,7 +1067,6 @@ end)
     FlyTab:Divider({ Text = "飞行" })
     FlyTab:Toggle({ Title = "飞行（绕过）", Value = false, Callback = function(value) if value then startFly() else stopFly() end end })
     FlyTab:Slider({ Title = "飞行速度", Step = 1, Value = { Min = 10, Max = 620, Default = 35 }, Callback = function(value) FlySpeed = value end })
-
     local flyQuickToggle, flyQuickScreenGui, flyQuickButton, flyQuickStatusLabel = false, nil, nil, nil
     local function DestroyFlyQuickToggle() if flyQuickScreenGui then flyQuickScreenGui:Destroy(); flyQuickScreenGui = nil; flyQuickButton = nil; flyQuickStatusLabel = nil end end
     local function CreateFlyQuickToggle()
@@ -1218,9 +1124,7 @@ end)
         task.spawn(function()
             while flyQuickScreenGui and flyQuickScreenGui.Parent do
                 task.wait(0.5)
-                if flyQuickToggle and flyQuickStatusLabel then
-                    updateFlyStatus()
-                end
+                if flyQuickToggle and flyQuickStatusLabel then updateFlyStatus() end
             end
         end)
     end
@@ -1288,7 +1192,6 @@ end)
             if p ~= player then pcall(function() if p:IsFriendsWith(player.UserId) then Whitelist[p.UserId] = true end end) end
         end
     end
-
     local godOn = false
     A:Toggle({ Title = "免疫部分伤害", Value = false, Callback = function(value) godOn = value end })
     A:Paragraph({ Title = "说明", Desc = "免疫火焰和车爆炸时候的伤害" })
@@ -1296,11 +1199,7 @@ end)
     A:Toggle({ Title = "启用人物穿墙", Value = false, Callback = function(value)
         Settings.NoclipEnabled = value
         local char = player.Character
-        if char then
-            for _, part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = not value end
-            end
-        end
+        if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = not value end end end
     end })
     A:Divider({ Text = "体力" })
     local staminaOn = false
@@ -1321,20 +1220,11 @@ end)
         while not isDestroyed do
             if staminaOn then
                 pcall(function()
-                    for _, obj in ipairs(player:GetDescendants()) do
-                        if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end
-                    end
+                    for _, obj in ipairs(player:GetDescendants()) do if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end end
                     local char = player.Character
-                    if char then
-                        for _, obj in ipairs(char:GetDescendants()) do
-                            if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end
-                        end
-                    end
+                    if char then for _, obj in ipairs(char:GetDescendants()) do if (obj:IsA("NumberValue") or obj:IsA("IntValue")) and (obj.Name:lower():find("stamina") or obj.Name:lower():find("energy")) then obj.Value = 9999999 end end end
                     local remote = ReplicatedStorage:FindFirstChild("Remote")
-                    if remote then
-                        local pe = remote:FindFirstChild("PlayerEvent")
-                        if pe then pcall(function() pe:FireServer("setStaminaOrFood", "stamina", 9999999) end) end
-                    end
+                    if remote then local pe = remote:FindFirstChild("PlayerEvent"); if pe then pcall(function() pe:FireServer("setStaminaOrFood", "stamina", 9999999) end) end end
                 end)
             end
             task.wait(0.15)
@@ -1345,13 +1235,7 @@ end)
     A:Toggle({ Title = "防甩飞", Value = false, Callback = function(value) _G.CatAntiFling_Enabled = value end })
     A:Divider({ Text = "防摔" })
     local antiFallEnabled = false
-    A:Toggle({
-        Title = "防摔",
-        Value = false,
-        Callback = function(value)
-            antiFallEnabled = value
-        end
-    })
+    A:Toggle({ Title = "防摔", Value = false, Callback = function(value) antiFallEnabled = value end })
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.1)
@@ -1361,21 +1245,13 @@ end)
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if root and hum and not hum.PlatformStand then
                     local vel = root.Velocity
-                    if vel.Y < -20 then
-                        root.Velocity = Vector3.new(vel.X, math.clamp(vel.Y, -40, -10), vel.Z)
-                    end
+                    if vel.Y < -20 then root.Velocity = Vector3.new(vel.X, math.clamp(vel.Y, -40, -10), vel.Z) end
                 end
             end
         end
     end)
-
     A:Divider({ Text = "碰飞" })
-    A:Button({
-        Title = "碰飞",
-        Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
-        end
-    })
+    A:Button({ Title = "碰飞", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))() end })
 
     -- ==================== 枪械功能 ====================
     B:Divider({ Text = "枪械强化" })
@@ -1420,7 +1296,6 @@ end)
     B:Toggle({ Title = "启用头部碰撞箱（推荐20-25）", Value = false, Callback = function(value) Settings.HitboxEnabled = value; if value then ApplyHitbox() else ResetHitbox() end end })
     B:Slider({ Title = "头部大小", Step = 1, Value = { Min = 5, Max = 400, Default = 10 }, Callback = function(value) Settings.HitboxSize = value; if Settings.HitboxEnabled then ApplyHitbox() end end })
     B:Toggle({ Title = "好友检测 (白名单)", Value = false, Callback = function(value) Settings.WhitelistEnabled = value; if value then UpdateWhitelist() end end })
-
     B:Divider({ Text = "子追" })
     local zzEnabled, zzDistance, zzAffected = false, 40, nil
     local function zzRestore() if zzAffected and zzAffected.Parent then pcall(function() zzAffected.Size = Vector3.new(2, 1, 1); zzAffected.Transparency = 0 end) end; zzAffected = nil end
@@ -1446,15 +1321,12 @@ end)
                     zzRestore()
                     if best then zzAffected = best; pcall(function() best.Size = Vector3.new(500, 500, 500); best.Transparency = 1; best.CanCollide = false end) end
                 end
-            else
-                zzRestore()
-            end
+            else zzRestore() end
             task.wait(0.2)
         end
     end)
     B:Toggle({ Title = "启用子追", Value = false, Callback = function(value) zzEnabled = value; if not value then zzRestore() end end })
     B:Slider({ Title = "判定距离", Step = 1, Value = { Min = 0, Max = 1000, Default = 40 }, Callback = function(value) zzDistance = value end })
-
     B:Divider({ Text = "自瞄" })
     local aimOn, aimFOV, aimNoTeam, aimWall, aimGui, aimCircle = false, 150, true, true, nil, nil
     local function aimEnsureCircle()
@@ -1620,19 +1492,12 @@ end)
     local function setupToolListener(char) if char then char.DescendantAdded:Connect(function(desc) if desc:IsA("Tool") then onToolAdded(desc) end end) end end
     if player.Character then setupToolListener(player.Character) end
     player.CharacterAdded:Connect(function(char) setupToolListener(char) end)
-
     C:Divider({ Text = "杀戮光环" })
     C:Paragraph({ Title = "注意", Desc = "需装备枪械武器才有伤害" })
     C:Toggle({ Title = "启用杀戮光环", Value = false, Callback = function(value)
         kaEnabled = value
-        if value then
-            if showTarget then CreateTargetDisplay() end
-            task.wait(0.1)
-            performAttack()
-        else
-            currentTarget = nil
-            if showTarget then UpdateTargetDisplay() end
-        end
+        if value then if showTarget then CreateTargetDisplay() end; task.wait(0.1); performAttack()
+        else currentTarget = nil; if showTarget then UpdateTargetDisplay() end end
     end })
     C:Slider({ Title = "攻击距离", Step = 1, Value = { Min = 50, Max = 1000, Default = 300 }, Callback = function(value) KA_MAX_DISTANCE = value end })
     C:Divider({ Text = "显示设置" })
@@ -1695,54 +1560,43 @@ end)
         for _, data in ipairs(FIXED_TELEPORTS) do if data.n == selectedTeleport then doTeleport(data.p, data.n); return end end
         WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 })
     end })
-
     local VENDING_TELEPORTS = { {n = "游戏厅售货机", p = Vector3.new(2905.10, -337.11, 1733.39)}, {n = "警察局售货机", p = Vector3.new(3372.79, -337.46, -476.88)}, {n = "医院售货机", p = Vector3.new(3943.85, -337.12, -201.67)}, {n = "当铺售货机", p = Vector3.new(-208.57, -337.05, -97.18)} }
     local vendingNames = {}; for _, data in ipairs(VENDING_TELEPORTS) do table.insert(vendingNames, data.n) end
     local selectedVending = vendingNames[1] or ""
     D:Divider({ Text = "售货机传送" })
     D:Dropdown({ Title = "售货机传送", Values = vendingNames, Value = vendingNames[1], Callback = function(value) selectedVending = value end })
     D:Button({ Title = "传送到选定售货机", Callback = function() for _, data in ipairs(VENDING_TELEPORTS) do if data.n == selectedVending then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local BANK_TELEPORTS = { {n = "小银行", p = Vector3.new(-678.77, -337.12, -104.65)}, {n = "大银行", p = Vector3.new(3134.90, -321.84, -270.04)} }
     local bankNames = {}; for _, data in ipairs(BANK_TELEPORTS) do table.insert(bankNames, data.n) end
     local selectedBank = bankNames[1] or ""
     D:Divider({ Text = "银行传送" })
     D:Dropdown({ Title = "银行传送", Values = bankNames, Value = bankNames[1], Callback = function(value) selectedBank = value end })
     D:Button({ Title = "传送到选定银行", Callback = function() for _, data in ipairs(BANK_TELEPORTS) do if data.n == selectedBank then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local TEAM_TELEPORTS = { {n = "警察局", p = Vector3.new(3315.72, 3.02, -481.83)}, {n = "医院", p = Vector3.new(3895.47, 3.02, -179.65)}, {n = "火焰", p = Vector3.new(3579.31, 8.41, 579.73)}, {n = "转运", p = Vector3.new(4150.27, 2.63, 942.63)}, {n = "送货", p = Vector3.new(4401.01, 3.04, 1607.59)}, {n = "道路服务", p = Vector3.new(4274.56, 2.63, 1200.60)}, {n = "圣奥里平民重生点", p = Vector3.new(3744.05, 2.63, -403.97)}, {n = "约克镇平民重生点", p = Vector3.new(-250.24, 2.63, -82.67)} }
     local teamNames = {}; for _, data in ipairs(TEAM_TELEPORTS) do table.insert(teamNames, data.n) end
     local selectedTeam = teamNames[1] or ""
     D:Divider({ Text = "队伍传送" })
     D:Dropdown({ Title = "队伍传送", Values = teamNames, Value = teamNames[1], Callback = function(value) selectedTeam = value end })
     D:Button({ Title = "传送到选定队伍点", Callback = function() for _, data in ipairs(TEAM_TELEPORTS) do if data.n == selectedTeam then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local GAS_TELEPORTS = { {n = "加油站1", p = Vector3.new(4517.21, -24.83, 111.44)}, {n = "加油站2", p = Vector3.new(-918.75, 2.63, 1110.16)}, {n = "加油站3", p = Vector3.new(2252.20, 2.63, 92.21)}, {n = "加油站4", p = Vector3.new(1150.41, 2.63, -841.89)}, {n = "加油站5", p = Vector3.new(-1620.28, 2.63, 1795.99)} }
     local gasNames = {}; for _, data in ipairs(GAS_TELEPORTS) do table.insert(gasNames, data.n) end
     local selectedGas = gasNames[1] or ""
     D:Divider({ Text = "加油站传送" })
     D:Dropdown({ Title = "加油站传送", Values = gasNames, Value = gasNames[1], Callback = function(value) selectedGas = value end })
     D:Button({ Title = "传送到选定加油站", Callback = function() for _, data in ipairs(GAS_TELEPORTS) do if data.n == selectedGas then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local REPAIR_TELEPORTS = { {n = "船艇维修店", p = Vector3.new(4091.92, -17.28, 2861.75)}, {n = "圣奥里车辆维修", p = Vector3.new(2783.67, 2.63, -413.05)}, {n = "约克镇车辆维修", p = Vector3.new(-399.23, 2.63, -8.15)} }
     local repairNames = {}; for _, data in ipairs(REPAIR_TELEPORTS) do table.insert(repairNames, data.n) end
     local selectedRepair = repairNames[1] or ""
     D:Divider({ Text = "载具维修类传送" })
     D:Dropdown({ Title = "载具维修类传送", Values = repairNames, Value = repairNames[1], Callback = function(value) selectedRepair = value end })
     D:Button({ Title = "传送到选定维修点", Callback = function() for _, data in ipairs(REPAIR_TELEPORTS) do if data.n == selectedRepair then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
     local CAR_TELEPORTS = { {n = "拆车的地方", p = Vector3.new(3440.26, 43.30, 2680.51)} }
     local carTeleNames = {}; for _, data in ipairs(CAR_TELEPORTS) do table.insert(carTeleNames, data.n) end
     local selectedCarTeleport = carTeleNames[1] or ""
     D:Divider({ Text = "偷车能用到的传送地点" })
     D:Dropdown({ Title = "偷车能用到的传送地点", Values = carTeleNames, Value = carTeleNames[1], Callback = function(value) selectedCarTeleport = value end })
     D:Button({ Title = "传送到选定地点", Callback = function() for _, data in ipairs(CAR_TELEPORTS) do if data.n == selectedCarTeleport then doTeleport(data.p, data.n); return end end; WindUI:Notify({ Title = "传送", Content = "未找到该地点", Duration = 2 }) end })
-
-    local DELIVERY_TELEPORTS = {
-        {n = "圣奥里取餐点", p = Vector3.new(3072.51, 3.02, 450.72)},
-        {n = "大景取餐点", p = Vector3.new(4537.18, 2.57, 912.38)},
-        {n = "莱斯维尔取餐点", p = Vector3.new(755.83, 3.04, 1005.67)},
-    }
+    local DELIVERY_TELEPORTS = { {n = "圣奥里取餐点", p = Vector3.new(3072.51, 3.02, 450.72)}, {n = "大景取餐点", p = Vector3.new(4537.18, 2.57, 912.38)}, {n = "莱斯维尔取餐点", p = Vector3.new(755.83, 3.04, 1005.67)} }
     local deliveryNames = {}; for _, data in ipairs(DELIVERY_TELEPORTS) do table.insert(deliveryNames, data.n) end
     local selectedDelivery = deliveryNames[1] or ""
     D:Divider({ Text = "送货能用到的传送" })
