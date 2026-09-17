@@ -1604,9 +1604,21 @@ end)
             if targetHead then
                 local myHead = player.Character and player.Character:FindFirstChild("Head")
                 if myHead then
+                    -- 修复：攻击前卸下再装备工具，重置服务器近战距离校验
+                    local char = player.Character
+                    if char then
+                        local tool = char:FindFirstChildOfClass("Tool")
+                        if tool then
+                            tool.Parent = player.Backpack
+                            task.wait(0.02)
+                            tool.Parent = char
+                            task.wait(0.02)
+                        end
+                    end
+
                     local origin, hitPos = myHead.Position, targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = 100
+                    local damage = 999999999
                     pcall(function() ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", { bodyParts = { { "Head", damage } }, shotCode = { origin, direction }, target = target, pos = hitPos }) end)
                     pcall(function() local handleShots = ReplicatedStorage:FindFirstChild("Events"); handleShots = handleShots and handleShots:FindFirstChild("HandleShots"); if handleShots then handleShots:FireServer("2", "Shoot") end end)
                 end
