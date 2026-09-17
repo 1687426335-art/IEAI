@@ -290,6 +290,7 @@ function createUI()
     local D = AddTab(MainSection, "传送点", "map-pin")
     local E = AddTab(MainSection, "透视", "eye")
     local PoliceDodgeTab = AddTab(MainSection, "自动躲警察", "shield")
+    local OtherTab = AddTab(MainSection, "其他功能", "box")
 
     -- ==================== 远程购买 ====================
     RemoteBuyTab:Divider({ Text = "黑市购买" })
@@ -1948,6 +1949,17 @@ end)
     MusicGroup:Divider()
     MusicGroup:Paragraph({ Title = "播放模式", Desc = "选择音乐的播放方式" })
     MusicGroup:Dropdown({ Title = "播放模式", Values = { "顺序播放", "循环播放", "随机播放" }, Value = "顺序播放", Callback = function(value) playMode = value; WindUI:Notify({ Title = "播放模式", Content = "已切换至: " .. value, Duration = 2 }); if isMusicPlaying then PlaySongByIndex(currentPlayIndex) end end })
+
+    -- ==================== 其他功能 ====================
+    OtherTab:Toggle({
+        Title = "显示聊天框",
+        Value = false,
+        Callback = function(value)
+            pcall(function()
+                game:GetService("TextChatService").ChatWindowConfiguration.Enabled = value
+            end)
+        end
+    })
 
     -- ==================== 设置 ====================
     local SettingsTab = Window:Tab({ Title = "设置", Icon = "settings" })
