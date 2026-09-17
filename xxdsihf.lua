@@ -954,6 +954,7 @@ end)
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
                     local found = false
+                    -- 优先从 getnilinstances 查找
                     if getnilinstances then
                         for _, obj in ipairs(getnilinstances()) do
                             if obj.Name == "CashDrop" then
@@ -962,6 +963,7 @@ end)
                             end
                         end
                     end
+                    -- 如果没找到，再从 workspace 里找
                     if not found then
                         for _, obj in ipairs(workspace:GetDescendants()) do
                             if obj.Name == "CashDrop" then
@@ -969,6 +971,7 @@ end)
                             end
                         end
                     end
+                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
                     if not found then
                         for _, descendant in pairs(workspace:GetDescendants()) do
                             if descendant:IsA("ProximityPrompt") then
@@ -1592,7 +1595,6 @@ end)
         end
         return bestPlayer
     end
-    -- 修复：所有武器距离超过18米都伪造起点
     local function performAttack()
         if not kaEnabled then return end
         local target = kaGetNearestEnemy()
@@ -1604,14 +1606,7 @@ end)
                 if myHead then
                     local origin, hitPos = myHead.Position, targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local distance = (hitPos - origin).Magnitude
-                    local damage = 999999999
-
-                    -- 距离超过18米时，伪造攻击起点到目标附近（距目标17米）
-                    if distance > 18 then
-                        origin = hitPos - direction * 17
-                    end
-
+                    local damage = math.huge
                     pcall(function() ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", { bodyParts = { { "Head", damage } }, shotCode = { origin, direction }, target = target, pos = hitPos }) end)
                     pcall(function() local handleShots = ReplicatedStorage:FindFirstChild("Events"); handleShots = handleShots and handleShots:FindFirstChild("HandleShots"); if handleShots then handleShots:FireServer("2", "Shoot") end end)
                 end
