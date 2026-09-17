@@ -1,19 +1,44 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 local Confirmed = false
 
+-- ==================== 设备 UID 生成 ====================
+local function GetDeviceUID(userId)
+    local salt = "wdfex_salt_2026_v1"
+    local str = tostring(userId) .. salt
+    local hash = 0
+    for i = 1, #str do
+        hash = (hash * 31 + string.byte(str, i)) % 0xFFFFFFFF
+    end
+    return string.format("%08X", hash)
+end
+
+-- ==================== 本地封禁存储 ====================
+local BAN_FILE = "wdfex_banlist.json"
+local function LoadBanList()
+    if isfile and isfile(BAN_FILE) then
+        local suc, data = pcall(function() return game:GetService("HttpService"):JSONDecode(readfile(BAN_FILE)) end)
+        if suc and type(data) == "table" then return data end
+    end
+    return {}
+end
+local function SaveBanList(list)
+    if writefile then
+        pcall(function() writefile(BAN_FILE, game:GetService("HttpService"):JSONEncode(list)) end)
+    end
+end
+
+-- ==================== 渐变颜色 ====================
 local gradientColors = {
     "rgb(255, 230, 235)", "rgb(255, 210, 220)", "rgb(255, 190, 205)", "rgb(255, 170, 190)",
     "rgb(255, 150, 175)", "rgb(245, 140, 180)", "rgb(235, 130, 185)", "rgb(225, 120, 190)",
     "rgb(215, 110, 195)", "rgb(205, 100, 200)"
 }
-
 local username = game.Players.LocalPlayer.Name
 local coloredUsername = ""
 for i = 1, #username do
     local colorIndex = (i - 1) % #gradientColors + 1
     coloredUsername = coloredUsername .. '<font color="' .. gradientColors[colorIndex] .. '">' .. username:sub(i, i) .. '</font>'
 end
-
 local version = "v4.3"
 local coloredVersion = ""
 for i = 1, #version do
@@ -38,9 +63,29 @@ function createUI()
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
+    local HttpService = game:GetService("HttpService")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
+    local isAuthor = false
+    local myDeviceUID = GetDeviceUID(player.UserId)
+
+    -- ==================== 检查自身封禁 ====================
+    task.spawn(function()
+        local banList = LoadBanList()
+        for uid, expire in pairs(banList) do
+            if uid == myDeviceUID then
+                if os.time() < expire then
+                    WindUI:Notify({ Title = "封禁", Content = "您的设备已被封禁，解封时间: " .. os.date("%Y-%m-%d %H:%M:%S", expire), Duration = 10 })
+                    task.wait(5)
+                    game:Shutdown() -- 或 player:Kick()
+                else
+                    banList[uid] = nil
+                    SaveBanList(banList)
+                end
+            end
+        end
+    end)
 
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
@@ -232,6 +277,7 @@ function createUI()
     AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
     AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
+    AuthorSection:Paragraph({ Title = "我的设备UID", Desc = myDeviceUID })
 
     AuthorSection:Toggle({
         Title = "降低卡顿",
@@ -479,13 +525,11 @@ function createUI()
         Value = false,
         Callback = function(value) autoCuffEnabled = value end
     })
-
-     PoliceTab:Toggle({
+    PoliceTab:Toggle({
         Title = "自动点护送",
         Value = false,
         Callback = function(value) autoEscortEnabled = value end
     })
-
     PoliceTab:Divider({ Text = "传送与甩飞" })
 
     local PlayerConfig = {
@@ -538,9 +582,7 @@ function createUI()
             if found then
                 PlayerConfig.playernamedied = found
                 if playerDropdown then
-                    pcall(function()
-                        playerDropdown:SetValue(found)
-                    end)
+                    pcall(function() playerDropdown:SetValue(found) end)
                 end
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已选中: " .. found, Duration = 3 })
             else
@@ -846,14 +888,12 @@ function createUI()
         end
     })
 
-    -- 快速互动：医疗相关 prompt 的按住时间归零
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
         if autoHealEnabled then
             pcall(function() prompt.HoldDuration = 0 end)
         end
     end)
 
-    -- 自动治疗主循环
     task.spawn(function()
         while not isDestroyed do
             task.wait(healInterval)
@@ -861,7 +901,6 @@ function createUI()
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
                 local myKit = char and char:FindFirstChild("MT First Aid Kit")
-
                 if myRoot and myKit then
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character then
@@ -895,11 +934,9 @@ function createUI()
         end
     end)
 
-    -- 自动手铐 + 自动互动统一循环（异步不会卡死）
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.05)
-
             if autoInteractEnabled then
                 for _, descendant in pairs(workspace:GetDescendants()) do
                     if descendant:IsA("ProximityPrompt") then
@@ -907,7 +944,6 @@ function createUI()
                     end
                 end
             end
-
             if autoCuffEnabled then
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
@@ -932,35 +968,34 @@ function createUI()
         end
     end)
 
-    -- ==================== 自动点护送独立循环 ====================
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if autoEscortEnabled then
-            local char = player.Character
-            local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if p ~= player and p.Character then
-                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                        local head = p.Character:FindFirstChild("Head")
-                        if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
-                            local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-                            if event then
-                                task.spawn(function()
-                                    pcall(function() event:InvokeServer("escortPlayer", "Arrested", p) end)
-                                end)
-                                task.wait(0.1)
+    task.spawn(function()
+        while true do
+            task.wait(0.1)
+            if autoEscortEnabled then
+                local char = player.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            local head = p.Character:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and head and (head.Position - myRoot.Position).Magnitude < 15 then
+                                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
+                                if event then
+                                    task.spawn(function()
+                                        pcall(function() event:InvokeServer("escortPlayer", "Arrested", p) end)
+                                    end)
+                                    task.wait(0.1)
+                                end
                             end
                         end
                     end
                 end
             end
         end
-    end
-end)
+    end)
 
-    -- ==================== 自动捡钱独立循环 ====================
+    -- ==================== 自动捡钱 ====================
     task.spawn(function()
         while not isDestroyed do
             task.wait(0.1)
@@ -968,7 +1003,6 @@ end)
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
                     local found = false
-                    -- 优先从 getnilinstances 查找
                     if getnilinstances then
                         for _, obj in ipairs(getnilinstances()) do
                             if obj.Name == "CashDrop" then
@@ -977,7 +1011,6 @@ end)
                             end
                         end
                     end
-                    -- 如果没找到，再从 workspace 里找
                     if not found then
                         for _, obj in ipairs(workspace:GetDescendants()) do
                             if obj.Name == "CashDrop" then
@@ -985,7 +1018,6 @@ end)
                             end
                         end
                     end
-                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
                     if not found then
                         for _, descendant in pairs(workspace:GetDescendants()) do
                             if descendant:IsA("ProximityPrompt") then
@@ -1232,9 +1264,7 @@ end)
         task.spawn(function()
             while flyQuickScreenGui and flyQuickScreenGui.Parent do
                 task.wait(0.5)
-                if flyQuickToggle and flyQuickStatusLabel then
-                    updateFlyStatus()
-                end
+                if flyQuickToggle and flyQuickStatusLabel then updateFlyStatus() end
             end
         end)
     end
@@ -1362,9 +1392,7 @@ end)
     A:Toggle({
         Title = "防摔",
         Value = false,
-        Callback = function(value)
-            antiFallEnabled = value
-        end
+        Callback = function(value) antiFallEnabled = value end
     })
     task.spawn(function()
         while not isDestroyed do
@@ -1382,28 +1410,6 @@ end)
             end
         end
     end)
-
-    A:Divider({ Text = "隐身" })
-    A:Toggle({
-        Title = "隐身",
-        Desc = "Invisible Character",
-        Value = false,
-        Callback = function(enabled)
-            local localPlayer = player
-            local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-            for _, child in pairs(char:GetChildren()) do
-                if child:IsA("BasePart") then
-                    child.Transparency = enabled and 1 or 0
-                    child.CanCollide = not enabled
-                elseif child:IsA("Accessory") then
-                    local handle = child.Handle
-                    if handle then
-                        handle.Transparency = enabled and 1 or 0
-                    end
-                end
-            end
-        end
-    })
 
     A:Divider({ Text = "碰飞" })
     A:Button({
@@ -1839,7 +1845,13 @@ end)
                 l.Size = UDim2.new(1, 0, 0, 20)
                 l.Position = UDim2.new(0, 0, 0, y)
                 l.BackgroundTransparency = 1
-                if p == player then l.Text = p.Name .. " (你)"; l.TextColor3 = Color3.fromRGB(0, 255, 255) else l.Text = p.Name; l.TextColor3 = color end
+                local nameText = p.Name
+                if isAuthor then
+                    local uid = GetDeviceUID(p.UserId)
+                    nameText = p.Name .. " - " .. uid
+                end
+                if p == player then nameText = nameText .. " (你)"; l.TextColor3 = Color3.fromRGB(0, 255, 255) else l.TextColor3 = color end
+                l.Text = nameText
                 l.TextSize = 15
                 l.Font = Enum.Font.GothamBold
                 l.TextStrokeTransparency = 0.3
@@ -1982,6 +1994,37 @@ end)
     local function buildAdminPanel()
         local AdminGroup = SettingsTab:Section({ Title = "开发者后台", Opened = true })
         AdminGroup:Paragraph({ Title = "已授权", Desc = "当前身份: 开发者" })
+        AdminGroup:Divider({ Text = "封禁管理" })
+        local banTargetName = ""
+        local banDuration = 60
+        AdminGroup:Input({ Title = "目标用户名", Placeholder = "输入要封禁的用户名", Callback = function(value) banTargetName = value end })
+        AdminGroup:Input({ Title = "封禁时长(分钟)", Placeholder = "60", Callback = function(value) local n = tonumber(value); if n then banDuration = n end end })
+        AdminGroup:Button({ Title = "封禁设备", Callback = function()
+            if not banTargetName or banTargetName == "" then WindUI:Notify({ Title = "封禁", Content = "请输入用户名", Duration = 3 }); return end
+            local success, userId = pcall(function() return Players:GetUserIdFromNameAsync(banTargetName) end)
+            if success and userId then
+                local uid = GetDeviceUID(userId)
+                local banList = LoadBanList()
+                banList[uid] = os.time() + banDuration * 60
+                SaveBanList(banList)
+                WindUI:Notify({ Title = "封禁", Content = "已封禁 " .. banTargetName .. " 的设备 " .. uid .. "，时长 " .. banDuration .. " 分钟", Duration = 5 })
+            else
+                WindUI:Notify({ Title = "封禁", Content = "未找到该用户", Duration = 3 })
+            end
+        end })
+        AdminGroup:Divider({ Text = "查询设备UID" })
+        local queryName = ""
+        AdminGroup:Input({ Title = "用户名", Placeholder = "输入要查询的用户名", Callback = function(value) queryName = value end })
+        AdminGroup:Button({ Title = "查询设备UID", Callback = function()
+            if not queryName or queryName == "" then WindUI:Notify({ Title = "查询", Content = "请输入用户名", Duration = 3 }); return end
+            local success, userId = pcall(function() return Players:GetUserIdFromNameAsync(queryName) end)
+            if success and userId then
+                local uid = GetDeviceUID(userId)
+                WindUI:Notify({ Title = "设备UID", Content = queryName .. " 的设备UID: " .. uid, Duration = 5 })
+            else
+                WindUI:Notify({ Title = "查询", Content = "未找到该用户", Duration = 3 })
+            end
+        end })
         AdminGroup:Divider({ Text = "坐标显示" })
         local coordEnabled, coordGui, coordFrame, coordTextBox, coordCopyBtn, coordDragging, coordDragStart, coordStartPos, coordRenderConn = false, nil, nil, nil, nil, false, nil, nil, nil
         local function CreateCoordDisplay()
@@ -2032,8 +2075,14 @@ end)
     end
     KeySection:Button({ Title = "验证并进入", Callback = function()
         if adminVerified then WindUI:Notify({ Title = "提示", Content = "已通过验证，无需重复", Duration = 2 }); return end
-        if keyInputValue == "2639zako" then adminVerified = true; WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 }); buildAdminPanel()
-        else WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 }) end
+        if keyInputValue == "2639zako" then 
+            adminVerified = true
+            isAuthor = true
+            WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 })
+            buildAdminPanel()
+        else 
+            WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 }) 
+        end
     end })
 
     WindUI:Notify({ Title = "wdfex-Hub", Content = "脚本已加载成功，欢迎使用！", Duration = 3 })
