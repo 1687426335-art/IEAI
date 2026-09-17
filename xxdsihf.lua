@@ -1606,7 +1606,7 @@ end)
                 if myHead then
                     local origin, hitPos = myHead.Position, targetHead.Position
                     local direction = (hitPos - origin).Unit
-                    local damage = math.huge
+                    local damage = 100
                     pcall(function() ReplicatedStorage.Remote.PlayerEvent:FireServer("damage", { bodyParts = { { "Head", damage } }, shotCode = { origin, direction }, target = target, pos = hitPos }) end)
                     pcall(function() local handleShots = ReplicatedStorage:FindFirstChild("Events"); handleShots = handleShots and handleShots:FindFirstChild("HandleShots"); if handleShots then handleShots:FireServer("2", "Shoot") end end)
                 end
