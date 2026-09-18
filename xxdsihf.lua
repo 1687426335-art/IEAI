@@ -38,14 +38,9 @@ function createUI()
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
-    local Stats = game:GetService("Stats")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
-
-    -- 飞天快捷相关变量
-    local lockFlyBtn = false
-    local showPerfEnabled = false
 
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
@@ -775,6 +770,9 @@ function createUI()
     local healRadius = 30
     local healInterval = 0.1
 
+    -- 医生功能的玩家缓存列表（仅手动刷新）
+    local doctorPlayers = {}
+
     DoctorTab:Divider({ Text = "自动治疗" })
 
     DoctorTab:Toggle({
@@ -803,10 +801,26 @@ function createUI()
         end
     })
 
+    DoctorTab:Divider({ Text = "玩家刷新" })
+    DoctorTab:Button({
+        Title = "刷新玩家",
+        Callback = function()
+            doctorPlayers = {}
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= player and p.Character then
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 and hum.Health < 100 then
+                        table.insert(doctorPlayers, p)
+                    end
+                end
+            end
+            WindUI:Notify({ Title = "医生功能", Content = "已刷新，当前有效玩家：" .. #doctorPlayers .. " 人", Duration = 3 })
+        end
+    })
+
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
 
     local loopTeleportLowHpEnabled = false
-
     DoctorTab:Toggle({
         Title = "循环传送血量为100以下的玩家",
         Value = false,
@@ -817,11 +831,11 @@ function createUI()
                     while loopTeleportLowHpEnabled and not isDestroyed do
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= player and p.Character then
+                            for _, p in ipairs(doctorPlayers) do
+                                if p and p.Parent and p.Character then
                                     local hum = p.Character:FindFirstChildOfClass("Humanoid")
                                     local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health < 100 and targetRoot then
+                                    if hum and hum.Health > 0 and hum.Health < 100 and targetRoot then
                                         myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
                                         break
                                     end
@@ -1092,31 +1106,17 @@ end)
         if flyAnchor.head and flyAnchor.hum then flyAnchor.head.Anchored = false; flyAnchor.hum.PlatformStand = false end
         flyAnchor.active = false
     end
-    
-    -- 性能优化版 flyMicroStepLoop
     local function flyMicroStepLoop()
         flyState.targetPos = flyState.hrp.Position
         flyState.lastTime = tick()
-        local rayCheckCounter = 0
-        local lastInWall = false
         while flyState.enabled do
             local now = tick()
             local dt = now - flyState.lastTime
             flyState.lastTime = now
             if not flyState.hrp or not flyState.hrp.Parent then break end
-            
-            -- 每 4 帧检测一次墙体，避免频繁射线检测导致掉帧
-            rayCheckCounter = rayCheckCounter + 1
-            local inWall = lastInWall
-            if rayCheckCounter >= 4 then
-                inWall = flyDetectWall()
-                lastInWall = inWall
-                rayCheckCounter = 0
-            end
-            
+            local inWall = flyDetectWall()
             if inWall and not flyAnchor.active then flyEnterAnchor()
             elseif not inWall and flyAnchor.active then flyExitAnchor() end
-            
             local moveDir
             if FlyControl then
                 local mv = FlyControl:GetMoveVector()
@@ -1134,8 +1134,6 @@ end)
             local distance = remaining.Magnitude
             if distance > 0 then
                 local steps = math.ceil(distance / 10)
-                -- 限制单帧最大步数，防止瞬移过快导致地图加载卡死
-                if steps > 4 then steps = 4 end
                 local stepVec = remaining / steps
                 for i = 1, steps do
                     if not flyState.enabled then break end
@@ -1151,7 +1149,6 @@ end)
             RunService.Heartbeat:Wait()
         end
     end
-
     local function flyHealthLockLoop()
         while flyState.enabled do
             if flyState.hum and flyState.hum.Health <= 0 then flyState.hum.Health = flyState.hum.MaxHealth end
@@ -1182,122 +1179,79 @@ end)
     FlyTab:Slider({ Title = "飞行速度", Step = 1, Value = { Min = 10, Max = 620, Default = 35 }, Callback = function(value) FlySpeed = value end })
 
     local flyQuickToggle, flyQuickScreenGui, flyQuickButton, flyQuickStatusLabel = false, nil, nil, nil
-    local flyDragging, flyDragStart, flyStartPos = false, nil, nil
-    local flyStrokeConn = nil
-
-    local function DestroyFlyQuickToggle()
-        if flyStrokeConn then flyStrokeConn:Disconnect(); flyStrokeConn = nil end
-        if flyQuickScreenGui then flyQuickScreenGui:Destroy(); flyQuickScreenGui = nil; flyQuickButton = nil; flyQuickStatusLabel = nil end
-    end
-
+    local function DestroyFlyQuickToggle() if flyQuickScreenGui then flyQuickScreenGui:Destroy(); flyQuickScreenGui = nil; flyQuickButton = nil; flyQuickStatusLabel = nil end end
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
         flyQuickScreenGui = Instance.new("ScreenGui")
         flyQuickScreenGui.Name = "FlyQuickToggle"
         flyQuickScreenGui.ResetOnSpawn = false
-        flyQuickScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 115, 0, 46)
-        button.Position = UDim2.new(0.5, -58, 0.2, 0)
+        local button = Instance.new("ImageButton")
+        button.Size = UDim2.new(0, 60, 0, 60)
+        button.Position = UDim2.new(0.5, -30, 0.15, 0)
         button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
         button.BackgroundTransparency = 0.15
-        button.BorderSizePixel = 0
-        button.Text = "飞天: 关"
-        button.TextColor3 = Color3.fromHSV(0, 1, 1)
-        button.TextSize = 14
-        button.Font = Enum.Font.GothamBold
+        button.BorderSizePixel = 2
+        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
+        button.Image = "rbxassetid://74369447499630"
+        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
+        button.ScaleType = Enum.ScaleType.Fit
         button.Parent = flyQuickScreenGui
         flyQuickButton = button
-
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
+        corner.CornerRadius = UDim.new(1, 0)
         corner.Parent = button
-
-        local flyStroke = Instance.new("UIStroke")
-        flyStroke.Thickness = 2
-        flyStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        flyStroke.Color = Color3.fromHSV(0, 1, 1)
-        flyStroke.Parent = button
-
-        flyStrokeConn = RunService.Heartbeat:Connect(function()
-            if flyQuickButton and flyQuickButton.Parent then
-                local hue = (tick() * 0.15) % 1
-                flyStroke.Color = Color3.fromHSV(hue, 1, 1)
-                flyQuickButton.TextColor3 = Color3.fromHSV((hue + 0.5) % 1, 1, 1)
-            end
-        end)
-
+        flyQuickStatusLabel = Instance.new("TextLabel")
+        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
+        flyQuickStatusLabel.BackgroundTransparency = 1
+        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        flyQuickStatusLabel.TextSize = 12
+        flyQuickStatusLabel.Font = Enum.Font.GothamBold
+        flyQuickStatusLabel.TextStrokeTransparency = 0.3
+        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        flyQuickStatusLabel.Text = "飞行: 关"
+        flyQuickStatusLabel.Parent = button
         local function updateFlyStatus()
-            if flyQuickButton then
-                flyQuickButton.Text = flyState.enabled and "飞天: 开" or "飞天: 关"
-            end
-        end
-
-        button.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                if not lockFlyBtn then
-                    flyDragging = true
-                    flyDragStart = input.Position
-                    flyStartPos = button.Position
+            if flyQuickStatusLabel then
+                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                if flyQuickButton then
+                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
+                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
                 end
             end
-        end)
+        end
+        button.MouseButton1Click:Connect(function() if flyState.enabled then stopFly() else startFly() end; updateFlyStatus() end)
+        local dragging, dragStart, startPos = false, nil, nil
+        button.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; dragStart = input.Position; startPos = button.Position end end)
         button.InputChanged:Connect(function(input)
-            if flyDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - flyDragStart
-                button.Position = UDim2.new(flyStartPos.X.Scale, flyStartPos.X.Offset + delta.X, flyStartPos.Y.Scale, flyStartPos.Y.Offset + delta.Y)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                button.Position = UDim2.new(startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X, startPos.X.Offset + delta.X, startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y, startPos.Y.Offset + delta.Y)
             end
         end)
-        button.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                flyDragging = false
-            end
-        end)
-        button.MouseButton1Click:Connect(function()
-            if flyState.enabled then stopFly() else startFly() end
-            updateFlyStatus()
-        end)
-
+        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
         updateFlyStatus()
         task.spawn(function()
             while flyQuickScreenGui and flyQuickScreenGui.Parent do
-                task.wait(0.3)
-                updateFlyStatus()
+                task.wait(0.5)
+                if flyQuickToggle and flyQuickStatusLabel then
+                    updateFlyStatus()
+                end
             end
         end)
     end
-
     FlyTab:Toggle({ Title = "飞天快捷开关", Value = false, Callback = function(value) flyQuickToggle = value; if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end end })
-
-    FlyTab:Toggle({
-        Title = "锁定飞天快捷开关",
-        Value = false,
-        Callback = function(value)
-            lockFlyBtn = value
-        end
-    })
-
     FlyTab:Divider({ Text = "移速" })
     local speedBypassOn, speedBypassValue = false, 20
     FlyTab:Toggle({ Title = "修改移速（绕过）", Value = false, Callback = function(value) speedBypassOn = value end })
     FlyTab:Slider({ Title = "移速", Step = 1, Value = { Min = 5, Max = 150, Default = 20 }, Callback = function(value) speedBypassValue = value end })
-    
-    -- 性能优化版 移速 Heartbeat 循环
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
         local char = player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        if hum and root and hum.MoveDirection.Magnitude > 0 then
-            -- 限制单帧最大移动距离，防止低帧率下瞬移距离过大导致区块加载崩溃
-            local moveVec = hum.MoveDirection * speedBypassValue * dt
-            if moveVec.Magnitude > 12 then
-                moveVec = moveVec.Unit * 12
-            end
-            root.CFrame = root.CFrame + moveVec
-        end
+        if hum and root and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt end
     end)
 
     -- ==================== 玩家修改 ====================
@@ -1438,13 +1392,6 @@ end)
         Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
         end
-    })
-
-    A:Divider({ Text = "性能显示" })
-    A:Toggle({
-        Title = "显示当前帧率延迟",
-        Value = false,
-        Callback = function(value) showPerfEnabled = value end
     })
 
     -- ==================== 枪械功能 ====================
@@ -2069,58 +2016,6 @@ end)
         if keyInputValue == "2639zako" then adminVerified = true; WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 }); buildAdminPanel()
         else WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 }) end
     end })
-
-    -- ==================== FPS 和延迟显示 ====================
-    local perfGui = Instance.new("ScreenGui")
-    perfGui.Name = "PerfDisplayGui"
-    perfGui.ResetOnSpawn = false
-    perfGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    perfGui.Parent = player:WaitForChild("PlayerGui")
-
-    local perfLabel = Instance.new("TextLabel")
-    perfLabel.Size = UDim2.new(0, 400, 0, 20)
-    perfLabel.Position = UDim2.new(0.5, -200, 0, 10)
-    perfLabel.BackgroundTransparency = 1
-    perfLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    perfLabel.TextSize = 14
-    perfLabel.Font = Enum.Font.GothamBold
-    perfLabel.TextStrokeTransparency = 0.3
-    perfLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    perfLabel.Text = "FPS: 0 | 延迟: 0ms"
-    perfLabel.Parent = perfGui
-    perfLabel.Visible = false
-
-    local frameCount = 0
-    local lastTime = tick()
-    RunService.RenderStepped:Connect(function()
-        frameCount = frameCount + 1
-    end)
-
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(0.5)
-            local now = tick()
-            local elapsed = now - lastTime
-            local fps = 0
-            if elapsed > 0 then
-                fps = math.floor(frameCount / elapsed)
-            end
-            frameCount = 0
-            lastTime = now
-
-            local ping = 0
-            pcall(function()
-                ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-            end)
-
-            if showPerfEnabled then
-                perfLabel.Visible = true
-                perfLabel.Text = "FPS: " .. fps .. " | 延迟: " .. ping .. "ms"
-            else
-                perfLabel.Visible = false
-            end
-        end
-    end)
 
     WindUI:Notify({ Title = "wdfex-Hub", Content = "脚本已加载成功，欢迎使用！", Duration = 3 })
 end
