@@ -42,13 +42,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- 刷新玩家相关变量
-    local refreshPlayerSignal = 0
-    local lockRefreshBtn = false
-    local refreshQuickGui = nil
-    local refreshQuickBtn = nil
-    local rqDragging, rqDragStart, rqStartPos = false, nil, nil
-
     -- 飞天快捷相关变量
     local lockFlyBtn = false
 
@@ -59,9 +52,10 @@ function createUI()
         sg.DisplayOrder = 999
         sg.Parent = player:WaitForChild("PlayerGui")
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 220, 0, 50)
-        frame.Position = UDim2.new(1, 0, 1, -80)
-        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        frame.Size = UDim2.new(0, 220,  frame0,
+ 50)
+        frame.Position = U       Dim2.new(1, 0 local, 1, -80)
+        frame.BackgroundColor label3 = Color3.from =RGB(30, 30, 35)
         frame.BorderSizePixel = 0
         frame.Parent = sg
         local corner = Instance.new("UICorner")
@@ -70,8 +64,7 @@ function createUI()
         local stroke = Instance.new("UIStroke")
         stroke.Color = Color3.fromRGB(0, 255, 100)
         stroke.Thickness = 2
-        stroke.Parent = frame
-        local label = Instance.new("TextLabel")
+        stroke.Parent = Instance.new("TextLabel")
         label.Size = UDim2.new(1, -20, 1, -10)
         label.Position = UDim2.new(0, 10, 0, 5)
         label.BackgroundTransparency = 1
@@ -811,8 +804,6 @@ function createUI()
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
 
     local loopTeleportLowHpEnabled = false
-    local currentLowHpTarget = nil
-    local lastRefreshSignal = -1
 
     DoctorTab:Toggle({
         Title = "循环传送血量为100以下的玩家",
@@ -822,37 +813,16 @@ function createUI()
             if enabled then
                 task.spawn(function()
                     while loopTeleportLowHpEnabled and not isDestroyed do
-                        if refreshPlayerSignal ~= lastRefreshSignal then
-                            lastRefreshSignal = refreshPlayerSignal
-                            currentLowHpTarget = nil
-                        end
-
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            if currentLowHpTarget and not Players:FindFirstChild(currentLowHpTarget.Name) then
-                                currentLowHpTarget = nil
-                            end
-
-                            if not currentLowHpTarget then
-                                for _, p in ipairs(Players:GetPlayers()) do
-                                    if p ~= player and p.Character then
-                                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                                        local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                        if hum and hum.Health < 100 and targetRoot then
-                                            currentLowHpTarget = p
-                                            break
-                                        end
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
+                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                    if hum and hum.Health < 100 and targetRoot then
+                                        myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+                                        break
                                     end
-                                end
-                            end
-
-                            if currentLowHpTarget and currentLowHpTarget.Character then
-                                local hum = currentLowHpTarget.Character:FindFirstChildOfClass("Humanoid")
-                                local targetRoot = currentLowHpTarget.Character:FindFirstChild("HumanoidRootPart")
-                                if hum and hum.Health < 100 and targetRoot then
-                                    myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-                                else
-                                    currentLowHpTarget = nil
                                 end
                             end
                         end
@@ -863,102 +833,6 @@ function createUI()
             else
                 WindUI:Notify({ Title = "wdfex-Hub", Content = "已关闭循环传送低血量玩家", Duration = 2 })
             end
-        end
-    })
-
-    DoctorTab:Divider({ Text = "刷新玩家" })
-
-    DoctorTab:Button({
-        Title = "刷新玩家",
-        Callback = function()
-            refreshPlayerSignal = refreshPlayerSignal + 1
-            WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
-        end
-    })
-
-    DoctorTab:Toggle({
-        Title = "刷新玩家快捷开关",
-        Value = false,
-        Callback = function(value)
-            if value then
-                if not refreshQuickGui then
-                    refreshQuickGui = Instance.new("ScreenGui")
-                    refreshQuickGui.Name = "RefreshPlayerQuickGui"
-                    refreshQuickGui.ResetOnSpawn = false
-                    refreshQuickGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-                    refreshQuickGui.Parent = player:WaitForChild("PlayerGui")
-
-                    refreshQuickBtn = Instance.new("TextButton")
-                    refreshQuickBtn.Size = UDim2.new(0, 100, 0, 40)
-                    refreshQuickBtn.Position = UDim2.new(0.5, -50, 0.3, 0)
-                    refreshQuickBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-                    refreshQuickBtn.BackgroundTransparency = 0.15
-                    refreshQuickBtn.BorderSizePixel = 0
-                    refreshQuickBtn.Text = "刷新玩家"
-                    refreshQuickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    refreshQuickBtn.TextSize = 14
-                    refreshQuickBtn.Font = Enum.Font.GothamBold
-                    refreshQuickBtn.Parent = refreshQuickGui
-
-                    local rqCorner = Instance.new("UICorner")
-                    rqCorner.CornerRadius = UDim.new(0, 8)
-                    rqCorner.Parent = refreshQuickBtn
-
-                    local rqStroke = Instance.new("UIStroke")
-                    rqStroke.Thickness = 2
-                    rqStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-                    rqStroke.Color = Color3.fromHSV(0, 1, 1)
-                    rqStroke.Parent = refreshQuickBtn
-
-                    task.spawn(function()
-                        local hue = 0
-                        while refreshQuickBtn and refreshQuickBtn.Parent do
-                            hue = (hue + 0.01) % 1
-                            rqStroke.Color = Color3.fromHSV(hue, 1, 1)
-                            task.wait(0.04)
-                        end
-                    end)
-
-                    refreshQuickBtn.InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                            if not lockRefreshBtn then
-                                rqDragging = true
-                                rqDragStart = input.Position
-                                rqStartPos = refreshQuickBtn.Position
-                            end
-                        end
-                    end)
-                    refreshQuickBtn.InputChanged:Connect(function(input)
-                        if rqDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                            local delta = input.Position - rqDragStart
-                            refreshQuickBtn.Position = UDim2.new(rqStartPos.X.Scale, rqStartPos.X.Offset + delta.X, rqStartPos.Y.Scale, rqStartPos.Y.Offset + delta.Y)
-                        end
-                    end)
-                    refreshQuickBtn.InputEnded:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                            rqDragging = false
-                        end
-                    end)
-                    refreshQuickBtn.MouseButton1Click:Connect(function()
-                        refreshPlayerSignal = refreshPlayerSignal + 1
-                        WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
-                    end)
-                end
-            else
-                if refreshQuickGui then
-                    refreshQuickGui:Destroy()
-                    refreshQuickGui = nil
-                    refreshQuickBtn = nil
-                end
-            end
-        end
-    })
-
-    DoctorTab:Toggle({
-        Title = "锁定刷新玩家快捷开关",
-        Value = false,
-        Callback = function(value)
-            lockRefreshBtn = value
         end
     })
 
