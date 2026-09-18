@@ -814,7 +814,6 @@ function createUI()
                     end
                 end
             end
-            WindUI:Notify({ Title = "医生功能", Content = "已刷新，当前有效玩家：" .. #doctorPlayers .. " 人", Duration = 3 })
         end
     })
 
