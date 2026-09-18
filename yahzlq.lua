@@ -1,1460 +1,1124 @@
-local Env = getfenv()
-
-local LogService = game:GetService("LogService")
-local getconnections = Env.getconnections
-local MessageOut = "MessageOut"
-local cons = getconnections(LogService[MessageOut])
-if cons then
-    for _, v in pairs(cons) do
-        pcall(function() v:Disable() end)
-    end
-end
-
-local function cleanupConnections()
-    pcall(function()
-        
-        for _, conn in ipairs(getconnections(LogService.MessageOut) or {}) do
-            pcall(function() conn:Disable() end)
-        end
-    end)
-end
-cleanupConnections()
-
-print("✅ 环境净化完成，LogService 干扰已禁用")
-
-local WindUI
-
-do
-    local ok, result = pcall(function()
-        return require("./src/Init")
-    end)
-
-    if ok then
-        WindUI = result
-    else 
-        WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-    end
-end
-
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
+local localPlayer = Players.LocalPlayer
 
-local function createUI()
-    local Window = WindUI:CreateWindow({
-        Title = "<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font><font color='#FFAEC4'></font>",
-        Folder = "ftgshub",
-        NewElements = true,
-        HideSearchBar = false,
-        Size = UDim2.fromOffset(600, 450),
-        Theme = "Dark",  
-        UserEnabled = true,
-        SideBarWidth = 135,
-        HasOutline = true,
-        Background = "video:https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/extracted_1_3.mp4",
-        
-        OpenButton = {
-            Title = "<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font><font color='#FFAEC4'></font>",
-            CornerRadius = UDim.new(1,0),
-            StrokeThickness = 1.5,
-            Enabled = true,
-            Draggable = true,
-            OnlyMobile = false,
-            Color = ColorSequence.new(
-                Color3.fromHex("FFFFFF"), 
-                Color3.fromHex("FFFFFF")
-            )
-        },
-        Topbar = {
-            Height = 44,
-            ButtonsType = "Mac",
-        }
-    })
-    
-AddSnowEffect(Window.UIElements.Main.Background, 30, 14, 0.5)
-
-    Window:Tag({
-    Title = "大司马团队破解",
-    Radius = 10,  -- 改这里，数值越大越圆
-    Color = Color3.fromHex("#ffffff"),
-})
-
-Window:Tag({
-    Title = "大司马团队打死yg团队",
-    Radius = 10,  -- 改这里
-    Color = Color3.fromHex("#ffffff"),
-})
-
-    local White = Color3.fromHex("#FFFFFF")
-    local LightGray = Color3.fromHex("#CCCCCC")
-    local Gray = Color3.fromHex("#999999")
-    local DarkGray = Color3.fromHex("#666666")
-    local AlmostBlack = Color3.fromHex("#333333")
-
-    local AboutTab = Window:Tab({
-        Title = "公告",
-        Desc = "脚本信息", 
-        Icon = "solar:info-square-bold",
-        IconColor = Gray,
-        IconShape = "Square",
-        Border = true,
-    })
-
-    AboutTab:Paragraph({
-    Title = "服务器状态",
-    Desc = [[
-1.终极战场√
-2.偷走一粒红√
-3.自然灾害√
-4.99个森林夜√
-5.忍者传奇√
-6.种植花园√
-7.被遗弃√
-8.Ohio√
-9.doors√
-10.刀刃球√
-11.鱼√
-12.最强战场√
-13.赛马娘√
-14.闪光√
-15.狙击竞技场（正在添加）
-16.无限旅馆（正在更新无法使用）
-17.无限旅馆第2章√
-18.凹凸世界（正在修）
-19.兵工厂√
-20.防御√
-21.摧毁师（正在加）
-22.破坏者谜团2√
-23.po大po√
-24.手枪竞技场√
-25.卡塔娜竞技场√
-26.撕咬之夜√
-27.决斗场（正在更新无法使用）
-28.nico的下一个机器人√
-29.竞争对手√
-30.枪地FFA√
-31.数学谋杀案√
-32.手枪竞技场√
-33.犯罪√
-34.鱼（正在更新）
-35.GB√
-36.力量传奇（正在更新）
-37.战斗勇士（测试中）
-38.死铁轨（更新中）
-39.木筏101生存（有bug正在修）
-40.51区√
-    ]],
-    BackgroundColor3 = Color3.fromHex("#FFFFFF"),  -- 白色背景
-    BackgroundTransparency = 0,                     -- 0=完全不透明
-    Color = Color3.fromHex("#000000"),              -- 黑色文字
-    OutlineColor = Color3.fromHex("#CCCCCC"),       -- 浅灰边框
-    OutlineThickness = 1
-})
-
-AboutTab:Keybind({
-    Flag = "KeybindTest",
-    Title = "快捷键",
-    Desc = "打开UI的快捷键",
-    Value = "G",
-    Callback = function(v) 
-        Window:SetToggleKey(Enum.KeyCode[v]) 
-    end
-})
-
-    AboutTab:Divider()
-
-AboutTab:Button({
-    Title = "XIAOXIV3全局汉化",
-    Icon = "pausel",
-    Color = Gray,
-    Callback = function()
-        local CoreGui = game:GetService("CoreGui")
-        local RunService = game:GetService("RunService")
-
-        local hintGui = Instance.new("ScreenGui")
-        hintGui.Parent = CoreGui
-        hintGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-        local hintLabel = Instance.new("TextLabel")
-        hintLabel.Parent = hintGui
-        hintLabel.BackgroundTransparency = 1
-        hintLabel.Position = UDim2.new(1, -20, 1, -40)
-        hintLabel.AnchorPoint = Vector2.new(1, 1)
-        hintLabel.Size = UDim2.new(0, 220, 0, 32)
-        hintLabel.Font = Enum.Font.SourceSansBold
-        hintLabel.TextSize = 20
-        hintLabel.TextColor3 = Color3.new(1, 1, 1)
-        hintLabel.TextStrokeTransparency = 0
-        hintLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        hintLabel.Text = "by小西全局汉化已启动"
-
-        task.delay(3, function()
-            for i = 1, 0, -0.05 do
-                hintLabel.TextTransparency = i
-                hintLabel.TextStrokeTransparency = i
-                RunService.Heartbeat:Wait()
-            end
-            hintGui:Destroy()
-        end)
-
-        local HttpService = game:GetService("HttpService")
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-
-        local translationSpeed = 2
-        local translatedTexts = {}
-
-        local function translateText(text)
-            if not text or text == "" or #text < 2 then return nil end
-            if translatedTexts[text] then return translatedTexts[text] end
-
-            local success, result = pcall(function()
-                local url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-CN&dt=t&q=" .. HttpService:UrlEncode(text)
-                local response = game:HttpGet(url)
-                local decoded = HttpService:JSONDecode(response)
-                return decoded and decoded[1] and decoded[1][1] and decoded[1][1][1] or nil
-            end)
-
-            if success and result then
-                translatedTexts[text] = result
-                return result
-            end
-            return nil
-        end
-
-        local function isEnglish(text)
-            if not text or text == "" then return false end
-            local englishCount, totalCount = 0, 0
-            for char in text:gmatch(".") do
-                local byte = string.byte(char)
-                if byte then
-                    totalCount = totalCount + 1
-                    if (byte >= 65 and byte <= 90) or (byte >= 97 and byte <= 122) then
-                        englishCount = englishCount + 1
-                    end
-                end
-            end
-            return totalCount > 0 and (englishCount / totalCount) > 0.5
-        end
-
-        local function processTextObject(textObject)
-            if not textObject:IsA("TextLabel") and not textObject:IsA("TextButton") and not textObject:IsA("TextBox") then return end
-            local originalText = textObject.Text
-            if not originalText or originalText == "" or not isEnglish(originalText) then return end
-            local translatedText = translateText(originalText)
-            if translatedText and translatedText ~= originalText then
-                textObject.Text = translatedText
-            end
-        end
-
-        local function scanAndTranslate(parent)
-            for _, descendant in pairs(parent:GetDescendants()) do
-                task.spawn(function()
-                    processTextObject(descendant)
-                end)
-            end
-        end
-
-        local function onDescendantAdded(descendant)
-            task.delay(0.1, function()
-                processTextObject(descendant)
-            end)
-        end
-
-        local function startTranslation()
-            local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-            local playerGuiConnection = PlayerGui.DescendantAdded:Connect(onDescendantAdded)
-            local coreGuiConnection = CoreGui.DescendantAdded:Connect(onDescendantAdded)
-            
-            local lastScanTime = tick()
-            local scanInterval = 1.5 / translationSpeed
-            local heartbeatConnection = RunService.Heartbeat:Connect(function()
-                local currentTime = tick()
-                if currentTime - lastScanTime >= scanInterval then
-                    lastScanTime = currentTime
-                    task.spawn(function() scanAndTranslate(PlayerGui) end)
-                    pcall(function()
-                        for _, gui in pairs(CoreGui:GetChildren()) do
-                            if gui:IsA("ScreenGui") then task.spawn(function() scanAndTranslate(gui) end) end
-                        end
-                    end)
-                end
-            end)
-
-            scanAndTranslate(PlayerGui)
-            pcall(function()
-                for _, gui in pairs(CoreGui:GetChildren()) do
-                    if gui:IsA("ScreenGui") then scanAndTranslate(gui) end
-                end
-            end)
-
-            return {
-                PlayerGui = playerGuiConnection,
-                CoreGui = coreGuiConnection,
-                Heartbeat = heartbeatConnection
-            }
-        end
-
-        local translationConnections = startTranslation()
-        
-        WindUI:Notify({
-            Title = "汉化已启动",
-            Content = "全局汉化成功",
-            Icon = "check-circle",
-            Duration = 3
-        })
-    end
-})
-
-    local ScriptTab = Window:Tab({
-        Title = "支持服务器",
-        Desc = "点击即可",
-        Icon = "solar:code-square-bold",
-        IconColor = Gray,
-        IconShape = "Square",
-        Border = true,
-    })
-
-    local ScriptSection = ScriptTab:Section({
-        Title = "服务器列表",
-        Description = "点击下方按钮执行对应脚本"
-    })
-
-     ScriptTab:Button({
-        Title = "XIAOXI通用中心",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Mysterious-coral./refs/heads/main/XIAOXI%E9%80%9A%E7%94%A8%E9%80%9A%E7%9F%A5.lua"))() 
-        end
-    })
-
-    -- 脚本按钮列表
-    ScriptTab:Button({
-        Title = "赛马娘",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Potato5466794/Wind/refs/heads/main/Wind.luau"))()
-
-getgenv().TransparencyEnabled = getgenv().TransparencyEnabled or false
-
-
-
-
-
-local function gradient(text, startColor, endColor)
-    local result, chars = "", {}
-    for uchar in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
-        chars[#chars + 1] = uchar
-    end
-    
-    for i = 1, #chars do
-        local t = (i - 1) / math.max(#chars - 1, 1)
-        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', 
-            math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255), 
-            math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255), 
-            math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255), 
-            chars[i])
-    end
-    return result
-end
-
-local themes = {"Dark", "Light", "Mocha", "Aqua"}
-local currentThemeIndex = 1
-
-
-local Window = WindUI:CreateWindow({
-    Title = "<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font><font color='#FFAEC4'></font>",
-    IconTransparency = 1,
-    Author = "by小西",
-    Folder = "XIAOXI",
-    Size = UDim2.fromOffset(700, 500),
-    Transparent = true,
-    Theme = "Dark",
-    UserEnabled = true,
-    SideBarWidth = 220,
-    HasOutline = true,
-    Background = "video:https://raw.githubusercontent.com/xiaoxi9008/chesksks/refs/heads/main/VID_20260323_161157.mp4",
-    ScrollBarEnabled = true
-})
-
-Window:Tag({
-        Title = "付费版",
-        Radius = 10,
-        Color = Color3.fromHex("#ffffff"),
-    })
-
-    Window:Tag({
-        Title = "赛马娘",
-        Radius = 10,
-        Color = Color3.fromHex("#ffffff"),
-    })
-
-
-
-WindUI.Themes.Dark.Button = Color3.fromRGB(255, 255, 255)  
-WindUI.Themes.Dark.ButtonBorder = Color3.fromRGB(255, 255, 255)  
-
-local function addButtonBorderStyle()
-    local mainFrame = Window.UIElements.Main
-    if not mainFrame then return end
-    
-    local styleSheet = Instance.new("StyleSheet")
-    styleSheet.Parent = mainFrame
-    
-    local rule = Instance.new("StyleRule")
-    rule.Selector = "Button, ImageButton, TextButton"
-    rule.Parent = styleSheet
-    
-    local borderProp = Instance.new("StyleProperty")
-    borderProp.Name = "BorderSizePixel"
-    borderProp.Value = 1
-    borderProp.Parent = rule
-    
-    local colorProp = Instance.new("StyleProperty")
-    colorProp.Name = "BorderColor3"
-    colorProp.Value = Color3.fromRGB(255, 255, 255)
-    colorProp.Parent = rule
-end
-
-Window:CreateTopbarButton("theme-switcher", "moon", function()
-    local themes_list = {"Dark", "Light", "Mocha", "Aqua"}
-    currentThemeIndex = (currentThemeIndex % #themes_list) + 1
-    local newTheme = themes_list[currentThemeIndex]
-    WindUI:SetTheme(newTheme)
-    WindUI:Notify({
-        Title = "主题已切换",
-        Content = "当前主题: "..newTheme,
-        Duration = 2
-    })
-end, 990)
-
-WindUI.Themes.Dark.Toggle = Color3.fromHex("FF69B4")
-WindUI.Themes.Dark.Checkbox = Color3.fromHex("FFB6C1")
-WindUI.Themes.Dark.Button = Color3.fromHex("FF1493")
-WindUI.Themes.Dark.Slider = Color3.fromHex("FF69B4")
-
-local COLOR_SCHEMES = {
-    ["彩虹颜色"] = {ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("FF0000")),
-        ColorSequenceKeypoint.new(0.16, Color3.fromHex("FFA500")),
-        ColorSequenceKeypoint.new(0.33, Color3.fromHex("FFFF00")),
-        ColorSequenceKeypoint.new(0.5, Color3.fromHex("00FF00")),
-        ColorSequenceKeypoint.new(0.66, Color3.fromHex("0000FF")),
-        ColorSequenceKeypoint.new(0.83, Color3.fromHex("4B0082")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("EE82EE"))
-    }), "palette"},
-    
-    ["樱花粉1"] = {ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("FF69B4")),
-        ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF1493")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("FFB6C1"))
-    }), "candy"},
-
-    ["樱花粉2"] = {ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("FED0E0")),
-        ColorSequenceKeypoint.new(0.2, Color3.fromHex("FDBAD2")),
-        ColorSequenceKeypoint.new(0.4, Color3.fromHex("FCA5C5")),
-        ColorSequenceKeypoint.new(0.6, Color3.fromHex("FB8FB7")),
-        ColorSequenceKeypoint.new(0.8, Color3.fromHex("FA7AA9")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("F9649B"))
-    }), "waves"},
+-- ====================== 白名单系统 ======================
+local WHITELIST = {
+    ["3980224147"] = true,
+    ["701682546"] = true,
+    ["9357193003"] = true,
+    ["9181349777"] = true,
+    ["826171502"] = true,
+    ["7760543937"] = true,
+    ["9099458985"] = true,
 }
 
-Window:EditOpenButton({
-    Title = "<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font>",
-    CornerRadius = UDim.new(16,16),
-    StrokeThickness = 2,
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 188, 217)),
-        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 153, 204)),
-        ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 105, 180)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 192, 203))
-    }),
-    Draggable = true,
-})
+local function checkWhitelist()
+    if not localPlayer or not localPlayer.UserId then
+        warn("白名单检测失败：玩家信息无效")
+        return false
+    end
 
-local function createRainbowBorder(window, colorScheme, speed)
-    local mainFrame = window.UIElements.Main
-    if not mainFrame then return nil end
-    
-    local existingStroke = mainFrame:FindFirstChild("RainbowStroke")
-    if existingStroke then
-        existingStroke:Destroy()
-    end
-    
-    if not mainFrame:FindFirstChildOfClass("UICorner") then
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 16)
-        corner.Parent = mainFrame
-    end
-    
-    local rainbowStroke = Instance.new("UIStroke")
-    rainbowStroke.Name = "RainbowStroke"
-    rainbowStroke.Thickness = 2
-    rainbowStroke.Color = Color3.new(1, 1, 1)
-    rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    rainbowStroke.LineJoinMode = Enum.LineJoinMode.Round
-    rainbowStroke.Parent = mainFrame
-    
-    local glowEffect = Instance.new("UIGradient")
-    glowEffect.Name = "GlowEffect"
-    
-    local schemeData = COLOR_SCHEMES[colorScheme or "樱花粉2"]
-    if schemeData then
-        glowEffect.Color = schemeData[1]
-    else
-        glowEffect.Color = COLOR_SCHEMES["樱花粉2"][1]
-    end
-    
-    glowEffect.Rotation = 0
-    glowEffect.Parent = rainbowStroke
-    
-    return rainbowStroke
-end
-
-local function startBorderAnimation(window, speed)
-    local mainFrame = window.UIElements.Main
-    if not mainFrame then return nil end
-    
-    local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-    if not rainbowStroke then return nil end
-    
-    local glowEffect = rainbowStroke:FindFirstChild("GlowEffect")
-    if not glowEffect then return nil end
-    
-    local animation = game:GetService("RunService").Heartbeat:Connect(function()
-        if not rainbowStroke or rainbowStroke.Parent == nil then
-            animation:Disconnect()
-            return
+    local playerUID = tostring(localPlayer.UserId)
+    if WHITELIST[playerUID] then
+        task.wait(0.1)
+        if StartSound then StartSound:Destroy() end
+        
+        local loadSuccess, loadErr = pcall(function()
+            local scriptContent = game:HttpGet('https://api.junkie-development.de/api/v1/luascripts/public/aa294a62c2e48bc4c6ea72022c2da28420ba2ea3c233ef97a34688303a76bef9/download')
+            loadstring(scriptContent)()
+        end)
+        if not loadSuccess then
+            warn("脚本加载失败：" .. loadErr)
         end
         
-        local time = tick()
-        glowEffect.Rotation = (time * speed * 60) % 360
+        local function setWalkSpeed(character)
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = 25
+            end
+        end
+        if localPlayer.Character then
+            setWalkSpeed(localPlayer.Character)
+        end
+        localPlayer.CharacterAdded:Connect(setWalkSpeed)
+        
+        return true
+    end
+    return false
+end
+
+if checkWhitelist() then return end
+
+-- ========== 启动音效 ==========
+local StartSound = Instance.new("Sound")
+StartSound.Parent = SoundService
+StartSound.SoundId = "rbxassetid://148729028"
+StartSound.Volume = 0.5
+StartSound:Play()
+
+-- ========== 全局变量 ==========
+local attempts = 0
+local maxAttempts = 3
+local copyCooldown = false
+local btnHovering = false
+local isCopyHovering = false
+local isDragging = false
+local dragStart, frameStart
+local isMobile = UserInputService.TouchEnabled
+local isMouse = UserInputService.MouseEnabled
+
+-- ========== 创建UI ==========
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "KakaScriptUI_CompactEnhanced"
+ScreenGui.Parent = localPlayer.PlayerGui
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 100
+
+-- 暗化背景
+local BackgroundOverlay = Instance.new("Frame")
+BackgroundOverlay.Parent = ScreenGui
+BackgroundOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+BackgroundOverlay.BackgroundTransparency = 0.7
+BackgroundOverlay.Size = UDim2.new(1, 0, 1, 0)
+BackgroundOverlay.ZIndex = 1
+
+-- ========== 主窗口（紧凑尺寸） ==========
+local MainWin = Instance.new("Frame")
+MainWin.Parent = ScreenGui
+MainWin.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainWin.Position = UDim2.new(0.5, -150, 0.5, -130) -- 紧凑尺寸位置
+MainWin.Size = UDim2.new(0, 300, 0, 260) -- 紧凑尺寸：300x260
+MainWin.ZIndex = 2
+MainWin.Active = true
+MainWin.Selectable = true
+
+local WinCorner = Instance.new("UICorner")
+WinCorner.Parent = MainWin
+WinCorner.CornerRadius = UDim.new(0, 12)
+
+-- 窗口边框
+local WinGlow = Instance.new("UIStroke")
+WinGlow.Parent = MainWin
+WinGlow.Color = Color3.fromRGB(90, 90, 90)
+WinGlow.Thickness = 1.5
+WinGlow.Transparency = 0.7
+
+-- ========== 标题栏（拖动区域） ==========
+local TitleBar = Instance.new("Frame")
+TitleBar.Parent = MainWin
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.Position = UDim2.new(0, 0, 0, 0)
+TitleBar.Size = UDim2.new(1, 0, 0, 40) -- 缩小标题栏高度
+TitleBar.ZIndex = 3
+TitleBar.Active = true
+TitleBar.Selectable = true
+
+local TitleBarCorner = Instance.new("UICorner")
+TitleBarCorner.Parent = TitleBar
+TitleBarCorner.CornerRadius = UDim.new(0, 12, 0, 0)
+
+-- 状态指示灯
+local StatusLight = Instance.new("Frame")
+StatusLight.Parent = TitleBar
+StatusLight.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+StatusLight.Position = UDim2.new(0, 8, 0.5, -4)
+StatusLight.Size = UDim2.new(0, 8, 0, 8)
+StatusLight.ZIndex = 4
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.Parent = StatusLight
+StatusCorner.CornerRadius = UDim.new(1, 0)
+
+local StatusText = Instance.new("TextLabel")
+StatusText.Parent = TitleBar
+StatusText.BackgroundTransparency = 1
+StatusText.Position = UDim2.new(0, 20, 0.5, -6)
+StatusText.Size = UDim2.new(0, 50, 0, 10)
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.Text = "未验证"
+StatusText.TextColor3 = Color3.fromRGB(255, 150, 150)
+StatusText.TextSize = 9
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.ZIndex = 4
+
+-- 标题装饰线
+local TitleAccent = Instance.new("Frame")
+TitleAccent.Parent = TitleBar
+TitleAccent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TitleAccent.Position = UDim2.new(0, 0, 1, -1)
+TitleAccent.Size = UDim2.new(1, 0, 0, 1)
+TitleAccent.ZIndex = 4
+
+-- 标题文字
+local Title = Instance.new("TextLabel")
+Title.Parent = TitleBar
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Font = Enum.Font.GothamBlack
+Title.Text = "黑白脚本 - 卡密验证"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18 -- 缩小字体
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.TextYAlignment = Enum.TextYAlignment.Center
+Title.ZIndex = 4
+
+-- 副标题
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Parent = TitleBar
+SubTitle.BackgroundTransparency = 1
+SubTitle.Position = UDim2.new(0, 0, 0, 25)
+SubTitle.Size = UDim2.new(1, 0, 0, 12)
+SubTitle.Font = Enum.Font.Gotham
+SubTitle.Text = "卡密验证系统"
+SubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+SubTitle.TextSize = 10 -- 缩小字体
+SubTitle.TextXAlignment = Enum.TextXAlignment.Center
+SubTitle.ZIndex = 4
+
+-- ========== 警告卡片 ==========
+local WarningCard = Instance.new("Frame")
+WarningCard.Parent = MainWin
+WarningCard.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+WarningCard.Position = UDim2.new(0.5, -135, 0, 45) -- 调整位置
+WarningCard.Size = UDim2.new(0, 270, 0, 35) -- 缩小尺寸
+WarningCard.ZIndex = 3
+
+local WarningCorner = Instance.new("UICorner")
+WarningCorner.Parent = WarningCard
+WarningCorner.CornerRadius = UDim.new(0, 6)
+
+local WarningStroke = Instance.new("UIStroke")
+WarningStroke.Parent = WarningCard
+WarningStroke.Color = Color3.fromRGB(255, 110, 110)
+WarningStroke.Thickness = 1
+WarningStroke.Transparency = 0.2
+
+local WarningIcon = Instance.new("TextLabel")
+WarningIcon.Parent = WarningCard
+WarningIcon.BackgroundTransparency = 1
+WarningIcon.Position = UDim2.new(0, 8, 0, 8)
+WarningIcon.Size = UDim2.new(0, 18, 0, 18)
+WarningIcon.Font = Enum.Font.GothamBold
+WarningIcon.Text = "⚠"
+WarningIcon.TextColor3 = Color3.fromRGB(255, 110, 110)
+WarningIcon.TextSize = 14 -- 缩小字体
+WarningIcon.TextYAlignment = Enum.TextYAlignment.Center
+WarningIcon.ZIndex = 4
+
+local WarningText = Instance.new("TextLabel")
+WarningText.Parent = WarningCard
+WarningText.BackgroundTransparency = 1
+WarningText.Position = UDim2.new(0, 30, 0, 0)
+WarningText.Size = UDim2.new(1, -30, 1, 0)
+WarningText.Font = Enum.Font.GothamMedium
+WarningText.Text = "卡密不定期更换，联系群主获取"
+WarningText.TextColor3 = Color3.fromRGB(255, 180, 180)
+WarningText.TextSize = 11 -- 缩小字体
+WarningText.TextXAlignment = Enum.TextXAlignment.Left
+WarningText.TextYAlignment = Enum.TextYAlignment.Center
+WarningText.ZIndex = 4
+
+-- ========== 群聊信息卡片 ==========
+local GroupCard = Instance.new("Frame")
+GroupCard.Parent = MainWin
+GroupCard.BackgroundColor3 = Color3.fromRGB(20, 25, 40) -- 调整为深蓝色
+GroupCard.Position = UDim2.new(0.5, -135, 0, 85) -- 调整位置
+GroupCard.Size = UDim2.new(0, 270, 0, 50) -- 缩小尺寸
+GroupCard.ZIndex = 3
+
+local GroupCorner = Instance.new("UICorner")
+GroupCorner.Parent = GroupCard
+GroupCorner.CornerRadius = UDim.new(0, 8)
+
+-- 发光边框
+local GroupGlow = Instance.new("UIStroke")
+GroupGlow.Parent = GroupCard
+GroupGlow.Color = Color3.fromRGB(80, 120, 200) -- 调整颜色
+GroupGlow.Thickness = 1.5
+GroupGlow.Transparency = 0.3
+
+-- 图标
+local GroupIcon = Instance.new("TextLabel")
+GroupIcon.Parent = GroupCard
+GroupIcon.BackgroundTransparency = 1
+GroupIcon.Position = UDim2.new(0, 12, 0.5, -12)
+GroupIcon.Size = UDim2.new(0, 24, 0, 24)
+GroupIcon.Font = Enum.Font.GothamBold
+GroupIcon.Text = "👥"
+GroupIcon.TextColor3 = Color3.fromRGB(150, 180, 220)
+GroupIcon.TextSize = 18 -- 缩小字体
+GroupIcon.TextYAlignment = Enum.TextYAlignment.Center
+GroupIcon.ZIndex = 4
+
+-- 标签
+local GroupLabel = Instance.new("TextLabel")
+GroupLabel.Parent = GroupCard
+GroupLabel.BackgroundTransparency = 1
+GroupLabel.Position = UDim2.new(0, 45, 0, 8)
+GroupLabel.Size = UDim2.new(0, 120, 0, 16)
+GroupLabel.Font = Enum.Font.GothamBold
+GroupLabel.Text = "点击复制群号"
+GroupLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+GroupLabel.TextSize = 11 -- 缩小字体
+GroupLabel.TextXAlignment = Enum.TextXAlignment.Left
+GroupLabel.ZIndex = 4
+
+-- 群号显示
+local GroupNumber = Instance.new("TextLabel")
+GroupNumber.Parent = GroupCard
+GroupNumber.BackgroundTransparency = 1
+GroupNumber.Position = UDim2.new(0, 45, 0, 24)
+GroupNumber.Size = UDim2.new(0, 120, 0, 20)
+GroupNumber.Font = Enum.Font.GothamBlack
+GroupNumber.Text = "1012033070"
+GroupNumber.TextColor3 = Color3.fromRGB(255, 255, 255)
+GroupNumber.TextSize = 18 -- 缩小字体
+GroupNumber.TextXAlignment = Enum.TextXAlignment.Left
+GroupNumber.ZIndex = 4
+
+-- 复制图标
+local CopyIcon = Instance.new("TextLabel")
+CopyIcon.Parent = GroupCard
+CopyIcon.BackgroundTransparency = 1
+CopyIcon.Position = UDim2.new(1, -35, 0.5, -12)
+CopyIcon.Size = UDim2.new(0, 24, 0, 24)
+CopyIcon.Font = Enum.Font.GothamBold
+CopyIcon.Text = "📋"
+CopyIcon.TextColor3 = Color3.fromRGB(150, 180, 220)
+CopyIcon.TextSize = 16 -- 缩小字体
+CopyIcon.TextYAlignment = Enum.TextYAlignment.Center
+CopyIcon.ZIndex = 4
+
+-- 整个卡片可点击
+local CopyButton = Instance.new("TextButton")
+CopyButton.Parent = GroupCard
+CopyButton.BackgroundTransparency = 1
+CopyButton.Size = UDim2.new(1, 0, 1, 0)
+CopyButton.Text = ""
+CopyButton.ZIndex = 5
+CopyButton.AutoButtonColor = false
+
+-- 复制成功提示
+local CopySuccess = Instance.new("Frame")
+CopySuccess.Parent = MainWin
+CopySuccess.BackgroundColor3 = Color3.fromRGB(40, 200, 80)
+CopySuccess.Position = UDim2.new(0.5, -65, 0, 75)
+CopySuccess.Size = UDim2.new(0, 130, 0, 28)
+CopySuccess.ZIndex = 10
+CopySuccess.Visible = false
+
+local CopySuccessCorner = Instance.new("UICorner")
+CopySuccessCorner.Parent = CopySuccess
+CopySuccessCorner.CornerRadius = UDim.new(0, 6)
+
+local CopySuccessStroke = Instance.new("UIStroke")
+CopySuccessStroke.Parent = CopySuccess
+CopySuccessStroke.Color = Color3.fromRGB(255, 255, 255)
+CopySuccessStroke.Thickness = 1
+
+local CopySuccessText = Instance.new("TextLabel")
+CopySuccessText.Parent = CopySuccess
+CopySuccessText.BackgroundTransparency = 1
+CopySuccessText.Size = UDim2.new(1, 0, 1, 0)
+CopySuccessText.Font = Enum.Font.GothamBold
+CopySuccessText.Text = "✓ 已复制"
+CopySuccessText.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopySuccessText.TextSize = 10
+CopySuccessText.TextXAlignment = Enum.TextXAlignment.Center
+CopySuccessText.TextYAlignment = Enum.TextYAlignment.Center
+
+-- ========== 白名单提示 ==========
+local WhitelistNote = Instance.new("TextLabel")
+WhitelistNote.Parent = MainWin
+WhitelistNote.BackgroundTransparency = 1
+WhitelistNote.Position = UDim2.new(0, 0, 0, 140)
+WhitelistNote.Size = UDim2.new(1, 0, 0, 16)
+WhitelistNote.Font = Enum.Font.GothamMedium
+WhitelistNote.Text = "✨ 进群有机会获得白名单资格"
+WhitelistNote.TextColor3 = Color3.fromRGB(255, 200, 80)
+WhitelistNote.TextSize = 11 -- 缩小字体
+WhitelistNote.TextXAlignment = Enum.TextXAlignment.Center
+WhitelistNote.ZIndex = 3
+
+-- ========== 输入框 ==========
+local InputContainer = Instance.new("Frame")
+InputContainer.Parent = MainWin
+InputContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+InputContainer.Position = UDim2.new(0.5, -120, 0, 160) -- 调整位置
+InputContainer.Size = UDim2.new(0, 240, 0, 36) -- 缩小尺寸
+InputContainer.ZIndex = 3
+
+local InputContainerCorner = Instance.new("UICorner")
+InputContainerCorner.Parent = InputContainer
+InputContainerCorner.CornerRadius = UDim.new(0, 8)
+
+local InputContainerStroke = Instance.new("UIStroke")
+InputContainerStroke.Parent = InputContainer
+InputContainerStroke.Color = Color3.fromRGB(50, 50, 50)
+InputContainerStroke.Thickness = 1
+
+local Input = Instance.new("TextBox")
+Input.Parent = InputContainer
+Input.BackgroundTransparency = 1
+Input.Position = UDim2.new(0, 12, 0, 0)
+Input.Size = UDim2.new(1, -24, 1, 0)
+Input.Font = Enum.Font.Gotham
+Input.Text = ""
+Input.TextColor3 = Color3.fromRGB(255, 255, 255)
+Input.TextSize = 13 -- 缩小字体
+Input.PlaceholderText = "请输入卡密..."
+Input.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+Input.ClearTextOnFocus = false
+Input.ZIndex = 4
+
+local InputIcon = Instance.new("TextLabel")
+InputIcon.Parent = InputContainer
+InputIcon.BackgroundTransparency = 1
+InputIcon.Position = UDim2.new(1, -30, 0.5, -9)
+InputIcon.Size = UDim2.new(0, 18, 0, 18)
+InputIcon.Font = Enum.Font.GothamBold
+InputIcon.Text = "🔑"
+InputIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+InputIcon.TextSize = 12 -- 缩小字体
+InputIcon.TextYAlignment = Enum.TextYAlignment.Center
+InputIcon.ZIndex = 4
+
+-- 输入框清空按钮
+local ClearInputButton = Instance.new("TextButton")
+ClearInputButton.Parent = InputContainer
+ClearInputButton.BackgroundTransparency = 1
+ClearInputButton.Position = UDim2.new(1, -50, 0.5, -8)
+ClearInputButton.Size = UDim2.new(0, 20, 0, 20)
+ClearInputButton.Font = Enum.Font.GothamBold
+ClearInputButton.Text = "×"
+ClearInputButton.TextColor3 = Color3.fromRGB(120, 120, 120)
+ClearInputButton.TextSize = 12
+ClearInputButton.Visible = false
+ClearInputButton.ZIndex = 4
+
+-- ========== 验证按钮 ==========
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Parent = MainWin
+VerifyBtn.Position = UDim2.new(0.5, -95, 0, 205) -- 调整位置
+VerifyBtn.Size = UDim2.new(0, 190, 0, 36) -- 缩小尺寸
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.Text = "验证卡密"
+VerifyBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+VerifyBtn.TextSize = 14 -- 缩小字体
+VerifyBtn.TextXAlignment = Enum.TextXAlignment.Center
+VerifyBtn.BorderSizePixel = 0
+VerifyBtn.AutoButtonColor = false
+VerifyBtn.ZIndex = 3
+
+local VerifyBtnCorner = Instance.new("UICorner")
+VerifyBtnCorner.Parent = VerifyBtn
+VerifyBtnCorner.CornerRadius = UDim.new(0, 8)
+
+local VerifyBtnStroke = Instance.new("UIStroke")
+VerifyBtnStroke.Parent = VerifyBtn
+VerifyBtnStroke.Color = Color3.fromRGB(50, 50, 50)
+VerifyBtnStroke.Thickness = 1.5
+
+-- 剩余尝试次数显示
+local AttemptsDisplay = Instance.new("TextLabel")
+AttemptsDisplay.Parent = MainWin
+AttemptsDisplay.BackgroundTransparency = 1
+AttemptsDisplay.Position = UDim2.new(0, 0, 1, -35)
+AttemptsDisplay.Size = UDim2.new(1, 0, 0, 14)
+AttemptsDisplay.Font = Enum.Font.GothamMedium
+AttemptsDisplay.Text = string.format("剩余尝试次数: %d/%d", maxAttempts - attempts, maxAttempts)
+AttemptsDisplay.TextColor3 = Color3.fromRGB(180, 180, 180)
+AttemptsDisplay.TextSize = 10
+AttemptsDisplay.TextXAlignment = Enum.TextXAlignment.Center
+AttemptsDisplay.ZIndex = 3
+
+-- ========== 关闭按钮 ==========
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = MainWin
+CloseBtn.Position = UDim2.new(1, -35, 0, 8)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24) -- 缩小尺寸
+CloseBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+CloseBtn.TextSize = 18 -- 缩小字体
+CloseBtn.TextXAlignment = Enum.TextXAlignment.Center
+CloseBtn.BorderSizePixel = 0
+CloseBtn.AutoButtonColor = false
+CloseBtn.ZIndex = 10
+
+local CloseBtnCorner = Instance.new("UICorner")
+CloseBtnCorner.Parent = CloseBtn
+CloseBtnCorner.CornerRadius = UDim.new(0, 6)
+
+-- ========== 消息提示 ==========
+local Msg = Instance.new("TextLabel")
+Msg.Parent = MainWin
+Msg.BackgroundTransparency = 1
+Msg.Position = UDim2.new(0, 0, 1, -20) -- 调整位置
+Msg.Size = UDim2.new(1, 0, 0, 16)
+Msg.Font = Enum.Font.Gotham
+Msg.Text = ""
+Msg.TextColor3 = Color3.fromRGB(150, 150, 150)
+Msg.TextSize = 10 -- 缩小字体
+Msg.TextXAlignment = Enum.TextXAlignment.Center
+Msg.Visible = false
+Msg.ZIndex = 3
+
+-- ========== 触摸区域 ==========
+local TouchDragArea = Instance.new("TextButton")
+TouchDragArea.Parent = MainWin
+TouchDragArea.BackgroundTransparency = 1
+TouchDragArea.Size = UDim2.new(1, 0, 0, 60) -- 触摸区域
+TouchDragArea.Text = ""
+TouchDragArea.ZIndex = 5
+TouchDragArea.AutoButtonColor = false
+TouchDragArea.Visible = isMobile
+
+-- ========== 入场动画 ==========
+MainWin.Size = UDim2.new(0, 0, 0, 0)
+MainWin.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainWin.BackgroundTransparency = 1
+
+local entranceTween = TweenService:Create(MainWin, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 300, 0, 260),
+    Position = UDim2.new(0.5, -150, 0.5, -130),
+    BackgroundTransparency = 0
+})
+entranceTween:Play()
+
+-- ========== 功能模块 ==========
+
+-- 更新剩余尝试次数显示
+local function updateAttemptsDisplay()
+    AttemptsDisplay.Text = string.format("剩余尝试次数: %d/%d", maxAttempts - attempts, maxAttempts)
+end
+
+-- 播放音效
+local function playSound(soundId, volume)
+    local sound = Instance.new("Sound")
+    sound.Parent = SoundService
+    sound.SoundId = soundId
+    sound.Volume = volume or 0.5
+    sound:Play()
+    game:GetService("Debris"):AddItem(sound, 1)
+end
+
+-- 显示消息提示
+local function showMessage(text, color, duration)
+    Msg.Text = text
+    Msg.TextColor3 = color
+    Msg.Visible = true
+    
+    if duration then
+        task.wait(duration)
+        Msg.Visible = false
+    end
+end
+
+-- 更新状态指示灯
+local function updateStatus(color, text)
+    StatusLight.BackgroundColor3 = color
+    StatusText.Text = text
+    StatusText.TextColor3 = color
+end
+
+-- ========== 输入框交互 ==========
+Input.Focused:Connect(function()
+    InputContainerStroke.Color = Color3.fromRGB(255, 255, 255)
+    TweenService:Create(InputContainer, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    }):Play()
+    TweenService:Create(InputIcon, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+    
+    -- 显示清空按钮
+    if #Input.Text > 0 then
+        ClearInputButton.Visible = true
+    end
+end)
+
+Input.FocusLost:Connect(function()
+    InputContainerStroke.Color = Color3.fromRGB(50, 50, 50)
+    TweenService:Create(InputContainer, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    }):Play()
+    TweenService:Create(InputIcon, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(150, 150, 150)
+    }):Play()
+    
+    -- 隐藏清空按钮
+    ClearInputButton.Visible = false
+end)
+
+-- 输入文本变化时显示/隐藏清空按钮
+Input:GetPropertyChangedSignal("Text"):Connect(function()
+    ClearInputButton.Visible = #Input.Text > 0
+end)
+
+-- 清空输入框按钮
+ClearInputButton.MouseEnter:Connect(function()
+    TweenService:Create(ClearInputButton, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+end)
+
+ClearInputButton.MouseLeave:Connect(function()
+    TweenService:Create(ClearInputButton, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(120, 120, 120)
+    }):Play()
+end)
+
+ClearInputButton.MouseButton1Click:Connect(function()
+    Input.Text = ""
+    Input:CaptureFocus()
+    playSound("rbxassetid://62339698", 0.3)
+end)
+
+-- ========== 按钮交互 ==========
+VerifyBtn.MouseEnter:Connect(function()
+    btnHovering = true
+    TweenService:Create(VerifyBtn, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    }):Play()
+    TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.2), {
+        Color = Color3.fromRGB(75, 75, 75)
+    }):Play()
+end)
+
+VerifyBtn.MouseLeave:Connect(function()
+    btnHovering = false
+    TweenService:Create(VerifyBtn, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+    TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.2), {
+        Color = Color3.fromRGB(50, 50, 50)
+    }):Play()
+end)
+
+VerifyBtn.MouseButton1Down:Connect(function()
+    TweenService:Create(VerifyBtn, TweenInfo.new(0.1), {
+        BackgroundColor3 = Color3.fromRGB(225, 225, 225),
+        Size = UDim2.new(0, 185, 0, 34)
+    }):Play()
+    playSound("rbxassetid://62339698", 0.2)
+end)
+
+VerifyBtn.MouseButton1Up:Connect(function()
+    TweenService:Create(VerifyBtn, TweenInfo.new(0.1), {
+        BackgroundColor3 = btnHovering and Color3.fromRGB(245, 245, 245) or Color3.fromRGB(255, 255, 255),
+        Size = UDim2.new(0, 190, 0, 36)
+    }):Play()
+end)
+
+-- ========== 关闭按钮交互 ==========
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(55, 55, 55),
+        TextColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+end)
+
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+        TextColor3 = Color3.fromRGB(200, 200, 200)
+    }):Play()
+end)
+
+-- ========== 复制功能交互 ==========
+CopyButton.MouseEnter:Connect(function()
+    isCopyHovering = true
+    if not copyCooldown then
+        TweenService:Create(GroupCard, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(30, 35, 55),
+            Size = UDim2.new(0, 275, 0, 52)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.2), {
+            Color = Color3.fromRGB(120, 160, 240),
+            Thickness = 2,
+            Transparency = 0.2
+        }):Play()
+        TweenService:Create(GroupIcon, TweenInfo.new(0.2), {
+            TextColor3 = Color3.fromRGB(190, 210, 245)
+        }):Play()
+        TweenService:Create(CopyIcon, TweenInfo.new(0.2), {
+            TextColor3 = Color3.fromRGB(190, 210, 245)
+        }):Play()
+        TweenService:Create(GroupNumber, TweenInfo.new(0.2), {
+            TextColor3 = Color3.fromRGB(255, 255, 230)
+        }):Play()
+    end
+end)
+
+CopyButton.MouseLeave:Connect(function()
+    isCopyHovering = false
+    if not copyCooldown then
+        TweenService:Create(GroupCard, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(20, 25, 40),
+            Size = UDim2.new(0, 270, 0, 50)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(80, 120, 200),
+            Thickness = 1.5,
+            Transparency = 0.3
+        }):Play()
+        TweenService:Create(GroupIcon, TweenInfo.new(0.3), {
+            TextColor3 = Color3.fromRGB(150, 180, 220)
+        }):Play()
+        TweenService:Create(CopyIcon, TweenInfo.new(0.3), {
+            TextColor3 = Color3.fromRGB(150, 180, 220)
+        }):Play()
+        TweenService:Create(GroupNumber, TweenInfo.new(0.3), {
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+    end
+end)
+
+CopyButton.MouseButton1Down:Connect(function()
+    if not copyCooldown then
+        TweenService:Create(GroupCard, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(15, 20, 35),
+            Size = UDim2.new(0, 265, 0, 48)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.1), {
+            Color = Color3.fromRGB(150, 190, 255),
+            Thickness = 2.2
+        }):Play()
+        playSound("rbxassetid://62339698", 0.2)
+    end
+end)
+
+CopyButton.MouseButton1Up:Connect(function()
+    if not copyCooldown then
+        TweenService:Create(GroupCard, TweenInfo.new(0.1), {
+            Size = UDim2.new(0, 270, 0, 50),
+            BackgroundColor3 = isCopyHovering and Color3.fromRGB(30, 35, 55) or Color3.fromRGB(20, 25, 40)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.1), {
+            Color = isCopyHovering and Color3.fromRGB(120, 160, 240) or Color3.fromRGB(80, 120, 200),
+            Thickness = 1.5
+        }):Play()
+    end
+end)
+
+CopyButton.MouseButton1Click:Connect(function()
+    if copyCooldown then return end
+    
+    copyCooldown = true
+    
+    -- 播放复制音效
+    playSound("rbxassetid://62339698", 0.5)
+    
+    -- 复制群号到剪贴板
+    local groupNumber = "1012033070"
+    pcall(function()
+        setclipboard(groupNumber)
     end)
     
-    return animation
-end
-
-local borderAnimation
-local borderEnabled = true
-local currentColor = "樱花粉2"
-local animationSpeed = 5
-
-local rainbowStroke = createRainbowBorder(Window, currentColor, animationSpeed)
-if rainbowStroke then
-    borderAnimation = startBorderAnimation(Window, animationSpeed)
-end
-
-Window:SetToggleKey(Enum.KeyCode.F, true)
-
-local Tabs = {
-    Main = Window:Tab({ Title = "主页", Icon = "home" }),
-    Elements = Window:Tab({ Title = "速度区", Icon = "layout-grid" }),
-    Rage = Window:Tab({ Title = "体力区", Icon = "skull" }), 
-    LoadScript = Window:Tab({ Title = "音乐区", Icon = "file" }), 
-    Settings = Window:Tab({ Title = "设置", Icon = "settings" }),
-    Config = Window:Tab({ Title = "配置", Icon = "save" })
-}
-
--- ==================== 主页内容 ====================
-Tabs.Main:Paragraph({
-    Title = "欢迎使用XIAIXI赛马娘",
-    Desc = "作者：小西｜ UI提供：鱼腥草｜赛马娘\n版本：v1.0.0\n\n本人亲自制作",
-    ImageSize = 50,
-    Thumbnail = "https://raw.githubusercontent.com/xiaoxi9008/chesksks/refs/heads/main/1357873301.jpg",
-    ThumbnailSize = 170
-})
-
-Tabs.Main:Divider()
-
-Tabs.Main:Button({
-    Title = "显示欢迎通知",
-    Icon = "bell",
-    Callback = function()
-        WindUI:Notify({
-            Title = "欢迎!",
-            Content = "感谢使用XIAOXI",
-            Icon = "heart",
-            Duration = 3
-        })
-    end
-})
-
--- ==================== 速度选项卡 ====================
-local elementSection = Tabs.Elements:Section({ Title = "速度（注意要过一分钟才能终点直接进终点就可以直接给你踢了）", Icon = "box", Opened = true })
-
-
-
-local aimbotToggleState = false
-local aimbotDemo = elementSection:Toggle({
-    Title = "移速修改",
-    Default = false,
-    Callback = function(v)
-        if v == true then
-            sudu = game:GetService("RunService").Heartbeat:Connect(function()
-                if game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character.Humanoid and game:GetService("Players").LocalPlayer.Character.Humanoid.Parent then
-                    if game:GetService("Players").LocalPlayer.Character.Humanoid.MoveDirection.Magnitude > 0 then
-                        game:GetService("Players").LocalPlayer.Character:TranslateBy(game:GetService("Players").LocalPlayer.Character.Humanoid.MoveDirection * Speed / 10)
-                    end
-                end
-            end)
-        elseif not v and sudu then
-            sudu:Disconnect()
-            sudu = nil
-        end
-    end
-})    
-elementSection:Slider({
-    Title = "速度设置",
-    Value = {
-        Min = 1,
-        Max = 100,
-        Default = 1,
-    },
-    Callback = function(Value)
-        Speed = Value
-    end
-})
-
-
-
-
--- ==============================================
--- 暴力区内容
--- ==============================================
-
-local RageSection = Tabs.Rage:Section({ Title = "体力设置" })
-
-local oldNamecall = nil
-local infiniteStaminaEnabled = false
-
-RageSection:Toggle({
-    Title = "无限体力",
-    Value = false,
-    Callback = function(value)
-        infiniteStaminaEnabled = value
-        if value then
-            if not oldNamecall then
-                oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                    if getnamecallmethod() == "FireServer" and tostring(self) == "RequestSprintAction" then
-                        local args = {...}
-                        if args[1] == "SpeedTarget" then
-                            args[2] = 0
-                            return oldNamecall(self, unpack(args))
-                        end
-                    end
-                    return oldNamecall(self, ...)
-                end)
-            end
-        else
-            if oldNamecall then
-                hookmetamethod(game, "__namecall", oldNamecall)
-                oldNamecall = nil
-            end
-        end
-    end
-})
-
-local RageSection = Tabs.Rage:Section({ Title = "演戏体力" })
-
-RageSection:Slider({
-    Title = "体力消耗值",
-    Description = "0 = 10",
-    Min = 0,
-    Max = 10,
-    Default = 0,
-    StepRounding = 0,
-    Callback = function(value)
-        staminaCostValue = value
-    end
-})
-
--- 无限体力开关
-RageSection:Toggle({
-    Title = "体力开关",
-    Value = false,
-    Callback = function(value)
-        infiniteStaminaEnabled = value
-        if value then
-            if not oldNamecall then
-                oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                    if getnamecallmethod() == "FireServer" and tostring(self) == "RequestSprintAction" then
-                        local args = {...}
-                        if args[1] == "SpeedTarget" then
-                            args[2] = staminaCostValue or 0
-                            return oldNamecall(self, unpack(args))
-                        end
-                    end
-                    return oldNamecall(self, ...)
-                end)
-            end
-        else
-            if oldNamecall then
-                hookmetamethod(game, "__namecall", oldNamecall)
-                oldNamecall = nil
-            end
-        end
-    end
-})
--- ==================== 加载脚本选项卡 ====================
-Tabs.LoadScript:Paragraph({ -- 把 Scripts 改成 LoadScript
-    Title = "加载其他脚本",
-    Desc = "点击下方按钮加载对应的脚本"
-})
-Tabs.LoadScript:Divider() -- 把 Scripts 改成 LoadScript
-
-Tabs.LoadScript:Button({ -- 把 Scripts 改成 LoadScript
-    Title = "网易云音乐",
-    Icon = "file",
-    Callback = function()
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/XIAOXIBUXINB/refs/heads/main/%E7%BD%91%E6%98%93%E4%BA%91.lua"))()
-        end)
-        if success then
-            WindUI:Notify({
-                Title = "加载成功",
-                Content = "网易云音乐已加载",
-                Type = "success"
-            })
-        else
-            WindUI:Notify({
-                Title = "加载失败",
-                Content = "错误: " .. tostring(err),
-                Type = "error"
-            })
-        end
-    end
-})
- 
--- ==================== 设置选项卡 ====================
--- 边框设置区域
-
-local borderSection = Tabs.Settings:Section({ Title = "边框设置", Icon = "square", Opened = true })
-
-borderSection:Toggle({
-    Title = "启用边框",
-    Value = true,
-    Callback = function(value)
-        borderEnabled = value
-        local mainFrame = Window.UIElements.Main
-        if mainFrame then
-            local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-            if rainbowStroke then
-                rainbowStroke.Enabled = value
-                if value and not borderAnimation then
-                    borderAnimation = startBorderAnimation(Window, animationSpeed)
-                elseif not value and borderAnimation then
-                    borderAnimation:Disconnect()
-                    borderAnimation = nil
-                end
-            end
-        end
-    end
-})
-
-local colorNames = {}
-for name, _ in pairs(COLOR_SCHEMES) do
-    table.insert(colorNames, name)
-end
-
-borderSection:Dropdown({
-    Title = "颜色方案",
-    Values = colorNames,
-    Value = "樱花粉2",
-    Callback = function(value)
-        currentColor = value
-        local mainFrame = Window.UIElements.Main
-        if mainFrame then
-            local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-            if rainbowStroke then
-                local glowEffect = rainbowStroke:FindFirstChild("GlowEffect")
-                if glowEffect then
-                    local schemeData = COLOR_SCHEMES[value]
-                    if schemeData then
-                        glowEffect.Color = schemeData[1]
-                    end
-                end
-            end
-        end
-    end
-})
-
-borderSection:Slider({
-    Title = "动画速度",
-    Value = {
-        Min = 1,
-        Max = 10,
-        Default = 5,
-    },
-    Callback = function(value)
-        animationSpeed = value
-        if borderAnimation then
-            borderAnimation:Disconnect()
-            borderAnimation = nil
-        end
-        if borderEnabled then
-            borderAnimation = startBorderAnimation(Window, animationSpeed)
-        end
-    end
-})
-
-borderSection:Slider({
-    Title = "边框粗细",
-    Value = {
-        Min = 1,
-        Max = 5,
-        Default = 2,
-    },
-    Step = 0.5,
-    Callback = function(value)
-        local mainFrame = Window.UIElements.Main
-        if mainFrame then
-            local rainbowStroke = mainFrame:FindFirstChild("RainbowStroke")
-            if rainbowStroke then
-                rainbowStroke.Thickness = value
-            end
-        end
-    end
-})
-
-borderSection:Slider({
-    Title = "圆角大小",
-    Value = {
-        Min = 0,
-        Max = 30,
-        Default = 16,
-    },
-    Callback = function(value)
-        local mainFrame = Window.UIElements.Main
-        if mainFrame then
-            local corner = mainFrame:FindFirstChildOfClass("UICorner")
-            if not corner then
-                corner = Instance.new("UICorner")
-                corner.Parent = mainFrame
-            end
-            corner.CornerRadius = UDim.new(0, value)
-        end
-    end
-})
-
--- 外观设置区域
-local appearanceSection = Tabs.Settings:Section({ Title = "外观设置", Icon = "brush", Opened = true })
-
-local themes_list = {}
-for themeName, _ in pairs(WindUI:GetThemes()) do
-    table.insert(themes_list, themeName)
-end
-table.sort(themes_list)
-
-local themeDropdown = appearanceSection:Dropdown({
-    Title = "选择主题",
-    Values = themes_list,
-    Value = "Dark",
-    Callback = function(theme)
-        WindUI:SetTheme(theme)
-        WindUI:Notify({
-            Title = "主题已应用",
-            Content = theme,
-            Icon = "palette",
-            Duration = 2
-        })
-    end
-})
-
-local transparencySlider = appearanceSection:Slider({
-    Title = "透明度",
-    Value = { 
-        Min = 0,
-        Max = 1,
-        Default = 0.2,
-    },
-    Step = 0.1,
-    Callback = function(value)
-        Window:ToggleTransparency(tonumber(value) > 0)
-        WindUI.TransparencyValue = tonumber(value)
-    end
-})
-
--- ==================== 配置选项卡 ====================
-local configSection = Tabs.Config:Section({ Title = "配置管理", Icon = "settings", Opened = true })
-
-configSection:Paragraph({
-    Title = "配置管理器",
-    Desc = "保存和加载你的设置",
-    Image = "save",
-    ImageSize = 20,
-    Color = "White"
-})
-
-local configName = "default"
-local configFile = nil
-local MyPlayerData = {
-    name = "Player1",
-    level = 1,
-    inventory = { "sword", "shield", "potion" }
-}
-
-configSection:Input({
-    Title = "配置名称",
-    Value = configName,
-    Callback = function(value)
-        configName = value
-    end
-})
-
-local ConfigManager = Window.ConfigManager
-if ConfigManager then
-    ConfigManager:Init(Window)
+    -- 复制成功动画
+    CopyIcon.Text = "✓"
+    TweenService:Create(CopyIcon, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(80, 255, 80),
+        TextSize = 18
+    }):Play()
     
-    configSection:Button({
-        Title = "保存配置",
-        Icon = "save",
-        Variant = "Primary",
-        Callback = function()
-            configFile = ConfigManager:CreateConfig(configName)
-            
-            configFile:Register("demo1", demo1)
-            configFile:Register("themeDropdown", themeDropdown)
-            configFile:Register("transparencySlider", transparencySlider)
-            
-            configFile:Set("playerData", MyPlayerData)
-            configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
-            
-            if configFile:Save() then
-                WindUI:Notify({ 
-                    Title = "保存配置", 
-                    Content = "已保存为: "..configName,
-                    Icon = "check",
-                    Duration = 3
-                })
-            else
-                WindUI:Notify({ 
-                    Title = "错误", 
-                    Content = "保存配置失败",
-                    Icon = "x",
-                    Duration = 3
-                })
-            end
-        end
-    })
-
-    configSection:Button({
-        Title = "加载配置",
-        Icon = "folder",
-        Callback = function()
-            configFile = ConfigManager:CreateConfig(configName)
-            local loadedData = configFile:Load()
-            
-            if loadedData then
-                if loadedData.playerData then
-                    MyPlayerData = loadedData.playerData
-                end
-                
-                local lastSave = loadedData.lastSave or "未知"
-                WindUI:Notify({ 
-                    Title = "加载配置", 
-                    Content = "已加载: "..configName.."\n上次保存: "..lastSave,
-                    Icon = "refresh-cw",
-                    Duration = 5
-                })
-                
-                configSection:Paragraph({
-                    Title = "玩家数据",
-                    Desc = string.format("名称: %s\n等级: %d\n物品: %s", 
-                        MyPlayerData.name, 
-                        MyPlayerData.level, 
-                        table.concat(MyPlayerData.inventory, ", "))
-                })
-            else
-                WindUI:Notify({ 
-                    Title = "错误", 
-                    Content = "加载配置失败",
-                    Icon = "x",
-                    Duration = 3
-                })
-            end
-        end
-    })
+    TweenService:Create(GroupNumber, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(80, 255, 80)
+    }):Play()
     
-    -- 配置文件列表
-    configSection:Button({
-        Title = "列出所有配置",
-        Icon = "list",
-        Callback = function()
-            local files = ConfigManager:ListConfigs()
-            local fileList = "找到 "..#files.." 个配置:\n"
-            for i, file in ipairs(files) do
-                fileList = fileList .. i .. ". " .. file .. "\n"
-            end
-            WindUI:Notify({
-                Title = "配置文件列表",
-                Content = fileList,
-                Duration = 5
-            })
-        end
-    })
-else
-    configSection:Paragraph({
-        Title = "配置管理器不可用",
-        Desc = "此功能需要ConfigManager",
-        Image = "alert-triangle",
-        ImageSize = 20,
-        Color = "White"
-    })
-end
-
--- 关于信息
-local aboutSection = Tabs.Config:Section({ Title = "关于" })
-aboutSection:Paragraph({
-    Title = "群号",
-    Desc = "\n作者：by小西\n\n赛马娘 v1.0.0",
-    Image = "🐧",
-    ImageSize = 20,
-    Color = "Grey",
-    Buttons = {
-        {
-            Title = "复制链接",
-            Icon = "copy",
-            Variant = "Tertiary",
-            Callback = function()
-                setclipboard("点击链接加入群聊【XIAOXI HUB新主群 [ 联邦 ]】：https://qun.qq.com/universal-share/share?ac=1&authKey=uxronKi8Dwy0M%2BHPaFABKnzV8WyrSFglO3Of1XoiXRiLAPhBjUsMtdNH9v8jtzfN&busi_data=eyJncm91cENvZGUiOiI1OTA2NDI0MjciLCJ0b2tlbiI6IjA1RGVNUVNmVGRaYXRtcHhCdGtjUTVuMjljbm1DYlc3TUFHYmZMTmJsUDFXTW9YcXREbDdtakdRdGsxTWpHa1EiLCJ1aW4iOiIzNTc0NzY5NDE1In0%3D&data=Al4_C1ij3U2uuYGj_vrlBtLmLlYlshk79tTG094L7oiov3r5WBW8KV_BKUQBiEzRttVcPVGPi0PIdXFtKmyomw&svctype=4&tempid=h5_group_info")
-                WindUI:Notify({
-                    Title = "已复制!",
-                    Content = "qq主群链接已复制到剪贴板",
-                    Duration = 2
-                })
-            end
-        }
-    }
-})
-
--- 窗口关闭清理
-Window:OnClose(function()
-    print("窗口关闭")
+    -- 显示成功提示
+    CopySuccess.Visible = true
+    CopySuccess.Position = UDim2.new(0.5, -65, 0, 75)
     
-    if borderAnimation then
-        borderAnimation:Disconnect()
-        borderAnimation = nil
+    local successTween = TweenService:Create(CopySuccess, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -65, 0, 70)
+    })
+    successTween:Play()
+    
+    -- 成功闪烁
+    for i = 1, 2 do
+        TweenService:Create(GroupCard, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(30, 55, 30)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.1), {
+            Color = Color3.fromRGB(100, 255, 100)
+        }):Play()
+        task.wait(0.1)
+        TweenService:Create(GroupCard, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(20, 25, 40)
+        }):Play()
+        TweenService:Create(GroupGlow, TweenInfo.new(0.1), {
+            Color = Color3.fromRGB(80, 120, 200)
+        }):Play()
+        task.wait(0.1)
     end
     
-    if ConfigManager and configFile then
-        configFile:Set("playerData", MyPlayerData)
-        configFile:Set("lastSave", os.date("%Y-%m-%d %H:%M:%S"))
-        configFile:Save()
-        print("配置已自动保存")
-    end
-end)
-
-Window:OnDestroy(function()
-    print("窗口已销毁")
-end)
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "po大po",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/拉大便.lua"))()   
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "99个森林夜",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI%E4%BB%98%E8%B4%B9%E7%89%8899%E5%A4%9C.lua"))() 
-        end
-    })
-
-    ScriptTab:Button({
-    Title = "决斗场",
-    Color = Color3.fromHex("999999"),
-    Justify = "Center",
-    Icon = "shredder",
-    IconAlign = "Left",
-    Callback = function()
-        -- 播放音频
-        local Sound = Instance.new("Sound")
-        Sound.SoundId = "rbxassetid://4590662766"
-        Sound.Parent = game:GetService("SoundService")
-        Sound.Volume = 5
-        Sound:Play()
-        
-        local repo = 'https://raw.githubusercontent.com/DevSloPo/obsidian_UI/main/'
-        local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-        
-        -- 显示通知
-        Library:Notify({
-            Title = "XIAOXI HUB",
-            Description = "该服务器正在更新中无法加载",
-            Time = 6
-        })
-        
-        Sound.Ended:Wait()
-        Sound:Destroy()
-    end
-})
-
-    ScriptTab:Button({
-        Title = "DOORS（推荐游玩）",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/DOORS通知.lua"))() 
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "终极战场",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/终极战场通知.lua"))()
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "最强战场",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/最强战场.lua"))() 
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "手枪竞技场",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI%E6%89%8B%E6%9E%AA%E7%AB%9E%E6%8A%80%E5%9C%BA%E4%BB%98%E8%B4%B9%E7%89%88.lua"))()
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "自然灾害",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/自然灾害.lua"))() 
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "卡塔娜竞技场",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("http://121.43.37.20:8885/output/enc/084b2e5e3026"))() 
-        end
-    })
-
-    ScriptTab:Button({
-    Title = "PETAPETA（无限旅馆）",
-    Color = Color3.fromHex("999999"),
-    Justify = "Center",
-    Icon = "shredder",
-    IconAlign = "Left",
-    Callback = function()
-        -- 播放音频
-        local Sound = Instance.new("Sound")
-        Sound.SoundId = "rbxassetid://4590662766"
-        Sound.Parent = game:GetService("SoundService")
-        Sound.Volume = 5
-        Sound:Play()
-        
-        local repo = 'https://raw.githubusercontent.com/DevSloPo/obsidian_UI/main/'
-        local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-        
-        -- 显示通知
-        Library:Notify({
-            Title = "XIAOXI HUB",
-            Description = "该服务器正在更新中无法加载",
-            Time = 6
-        })
-        
-        Sound.Ended:Wait()
-        Sound:Destroy()
-    end
-})
-
-    ScriptTab:Button({
-        Title = "防御",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/%E4%BB%98%E8%B4%B9%E7%89%88%E9%98%B2%E5%BE%A1XIAOXI.lua"))() 
-        end
-    })
-
-    ScriptTab:Button({
-        Title = "nico下一个机器人",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI的nico下一个机器.lua"))() 
-        end
-    })
-
-
-ScriptTab:Button({
-        Title = "PETAPETA无限旅馆第2章",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI无限旅馆第2章付费版.lua"))() 
-        end
-    })
-
-ScriptTab:Button({
-        Title = "GB（内脏与黑火药）",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/GB通知.lua"))() 
-        end
-    })
+    task.wait(1.5)
     
-ScriptTab:Button({
-        Title = "GB（更新频率快）",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/GB通知2.lua"))() 
-        end
+    -- 隐藏成功提示
+    local hideTween = TweenService:Create(CopySuccess, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Position = UDim2.new(0.5, -65, 0, 75)
     })
-
-ScriptTab:Button({
-        Title = "Forsaken（被遗弃）",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Mysterious-coral./refs/heads/main/XIAOXI%E4%BB%98%E8%B4%B9%E7%89%88%E8%A2%AB%E9%81%97%E5%BC%83%E9%80%9A%E7%9F%A5.lua"))() 
-        end
-    })
-
-ScriptTab:Button({
-        Title = "犯罪",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/%E7%8A%AF%E7%BD%AA%E9%80%9A%E7%9F%A5.lua"))() 
-        end
-    })
+    hideTween:Play()
+    hideTween.Completed:Wait()
+    CopySuccess.Visible = false
     
-ScriptTab:Button({
-        Title = "亡命速递",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI%E4%BB%98%E8%B4%B9%E7%89%88%E4%BA%A1%E5%91%BD%E9%80%9F%E9%80%92.lua"))() 
-        end
-    })
- 
-ScriptTab:Button({
-        Title = "数学谋杀案（残疾人专用）",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI付费版数学谋杀案.lua"))() 
-        end
-    })    
-
-ScriptTab:Button({
-        Title = "闪光",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/闪光.lua"))() 
-        end
-    })    
-ScriptTab:Button({
-        Title = "兵工厂",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXI%E4%BB%98%E8%B4%B9%E5%85%B5%E5%B7%A5%E5%8E%82.lua"))() 
-        end
-    })    
-
-ScriptTab:Button({
-        Title = "枪地FFA",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/付费版枪地FFA.lua"))() 
-        end
-    })    
-
-ScriptTab:Button({
-        Title = "将会发生一些邪恶的事",
-        Color = Color3.fromHex("999999"),
-        Justify = "Center",
-        Icon = "shredder",
-        IconAlign = "Left",
-        Callback = function()
-            Window:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxi9008/Server./refs/heads/main/XIAOXIHUB将会发生一些邪恶的事.lua"))() 
-        end
-    })    
-
-                                                 
     task.wait(0.5)
+    
+    CopyIcon.Text = "📋"
+    TweenService:Create(CopyIcon, TweenInfo.new(0.3), {
+        TextColor3 = Color3.fromRGB(150, 180, 220),
+        TextSize = 16
+    }):Play()
+    
+    TweenService:Create(GroupNumber, TweenInfo.new(0.3), {
+        TextColor3 = Color3.fromRGB(255, 255, 255)
+    }):Play()
+    
+    -- 显示消息提示
+    showMessage("✅ 群号已复制到剪贴板", Color3.fromRGB(80, 255, 80), 2)
+    
+    task.wait(1)
+    copyCooldown = false
+end)
 
-    -- 黑白渐变边框效果
-    local function startGrayscaleBorder()
-        local mainFrame = Window.UIElements and Window.UIElements.Main
-        if not mainFrame then
-            task.wait(0.2)
-            mainFrame = Window.UIElements and Window.UIElements.Main
-            if not mainFrame then
-                warn("无法找到窗口主框架")
-                return
-            end
-        end
+-- ========== 统一的拖动功能 ==========
+local function startDrag(input)
+    if (isMouse and input.UserInputType == Enum.UserInputType.MouseButton1) or
+       (isMobile and input.UserInputType == Enum.UserInputType.Touch) then
+        isDragging = true
+        dragStart = input.Position
+        frameStart = MainWin.Position
         
-        local corner = mainFrame:FindFirstChildOfClass("UICorner")
-        if not corner then
-            corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 16)
-            corner.Parent = mainFrame
-        end
+        TweenService:Create(TitleBar, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        }):Play()
+        TweenService:Create(TitleAccent, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+        }):Play()
         
-        local oldStroke = mainFrame:FindFirstChild("GrayscaleStroke")
-        if oldStroke then oldStroke:Destroy() end
-        
-        local colorScheme = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromHex("FFFFFF")),
-            ColorSequenceKeypoint.new(0.25, Color3.fromHex("CCCCCC")),
-            ColorSequenceKeypoint.new(0.5, Color3.fromHex("999999")),
-            ColorSequenceKeypoint.new(0.75, Color3.fromHex("666666")),
-            ColorSequenceKeypoint.new(1, Color3.fromHex("333333"))
-        })
-        
-        local stroke = Instance.new("UIStroke")
-        stroke.Name = "GrayscaleStroke"
-        stroke.Thickness = 3
-        stroke.Color = Color3.fromRGB(255, 255, 255)
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        stroke.LineJoinMode = Enum.LineJoinMode.Round
-        stroke.Parent = mainFrame
-        
-        local gradient = Instance.new("UIGradient")
-        gradient.Color = colorScheme
-        gradient.Rotation = 0
-        gradient.Parent = stroke
-        
-        local runService = game:GetService("RunService")
-        local angle = 0
-        local animationConnection = runService.Heartbeat:Connect(function(deltaTime)
-            if not stroke or stroke.Parent == nil then
-                animationConnection:Disconnect()
-                return
-            end
-            angle = (angle + 180 * deltaTime) % 360
-            gradient.Rotation = angle
-        end)
-        
-        print("黑白渐变边框动画已启动")
-        return animationConnection
+        showMessage("拖动中...", Color3.fromRGB(200, 200, 200))
     end
-
-    startGrayscaleBorder()
 end
 
-WindUI:Popup({
-    Title = "<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font>",
-    IconThemed = true,
-    Content = "尊贵付费版用户" .. game.Players.LocalPlayer.Name .. "使用<font color='#FFFFFF'>X</font><font color='#CCCCCC'>I</font><font color='#999999'>A</font><font color='#666666'>O</font><font color='#444444'>X</font><font color='#333333'>I</font> <font color='#666666'>S</font><font color='#444444'>C</font><font color='#222222'>R</font><font color='#111111'>I</font><font color='#000000'>P</font><font color='#000000'>T</font>付费版",
-    Buttons = {
-        {
-            Title = "取消",
-            Callback = function() 
-                createUI()
-            end,
-            Variant = "Secondary",
-        },
-        {
-            Title = "执行",
-            Icon = "arrow-right",
-            Callback = function() 
-                createUI()
-            end,
-            Variant = "Primary",
-        }
-    }
-})
+local function endDrag()
+    if isDragging then
+        isDragging = false
+        
+        TweenService:Create(TitleBar, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        }):Play()
+        TweenService:Create(TitleAccent, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        
+        Msg.Visible = false
+    end
+end
+
+-- 设置拖动区域
+if isMobile then
+    TouchDragArea.InputBegan:Connect(startDrag)
+else
+    TitleBar.InputBegan:Connect(startDrag)
+end
+
+-- 拖动处理
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging then
+        local delta = input.Position - dragStart
+        local newX = frameStart.X.Offset + delta.X
+        local newY = frameStart.Y.Offset + delta.Y
+        
+        local screenWidth = workspace.CurrentCamera.ViewportSize.X
+        local screenHeight = workspace.CurrentCamera.ViewportSize.Y
+        
+        newX = math.clamp(newX, 0, screenWidth - MainWin.Size.X.Offset)
+        newY = math.clamp(newY, 0, screenHeight - MainWin.Size.Y.Offset)
+        
+        MainWin.Position = UDim2.new(0, newX, 0, newY)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if isDragging and ((isMouse and input.UserInputType == Enum.UserInputType.MouseButton1) or
+                      (isMobile and input.UserInputType == Enum.UserInputType.Touch)) then
+        endDrag()
+    end
+end)
+
+-- ========== 关闭功能 ==========
+CloseBtn.MouseButton1Click:Connect(function()
+    playSound("rbxassetid://62339698", 0.3)
+    
+    local exitTween = TweenService:Create(MainWin, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        BackgroundTransparency = 1
+    })
+    exitTween:Play()
+    exitTween.Completed:Wait()
+    ScreenGui:Destroy()
+    if StartSound then
+        StartSound:Destroy()
+    end
+end)
+
+-- ========== 验证功能 ==========
+VerifyBtn.MouseButton1Click:Connect(function()
+    local key = Input.Text
+    
+    if #key == 0 then
+        showMessage("请输入卡密", Color3.fromRGB(255, 180, 80), 1.5)
+        
+        -- 输入框震动效果
+        for i = 1, 3 do
+            InputContainer.Position = UDim2.new(0.5, -120 + (i % 2 == 1 and 3 or -3), 0, 160)
+            task.wait(0.05)
+        end
+        InputContainer.Position = UDim2.new(0.5, -120, 0, 160)
+        return
+    end
+    
+    if key == "HB_GoodBye Planet Gay" then
+        -- 验证成功
+        updateStatus(Color3.fromRGB(80, 255, 80), "已验证")
+        showMessage("✓ 验证成功，正在启动脚本...", Color3.fromRGB(80, 255, 80))
+        
+        TweenService:Create(VerifyBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(80, 255, 80),
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        
+        TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(80, 255, 80)
+        }):Play()
+        
+        TweenService:Create(WinGlow, TweenInfo.new(0.3), {
+            Color = Color3.fromRGB(80, 255, 80),
+            Thickness = 2
+        }):Play()
+        
+        -- 成功音效
+        playSound("rbxassetid://62339698", 0.6)
+        
+        task.wait(1.2)
+        
+        local exitTween = TweenService:Create(MainWin, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundTransparency = 1
+        })
+        exitTween:Play()
+        exitTween.Completed:Wait()
+        
+        ScreenGui:Destroy()
+        if StartSound then
+            StartSound:Destroy()
+        end
+        
+        pcall(function()
+            loadstring(game:HttpGet("https://api.junkie-development.de/api/v1/luascripts/public/aa294a62c2e48bc4c6ea72022c2da28420ba2ea3c233ef97a34688303a76bef9/download"))()
+        end)
+        
+        if localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            localPlayer.Character.Humanoid.WalkSpeed = 25
+        end
+        
+    else
+        -- 验证失败
+        attempts = attempts + 1
+        updateAttemptsDisplay()
+        
+        showMessage(string.format("验证失败 (%d/%d)", attempts, maxAttempts), Color3.fromRGB(255, 110, 110))
+        
+        TweenService:Create(VerifyBtn, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(255, 110, 110),
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        
+        TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.2), {
+            Color = Color3.fromRGB(255, 110, 110)
+        }):Play()
+        
+        -- 失败音效
+        playSound("rbxassetid://62339698", 0.3)
+        
+        -- 震动效果
+        for i = 1, 3 do
+            InputContainer.Position = UDim2.new(0.5, -120 + (i % 2 == 1 and 4 or -4), 0, 160)
+            task.wait(0.05)
+        end
+        InputContainer.Position = UDim2.new(0.5, -120, 0, 160)
+        
+        -- 警告闪烁
+        for i = 1, 2 do
+            WarningStroke.Color = Color3.fromRGB(255, 80, 80)
+            task.wait(0.1)
+            WarningStroke.Color = Color3.fromRGB(255, 110, 110)
+            task.wait(0.1)
+        end
+        
+        task.wait(0.5)
+        
+        if attempts >= maxAttempts then
+            updateStatus(Color3.fromRGB(255, 80, 80), "已锁定")
+            showMessage("❌ 验证次数过多，UI将在3秒后关闭", Color3.fromRGB(255, 80, 80))
+            
+            -- 锁定UI
+            VerifyBtn.AutoButtonColor = false
+            VerifyBtn.Active = false
+            Input.TextEditable = false
+            
+            task.wait(3)
+            
+            local exitTween = TweenService:Create(MainWin, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1
+            })
+            exitTween:Play()
+            exitTween.Completed:Wait()
+            ScreenGui:Destroy()
+        else
+            if btnHovering then
+                TweenService:Create(VerifyBtn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromRGB(245, 245, 245),
+                    TextColor3 = Color3.fromRGB(0, 0, 0)
+                }):Play()
+                TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.2), {
+                    Color = Color3.fromRGB(75, 75, 75)
+                }):Play()
+            else
+                TweenService:Create(VerifyBtn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                    TextColor3 = Color3.fromRGB(0, 0, 0)
+                }):Play()
+                TweenService:Create(VerifyBtnStroke, TweenInfo.new(0.2), {
+                    Color = Color3.fromRGB(50, 50, 50)
+                }):Play()
+            end
+            
+            -- 清空输入框
+            Input.Text = ""
+        end
+    end
+end)
+
+-- ========== 快捷键功能 ==========
+Input.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        VerifyBtn.MouseButton1Click:Fire()
+    end
+end)
+
+-- 键盘快捷键
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Escape then
+        CloseBtn.MouseButton1Click:Fire()
+    end
+    
+    if input.KeyCode == Enum.KeyCode.F5 then
+        -- 重新验证快捷键
+        if attempts < maxAttempts then
+            attempts = 0
+            updateAttemptsDisplay()
+            updateStatus(Color3.fromRGB(255, 100, 100), "未验证")
+            VerifyBtn.AutoButtonColor = true
+            VerifyBtn.Active = true
+            Input.TextEditable = true
+            
+            showMessage("重置验证次数", Color3.fromRGB(100, 200, 255), 1.5)
+            playSound("rbxassetid://62339698", 0.3)
+        end
+    end
+end)
+
+-- ========== 输入限制 ==========
+Input:GetPropertyChangedSignal("Text"):Connect(function()
+    if #Input.Text > 100 then
+        Input.Text = string.sub(Input.Text, 1, 100)
+        showMessage("输入过长，已自动截断", Color3.fromRGB(255, 160, 60), 1.5)
+    end
+end)
+
+-- ========== 动态效果 ==========
+-- 窗口边框呼吸效果
+coroutine.wrap(function()
+    while WinGlow.Parent do
+        TweenService:Create(WinGlow, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {
+            Transparency = 0.8
+        }):Play()
+        task.wait(2)
+    end
+end)()
+
+-- 按钮边框呼吸效果
+coroutine.wrap(function()
+    while VerifyBtnStroke.Parent do
+        TweenService:Create(VerifyBtnStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {
+            Transparency = 0.5
+        }):Play()
+        task.wait(1.5)
+    end
+end)()
+
+-- 状态指示灯闪烁
+coroutine.wrap(function()
+    while StatusLight.Parent do
+        TweenService:Create(StatusLight, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {
+            BackgroundTransparency = 0.3
+        }):Play()
+        task.wait(1)
+    end
+end)()
+
+-- ========== 移动端优化 ==========
+if isMobile then
+    -- 软键盘处理
+    local function onTextFieldFocused()
+        TweenService:Create(MainWin, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Position = UDim2.new(0.5, -150, 0, 50)
+        }):Play()
+    end
+    
+    local function onTextFieldFocusLost()
+        TweenService:Create(MainWin, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Position = UDim2.new(0.5, -150, 0.5, -130)
+        }):Play()
+    end
+    
+    Input.Focused:Connect(onTextFieldFocused)
+    Input.FocusLost:Connect(onTextFieldFocusLost)
+    
+    -- 双击拖动区域关闭UI
+    local lastTapTime = 0
+    local doubleTapThreshold = 0.3
+    
+    TouchDragArea.MouseButton1Click:Connect(function()
+        local currentTime = tick()
+        if currentTime - lastTapTime < doubleTapThreshold then
+            CloseBtn.MouseButton1Click:Fire()
+        end
+        lastTapTime = currentTime
+    end)
+end
+
+-- 初始化
+updateAttemptsDisplay()
+updateStatus(Color3.fromRGB(255, 100, 100), "未验证")
+
+print("黑白脚本紧凑增强版UI已加载完成")
+print("窗口尺寸: 300x260 (紧凑尺寸)")
+print("设备适配:", isMobile and "移动端" or "电脑端")
+print("功能优化完成，用户体验提升")
