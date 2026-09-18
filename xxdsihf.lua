@@ -767,11 +767,8 @@ function createUI()
 
     -- ==================== 医生功能 ====================
     local autoHealEnabled = false
-    local healRadius = 30
-    local healInterval = 0.1
-
-    -- 医生功能的玩家缓存列表（仅手动刷新）
-    local doctorPlayers = {}
+    local healRadius = 15
+    local healInterval = 0.3
 
     DoctorTab:Divider({ Text = "自动治疗" })
 
@@ -779,6 +776,20 @@ function createUI()
         Title = "自动治疗",
         Value = false,
         Callback = function(value) autoHealEnabled = value end
+    })
+
+    DoctorTab:Slider({
+        Title = "检测范围",
+        Step = 1,
+        Value = { Min = 5, Max = 50, Default = 15 },
+        Callback = function(value) healRadius = value end
+    })
+
+    DoctorTab:Slider({
+        Title = "治疗间隔",
+        Step = 0.1,
+        Value = { Min = 0.1, Max = 3, Default = 0.3 },
+        Callback = function(value) healInterval = value end
     })
 
     DoctorTab:Divider({ Text = "修复物品" })
@@ -801,22 +812,6 @@ function createUI()
         end
     })
 
-    DoctorTab:Divider({ Text = "玩家刷新" })
-    DoctorTab:Button({
-        Title = "刷新玩家",
-        Callback = function()
-            doctorPlayers = {}
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player and p.Character then
-                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 and hum.Health < 100 then
-                        table.insert(doctorPlayers, p)
-                    end
-                end
-            end
-        end
-    })
-
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
 
     local loopTeleportLowHpEnabled = false
@@ -830,11 +825,11 @@ function createUI()
                     while loopTeleportLowHpEnabled and not isDestroyed do
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            for _, p in ipairs(doctorPlayers) do
-                                if p and p.Parent and p.Character then
+                            for _, p in ipairs(Players:GetPlayers()) do
+                                if p ~= player and p.Character then
                                     local hum = p.Character:FindFirstChildOfClass("Humanoid")
                                     local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health > 0 and hum.Health < 100 and targetRoot then
+                                    if hum and hum.Health < 100 and targetRoot then
                                         myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
                                         break
                                     end
@@ -973,6 +968,7 @@ end)
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
                     local found = false
+                    -- 优先从 getnilinstances 查找
                     if getnilinstances then
                         for _, obj in ipairs(getnilinstances()) do
                             if obj.Name == "CashDrop" then
@@ -981,6 +977,7 @@ end)
                             end
                         end
                     end
+                    -- 如果没找到，再从 workspace 里找
                     if not found then
                         for _, obj in ipairs(workspace:GetDescendants()) do
                             if obj.Name == "CashDrop" then
@@ -988,6 +985,7 @@ end)
                             end
                         end
                     end
+                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
                     if not found then
                         for _, descendant in pairs(workspace:GetDescendants()) do
                             if descendant:IsA("ProximityPrompt") then
