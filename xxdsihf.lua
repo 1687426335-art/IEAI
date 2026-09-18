@@ -42,6 +42,10 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
+    -- 刷新玩家相关变量
+    local refreshPlayerSignal = 0
+    local lockRefreshBtn = false
+
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
         sg.Name = "BuySuccessGui"
@@ -801,6 +805,9 @@ function createUI()
     DoctorTab:Divider({ Text = "循环传送低血量玩家" })
 
     local loopTeleportLowHpEnabled = false
+    local currentLowHpTarget = nil
+    local lastRefreshSignal = -1
+
     DoctorTab:Toggle({
         Title = "循环传送血量为100以下的玩家",
         Value = false,
@@ -809,16 +816,41 @@ function createUI()
             if enabled then
                 task.spawn(function()
                     while loopTeleportLowHpEnabled and not isDestroyed do
+                        -- 检测刷新信号，清空缓存目标
+                        if refreshPlayerSignal ~= lastRefreshSignal then
+                            lastRefreshSignal = refreshPlayerSignal
+                            currentLowHpTarget = nil
+                        end
+
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            for _, p in ipairs(Players:GetPlayers()) do
-                                if p ~= player and p.Character then
-                                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                                    local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
-                                    if hum and hum.Health < 100 and targetRoot then
-                                        myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-                                        break
+                            -- 检查缓存目标是否还在服务器里
+                            if currentLowHpTarget and not Players:FindFirstChild(currentLowHpTarget.Name) then
+                                currentLowHpTarget = nil
+                            end
+
+                            -- 没有目标就重新找
+                            if not currentLowHpTarget then
+                                for _, p in ipairs(Players:GetPlayers()) do
+                                    if p ~= player and p.Character then
+                                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                                        local targetRoot = p.Character:FindFirstChild("HumanoidRootPart")
+                                        if hum and hum.Health < 100 and targetRoot then
+                                            currentLowHpTarget = p
+                                            break
+                                        end
                                     end
+                                end
+                            end
+
+                            -- 传送到目标位置
+                            if currentLowHpTarget and currentLowHpTarget.Character then
+                                local hum = currentLowHpTarget.Character:FindFirstChildOfClass("Humanoid")
+                                local targetRoot = currentLowHpTarget.Character:FindFirstChild("HumanoidRootPart")
+                                if hum and hum.Health < 100 and targetRoot then
+                                    myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+                                else
+                                    currentLowHpTarget = nil
                                 end
                             end
                         end
@@ -831,6 +863,72 @@ function createUI()
             end
         end
     })
+
+    DoctorTab:Divider({ Text = "刷新玩家" })
+
+    DoctorTab:Button({
+        Title = "刷新玩家",
+        Callback = function()
+            refreshPlayerSignal = refreshPlayerSignal + 1
+            WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
+        end
+    })
+
+    DoctorTab:Toggle({
+        Title = "锁定快捷开关",
+        Value = false,
+        Callback = function(value) lockRefreshBtn = value end
+    })
+
+    -- ==================== 屏幕快捷按钮：刷新玩家 ====================
+    local refreshQuickGui = Instance.new("ScreenGui")
+    refreshQuickGui.Name = "RefreshPlayerQuickGui"
+    refreshQuickGui.ResetOnSpawn = false
+    refreshQuickGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    refreshQuickGui.Parent = player:WaitForChild("PlayerGui")
+
+    local refreshQuickBtn = Instance.new("TextButton")
+    refreshQuickBtn.Size = UDim2.new(0, 100, 0, 40)
+    refreshQuickBtn.Position = UDim2.new(0.5, -50, 0.3, 0)
+    refreshQuickBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    refreshQuickBtn.BackgroundTransparency = 0.15
+    refreshQuickBtn.BorderSizePixel = 2
+    refreshQuickBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
+    refreshQuickBtn.Text = "刷新玩家"
+    refreshQuickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    refreshQuickBtn.TextSize = 14
+    refreshQuickBtn.Font = Enum.Font.GothamBold
+    refreshQuickBtn.Parent = refreshQuickGui
+
+    local rqCorner = Instance.new("UICorner")
+    rqCorner.CornerRadius = UDim.new(0, 8)
+    rqCorner.Parent = refreshQuickBtn
+
+    local rqDragging, rqDragStart, rqStartPos = false, nil, nil
+    refreshQuickBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if not lockRefreshBtn then
+                rqDragging = true
+                rqDragStart = input.Position
+                rqStartPos = refreshQuickBtn.Position
+            end
+        end
+    end)
+    refreshQuickBtn.InputChanged:Connect(function(input)
+        if rqDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - rqDragStart
+            refreshQuickBtn.Position = UDim2.new(rqStartPos.X.Scale, rqStartPos.X.Offset + delta.X, rqStartPos.Y.Scale, rqStartPos.Y.Offset + delta.Y)
+        end
+    end)
+    refreshQuickBtn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            rqDragging = false
+        end
+    end)
+    refreshQuickBtn.MouseButton1Click:Connect(function()
+        refreshPlayerSignal = refreshPlayerSignal + 1
+        WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
+    end)
 
     -- 快速互动：医疗相关 prompt 的按住时间归零
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
