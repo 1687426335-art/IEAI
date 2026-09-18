@@ -42,11 +42,15 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
+    -- 刷新玩家相关变量
     local refreshPlayerSignal = 0
     local lockRefreshBtn = false
     local refreshQuickGui = nil
     local refreshQuickBtn = nil
     local rqDragging, rqDragStart, rqStartPos = false, nil, nil
+
+    -- 飞天快捷相关变量
+    local lockFlyBtn = false
 
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
@@ -889,8 +893,7 @@ function createUI()
                     refreshQuickBtn.Position = UDim2.new(0.5, -50, 0.3, 0)
                     refreshQuickBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
                     refreshQuickBtn.BackgroundTransparency = 0.15
-                    refreshQuickBtn.BorderSizePixel = 2
-                    refreshQuickBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                    refreshQuickBtn.BorderSizePixel = 0
                     refreshQuickBtn.Text = "刷新玩家"
                     refreshQuickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
                     refreshQuickBtn.TextSize = 14
@@ -900,6 +903,21 @@ function createUI()
                     local rqCorner = Instance.new("UICorner")
                     rqCorner.CornerRadius = UDim.new(0, 8)
                     rqCorner.Parent = refreshQuickBtn
+
+                    local rqStroke = Instance.new("UIStroke")
+                    rqStroke.Thickness = 2
+                    rqStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                    rqStroke.Color = Color3.fromHSV(0, 1, 1)
+                    rqStroke.Parent = refreshQuickBtn
+
+                    task.spawn(function()
+                        local hue = 0
+                        while refreshQuickBtn and refreshQuickBtn.Parent do
+                            hue = (hue + 0.01) % 1
+                            rqStroke.Color = Color3.fromHSV(hue, 1, 1)
+                            task.wait(0.04)
+                        end
+                    end)
 
                     refreshQuickBtn.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1270,97 +1288,103 @@ end)
     FlyTab:Toggle({ Title = "飞行（绕过）", Value = false, Callback = function(value) if value then startFly() else stopFly() end end })
     FlyTab:Slider({ Title = "飞行速度", Step = 1, Value = { Min = 10, Max = 620, Default = 35 }, Callback = function(value) FlySpeed = value end })
 
-    -- ==================== 飞天快捷按钮（新样式） ====================
-    local flyQuickToggle, flyQuickScreenGui, flyQuickButton = false, nil, nil
+    local flyQuickToggle, flyQuickScreenGui, flyQuickButton, flyQuickStatusLabel = false, nil, nil, nil
+    local flyDragging, flyDragStart, flyStartPos = false, nil, nil
+    local flyStrokeConn = nil
+
     local function DestroyFlyQuickToggle()
-        if flyQuickScreenGui then
-            flyQuickScreenGui:Destroy()
-            flyQuickScreenGui = nil
-            flyQuickButton = nil
-        end
+        if flyStrokeConn then flyStrokeConn:Disconnect(); flyStrokeConn = nil end
+        if flyQuickScreenGui then flyQuickScreenGui:Destroy(); flyQuickScreenGui = nil; flyQuickButton = nil; flyQuickStatusLabel = nil end
     end
+
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
         flyQuickScreenGui = Instance.new("ScreenGui")
         flyQuickScreenGui.Name = "FlyQuickToggle"
         flyQuickScreenGui.ResetOnSpawn = false
+        flyQuickScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
 
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 130, 0, 55)
-        button.Position = UDim2.new(0.5, -65, 0.15, 0)
+        button.Size = UDim2.new(0, 100, 0, 40)
+        button.Position = UDim2.new(0.5, -50, 0.2, 0)
         button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.3
+        button.BackgroundTransparency = 0.15
         button.BorderSizePixel = 0
-        button.Text = "飞行: 关"
+        button.Text = "飞天: 关"
         button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextSize = 18
+        button.TextSize = 14
         button.Font = Enum.Font.GothamBold
         button.Parent = flyQuickScreenGui
         flyQuickButton = button
 
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
+        corner.CornerRadius = UDim.new(0, 8)
         corner.Parent = button
 
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = 2.5
-        stroke.Color = Color3.fromRGB(100, 200, 255)
-        stroke.Parent = button
+        local flyStroke = Instance.new("UIStroke")
+        flyStroke.Thickness = 2
+        flyStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        flyStroke.Color = Color3.fromHSV(0, 1, 1)
+        flyStroke.Parent = button
 
-        -- 彩色边框循环
-        task.spawn(function()
-            local hue = 0
-            while button and button.Parent do
-                hue = (hue + 0.005) % 1
-                stroke.Color = Color3.fromHSV(hue, 0.85, 1)
-                task.wait(0.05)
+        flyStrokeConn = RunService.Heartbeat:Connect(function()
+            if flyQuickButton and flyQuickButton.Parent then
+                local hue = (tick() * 0.15) % 1
+                flyStroke.Color = Color3.fromHSV(hue, 1, 1)
             end
         end)
 
         local function updateFlyStatus()
             if flyQuickButton then
-                flyQuickButton.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                flyQuickButton.BackgroundColor3 = flyState.enabled and Color3.fromRGB(20, 80, 40) or Color3.fromRGB(30, 30, 50)
+                flyQuickButton.Text = flyState.enabled and "飞天: 开" or "飞天: 关"
             end
         end
 
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if not lockFlyBtn then
+                    flyDragging = true
+                    flyDragStart = input.Position
+                    flyStartPos = button.Position
+                end
+            end
+        end)
+        button.InputChanged:Connect(function(input)
+            if flyDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - flyDragStart
+                button.Position = UDim2.new(flyStartPos.X.Scale, flyStartPos.X.Offset + delta.X, flyStartPos.Y.Scale, flyStartPos.Y.Offset + delta.Y)
+            end
+        end)
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                flyDragging = false
+            end
+        end)
         button.MouseButton1Click:Connect(function()
             if flyState.enabled then stopFly() else startFly() end
             updateFlyStatus()
         end)
 
-        local dragging, dragStart, startPos = false, nil, nil
-        button.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = button.Position
-            end
-        end)
-        button.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                button.Position = UDim2.new(startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X, startPos.X.Offset + delta.X, startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y, startPos.Y.Offset + delta.Y)
-            end
-        end)
-        button.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
         updateFlyStatus()
         task.spawn(function()
             while flyQuickScreenGui and flyQuickScreenGui.Parent do
-                task.wait(0.5)
-                if flyQuickToggle then
-                    updateFlyStatus()
-                end
+                task.wait(0.3)
+                updateFlyStatus()
             end
         end)
     end
+
     FlyTab:Toggle({ Title = "飞天快捷开关", Value = false, Callback = function(value) flyQuickToggle = value; if value then CreateFlyQuickToggle() else DestroyFlyQuickToggle() end end })
+
+    FlyTab:Toggle({
+        Title = "锁定飞天快捷开关",
+        Value = false,
+        Callback = function(value)
+            lockFlyBtn = value
+        end
+    })
+
     FlyTab:Divider({ Text = "移速" })
     local speedBypassOn, speedBypassValue = false, 20
     FlyTab:Toggle({ Title = "修改移速（绕过）", Value = false, Callback = function(value) speedBypassOn = value end })
