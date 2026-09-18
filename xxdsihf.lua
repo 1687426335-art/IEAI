@@ -42,9 +42,11 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- 刷新玩家相关变量
     local refreshPlayerSignal = 0
     local lockRefreshBtn = false
+    local refreshQuickGui = nil
+    local refreshQuickBtn = nil
+    local rqDragging, rqDragStart, rqStartPos = false, nil, nil
 
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
@@ -816,7 +818,6 @@ function createUI()
             if enabled then
                 task.spawn(function()
                     while loopTeleportLowHpEnabled and not isDestroyed do
-                        -- 检测刷新信号，清空缓存目标
                         if refreshPlayerSignal ~= lastRefreshSignal then
                             lastRefreshSignal = refreshPlayerSignal
                             currentLowHpTarget = nil
@@ -824,12 +825,10 @@ function createUI()
 
                         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                         if myRoot then
-                            -- 检查缓存目标是否还在服务器里
                             if currentLowHpTarget and not Players:FindFirstChild(currentLowHpTarget.Name) then
                                 currentLowHpTarget = nil
                             end
 
-                            -- 没有目标就重新找
                             if not currentLowHpTarget then
                                 for _, p in ipairs(Players:GetPlayers()) do
                                     if p ~= player and p.Character then
@@ -843,7 +842,6 @@ function createUI()
                                 end
                             end
 
-                            -- 传送到目标位置
                             if currentLowHpTarget and currentLowHpTarget.Character then
                                 local hum = currentLowHpTarget.Character:FindFirstChildOfClass("Humanoid")
                                 local targetRoot = currentLowHpTarget.Character:FindFirstChild("HumanoidRootPart")
@@ -875,60 +873,76 @@ function createUI()
     })
 
     DoctorTab:Toggle({
-        Title = "锁定快捷开关",
+        Title = "刷新玩家快捷开关",
         Value = false,
-        Callback = function(value) lockRefreshBtn = value end
-    })
+        Callback = function(value)
+            if value then
+                if not refreshQuickGui then
+                    refreshQuickGui = Instance.new("ScreenGui")
+                    refreshQuickGui.Name = "RefreshPlayerQuickGui"
+                    refreshQuickGui.ResetOnSpawn = false
+                    refreshQuickGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                    refreshQuickGui.Parent = player:WaitForChild("PlayerGui")
 
-    -- ==================== 屏幕快捷按钮：刷新玩家 ====================
-    local refreshQuickGui = Instance.new("ScreenGui")
-    refreshQuickGui.Name = "RefreshPlayerQuickGui"
-    refreshQuickGui.ResetOnSpawn = false
-    refreshQuickGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    refreshQuickGui.Parent = player:WaitForChild("PlayerGui")
+                    refreshQuickBtn = Instance.new("TextButton")
+                    refreshQuickBtn.Size = UDim2.new(0, 100, 0, 40)
+                    refreshQuickBtn.Position = UDim2.new(0.5, -50, 0.3, 0)
+                    refreshQuickBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+                    refreshQuickBtn.BackgroundTransparency = 0.15
+                    refreshQuickBtn.BorderSizePixel = 2
+                    refreshQuickBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
+                    refreshQuickBtn.Text = "刷新玩家"
+                    refreshQuickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    refreshQuickBtn.TextSize = 14
+                    refreshQuickBtn.Font = Enum.Font.GothamBold
+                    refreshQuickBtn.Parent = refreshQuickGui
 
-    local refreshQuickBtn = Instance.new("TextButton")
-    refreshQuickBtn.Size = UDim2.new(0, 100, 0, 40)
-    refreshQuickBtn.Position = UDim2.new(0.5, -50, 0.3, 0)
-    refreshQuickBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-    refreshQuickBtn.BackgroundTransparency = 0.15
-    refreshQuickBtn.BorderSizePixel = 2
-    refreshQuickBtn.BorderColor3 = Color3.fromRGB(100, 200, 255)
-    refreshQuickBtn.Text = "刷新玩家"
-    refreshQuickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    refreshQuickBtn.TextSize = 14
-    refreshQuickBtn.Font = Enum.Font.GothamBold
-    refreshQuickBtn.Parent = refreshQuickGui
+                    local rqCorner = Instance.new("UICorner")
+                    rqCorner.CornerRadius = UDim.new(0, 8)
+                    rqCorner.Parent = refreshQuickBtn
 
-    local rqCorner = Instance.new("UICorner")
-    rqCorner.CornerRadius = UDim.new(0, 8)
-    rqCorner.Parent = refreshQuickBtn
-
-    local rqDragging, rqDragStart, rqStartPos = false, nil, nil
-    refreshQuickBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not lockRefreshBtn then
-                rqDragging = true
-                rqDragStart = input.Position
-                rqStartPos = refreshQuickBtn.Position
+                    refreshQuickBtn.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            if not lockRefreshBtn then
+                                rqDragging = true
+                                rqDragStart = input.Position
+                                rqStartPos = refreshQuickBtn.Position
+                            end
+                        end
+                    end)
+                    refreshQuickBtn.InputChanged:Connect(function(input)
+                        if rqDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                            local delta = input.Position - rqDragStart
+                            refreshQuickBtn.Position = UDim2.new(rqStartPos.X.Scale, rqStartPos.X.Offset + delta.X, rqStartPos.Y.Scale, rqStartPos.Y.Offset + delta.Y)
+                        end
+                    end)
+                    refreshQuickBtn.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            rqDragging = false
+                        end
+                    end)
+                    refreshQuickBtn.MouseButton1Click:Connect(function()
+                        refreshPlayerSignal = refreshPlayerSignal + 1
+                        WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
+                    end)
+                end
+            else
+                if refreshQuickGui then
+                    refreshQuickGui:Destroy()
+                    refreshQuickGui = nil
+                    refreshQuickBtn = nil
+                end
             end
         end
-    end)
-    refreshQuickBtn.InputChanged:Connect(function(input)
-        if rqDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - rqDragStart
-            refreshQuickBtn.Position = UDim2.new(rqStartPos.X.Scale, rqStartPos.X.Offset + delta.X, rqStartPos.Y.Scale, rqStartPos.Y.Offset + delta.Y)
+    })
+
+    DoctorTab:Toggle({
+        Title = "锁定刷新玩家快捷开关",
+        Value = false,
+        Callback = function(value)
+            lockRefreshBtn = value
         end
-    end)
-    refreshQuickBtn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            rqDragging = false
-        end
-    end)
-    refreshQuickBtn.MouseButton1Click:Connect(function()
-        refreshPlayerSignal = refreshPlayerSignal + 1
-        WindUI:Notify({ Title = "医生功能", Content = "已刷新玩家列表！", Duration = 2 })
-    end)
+    })
 
     -- 快速互动：医疗相关 prompt 的按住时间归零
     game.ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
@@ -1052,7 +1066,6 @@ end)
                 local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
                 if event then
                     local found = false
-                    -- 优先从 getnilinstances 查找
                     if getnilinstances then
                         for _, obj in ipairs(getnilinstances()) do
                             if obj.Name == "CashDrop" then
@@ -1061,7 +1074,6 @@ end)
                             end
                         end
                     end
-                    -- 如果没找到，再从 workspace 里找
                     if not found then
                         for _, obj in ipairs(workspace:GetDescendants()) do
                             if obj.Name == "CashDrop" then
@@ -1069,7 +1081,6 @@ end)
                             end
                         end
                     end
-                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
                     if not found then
                         for _, descendant in pairs(workspace:GetDescendants()) do
                             if descendant:IsA("ProximityPrompt") then
@@ -1259,64 +1270,91 @@ end)
     FlyTab:Toggle({ Title = "飞行（绕过）", Value = false, Callback = function(value) if value then startFly() else stopFly() end end })
     FlyTab:Slider({ Title = "飞行速度", Step = 1, Value = { Min = 10, Max = 620, Default = 35 }, Callback = function(value) FlySpeed = value end })
 
-    local flyQuickToggle, flyQuickScreenGui, flyQuickButton, flyQuickStatusLabel = false, nil, nil, nil
-    local function DestroyFlyQuickToggle() if flyQuickScreenGui then flyQuickScreenGui:Destroy(); flyQuickScreenGui = nil; flyQuickButton = nil; flyQuickStatusLabel = nil end end
+    -- ==================== 飞天快捷按钮（新样式） ====================
+    local flyQuickToggle, flyQuickScreenGui, flyQuickButton = false, nil, nil
+    local function DestroyFlyQuickToggle()
+        if flyQuickScreenGui then
+            flyQuickScreenGui:Destroy()
+            flyQuickScreenGui = nil
+            flyQuickButton = nil
+        end
+    end
     local function CreateFlyQuickToggle()
         if flyQuickButton then return end
         flyQuickScreenGui = Instance.new("ScreenGui")
         flyQuickScreenGui.Name = "FlyQuickToggle"
         flyQuickScreenGui.ResetOnSpawn = false
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
-        local button = Instance.new("ImageButton")
-        button.Size = UDim2.new(0, 60, 0, 60)
-        button.Position = UDim2.new(0.5, -30, 0.15, 0)
+
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(0, 130, 0, 55)
+        button.Position = UDim2.new(0.5, -65, 0.15, 0)
         button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.15
-        button.BorderSizePixel = 2
-        button.BorderColor3 = Color3.fromRGB(100, 200, 255)
-        button.Image = "rbxassetid://74369447499630"
-        button.ImageColor3 = Color3.fromRGB(100, 200, 255)
-        button.ScaleType = Enum.ScaleType.Fit
+        button.BackgroundTransparency = 0.3
+        button.BorderSizePixel = 0
+        button.Text = "飞行: 关"
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextSize = 18
+        button.Font = Enum.Font.GothamBold
         button.Parent = flyQuickScreenGui
         flyQuickButton = button
+
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
+        corner.CornerRadius = UDim.new(0, 10)
         corner.Parent = button
-        flyQuickStatusLabel = Instance.new("TextLabel")
-        flyQuickStatusLabel.Size = UDim2.new(1, 0, 0, 20)
-        flyQuickStatusLabel.Position = UDim2.new(0, 0, 1, 0)
-        flyQuickStatusLabel.BackgroundTransparency = 1
-        flyQuickStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        flyQuickStatusLabel.TextSize = 12
-        flyQuickStatusLabel.Font = Enum.Font.GothamBold
-        flyQuickStatusLabel.TextStrokeTransparency = 0.3
-        flyQuickStatusLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        flyQuickStatusLabel.Text = "飞行: 关"
-        flyQuickStatusLabel.Parent = button
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = 2.5
+        stroke.Color = Color3.fromRGB(100, 200, 255)
+        stroke.Parent = button
+
+        -- 彩色边框循环
+        task.spawn(function()
+            local hue = 0
+            while button and button.Parent do
+                hue = (hue + 0.005) % 1
+                stroke.Color = Color3.fromHSV(hue, 0.85, 1)
+                task.wait(0.05)
+            end
+        end)
+
         local function updateFlyStatus()
-            if flyQuickStatusLabel then
-                flyQuickStatusLabel.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
-                if flyQuickButton then
-                    flyQuickButton.BorderColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                    flyQuickButton.ImageColor3 = flyState.enabled and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(100, 200, 255)
-                end
+            if flyQuickButton then
+                flyQuickButton.Text = flyState.enabled and "飞行: 开" or "飞行: 关"
+                flyQuickButton.BackgroundColor3 = flyState.enabled and Color3.fromRGB(20, 80, 40) or Color3.fromRGB(30, 30, 50)
             end
         end
-        button.MouseButton1Click:Connect(function() if flyState.enabled then stopFly() else startFly() end; updateFlyStatus() end)
+
+        button.MouseButton1Click:Connect(function()
+            if flyState.enabled then stopFly() else startFly() end
+            updateFlyStatus()
+        end)
+
         local dragging, dragStart, startPos = false, nil, nil
-        button.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; dragStart = input.Position; startPos = button.Position end end)
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+            end
+        end)
         button.InputChanged:Connect(function(input)
             if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local delta = input.Position - dragStart
                 button.Position = UDim2.new(startPos.X.Scale + delta.X / player:WaitForChild("PlayerGui").AbsoluteSize.X, startPos.X.Offset + delta.X, startPos.Y.Scale + delta.Y / player:WaitForChild("PlayerGui").AbsoluteSize.Y, startPos.Y.Offset + delta.Y)
             end
         end)
-        button.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+        button.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
         updateFlyStatus()
         task.spawn(function()
             while flyQuickScreenGui and flyQuickScreenGui.Parent do
                 task.wait(0.5)
-                if flyQuickToggle and flyQuickStatusLabel then
+                if flyQuickToggle then
                     updateFlyStatus()
                 end
             end
