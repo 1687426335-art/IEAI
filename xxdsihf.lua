@@ -168,7 +168,7 @@ function createUI()
             banner.Size = UDim2.new(0, 220, 0, 28)
             banner.Position = UDim2.new(0, -220, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "我不需要任何的热度请不要广泛宣传"
+            banner.Text = "倒卖死爸妈"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
@@ -1092,17 +1092,31 @@ end)
         if flyAnchor.head and flyAnchor.hum then flyAnchor.head.Anchored = false; flyAnchor.hum.PlatformStand = false end
         flyAnchor.active = false
     end
+    
+    -- 性能优化版 flyMicroStepLoop
     local function flyMicroStepLoop()
         flyState.targetPos = flyState.hrp.Position
         flyState.lastTime = tick()
+        local rayCheckCounter = 0
+        local lastInWall = false
         while flyState.enabled do
             local now = tick()
             local dt = now - flyState.lastTime
             flyState.lastTime = now
             if not flyState.hrp or not flyState.hrp.Parent then break end
-            local inWall = flyDetectWall()
+            
+            -- 每 4 帧检测一次墙体，避免频繁射线检测导致掉帧
+            rayCheckCounter = rayCheckCounter + 1
+            local inWall = lastInWall
+            if rayCheckCounter >= 4 then
+                inWall = flyDetectWall()
+                lastInWall = inWall
+                rayCheckCounter = 0
+            end
+            
             if inWall and not flyAnchor.active then flyEnterAnchor()
             elseif not inWall and flyAnchor.active then flyExitAnchor() end
+            
             local moveDir
             if FlyControl then
                 local mv = FlyControl:GetMoveVector()
@@ -1120,6 +1134,8 @@ end)
             local distance = remaining.Magnitude
             if distance > 0 then
                 local steps = math.ceil(distance / 10)
+                -- 限制单帧最大步数，防止瞬移过快导致地图加载卡死
+                if steps > 4 then steps = 4 end
                 local stepVec = remaining / steps
                 for i = 1, steps do
                     if not flyState.enabled then break end
@@ -1135,6 +1151,7 @@ end)
             RunService.Heartbeat:Wait()
         end
     end
+
     local function flyHealthLockLoop()
         while flyState.enabled do
             if flyState.hum and flyState.hum.Health <= 0 then flyState.hum.Health = flyState.hum.MaxHealth end
@@ -1266,12 +1283,21 @@ end)
     local speedBypassOn, speedBypassValue = false, 20
     FlyTab:Toggle({ Title = "修改移速（绕过）", Value = false, Callback = function(value) speedBypassOn = value end })
     FlyTab:Slider({ Title = "移速", Step = 1, Value = { Min = 5, Max = 150, Default = 20 }, Callback = function(value) speedBypassValue = value end })
+    
+    -- 性能优化版 移速 Heartbeat 循环
     RunService.Heartbeat:Connect(function(dt)
         if not speedBypassOn then return end
         local char = player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        if hum and root and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + hum.MoveDirection * speedBypassValue * dt end
+        if hum and root and hum.MoveDirection.Magnitude > 0 then
+            -- 限制单帧最大移动距离，防止低帧率下瞬移距离过大导致区块加载崩溃
+            local moveVec = hum.MoveDirection * speedBypassValue * dt
+            if moveVec.Magnitude > 12 then
+                moveVec = moveVec.Unit * 12
+            end
+            root.CFrame = root.CFrame + moveVec
+        end
     end)
 
     -- ==================== 玩家修改 ====================
