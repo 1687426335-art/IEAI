@@ -38,12 +38,14 @@ function createUI()
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
+    local Stats = game:GetService("Stats")
     local player = Players.LocalPlayer
     local isDestroyed = false
     local connections = {}
 
     -- 飞天快捷相关变量
     local lockFlyBtn = false
+    local showPerfEnabled = false
 
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
@@ -52,10 +54,9 @@ function createUI()
         sg.DisplayOrder = 999
         sg.Parent = player:WaitForChild("PlayerGui")
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 220,  frame0,
- 50)
-        frame.Position = U       Dim2.new(1, 0 local, 1, -80)
-        frame.BackgroundColor label3 = Color3.from =RGB(30, 30, 35)
+        frame.Size = UDim2.new(0, 220, 0, 50)
+        frame.Position = UDim2.new(1, 0, 1, -80)
+        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         frame.BorderSizePixel = 0
         frame.Parent = sg
         local corner = Instance.new("UICorner")
@@ -64,7 +65,8 @@ function createUI()
         local stroke = Instance.new("UIStroke")
         stroke.Color = Color3.fromRGB(0, 255, 100)
         stroke.Thickness = 2
-        stroke.Parent = Instance.new("TextLabel")
+        stroke.Parent = frame
+        local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, -20, 1, -10)
         label.Position = UDim2.new(0, 10, 0, 5)
         label.BackgroundTransparency = 1
@@ -1411,6 +1413,13 @@ end)
         end
     })
 
+    A:Divider({ Text = "性能显示" })
+    A:Toggle({
+        Title = "显示当前帧率延迟",
+        Value = false,
+        Callback = function(value) showPerfEnabled = value end
+    })
+
     -- ==================== 枪械功能 ====================
     B:Divider({ Text = "枪械强化" })
     B:Toggle({ Title = "超快射速", Value = false, Callback = function(value)
@@ -2033,6 +2042,58 @@ end)
         if keyInputValue == "2639zako" then adminVerified = true; WindUI:Notify({ Title = "成功", Content = "验证通过，已解锁开发者后台", Duration = 3 }); buildAdminPanel()
         else WindUI:Notify({ Title = "错误", Content = "卡密错误", Duration = 2 }) end
     end })
+
+    -- ==================== FPS 和延迟显示 ====================
+    local perfGui = Instance.new("ScreenGui")
+    perfGui.Name = "PerfDisplayGui"
+    perfGui.ResetOnSpawn = false
+    perfGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    perfGui.Parent = player:WaitForChild("PlayerGui")
+
+    local perfLabel = Instance.new("TextLabel")
+    perfLabel.Size = UDim2.new(0, 400, 0, 24)
+    perfLabel.Position = UDim2.new(0.5, -200, 0, 10)
+    perfLabel.BackgroundTransparency = 1
+    perfLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    perfLabel.TextSize = 18
+    perfLabel.Font = Enum.Font.GothamBold
+    perfLabel.TextStrokeTransparency = 0.3
+    perfLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    perfLabel.Text = "FPS: 0 | 延迟: 0ms"
+    perfLabel.Parent = perfGui
+    perfLabel.Visible = false
+
+    local frameCount = 0
+    local lastTime = tick()
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+    end)
+
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.5)
+            local now = tick()
+            local elapsed = now - lastTime
+            local fps = 0
+            if elapsed > 0 then
+                fps = math.floor(frameCount / elapsed)
+            end
+            frameCount = 0
+            lastTime = now
+
+            local ping = 0
+            pcall(function()
+                ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+            end)
+
+            if showPerfEnabled then
+                perfLabel.Visible = true
+                perfLabel.Text = "FPS: " .. fps .. " | 延迟: " .. ping .. "ms"
+            else
+                perfLabel.Visible = false
+            end
+        end
+    end)
 
     WindUI:Notify({ Title = "wdfex-Hub", Content = "脚本已加载成功，欢迎使用！", Duration = 3 })
 end
