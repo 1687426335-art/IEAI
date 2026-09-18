@@ -162,7 +162,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.Size = UDim2.new(1, 0, 0, 25)
 Title.Font = Enum.Font.GothamBlack
-Title.Text = "黑白脚本 - 卡密验证"
+Title.Text = "wdfex-Hub卡密验证"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 18 -- 缩小字体
 Title.TextXAlignment = Enum.TextXAlignment.Center
@@ -341,7 +341,7 @@ WhitelistNote.BackgroundTransparency = 1
 WhitelistNote.Position = UDim2.new(0, 0, 0, 140)
 WhitelistNote.Size = UDim2.new(1, 0, 0, 16)
 WhitelistNote.Font = Enum.Font.GothamMedium
-WhitelistNote.Text = "✨ 进群有机会获得白名单资格"
+WhitelistNote.Text = "？"
 WhitelistNote.TextColor3 = Color3.fromRGB(255, 200, 80)
 WhitelistNote.TextSize = 11 -- 缩小字体
 WhitelistNote.TextXAlignment = Enum.TextXAlignment.Center
@@ -786,7 +786,7 @@ CopyButton.MouseButton1Click:Connect(function()
     }):Play()
     
     -- 显示消息提示
-    showMessage("✅ 群号已复制到剪贴板", Color3.fromRGB(80, 255, 80), 2)
+    showMessage("作者QQ号已复制到剪贴板", Color3.fromRGB(80, 255, 80), 2)
     
     task.wait(1)
     copyCooldown = false
@@ -1118,7 +1118,7 @@ end
 updateAttemptsDisplay()
 updateStatus(Color3.fromRGB(255, 100, 100), "未验证")
 
-print("黑白脚本紧凑增强版UI已加载完成")
+print("wdfex-Hub紧凑增强版UI已加载完成")
 print("窗口尺寸: 300x260 (紧凑尺寸)")
 print("设备适配:", isMobile and "移动端" or "电脑端")
 print("功能优化完成，用户体验提升")
