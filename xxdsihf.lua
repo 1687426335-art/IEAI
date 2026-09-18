@@ -1184,7 +1184,8 @@ end)
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(0, 115, 0, 46)
         button.Position = UDim2.new(0.5, -58, 0.2, 0)
-        button.BackgroundTransparency = 1
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        button.BackgroundTransparency = 0.15
         button.BorderSizePixel = 0
         button.Text = "飞天: 关"
         button.TextColor3 = Color3.fromHSV(0, 1, 1)
