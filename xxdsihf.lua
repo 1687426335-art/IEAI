@@ -1182,13 +1182,12 @@ end)
         flyQuickScreenGui.Parent = player:WaitForChild("PlayerGui")
 
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 100, 0, 40)
-        button.Position = UDim2.new(0.5, -50, 0.2, 0)
-        button.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        button.BackgroundTransparency = 0.15
+        button.Size = UDim2.new(0, 115, 0, 46)
+        button.Position = UDim2.new(0.5, -58, 0.2, 0)
+        button.BackgroundTransparency = 1
         button.BorderSizePixel = 0
         button.Text = "飞天: 关"
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextColor3 = Color3.fromHSV(0, 1, 1)
         button.TextSize = 14
         button.Font = Enum.Font.GothamBold
         button.Parent = flyQuickScreenGui
@@ -1208,6 +1207,7 @@ end)
             if flyQuickButton and flyQuickButton.Parent then
                 local hue = (tick() * 0.15) % 1
                 flyStroke.Color = Color3.fromHSV(hue, 1, 1)
+                flyQuickButton.TextColor3 = Color3.fromHSV((hue + 0.5) % 1, 1, 1)
             end
         end)
 
@@ -2051,11 +2051,11 @@ end)
     perfGui.Parent = player:WaitForChild("PlayerGui")
 
     local perfLabel = Instance.new("TextLabel")
-    perfLabel.Size = UDim2.new(0, 400, 0, 24)
+    perfLabel.Size = UDim2.new(0, 400, 0, 20)
     perfLabel.Position = UDim2.new(0.5, -200, 0, 10)
     perfLabel.BackgroundTransparency = 1
     perfLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    perfLabel.TextSize = 18
+    perfLabel.TextSize = 14
     perfLabel.Font = Enum.Font.GothamBold
     perfLabel.TextStrokeTransparency = 0.3
     perfLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
