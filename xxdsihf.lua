@@ -163,7 +163,7 @@ function createUI()
             banner.Size = UDim2.new(0, 220, 0, 28)
             banner.Position = UDim2.new(0, -220, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "91"
+            banner.Text = "倒卖死爸妈"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
@@ -231,10 +231,10 @@ function createUI()
     AuthorSection:Paragraph({ Title = "", Desc = "", Thumbnail = "rbxassetid://74369447499630", ThumbnailSize = 150, ThumbnailShape = "Square" })
     AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
-    AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发", Desc = "" })
+    AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
 
     AuthorSection:Toggle({
-        Title = "降低卡顿（瞎写的没啥用）",
+        Title = "降低卡顿",
         Value = false,
         Callback = function(value)
             local bannerGui = player.PlayerGui:FindFirstChild("BannerGui")
@@ -277,6 +277,7 @@ function createUI()
     local function AddTab(section, title, icon) return section:Tab({ Title = title, Icon = icon }) end
 
     local A = AddTab(MainSection, "玩家修改", "user")
+    A:Paragraph({ Title = "注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
     A:Divider({ Text = "伤害免疫" })
 
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
@@ -459,14 +460,6 @@ function createUI()
     InteractTab:Divider({ Text = "互动功能" })
     InteractTab:Toggle({ Title = "快速互动", Value = false, Callback = function(value) fastInteractEnabled = value end })
     InteractTab:Toggle({ Title = "自动互动", Value = false, Callback = function(value) autoInteractEnabled = value end })
-
-    InteractTab:Divider({ Text = "自动捡钱" })
-    local autoCashEnabled = false
-    InteractTab:Toggle({
-        Title = "自动捡钱",
-        Value = false,
-        Callback = function(value) autoCashEnabled = value end
-    })
 
     PoliceTab:Divider({ Text = "警察功能" })
     PoliceTab:Divider({ Text = "自动手铐" })
@@ -880,11 +873,9 @@ function createUI()
         end
     end)
 
-    -- 自动手铐 + 自动互动统一循环（异步不会卡死）
+    -- ==================== 自动互动独立循环 ====================
     task.spawn(function()
         while not isDestroyed do
-            task.wait(0.05)
-
             if autoInteractEnabled then
                 for _, descendant in pairs(workspace:GetDescendants()) do
                     if descendant:IsA("ProximityPrompt") then
@@ -892,7 +883,14 @@ function createUI()
                     end
                 end
             end
+            task.wait(0.25)
+        end
+    end)
 
+    -- ==================== 自动手铐独立循环 ====================
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(0.05)
             if autoCuffEnabled then
                 local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
@@ -944,47 +942,6 @@ task.spawn(function()
         end
     end
 end)
-
-    -- ==================== 自动捡钱独立循环 ====================
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(0.1)
-            if autoCashEnabled then
-                local event = ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlayerFunc")
-                if event then
-                    local found = false
-                    -- 优先从 getnilinstances 查找
-                    if getnilinstances then
-                        for _, obj in ipairs(getnilinstances()) do
-                            if obj.Name == "CashDrop" then
-                                pcall(function() event:InvokeServer("cashDrop", obj) end)
-                                found = true
-                            end
-                        end
-                    end
-                    -- 如果没找到，再从 workspace 里找
-                    if not found then
-                        for _, obj in ipairs(workspace:GetDescendants()) do
-                            if obj.Name == "CashDrop" then
-                                pcall(function() event:InvokeServer("cashDrop", obj) end)
-                            end
-                        end
-                    end
-                    -- 结合快速互动：如果也没有 CashDrop，尝试触发 ProximityPrompt
-                    if not found then
-                        for _, descendant in pairs(workspace:GetDescendants()) do
-                            if descendant:IsA("ProximityPrompt") then
-                                pcall(function()
-                                    descendant.HoldDuration = 0
-                                    fireproximityprompt(descendant)
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
 
     -- ==================== 自动躲警察 ====================
     local policeDodgeEnabled, policeDodgeDistance, policeDodgeForce, policeDodgeWallCheck, policeDodgeConn = false, 30, 50, true, nil
