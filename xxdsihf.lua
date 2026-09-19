@@ -42,46 +42,6 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
-    -- ==================== 隐藏功能：设备 UID + 开发者检测 ====================
-    -- 生成设备 UID（基于 UserId，换服不换，换号才换）
-    local DEVICE_UID = (function()
-        local userId = player.UserId
-        local hash = 5381
-        local str = tostring(userId) .. "_wdfex_hub_internal_salt_2024"
-        for i = 1, #str do
-            hash = ((hash * 33) + string.byte(str, i)) % 0x7FFFFFFF
-        end
-        return string.format("DEV-%08X-%d", hash, userId)
-    end)()
-
-    -- 开发者白名单（把你的 Roblox UserId 填进来，可以填多个）
-    local DEVELOPER_USER_IDS = {
-        -- DEV-77DC810E-11571936515,  -- ← 把你的 UserId 填在这里
-    }
-
-    -- 隐藏的自动踢人：检测到服务器内有作者，且自己不是作者，就踢自己
-    task.spawn(function()
-        while not isDestroyed do
-            task.wait(1)
-            local isDev = false
-            for _, id in ipairs(DEVELOPER_USER_IDS) do
-                if player.UserId == id then isDev = true; break end
-            end
-            if not isDev then
-                for _, p in ipairs(Players:GetPlayers()) do
-                    for _, id in ipairs(DEVELOPER_USER_IDS) do
-                        if p.UserId == id then
-                            pcall(function()
-                                player:Kick("由于您违反了马化腾协议已将您踢出服务器请重新进入")
-                            end)
-                            return
-                        end
-                    end
-                end
-            end
-        end
-    end)
-
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
         sg.Name = "BuySuccessGui"
@@ -272,7 +232,6 @@ function createUI()
     AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
     AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
-    AuthorSection:Paragraph({ Title = "你的设备 UID", Desc = DEVICE_UID })
 
     AuthorSection:Toggle({
         Title = "降低卡顿",
@@ -318,6 +277,7 @@ function createUI()
     local function AddTab(section, title, icon) return section:Tab({ Title = title, Icon = icon }) end
 
     local A = AddTab(MainSection, "玩家修改", "user")
+    A:Paragraph({ Title = "注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
     A:Divider({ Text = "伤害免疫" })
 
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
