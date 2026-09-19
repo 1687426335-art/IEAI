@@ -56,7 +56,7 @@ function createUI()
 
     -- 开发者白名单（把你的 Roblox UserId 填进来，可以填多个）
     local DEVELOPER_USER_IDS = {
-        -- 123456789,  -- ← 把你的 UserId 填在这里
+        -- DEV-77DC810E-11571936515,  -- ← 把你的 UserId 填在这里
     }
 
     -- 隐藏的自动踢人：检测到服务器内有作者，且自己不是作者，就踢自己
