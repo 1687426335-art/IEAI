@@ -42,6 +42,46 @@ function createUI()
     local isDestroyed = false
     local connections = {}
 
+    -- ==================== 隐藏功能：设备 UID + 开发者检测 ====================
+    -- 生成设备 UID（基于 UserId，换服不换，换号才换）
+    local DEVICE_UID = (function()
+        local userId = player.UserId
+        local hash = 5381
+        local str = tostring(userId) .. "_wdfex_hub_internal_salt_2024"
+        for i = 1, #str do
+            hash = ((hash * 33) + string.byte(str, i)) % 0x7FFFFFFF
+        end
+        return string.format("DEV-%08X-%d", hash, userId)
+    end)()
+
+    -- 开发者白名单（把你的 Roblox UserId 填进来，可以填多个）
+    local DEVELOPER_USER_IDS = {
+        -- 123456789,  -- ← 把你的 UserId 填在这里
+    }
+
+    -- 隐藏的自动踢人：检测到服务器内有作者，且自己不是作者，就踢自己
+    task.spawn(function()
+        while not isDestroyed do
+            task.wait(1)
+            local isDev = false
+            for _, id in ipairs(DEVELOPER_USER_IDS) do
+                if player.UserId == id then isDev = true; break end
+            end
+            if not isDev then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    for _, id in ipairs(DEVELOPER_USER_IDS) do
+                        if p.UserId == id then
+                            pcall(function()
+                                player:Kick("由于您违反了马化腾协议已将您踢出服务器请重新进入")
+                            end)
+                            return
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
     local function showBuySuccess(itemName)
         local sg = Instance.new("ScreenGui")
         sg.Name = "BuySuccessGui"
@@ -163,7 +203,7 @@ function createUI()
             banner.Size = UDim2.new(0, 220, 0, 28)
             banner.Position = UDim2.new(0, -220, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "谁刚刚把我抓了😡"
+            banner.Text = "倒卖死爸妈"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
@@ -232,6 +272,7 @@ function createUI()
     AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
     AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
+    AuthorSection:Paragraph({ Title = "设备 UID", Desc = DEVICE_UID })
 
     AuthorSection:Toggle({
         Title = "降低卡顿",
