@@ -277,7 +277,6 @@ function createUI()
     local function AddTab(section, title, icon) return section:Tab({ Title = title, Icon = icon }) end
 
     local A = AddTab(MainSection, "玩家修改", "user")
-    A:Paragraph({ Title = "注意事项", Desc = "如果你使用的是ANSN又使用了我的脚本请勿打开玩家功能里面的人物穿墙防甩飞无限体力否则卡死其他功能都可以正常打开可以打开" })
     A:Divider({ Text = "伤害免疫" })
 
     local FlyTab = AddTab(MainSection, "飞天与加速", "plane")
