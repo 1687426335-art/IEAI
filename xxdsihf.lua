@@ -272,7 +272,7 @@ function createUI()
     AuthorSection:Paragraph({ Title = "作者：wdfex", Desc = "" })
     AuthorSection:Paragraph({ Title = "作者QQ：1687426335", Desc = "" })
     AuthorSection:Paragraph({ Title = "此脚本仅wdfex一人开发其他均为假的", Desc = "" })
-    AuthorSection:Paragraph({ Title = "设备 UID", Desc = DEVICE_UID })
+    AuthorSection:Paragraph({ Title = "你的设备 UID", Desc = DEVICE_UID })
 
     AuthorSection:Toggle({
         Title = "降低卡顿",
