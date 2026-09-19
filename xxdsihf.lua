@@ -163,7 +163,7 @@ function createUI()
             banner.Size = UDim2.new(0, 220, 0, 28)
             banner.Position = UDim2.new(0, -220, 0, 2)
             banner.BackgroundTransparency = 1
-            banner.Text = "倒卖死爸妈"
+            banner.Text = "谁刚刚把我抓了😡"
             banner.TextSize = 18
             banner.Font = Enum.Font.GothamBold
             banner.TextStrokeTransparency = 0
